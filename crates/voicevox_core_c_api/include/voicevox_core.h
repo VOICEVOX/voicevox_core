@@ -724,7 +724,7 @@ VoicevoxResultCode voicevox_audio_query_create_from_accent_phrases(const char *a
  * - `volumeScale`が負。
  * - `prePhonemeLength`が負。
  * - `postPhonemeLength`が負。
- * - `outputSamplingRate`が`24000`以外の値 (エラーと同様将来的に解消予定)。
+ * - `outputSamplingRate`が`24000`以外の値（エラーと同様将来的に解消予定）。
  *
  * @param [in] audio_query_json `AudioQuery`型のJSON
  *
@@ -744,7 +744,7 @@ VoicevoxResultCode voicevox_audio_query_validate(const char *audio_query_json);
 /**
  * JSONを[`AccentPhrase`型]としてバリデートする。
  *
- *[`AccentPhrase`型]: ../rust_api/voicevox_core/struct.AccentPhrase.html
+ * [`AccentPhrase`型]: ../rust_api/voicevox_core/struct.AccentPhrase.html
  *
  * 次のうちどれかを満たすならエラーを返す。
  *

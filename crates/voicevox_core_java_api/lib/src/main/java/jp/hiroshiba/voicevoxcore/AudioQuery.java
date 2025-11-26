@@ -96,7 +96,7 @@ public class AudioQuery {
    *   <li>{@link #volumeScale}がNaN、infinity、もしくは負。
    *   <li>{@link #prePhonemeLength}がNaN、infinity、もしくは負。
    *   <li>{@link #postPhonemeLength}がNaN、infinity、もしくは負。
-   *   <li>{@link #outputSamplingRate}が{@code 24000}以外の値 (エラーと同様将来的に解消予定)。
+   *   <li>{@link #outputSamplingRate}が{@code 24000}以外の値（エラーと同様将来的に解消予定）。
    * </ul>
    */
   public void validate() {

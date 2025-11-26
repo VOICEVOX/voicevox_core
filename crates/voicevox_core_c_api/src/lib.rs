@@ -529,7 +529,7 @@ pub unsafe extern "C" fn voicevox_audio_query_create_from_accent_phrases(
 /// - `volumeScale`が負。
 /// - `prePhonemeLength`が負。
 /// - `postPhonemeLength`が負。
-/// - `outputSamplingRate`が`24000`以外の値 (エラーと同様将来的に解消予定)。
+/// - `outputSamplingRate`が`24000`以外の値（エラーと同様将来的に解消予定）。
 ///
 /// @param [in] audio_query_json `AudioQuery`型のJSON
 ///

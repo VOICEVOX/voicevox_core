@@ -414,7 +414,7 @@ class AudioQuery:
         - :attr:`volume_scale` がNaN、infinity、もしくは負。
         - :attr:`pre_phoneme_length` がNaN、infinity、もしくは負。
         - :attr:`post_phoneme_length` がNaN、infinity、もしくは負。
-        - :attr:`output_sampling_rate` が ``24000`` 以外の値 (エラーと同様将来的に解消予定)。
+        - :attr:`output_sampling_rate` が ``24000`` 以外の値（エラーと同様将来的に解消予定）。
 
         .. |audio-query-validate-invalid-query-error| replace:: ``InvalidQueryError``
         .. _audio-query-validate-invalid-query-error: #voicevox_core.InvalidQueryError

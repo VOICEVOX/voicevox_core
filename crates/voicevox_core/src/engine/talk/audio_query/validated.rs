@@ -115,7 +115,7 @@ impl AudioQuery {
     /// - [`volume_scale`]がNaN、infinity、もしくは負。
     /// - [`pre_phoneme_length`]がNaN、infinity、もしくは負。
     /// - [`post_phoneme_length`]がNaN、infinity、もしくは負。
-    /// - [`output_sampling_rate`]が`24000`以外の値 (エラーと同様将来的に解消予定)。
+    /// - [`output_sampling_rate`]が`24000`以外の値（エラーと同様将来的に解消予定）。
     ///
     /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
     /// [`WARN`]: tracing::Level::WARN
