@@ -8,7 +8,7 @@ use serde::{
 };
 use strum::EnumCount;
 
-use self::sil::Sil;
+pub use self::sil::Sil;
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, derive_more::Display)]
 pub enum Phoneme {
@@ -556,12 +556,27 @@ const _: () = assert!(MoraTail::COUNT == 13);
 const _: () = assert!(OptionalConsonant::COUNT == PhonemeCode::COUNT - MoraTail::COUNT + 1);
 
 mod sil {
-    use std::{borrow::Cow, str::FromStr};
+    use std::{borrow::Cow, fmt, str::FromStr};
+
+    use serde::{
+        de::{self, Unexpected},
+        Deserialize, Deserializer,
+    };
 
     #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, derive_more::Display)]
     pub struct Sil(
         Cow<'static, str>, // invariant: must contain "sil"
     );
+
+    impl Sil {
+        pub const DEFAULT: Self = Self(Cow::Borrowed("sil"));
+    }
+
+    impl Default for Sil {
+        fn default() -> Self {
+            Self::DEFAULT
+        }
+    }
 
     impl FromStr for Sil {
         type Err = ();
@@ -574,6 +589,33 @@ mod sil {
                 }))
             } else {
                 Err(())
+            }
+        }
+    }
+
+    impl<'de> Deserialize<'de> for Sil {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            return deserializer.deserialize_str(Visitor);
+
+            struct Visitor;
+
+            impl de::Visitor<'_> for Visitor {
+                type Value = Sil;
+
+                fn expecting(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+                    write!(fmt, "a string that contains \"sil\"")
+                }
+
+                fn visit_str<E>(self, s: &str) -> Result<Self::Value, E>
+                where
+                    E: de::Error,
+                {
+                    s.parse()
+                        .map_err(|()| de::Error::invalid_value(Unexpected::Str(s), &self))
+                }
             }
         }
     }

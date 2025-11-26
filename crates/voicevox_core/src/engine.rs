@@ -7,9 +7,11 @@ mod mora_list;
 pub(crate) mod song;
 pub(crate) mod talk;
 
-pub use self::audio_file::wav_from_s16le;
 pub(crate) use self::{
-    acoustic_feature_extractor::{Phoneme, PhonemeCode},
-    audio_file::to_s16le_pcm,
+    acoustic_feature_extractor::PhonemeCode, audio_file::to_s16le_pcm,
     fundamental::DEFAULT_SAMPLING_RATE,
+};
+pub use self::{
+    acoustic_feature_extractor::{Phoneme, Sil},
+    audio_file::wav_from_s16le,
 };
