@@ -556,11 +556,11 @@ const _: () = assert!(MoraTail::COUNT == 13);
 const _: () = assert!(OptionalConsonant::COUNT == PhonemeCode::COUNT - MoraTail::COUNT + 1);
 
 mod sil {
-    use std::str::FromStr;
+    use std::{borrow::Cow, str::FromStr};
 
     #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, derive_more::Display)]
     pub struct Sil(
-        String, // invariant: must contain "sil"
+        Cow<'static, str>, // invariant: must contain "sil"
     );
 
     impl FromStr for Sil {
@@ -568,7 +568,10 @@ mod sil {
 
         fn from_str(s: &str) -> Result<Self, Self::Err> {
             if s.contains("sil") {
-                Ok(Self(s.to_owned()))
+                Ok(Self(match s {
+                    "sil" => "sil".into(),
+                    s => s.to_owned().into(),
+                }))
             } else {
                 Err(())
             }

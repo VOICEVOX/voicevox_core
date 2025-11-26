@@ -10,6 +10,9 @@ from .._rust import (
     _audio_query_to_json,
     _ReservedFields,
     _to_zenkaku,
+    _validate_accent_phrase,
+    _validate_audio_query,
+    _validate_mora,
     _validate_user_dict_word,
 )
 from ._please_do_not_use import _Reserved
@@ -255,6 +258,12 @@ def _(mode: AccelerationMode):
 class Mora:
     """
     モーラ（子音＋母音）ごとの情報。
+
+    この構造体の状態によっては、 ``Synthesizer`` の各メソッドは
+    |mora-invalid-query-error|_ を発する。詳細は :func:`validate` にて。
+
+    .. |mora-invalid-query-error| replace:: ``InvalidQueryError``
+    .. _mora-invalid-query-error: #voicevox_core.InvalidQueryError
     """
 
     text: str
@@ -275,11 +284,40 @@ class Mora:
     consonant_length: float | None = None
     """子音の音長。"""
 
+    def validate(self) -> None:
+        """
+        このインスタンスをバリデートする。
+
+        次のうちどれかを満たすなら |mora-validate-invalid-query-error|_ を発する。
+
+        - :attr:`consonant` と :attr:`consonant_length` の有無が不一致。
+        - :attr:`consonant` もしくは :attr:`vowel` が音素として不正。
+
+        また次の状態に対しては |mora-validate-logging-warning|_
+        レベルのログを出す。将来的にはエラーになる予定。
+
+        - :attr:`consonant_length` がNaN、infinity、もしくは負。
+        - :attr:`vowel_length` がNaN、infinity、もしくは負。
+        - :attr:`pitch` がNaNもしくは±infinity。
+
+        .. |mora-validate-invalid-query-error| replace:: ``InvalidQueryError``
+        .. _mora-validate-invalid-query-error: #voicevox_core.InvalidQueryError
+        .. |mora-validate-logging-warning| replace:: ``WARNING``
+        .. _mora-validate-logging-warning: https://docs.python.org/3/library/logging.html#logging.WARNING
+        """
+        _validate_mora(self)
+
 
 @dataclasses.dataclass
 class AccentPhrase:
     """
     AccentPhrase (アクセント句ごとの情報)。
+
+    この構造体の状態によっては、 ``Synthesizer`` の各メソッドは
+    |accent-phrase-invalid-query-error|_ を発する。詳細は :func:`validate` にて。
+
+    .. |accent-phrase-invalid-query-error| replace:: ``InvalidQueryError``
+    .. _accent-phrase-invalid-query-error: #voicevox_core.InvalidQueryError
     """
 
     moras: list[Mora]
@@ -294,11 +332,41 @@ class AccentPhrase:
     is_interrogative: bool = False
     """疑問系かどうか。"""
 
+    def validate(self) -> None:
+        """
+        このインスタンスをバリデートする。
+
+        次のうちどれかを満たすなら |accent-phrase-validate-invalid-query-error|_ を発する。
+
+        - :attr:`moras` もしくは :attr:`pause_mora` の要素のうちいずれかが |accent-phrase-validate-mora-validate|_ 。
+        - :attr:`accent` が ``0`` 。
+
+        また次の状態に対しては |accent-phrase-validate-logging-warning|_
+        レベルのログを出す。将来的にはエラーになる予定。
+
+        - :attr:`moras` もしくは :attr:`pause_mora` の要素のうちいずれかが、警告が出る状態。
+        - :attr:`accent` が :attr:`moras` の数を超過している。
+
+        .. |accent-phrase-validate-invalid-query-error| replace:: ``InvalidQueryError``
+        .. _accent-phrase-validate-invalid-query-error: #voicevox_core.InvalidQueryError
+        .. |accent-phrase-validate-mora-validate| replace:: 不正
+        .. _accent-phrase-validate-mora-validate: #voicevox_core.Mora.validate
+        .. |accent-phrase-validate-logging-warning| replace:: ``WARNING``
+        .. _accent-phrase-validate-logging-warning: https://docs.python.org/3/library/logging.html#logging.WARNING
+        """
+        _validate_accent_phrase(self)
+
 
 @dataclasses.dataclass
 class AudioQuery:
     """
     AudioQuery (音声合成用のクエリ)。
+
+    この構造体の状態によっては、 ``Synthesizer`` の各メソッドは
+    |audio-query-invalid-query-error|_ を発する。詳細は :func:`validate` にて。
+
+    .. |audio-query-invalid-query-error| replace:: ``InvalidQueryError``
+    .. _audio-query-invalid-query-error: #voicevox_core.InvalidQueryError
 
     シリアライゼーションのサポートはされていない。詳細は
     `データのシリアライゼーション
@@ -344,6 +412,38 @@ class AudioQuery:
     @staticmethod
     def from_accent_phrases(accent_phrases: list["AccentPhrase"]) -> "AudioQuery":
         return _audio_query_from_accent_phrases(accent_phrases)
+
+    def validate(self) -> None:
+        """
+        このインスタンスをバリデートする。
+
+        次のうちどれかを満たすなら |audio-query-validate-invalid-query-error|_ を発する。
+
+        - :attr:`accent_phrases` の要素のうちいずれかが |audio-query-validate-accent-phrase-validate|_ 。
+        - :attr:`output_sampling_rate` が ``24000`` の倍数ではない、もしくは ``0`` (将来的に解消予定。cf. |audio-query-validate-issue762|_)。
+
+        また次の状態に対しては |audio-query-validate-logging-warning|_
+        レベルのログを出す。将来的にはエラーになる予定。
+
+        - :attr:`accent_phrases` の要素のうちいずれかが警告が出る状態。
+        - :attr:`speed_scale` がNaN、infinity、もしくは負。
+        - :attr:`pitch_scale` がNaNもしくは±infinity。
+        - :attr:`intonation_scale` がNaNもしくは±infinity。
+        - :attr:`volume_scale` がNaN、infinity、もしくは負。
+        - :attr:`pre_phoneme_length` がNaN、infinity、もしくは負。
+        - :attr:`post_phoneme_length` がNaN、infinity、もしくは負。
+        - :attr:`output_sampling_rate` が ``24000`` 以外の値（エラーと同様将来的に解消予定）。
+
+        .. |audio-query-validate-invalid-query-error| replace:: ``InvalidQueryError``
+        .. _audio-query-validate-invalid-query-error: #voicevox_core.InvalidQueryError
+        .. |audio-query-validate-accent-phrase-validate| replace:: 不正
+        .. _audio-query-validate-accent-phrase-validate: #voicevox_core.AccentPhrase.validate
+        .. |audio-query-validate-issue762| replace:: #762
+        .. _audio-query-validate-issue762: https://github.com/VOICEVOX/voicevox_core/issues/762
+        .. |audio-query-validate-logging-warning| replace:: ``WARNING``
+        .. _audio-query-validate-logging-warning: https://docs.python.org/3/library/logging.html#logging.WARNING
+        """
+        _validate_audio_query(self)
 
     # テストに使用する目的でのみ存在
 
