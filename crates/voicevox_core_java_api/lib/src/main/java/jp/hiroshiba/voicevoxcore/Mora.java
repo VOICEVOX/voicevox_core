@@ -4,9 +4,13 @@ import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import jp.hiroshiba.voicevoxcore.exceptions.InvalidQueryException;
 
 /**
  * モーラ（子音＋母音）ごとの情報。
+ *
+ * <p>この構造体の状態によっては、{@code Synthesizer}の各メソッドは{@link InvalidQueryException}を発する。詳細は{@link
+ * #validate}にて。
  *
  * <p>現在この型はGSONに対応しているが、将来的には <a href="https://github.com/VOICEVOX/voicevox_core/issues/984"
  * target="_blank">Jacksonに切り替わる予定</a> 。
@@ -56,6 +60,28 @@ public class Mora implements Cloneable {
     this.pitch = 0.0;
   }
 
+  /**
+   * このインスタンスをバリデートする。
+   *
+   * <p>次のうちどれかを満たすなら{@link InvalidQueryException}を発する。
+   *
+   * <ul>
+   *   <li>{@link #consonant}と{@link #consonantLength}の有無が不一致。
+   *   <li>{@link #consonant}もしくは{@link #vowel}が音素として不正。
+   * </ul>
+   *
+   * <p>また次の状態に対してはログで警告を出す。将来的にはエラーになる予定。
+   *
+   * <ul>
+   *   <li>{@link #consonantLength}がNaN、infinity、もしくは負。
+   *   <li>{@link #vowelLength}がNaN、infinity、もしくは負。
+   *   <li>{@link #pitch}がNaNもしくは±infinity。
+   * </ul>
+   */
+  public void validate() {
+    rsValidate();
+  }
+
   @Override
   public boolean equals(Object obj) {
     if (!(obj instanceof Mora)) {
@@ -80,4 +106,6 @@ public class Mora implements Cloneable {
     ret.pitch = pitch;
     return ret;
   }
+
+  private native void rsValidate();
 }

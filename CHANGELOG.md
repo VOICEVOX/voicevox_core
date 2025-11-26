@@ -67,8 +67,14 @@
 
 ### Added
 
-- AudioQueryに書かれている音素が不正だったときのクラッシュにおいて、メッセージが改善されます ([#1203])。
 - `sil`に対する扱いが、現行のバージョン0.25.0のVOICEVOX ENGINEと同じになります ([#1197])。
+
+### Changed
+
+- `AudioQuery`/`AccentPhrase`/`Mora`において不正な状態というものが定義され、不正な`AudioQuery`もしくは`accent_phrases`が明示的にエラーを引き起こすようになります ([#1203], [#1208])。
+    - \[Rust,Python,Java\] エラーの種類として`InvalidQuery`が追加されます。
+    - \[C\] エラーの種類として`VOICEVOX_RESULT_INVALID_MORA_ERROR`が追加されます。
+    - メソッドとして`{AudioQuery,AccentPhrase,Mora}::validate`が追加されます。
 
 ### Removed
 
@@ -1365,6 +1371,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1174]: https://github.com/VOICEVOX/voicevox_core/pull/1174
 [#1197]: https://github.com/VOICEVOX/voicevox_core/pull/1197
 [#1203]: https://github.com/VOICEVOX/voicevox_core/pull/1203
+[#1208]: https://github.com/VOICEVOX/voicevox_core/pull/1208
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 

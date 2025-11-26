@@ -39,7 +39,10 @@ use crate::{
         voice_model,
     },
     engine::{
-        talk::{create_kana, initial_process, parse_kana, split_mora, DecoderFeature, Mora},
+        talk::{
+            create_kana, initial_process, parse_kana, split_mora, DecoderFeature, LengthedPhoneme,
+            ValidatedAccentPhrase, ValidatedAudioQuery, ValidatedMora,
+        },
         to_s16le_pcm, wav_from_s16le, PhonemeCode, DEFAULT_SAMPLING_RATE,
     },
     error::ErrorRepr,
@@ -191,7 +194,7 @@ pub struct AudioFeature {
     /// フレームレート。全体の秒数は`frame_length / frame_rate`で表せる。
     pub frame_rate: f64,
     /// 生成時に利用したクエリ。
-    audio_query: AudioQuery,
+    audio_query: ValidatedAudioQuery<'static>,
 }
 
 #[derive(derive_more::Debug)]
@@ -399,6 +402,8 @@ trait AsInner {
         style_id: StyleId,
         options: &SynthesisOptions<Self::Async>,
     ) -> Result<AudioFeature> {
+        let audio_query = audio_query.to_validated()?.into_owned();
+
         let DecoderFeature { f0, phoneme } =
             audio_query.decoder_feature(options.enable_interrogative_upspeak);
 
@@ -416,7 +421,7 @@ trait AsInner {
             style_id,
             frame_length: f0.len(),
             frame_rate: (DEFAULT_SAMPLING_RATE as f64) / 256.0,
-            audio_query: audio_query.clone(),
+            audio_query,
         })
     }
 
@@ -446,6 +451,7 @@ trait AsInner {
         options: &SynthesisOptions<Self::Async>,
     ) -> Result<Vec<u8>> {
         if self.status().contains_domain::<TalkDomain>(style_id) {
+            let audio_query = audio_query.to_validated()?;
             let DecoderFeature { f0, phoneme } =
                 audio_query.decoder_feature(options.enable_interrogative_upspeak);
             let wave = &self
@@ -459,8 +465,8 @@ trait AsInner {
                 )
                 .await?;
             return Ok(wav_from_s16le(
-                &to_s16le_pcm(wave, audio_query),
-                audio_query.output_sampling_rate,
+                &to_s16le_pcm(wave, &audio_query),
+                audio_query.output_sampling_rate.get(),
                 audio_query.output_stereo,
             ));
         }
@@ -500,6 +506,11 @@ trait AsInner {
         accent_phrases: &[AccentPhrase],
         style_id: StyleId,
     ) -> Result<Vec<AccentPhrase>> {
+        let accent_phrases = &accent_phrases
+            .iter()
+            .map(AccentPhrase::to_validated)
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+
         let (_, phoneme_data_list) = initial_process(accent_phrases);
 
         let (_, _, vowel_indexes_data) = split_mora(&phoneme_data_list);
@@ -510,16 +521,20 @@ trait AsInner {
         let mut index = 0;
         let new_accent_phrases = accent_phrases
             .iter()
-            .map(|accent_phrase| AccentPhrase {
+            .map(|accent_phrase| ValidatedAccentPhrase {
                 moras: accent_phrase
                     .moras
                     .iter()
                     .map(|mora| {
-                        let new_mora = Mora {
-                            consonant_length: mora.consonant.as_ref().map(|_| {
-                                phoneme_length[vowel_indexes_data[index + 1] as usize - 1]
+                        let new_mora = ValidatedMora {
+                            consonant: mora.consonant.as_ref().map(|consonant| {
+                                consonant.with_length(
+                                    phoneme_length[vowel_indexes_data[index + 1] as usize - 1],
+                                )
                             }),
-                            vowel_length: phoneme_length[vowel_indexes_data[index + 1] as usize],
+                            vowel: mora.vowel.with_length(
+                                phoneme_length[vowel_indexes_data[index + 1] as usize],
+                            ),
                             ..mora.clone()
                         };
                         index += 1;
@@ -527,8 +542,10 @@ trait AsInner {
                     })
                     .collect(),
                 pause_mora: accent_phrase.pause_mora.as_ref().map(|pause_mora| {
-                    let new_pause_mora = Mora {
-                        vowel_length: phoneme_length[vowel_indexes_data[index + 1] as usize],
+                    let new_pause_mora = ValidatedMora {
+                        vowel: pause_mora
+                            .vowel
+                            .with_length(phoneme_length[vowel_indexes_data[index + 1] as usize]),
                         ..pause_mora.clone()
                     };
                     index += 1;
@@ -536,9 +553,20 @@ trait AsInner {
                 }),
                 ..accent_phrase.clone()
             })
+            .map(Into::into)
             .collect();
 
-        Ok(new_accent_phrases)
+        return Ok(new_accent_phrases);
+
+        #[ext]
+        impl LengthedPhoneme {
+            fn with_length(&self, length: f32) -> LengthedPhoneme {
+                LengthedPhoneme {
+                    phoneme: self.phoneme.clone(),
+                    length,
+                }
+            }
+        }
     }
 
     async fn replace_mora_pitch(
@@ -546,6 +574,11 @@ trait AsInner {
         accent_phrases: &[AccentPhrase],
         style_id: StyleId,
     ) -> Result<Vec<AccentPhrase>> {
+        let accent_phrases = &accent_phrases
+            .iter()
+            .map(AccentPhrase::to_validated)
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+
         let (_, phoneme_data_list) = initial_process(accent_phrases);
 
         let mut base_start_accent_list = vec![0];
@@ -553,10 +586,10 @@ trait AsInner {
         let mut base_start_accent_phrase_list = vec![0];
         let mut base_end_accent_phrase_list = vec![0];
         for accent_phrase in accent_phrases {
-            let mut accent = usize::from(accent_phrase.accent != 1);
+            let mut accent = usize::from(accent_phrase.accent.get() != 1);
             create_one_accent_list(&mut base_start_accent_list, accent_phrase, accent as i32);
 
-            accent = accent_phrase.accent - 1;
+            accent = accent_phrase.accent.get() - 1;
             create_one_accent_list(&mut base_end_accent_list, accent_phrase, accent as i32);
             create_one_accent_list(&mut base_start_accent_phrase_list, accent_phrase, 0);
             create_one_accent_list(&mut base_end_accent_phrase_list, accent_phrase, -1);
@@ -606,12 +639,12 @@ trait AsInner {
         let mut index = 0;
         let new_accent_phrases = accent_phrases
             .iter()
-            .map(|accent_phrase| AccentPhrase {
+            .map(|accent_phrase| ValidatedAccentPhrase {
                 moras: accent_phrase
                     .moras
                     .iter()
                     .map(|mora| {
-                        let new_mora = Mora {
+                        let new_mora = ValidatedMora {
                             pitch: f0_list[index + 1],
                             ..mora.clone()
                         };
@@ -620,7 +653,7 @@ trait AsInner {
                     })
                     .collect(),
                 pause_mora: accent_phrase.pause_mora.as_ref().map(|pause_mora| {
-                    let new_pause_mora = Mora {
+                    let new_pause_mora = ValidatedMora {
                         pitch: f0_list[index + 1],
                         ..pause_mora.clone()
                     };
@@ -629,13 +662,14 @@ trait AsInner {
                 }),
                 ..accent_phrase.clone()
             })
+            .map(Into::into)
             .collect();
 
         return Ok(new_accent_phrases);
 
         fn create_one_accent_list(
             accent_list: &mut Vec<i64>,
-            accent_phrase: &AccentPhrase,
+            accent_phrase: &ValidatedAccentPhrase<'_>,
             point: i32,
         ) {
             let mut one_accent_list: Vec<i64> = Vec::new();

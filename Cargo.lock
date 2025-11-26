@@ -4988,6 +4988,7 @@ dependencies = [
  "duplicate",
  "easy-ext",
  "educe",
+ "either",
  "indexmap 2.6.0",
  "inventory",
  "itertools 0.10.5",
