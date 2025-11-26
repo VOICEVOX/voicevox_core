@@ -553,7 +553,7 @@ pub unsafe extern "C" fn voicevox_audio_query_validate(
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// JSONを[`AccentPhrase`型]としてバリデートする。
 ///
-///[`AccentPhrase`型]: ../rust_api/voicevox_core/struct.AccentPhrase.html
+/// [`AccentPhrase`型]: ../rust_api/voicevox_core/struct.AccentPhrase.html
 ///
 /// 次のうちどれかを満たすならエラーを返す。
 ///
