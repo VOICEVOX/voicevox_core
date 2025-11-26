@@ -258,6 +258,12 @@ def _(mode: AccelerationMode):
 class Mora:
     """
     モーラ（子音＋母音）ごとの情報。
+
+    この構造体の状態によっては、 ``Synthesizer`` の各メソッドは
+    |mora-invalid-query-error|_ を発する。詳細は :func:`validate` にて。
+
+    .. |mora-invalid-query-error| replace:: ``InvalidQueryError``
+    .. _mora-invalid-query-error: #voicevox_core.InvalidQueryError
     """
 
     text: str
@@ -306,6 +312,12 @@ class Mora:
 class AccentPhrase:
     """
     AccentPhrase (アクセント句ごとの情報)。
+
+    この構造体の状態によっては、 ``Synthesizer`` の各メソッドは
+    |accent-phrase-invalid-query-error|_ を発する。詳細は :func:`validate` にて。
+
+    .. |accent-phrase-invalid-query-error| replace:: ``InvalidQueryError``
+    .. _accent-phrase-invalid-query-error: #voicevox_core.InvalidQueryError
     """
 
     moras: list[Mora]
@@ -349,6 +361,12 @@ class AccentPhrase:
 class AudioQuery:
     """
     AudioQuery (音声合成用のクエリ)。
+
+    この構造体の状態によっては、 ``Synthesizer`` の各メソッドは
+    |audio-query-invalid-query-error|_ を発する。詳細は :func:`validate` にて。
+
+    .. |audio-query-invalid-query-error| replace:: ``InvalidQueryError``
+    .. _audio-query-invalid-query-error: #voicevox_core.InvalidQueryError
 
     シリアライゼーションのサポートはされていない。詳細は
     `データのシリアライゼーション

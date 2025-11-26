@@ -9,6 +9,9 @@ import jp.hiroshiba.voicevoxcore.exceptions.InvalidQueryException;
 /**
  * モーラ（子音＋母音）ごとの情報。
  *
+ * <p>この構造体の状態によっては、{@code Synthesizer}の各メソッドは{@link InvalidQueryException}を発する。詳細は{@link
+ * #validate}にて。
+ *
  * <p>現在この型はGSONに対応しているが、将来的には <a href="https://github.com/VOICEVOX/voicevox_core/issues/984"
  * target="_blank">Jacksonに切り替わる予定</a> 。
  */

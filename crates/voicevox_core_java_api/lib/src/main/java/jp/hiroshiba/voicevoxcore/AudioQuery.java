@@ -13,6 +13,9 @@ import jp.hiroshiba.voicevoxcore.internal.Dll;
 /**
  * AudioQuery（音声合成用のクエリ）。
  *
+ * <p>この構造体の状態によっては、{@code Synthesizer}の各メソッドは{@link InvalidQueryException}を発する。詳細は{@link
+ * #validate}にて。
+ *
  * <p>JSONの形式はVOICEVOX ENGINEと同じになっている。ただし今後の破壊的変更にて変わる可能性がある。<a
  * href="https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/serialization.md"
  * target="_blank">データのシリアライゼーション</a>を参照。
