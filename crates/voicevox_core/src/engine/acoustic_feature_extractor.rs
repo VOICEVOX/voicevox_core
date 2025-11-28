@@ -6,6 +6,152 @@ use strum::EnumCount;
 
 use self::sil::Sil;
 
+macro_rules! optional_consonant {
+    ("") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::None
+    };
+    ("b") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantB
+    };
+    ("by") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantBy
+    };
+    ("ch") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantCh
+    };
+    ("d") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantD
+    };
+    ("dy") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantDy
+    };
+    ("f") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantF
+    };
+    ("g") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantG
+    };
+    ("gw") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantGw
+    };
+    ("gy") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantGy
+    };
+    ("h") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantH
+    };
+    ("hy") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantHy
+    };
+    ("j") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantJ
+    };
+    ("k") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantK
+    };
+    ("kw") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantKw
+    };
+    ("ky") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantKy
+    };
+    ("m") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantM
+    };
+    ("my") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantMy
+    };
+    ("n") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantN
+    };
+    ("ny") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantNy
+    };
+    ("p") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantP
+    };
+    ("py") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantPy
+    };
+    ("r") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantR
+    };
+    ("ry") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantRy
+    };
+    ("s") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantS
+    };
+    ("sh") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantSh
+    };
+    ("t") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantT
+    };
+    ("ts") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantTs
+    };
+    ("ty") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantTy
+    };
+    ("v") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantV
+    };
+    ("w") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantW
+    };
+    ("y") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantY
+    };
+    ("z") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantZ
+    };
+}
+
+macro_rules! mora_tail {
+    ("pau") => {
+        crate::engine::acoustic_feature_extractor::MoraTail::MorablePau
+    };
+    ("A") => {
+        crate::engine::acoustic_feature_extractor::MoraTail::UnvoicedVowelA
+    };
+    ("E") => {
+        crate::engine::acoustic_feature_extractor::MoraTail::UnvoicedVowelE
+    };
+    ("I") => {
+        crate::engine::acoustic_feature_extractor::MoraTail::UnvoicedVowelI
+    };
+    ("N") => {
+        crate::engine::acoustic_feature_extractor::MoraTail::MorableN
+    };
+    ("O") => {
+        crate::engine::acoustic_feature_extractor::MoraTail::UnvoicedVowelO
+    };
+    ("U") => {
+        crate::engine::acoustic_feature_extractor::MoraTail::UnvoicedVowelU
+    };
+    ("a") => {
+        crate::engine::acoustic_feature_extractor::MoraTail::VoicedVowelA
+    };
+    ("cl") => {
+        crate::engine::acoustic_feature_extractor::MoraTail::MorableCl
+    };
+    ("e") => {
+        crate::engine::acoustic_feature_extractor::MoraTail::VoicedVowelE
+    };
+    ("i") => {
+        crate::engine::acoustic_feature_extractor::MoraTail::VoicedVowelI
+    };
+    ("o") => {
+        crate::engine::acoustic_feature_extractor::MoraTail::VoicedVowelO
+    };
+    ("u") => {
+        crate::engine::acoustic_feature_extractor::MoraTail::VoicedVowelU
+    };
+}
+
+pub(super) use {mora_tail, optional_consonant};
+
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, derive_more::Display)]
 pub(crate) enum Phoneme {
     /// `pau`。
