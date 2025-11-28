@@ -5,7 +5,9 @@ use ndarray::Array1;
 use pastey::paste;
 use typeshare::U53;
 
-use crate::{Note, NoteId};
+use crate::NoteId;
+
+use super::ValidatedNote;
 
 pub(crate) struct ScoreFeature<'score> {
     pub(crate) note_lengths: Array1<i64>,
@@ -16,10 +18,8 @@ pub(crate) struct ScoreFeature<'score> {
     pub(crate) phoneme_note_ids: Vec<Option<&'score NoteId>>,
 }
 
-impl<'score> TryFrom<&'score [Note]> for ScoreFeature<'score> {
-    type Error = std::convert::Infallible; // TODO
-
-    fn try_from(notes: &'score [Note]) -> std::result::Result<Self, Self::Error> {
+impl<'score> From<&'score [ValidatedNote]> for ScoreFeature<'score> {
+    fn from(notes: &'score [ValidatedNote]) -> Self {
         let feature = notes.iter().map(Into::into).collect::<Vec<_>>();
 
         duplicate! {
@@ -54,14 +54,14 @@ impl<'score> TryFrom<&'score [Note]> for ScoreFeature<'score> {
                 .collect();
         }
 
-        Ok(Self {
+        Self {
             note_lengths,
             note_constants,
             note_vowels,
             phonemes,
             phoneme_keys,
             phoneme_note_ids,
-        })
+        }
     }
 }
 
@@ -72,33 +72,28 @@ struct NoteFeature<'score> {
     phonemes: ArrayVec<PhonemeFeature<'score>, 2>, // 1 or 2 phonemes
 }
 
-impl<'score> From<&'score Note> for NoteFeature<'score> {
+impl<'score> From<&'score ValidatedNote> for NoteFeature<'score> {
     fn from(
-        Note {
+        ValidatedNote {
             id,
             key_and_lyric,
             frame_length,
-        }: &'score Note,
+        }: &'score ValidatedNote,
     ) -> Self {
-        match key_and_lyric.lyric() {
-            "" => {
-                assert!(key_and_lyric.key().is_none(), "should have been validated");
-                Self {
-                    note_length: frame_length.to_i64(),
-                    note_constant: -1,
-                    note_vowel: 0, // pau
-                    phonemes: [PhonemeFeature {
-                        phoneme: 0, // pau
-                        phoneme_key: -1,
-                        phoneme_note_id: id.as_ref(),
-                    }]
-                    .into_iter()
-                    .collect(),
-                }
-            }
-            lyric => {
-                assert!(key_and_lyric.key().is_some(), "should have been validated");
-                todo!();
+        if let Some(key_and_lyric) = key_and_lyric {
+            todo!();
+        } else {
+            Self {
+                note_length: frame_length.to_i64(),
+                note_constant: -1,
+                note_vowel: 0, // pau
+                phonemes: [PhonemeFeature {
+                    phoneme: 0, // pau
+                    phoneme_key: -1,
+                    phoneme_note_id: id.as_ref(),
+                }]
+                .into_iter()
+                .collect(),
             }
         }
     }

@@ -46,6 +46,7 @@ indexmap = { workspace = true, features = ["serde"] }
 itertools.workspace = true
 jlabel.workspace = true
 ndarray.workspace = true
+nonempty-collections = { version = "1.2.1", features = ["serde"] }
 open_jtalk.workspace = true
 ouroboros.workspace = true
 pastey.workspace = true
@@ -59,6 +60,7 @@ strum = { workspace = true, features = ["derive"] }
 tempfile.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
+typed_floats = { version = "1.0.7", features = ["serde"] }
 typeshare = { workspace = true, default-features = false }
 uuid = { workspace = true, features = ["v4", "serde"] }
 voicevox-ort = { workspace = true, features = ["download-binaries", "__init-for-voicevox"] }
