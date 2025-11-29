@@ -5,7 +5,7 @@ use smallvec::SmallVec;
 
 use crate::AccentPhrase;
 
-use super::{super::mora_mappings::MORA_LIST_MINIMUM, open_jtalk::FullcontextExtractor};
+use super::{super::mora_mappings::MORA_PHONEMES_TO_MORA_KANA, open_jtalk::FullcontextExtractor};
 
 #[derive(thiserror::Error, Debug)]
 #[error("入力テキストからのフルコンテキストラベル抽出に失敗しました: {context}")]
@@ -177,15 +177,10 @@ pub fn mora_to_text(consonant: Option<&str>, vowel: &str) -> String {
 }
 
 fn mora2text(mora: &str) -> &str {
-    for &[text, consonant, vowel] in MORA_LIST_MINIMUM {
-        if mora.len() >= consonant.len()
-            && &mora[..consonant.len()] == consonant
-            && &mora[consonant.len()..] == vowel
-        {
-            return text;
-        }
-    }
-    mora
+    MORA_PHONEMES_TO_MORA_KANA
+        .get(mora)
+        .map(Into::into)
+        .unwrap_or(mora)
 }
 
 #[cfg(test)]

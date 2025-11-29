@@ -6,6 +6,7 @@
 mod extract;
 mod inference_domain;
 mod inference_domains;
+mod mora_mappings;
 mod python_api;
 
 use syn::parse_macro_input;
@@ -125,6 +126,12 @@ pub fn derive_inference_output_signature(
 pub fn substitute_type(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(input);
     from_syn(inference_domains::substitute_type(input))
+}
+
+#[proc_macro_derive(MoraMappings, attributes(mora_mappings))]
+pub fn derive_mora_mappings(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let input = &parse_macro_input!(input);
+    from_syn(mora_mappings::derive_mora_mappings(input))
 }
 
 #[proc_macro]

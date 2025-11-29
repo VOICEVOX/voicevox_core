@@ -1,6 +1,9 @@
 use std::{collections::HashMap, sync::LazyLock};
 
-use super::{super::mora_mappings::MORA_LIST_MINIMUM, AccentPhrase, Mora};
+use super::{
+    super::{acoustic_feature_extractor::Phoneme, mora_mappings::MORA_KANA_TO_MORA_PHONEMES},
+    AccentPhrase, LengthedPhoneme, Mora, ValidatedMora,
+};
 
 const UNVOICE_SYMBOL: char = '_';
 const ACCENT_SYMBOL: char = '\'';
@@ -15,42 +18,40 @@ pub(crate) struct KanaParseError(String);
 
 type KanaParseResult<T> = std::result::Result<T, KanaParseError>;
 
-static TEXT2MORA_WITH_UNVOICE: LazyLock<HashMap<String, Mora>> = LazyLock::new(|| {
-    let mut text2mora_with_unvoice = HashMap::new();
-    for [text, consonant, vowel] in MORA_LIST_MINIMUM {
-        let consonant = if !consonant.is_empty() {
-            Some(consonant.to_string())
-        } else {
-            None
-        };
-        let consonant_length = if consonant.is_some() { Some(0.0) } else { None };
+static TEXT2MORA_WITH_UNVOICE: LazyLock<HashMap<String, ValidatedMora<'static>>> =
+    LazyLock::new(|| {
+        let mut text2mora_with_unvoice = HashMap::new();
+        for (text, &(consonant, vowel)) in &MORA_KANA_TO_MORA_PHONEMES {
+            fn zero_lengthed(phoneme: impl Into<Phoneme>) -> LengthedPhoneme {
+                LengthedPhoneme {
+                    phoneme: phoneme.into(),
+                    length: 0.,
+                }
+            }
 
-        if ["a", "i", "u", "e", "o"].contains(vowel) {
-            let vowel = vowel.to_uppercase();
+            let text = <&str>::from(text);
+            let consonant = consonant.to_phoneme().map(zero_lengthed);
 
-            let unvoice_mora = Mora {
-                text: text.to_string(),
-                consonant: consonant.clone(),
-                consonant_length,
-                vowel,
-                vowel_length: 0.,
+            if let Some(vowel) = vowel.to_unvoiced() {
+                let unvoice_mora = ValidatedMora {
+                    text: text.into(),
+                    consonant: consonant.clone(),
+                    vowel: zero_lengthed(vowel),
+                    pitch: 0.,
+                };
+                text2mora_with_unvoice.insert(UNVOICE_SYMBOL.to_string() + text, unvoice_mora);
+            }
+
+            let mora = ValidatedMora {
+                text: text.into(),
+                consonant,
+                vowel: zero_lengthed(vowel),
                 pitch: 0.,
             };
-            text2mora_with_unvoice.insert(UNVOICE_SYMBOL.to_string() + text, unvoice_mora);
+            text2mora_with_unvoice.insert(text.to_string(), mora);
         }
-
-        let mora = Mora {
-            text: text.to_string(),
-            consonant,
-            consonant_length,
-            vowel: vowel.to_string(),
-            vowel_length: 0.,
-            pitch: 0.,
-        };
-        text2mora_with_unvoice.insert(text.to_string(), mora);
-    }
-    text2mora_with_unvoice
-});
+        text2mora_with_unvoice
+    });
 
 fn text_to_accent_phrase(phrase: &str) -> KanaParseResult<AccentPhrase> {
     let phrase_vec: Vec<char> = phrase.chars().collect();
@@ -91,7 +92,7 @@ fn text_to_accent_phrase(phrase: &str) -> KanaParseResult<AccentPhrase> {
         }
         if let Some(matched_text) = matched_text.take() {
             index += matched_text.chars().count();
-            moras.push(text2mora.get(&matched_text).unwrap().clone());
+            moras.push(text2mora.get(&matched_text).unwrap().clone().into());
             stack.clear();
         } else {
             return Err(KanaParseError(format!(
@@ -196,7 +197,7 @@ mod tests {
     use pretty_assertions::assert_eq;
     use rstest::rstest;
 
-    use super::super::super::mora_mappings::MORA_LIST_MINIMUM;
+    use super::super::super::mora_mappings::MORA_KANA_TO_MORA_PHONEMES;
 
     #[rstest]
     #[case(Some("da"), "ダ")]
@@ -210,15 +211,15 @@ mod tests {
     #[case(None, "fail")]
     fn test_text2mora_with_unvoice(#[case] mora: Option<&str>, #[case] text: &str) {
         let text2mora = &super::TEXT2MORA_WITH_UNVOICE;
-        assert_eq!(text2mora.len(), MORA_LIST_MINIMUM.len() * 2 - 2); // added twice except ン and ッ
+        assert_eq!(text2mora.len(), MORA_KANA_TO_MORA_PHONEMES.len() * 2 - 2); // added twice except ン and ッ
         let res = text2mora.get(text);
         assert_eq!(mora.is_some(), res.is_some());
         if let Some(res) = res {
             let mut m = String::new();
             if let Some(c) = &res.consonant {
-                m.push_str(c);
+                m.push_str(&c.phoneme.to_string());
             }
-            m.push_str(&res.vowel);
+            m.push_str(&res.vowel.phoneme.to_string());
             assert_eq!(m, mora.unwrap());
         }
     }

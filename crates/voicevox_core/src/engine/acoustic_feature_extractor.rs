@@ -533,8 +533,7 @@ impl From<PhonemeCode> for usize {
     }
 }
 
-#[expect(dead_code, reason = "we use `bytemuck` to construct values instead")]
-#[derive(Clone, Copy, CheckedBitPattern, NoUninit, EnumCount)]
+#[derive(Clone, Copy, PartialEq, CheckedBitPattern, NoUninit, EnumCount)]
 #[repr(i64)]
 pub(crate) enum OptionalConsonant {
     None = -1,
@@ -583,6 +582,64 @@ pub(crate) enum OptionalConsonant {
     ConsonantW = 42,
     ConsonantY = 43,
     ConsonantZ = 44,
+}
+
+impl From<OptionalConsonant> for &'static str {
+    fn from(phoneme: OptionalConsonant) -> Self {
+        macro_rules! convert {
+            ($($s:tt),* $(,)?) => {
+                match phoneme {
+                    $(optional_consonant!($s) => $s),*
+                }
+            };
+        }
+
+        convert!(
+            "", "b", "by", "ch", "d", "dy", "f", "g", "gw", "gy", "h", "hy", "j", "k", "kw", "ky",
+            "m", "my", "n", "ny", "p", "py", "r", "ry", "s", "sh", "t", "ts", "ty", "v", "w", "y",
+            "z"
+        )
+    }
+}
+
+impl OptionalConsonant {
+    pub(super) fn to_phoneme(self) -> Option<Phoneme> {
+        match self {
+            Self::None => None,
+            Self::ConsonantB => Some(Phoneme::ConsonantB),
+            Self::ConsonantBy => Some(Phoneme::ConsonantBy),
+            Self::ConsonantCh => Some(Phoneme::ConsonantCh),
+            Self::ConsonantD => Some(Phoneme::ConsonantD),
+            Self::ConsonantDy => Some(Phoneme::ConsonantDy),
+            Self::ConsonantF => Some(Phoneme::ConsonantF),
+            Self::ConsonantG => Some(Phoneme::ConsonantG),
+            Self::ConsonantGw => Some(Phoneme::ConsonantGw),
+            Self::ConsonantGy => Some(Phoneme::ConsonantGy),
+            Self::ConsonantH => Some(Phoneme::ConsonantH),
+            Self::ConsonantHy => Some(Phoneme::ConsonantHy),
+            Self::ConsonantJ => Some(Phoneme::ConsonantJ),
+            Self::ConsonantK => Some(Phoneme::ConsonantK),
+            Self::ConsonantKw => Some(Phoneme::ConsonantKw),
+            Self::ConsonantKy => Some(Phoneme::ConsonantKy),
+            Self::ConsonantM => Some(Phoneme::ConsonantM),
+            Self::ConsonantMy => Some(Phoneme::ConsonantMy),
+            Self::ConsonantN => Some(Phoneme::ConsonantN),
+            Self::ConsonantNy => Some(Phoneme::ConsonantNy),
+            Self::ConsonantP => Some(Phoneme::ConsonantP),
+            Self::ConsonantPy => Some(Phoneme::ConsonantPy),
+            Self::ConsonantR => Some(Phoneme::ConsonantR),
+            Self::ConsonantRy => Some(Phoneme::ConsonantRy),
+            Self::ConsonantS => Some(Phoneme::ConsonantS),
+            Self::ConsonantSh => Some(Phoneme::ConsonantSh),
+            Self::ConsonantT => Some(Phoneme::ConsonantT),
+            Self::ConsonantTs => Some(Phoneme::ConsonantTs),
+            Self::ConsonantTy => Some(Phoneme::ConsonantTy),
+            Self::ConsonantV => Some(Phoneme::ConsonantV),
+            Self::ConsonantW => Some(Phoneme::ConsonantW),
+            Self::ConsonantY => Some(Phoneme::ConsonantY),
+            Self::ConsonantZ => Some(Phoneme::ConsonantZ),
+        }
+    }
 }
 
 #[expect(dead_code, reason = "we use `bytemuck` to construct values instead")]
@@ -648,6 +705,59 @@ impl MoraTail {
                 | Self::UnvoicedVowelO
                 | Self::MorableCl
                 | Self::MorablePau
+        )
+    }
+
+    pub(super) fn to_unvoiced(self) -> Option<Self> {
+        match self {
+            mora_tail!("a") => Some(mora_tail!("A")),
+            mora_tail!("i") => Some(mora_tail!("I")),
+            mora_tail!("u") => Some(mora_tail!("U")),
+            mora_tail!("e") => Some(mora_tail!("E")),
+            mora_tail!("o") => Some(mora_tail!("O")),
+            _ => None,
+        }
+    }
+}
+
+impl From<MoraTail> for &'static str {
+    fn from(phoneme: MoraTail) -> Self {
+        macro_rules! convert {
+            ($($s:tt),* $(,)?) => {
+                match phoneme {
+                    $(mora_tail!($s) => $s),*
+                }
+            };
+        }
+
+        convert!("pau", "A", "E", "I", "N", "O", "U", "a", "cl", "e", "i", "o", "u")
+    }
+}
+
+impl From<MoraTail> for Phoneme {
+    fn from(phoneme: MoraTail) -> Self {
+        macro_rules! convert {
+            ($($variant:ident),* $(,)?) => {
+                match phoneme {
+                    $(MoraTail::$variant => Self::$variant,)*
+                }
+            };
+        }
+
+        convert!(
+            MorablePau,
+            UnvoicedVowelA,
+            UnvoicedVowelE,
+            UnvoicedVowelI,
+            MorableN,
+            UnvoicedVowelO,
+            UnvoicedVowelU,
+            VoicedVowelA,
+            MorableCl,
+            VoicedVowelE,
+            VoicedVowelI,
+            VoicedVowelO,
+            VoicedVowelU,
         )
     }
 }

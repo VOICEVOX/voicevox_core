@@ -40,445 +40,481 @@
 //  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //  POSSIBILITY OF SUCH DAMAGE.
 
-// TODO: マクロにより次の二つの、コンパイル時最適化されるマップを生成する。
-//
-// - `enum_map::EnumMap<MoraKana, (OptionalConsonant, MoraTail)>`
-//   (text → (consonant?, vowel))（マップとしてはtotal）
-//   （kana_parser用）
-// - `pdf::Map<&'static str, MoraKana>`
-//   (consonant? ++ vowel → text)（マップとしてはpartial）
-//   （full_context_label用）
+use enum_map::{Enum, EnumMap};
+use macros::MoraMappings;
+use strum::{EnumCount, IntoStaticStr};
 
+use super::acoustic_feature_extractor::{MoraTail, OptionalConsonant};
+
+#[derive(Clone, Copy, PartialEq, Debug, Enum, EnumCount, IntoStaticStr, MoraMappings)]
+#[mora_mappings(
+    mora_phonemes_to_mora_kana {
+        pub(super) static MORA_PHONEMES_TO_MORA_KANA: phf::Map<&str, MoraKana> = _;
+    }
+    mora_kana_to_mora_phonemes {
+        pub(super) static MORA_KANA_TO_MORA_PHONEMES: EnumMap<
+            MoraKana,
+            (OptionalConsonant, MoraTail),
+        > = _;
+    }
+)]
 pub(super) enum MoraKana {
-    #[mora_kana("v", "o")]
+    #[mora_mappings("v", "o")]
     ヴォ,
 
-    #[mora_kana("v", "e")]
+    #[mora_mappings("v", "e")]
     ヴェ,
 
-    #[mora_kana("v", "i")]
+    #[mora_mappings("v", "i")]
     ヴィ,
 
-    #[mora_kana("v", "a")]
+    #[mora_mappings("v", "a")]
     ヴァ,
 
-    #[mora_kana("v", "u")]
+    #[mora_mappings("v", "u")]
     ヴ,
 
-    #[mora_kana("", "N")]
+    #[mora_mappings("", "N")]
     ン,
 
-    #[mora_kana("w", "a")]
+    #[mora_mappings("w", "a")]
     ワ,
 
-    #[mora_kana("r", "o")]
+    #[mora_mappings("r", "o")]
     ロ,
 
-    #[mora_kana("r", "e")]
+    #[mora_mappings("r", "e")]
     レ,
 
-    #[mora_kana("r", "u")]
+    #[mora_mappings("r", "u")]
     ル,
 
-    #[mora_kana("ry", "o")]
+    #[mora_mappings("ry", "o")]
     リョ,
 
-    #[mora_kana("ry", "u")]
+    #[mora_mappings("ry", "u")]
     リュ,
 
-    #[mora_kana("ry", "a")]
+    #[mora_mappings("ry", "a")]
     リャ,
 
-    #[mora_kana("ry", "e")]
+    #[mora_mappings("ry", "e")]
     リェ,
 
-    #[mora_kana("r", "i")]
+    #[mora_mappings("r", "i")]
     リ,
 
-    #[mora_kana("r", "a")]
+    #[mora_mappings("r", "a")]
     ラ,
 
-    #[mora_kana("y", "o")]
+    #[mora_mappings("y", "o")]
     ヨ,
 
-    #[mora_kana("y", "u")]
+    #[mora_mappings("y", "u")]
     ユ,
 
-    #[mora_kana("y", "a")]
+    #[mora_mappings("y", "a")]
     ヤ,
 
-    #[mora_kana("m", "o")]
+    #[mora_mappings("m", "o")]
     モ,
 
-    #[mora_kana("m", "e")]
+    #[mora_mappings("m", "e")]
     メ,
 
-    #[mora_kana("m", "u")]
+    #[mora_mappings("m", "u")]
     ム,
 
-    #[mora_kana("my", "o")]
+    #[mora_mappings("my", "o")]
     ミョ,
 
-    #[mora_kana("my", "u")]
+    #[mora_mappings("my", "u")]
     ミュ,
 
-    #[mora_kana("my", "a")]
+    #[mora_mappings("my", "a")]
     ミャ,
 
-    #[mora_kana("my", "e")]
+    #[mora_mappings("my", "e")]
     ミェ,
 
-    #[mora_kana("m", "i")]
+    #[mora_mappings("m", "i")]
     ミ,
 
-    #[mora_kana("m", "a")]
+    #[mora_mappings("m", "a")]
     マ,
 
-    #[mora_kana("p", "o")]
+    #[mora_mappings("p", "o")]
     ポ,
 
-    #[mora_kana("b", "o")]
+    #[mora_mappings("b", "o")]
     ボ,
 
-    #[mora_kana("h", "o")]
+    #[mora_mappings("h", "o")]
     ホ,
 
-    #[mora_kana("p", "e")]
+    #[mora_mappings("p", "e")]
     ペ,
 
-    #[mora_kana("b", "e")]
+    #[mora_mappings("b", "e")]
     ベ,
 
-    #[mora_kana("h", "e")]
+    #[mora_mappings("h", "e")]
     ヘ,
 
-    #[mora_kana("p", "u")]
+    #[mora_mappings("p", "u")]
     プ,
 
-    #[mora_kana("b", "u")]
+    #[mora_mappings("b", "u")]
     ブ,
 
-    #[mora_kana("f", "o")]
+    #[mora_mappings("f", "o")]
     フォ,
 
-    #[mora_kana("f", "e")]
+    #[mora_mappings("f", "e")]
     フェ,
 
-    #[mora_kana("f", "i")]
+    #[mora_mappings("f", "i")]
     フィ,
 
-    #[mora_kana("f", "a")]
+    #[mora_mappings("f", "a")]
     ファ,
 
-    #[mora_kana("f", "u")]
+    #[mora_mappings("f", "u")]
     フ,
 
-    #[mora_kana("py", "o")]
+    #[mora_mappings("py", "o")]
     ピョ,
 
-    #[mora_kana("py", "u")]
+    #[mora_mappings("py", "u")]
     ピュ,
 
-    #[mora_kana("py", "a")]
+    #[mora_mappings("py", "a")]
     ピャ,
 
-    #[mora_kana("py", "e")]
+    #[mora_mappings("py", "e")]
     ピェ,
 
-    #[mora_kana("p", "i")]
+    #[mora_mappings("p", "i")]
     ピ,
 
-    #[mora_kana("by", "o")]
+    #[mora_mappings("by", "o")]
     ビョ,
 
-    #[mora_kana("by", "u")]
+    #[mora_mappings("by", "u")]
     ビュ,
 
-    #[mora_kana("by", "a")]
+    #[mora_mappings("by", "a")]
     ビャ,
 
-    #[mora_kana("by", "e")]
+    #[mora_mappings("by", "e")]
     ビェ,
 
-    #[mora_kana("b", "i")]
+    #[mora_mappings("b", "i")]
     ビ,
 
-    #[mora_kana("hy", "o")]
+    #[mora_mappings("hy", "o")]
     ヒョ,
 
-    #[mora_kana("hy", "u")]
+    #[mora_mappings("hy", "u")]
     ヒュ,
 
-    #[mora_kana("hy", "a")]
+    #[mora_mappings("hy", "a")]
     ヒャ,
 
-    #[mora_kana("hy", "e")]
+    #[mora_mappings("hy", "e")]
     ヒェ,
 
-    #[mora_kana("h", "i")]
+    #[mora_mappings("h", "i")]
     ヒ,
 
-    #[mora_kana("p", "a")]
+    #[mora_mappings("p", "a")]
     パ,
 
-    #[mora_kana("b", "a")]
+    #[mora_mappings("b", "a")]
     バ,
 
-    #[mora_kana("h", "a")]
+    #[mora_mappings("h", "a")]
     ハ,
 
-    #[mora_kana("n", "o")]
+    #[mora_mappings("n", "o")]
     ノ,
 
-    #[mora_kana("n", "e")]
+    #[mora_mappings("n", "e")]
     ネ,
 
-    #[mora_kana("n", "u")]
+    #[mora_mappings("n", "u")]
     ヌ,
 
-    #[mora_kana("ny", "o")]
+    #[mora_mappings("ny", "o")]
     ニョ,
 
-    #[mora_kana("ny", "u")]
+    #[mora_mappings("ny", "u")]
     ニュ,
 
-    #[mora_kana("ny", "a")]
+    #[mora_mappings("ny", "a")]
     ニャ,
 
-    #[mora_kana("ny", "e")]
+    #[mora_mappings("ny", "e")]
     ニェ,
 
-    #[mora_kana("n", "i")]
+    #[mora_mappings("n", "i")]
     ニ,
 
-    #[mora_kana("n", "a")]
+    #[mora_mappings("n", "a")]
     ナ,
 
-    #[mora_kana("d", "u")]
+    #[mora_mappings("d", "u")]
     ドゥ,
 
-    #[mora_kana("d", "o")]
+    #[mora_mappings("d", "o")]
     ド,
 
-    #[mora_kana("t", "u")]
+    #[mora_mappings("t", "u")]
     トゥ,
 
-    #[mora_kana("t", "o")]
+    #[mora_mappings("t", "o")]
     ト,
 
-    #[mora_kana("dy", "o")]
+    #[mora_mappings("dy", "o")]
     デョ,
 
-    #[mora_kana("dy", "u")]
+    #[mora_mappings("dy", "u")]
     デュ,
 
-    #[mora_kana("dy", "a")]
+    #[mora_mappings("dy", "a")]
     デャ,
 
-    #[mora_kana("d", "i")]
+    #[mora_mappings("d", "i")]
     ディ,
 
-    #[mora_kana("d", "e")]
+    #[mora_mappings("d", "e")]
     デ,
 
-    #[mora_kana("ty", "o")]
+    #[mora_mappings("ty", "o")]
     テョ,
 
-    #[mora_kana("ty", "u")]
+    #[mora_mappings("ty", "u")]
     テュ,
 
-    #[mora_kana("ty", "a")]
+    #[mora_mappings("ty", "a")]
     テャ,
 
-    #[mora_kana("t", "i")]
+    #[mora_mappings("t", "i")]
     ティ,
 
-    #[mora_kana("t", "e")]
+    #[mora_mappings("t", "e")]
     テ,
 
-    #[mora_kana("ts", "o")]
+    #[mora_mappings("ts", "o")]
     ツォ,
 
-    #[mora_kana("ts", "e")]
+    #[mora_mappings("ts", "e")]
     ツェ,
 
-    #[mora_kana("ts", "i")]
+    #[mora_mappings("ts", "i")]
     ツィ,
 
-    #[mora_kana("ts", "a")]
+    #[mora_mappings("ts", "a")]
     ツァ,
 
-    #[mora_kana("ts", "u")]
+    #[mora_mappings("ts", "u")]
     ツ,
 
-    #[mora_kana("", "cl")]
+    #[mora_mappings("", "cl")]
     ッ,
 
-    #[mora_kana("ch", "o")]
+    #[mora_mappings("ch", "o")]
     チョ,
 
-    #[mora_kana("ch", "u")]
+    #[mora_mappings("ch", "u")]
     チュ,
 
-    #[mora_kana("ch", "a")]
+    #[mora_mappings("ch", "a")]
     チャ,
 
-    #[mora_kana("ch", "e")]
+    #[mora_mappings("ch", "e")]
     チェ,
 
-    #[mora_kana("ch", "i")]
+    #[mora_mappings("ch", "i")]
     チ,
 
-    #[mora_kana("d", "a")]
+    #[mora_mappings("d", "a")]
     ダ,
 
-    #[mora_kana("t", "a")]
+    #[mora_mappings("t", "a")]
     タ,
 
-    #[mora_kana("z", "o")]
+    #[mora_mappings("z", "o")]
     ゾ,
 
-    #[mora_kana("s", "o")]
+    #[mora_mappings("s", "o")]
     ソ,
 
-    #[mora_kana("z", "e")]
+    #[mora_mappings("z", "e")]
     ゼ,
 
-    #[mora_kana("s", "e")]
+    #[mora_mappings("s", "e")]
     セ,
 
-    #[mora_kana("z", "i")]
+    #[mora_mappings("z", "i")]
     ズィ,
 
-    #[mora_kana("z", "u")]
+    #[mora_mappings("z", "u")]
     ズ,
 
-    #[mora_kana("s", "i")]
+    #[mora_mappings("s", "i")]
     スィ,
 
-    #[mora_kana("s", "u")]
+    #[mora_mappings("s", "u")]
     ス,
 
-    #[mora_kana("j", "o")]
+    #[mora_mappings("j", "o")]
     ジョ,
 
-    #[mora_kana("j", "u")]
+    #[mora_mappings("j", "u")]
     ジュ,
 
-    #[mora_kana("j", "a")]
+    #[mora_mappings("j", "a")]
     ジャ,
 
-    #[mora_kana("j", "e")]
+    #[mora_mappings("j", "e")]
     ジェ,
 
-    #[mora_kana("j", "i")]
+    #[mora_mappings("j", "i")]
     ジ,
 
-    #[mora_kana("sh", "o")]
+    #[mora_mappings("sh", "o")]
     ショ,
 
-    #[mora_kana("sh", "u")]
+    #[mora_mappings("sh", "u")]
     シュ,
 
-    #[mora_kana("sh", "a")]
+    #[mora_mappings("sh", "a")]
     シャ,
 
-    #[mora_kana("sh", "e")]
+    #[mora_mappings("sh", "e")]
     シェ,
 
-    #[mora_kana("sh", "i")]
+    #[mora_mappings("sh", "i")]
     シ,
 
-    #[mora_kana("z", "a")]
+    #[mora_mappings("z", "a")]
     ザ,
 
-    #[mora_kana("s", "a")]
+    #[mora_mappings("s", "a")]
     サ,
 
-    #[mora_kana("g", "o")]
+    #[mora_mappings("g", "o")]
     ゴ,
 
-    #[mora_kana("k", "o")]
+    #[mora_mappings("k", "o")]
     コ,
 
-    #[mora_kana("g", "e")]
+    #[mora_mappings("g", "e")]
     ゲ,
 
-    #[mora_kana("k", "e")]
+    #[mora_mappings("k", "e")]
     ケ,
 
-    #[mora_kana("gw", "a")]
+    #[mora_mappings("gw", "a")]
     グヮ,
 
-    #[mora_kana("g", "u")]
+    #[mora_mappings("g", "u")]
     グ,
 
-    #[mora_kana("kw", "a")]
+    #[mora_mappings("kw", "a")]
     クヮ,
 
-    #[mora_kana("k", "u")]
+    #[mora_mappings("k", "u")]
     ク,
 
-    #[mora_kana("gy", "o")]
+    #[mora_mappings("gy", "o")]
     ギョ,
 
-    #[mora_kana("gy", "u")]
+    #[mora_mappings("gy", "u")]
     ギュ,
 
-    #[mora_kana("gy", "a")]
+    #[mora_mappings("gy", "a")]
     ギャ,
 
-    #[mora_kana("gy", "e")]
+    #[mora_mappings("gy", "e")]
     ギェ,
 
-    #[mora_kana("g", "i")]
+    #[mora_mappings("g", "i")]
     ギ,
 
-    #[mora_kana("ky", "o")]
+    #[mora_mappings("ky", "o")]
     キョ,
 
-    #[mora_kana("ky", "u")]
+    #[mora_mappings("ky", "u")]
     キュ,
 
-    #[mora_kana("ky", "a")]
+    #[mora_mappings("ky", "a")]
     キャ,
 
-    #[mora_kana("ky", "e")]
+    #[mora_mappings("ky", "e")]
     キェ,
 
-    #[mora_kana("k", "i")]
+    #[mora_mappings("k", "i")]
     キ,
 
-    #[mora_kana("g", "a")]
+    #[mora_mappings("g", "a")]
     ガ,
 
-    #[mora_kana("k", "a")]
+    #[mora_mappings("k", "a")]
     カ,
 
-    #[mora_kana("", "o")]
+    #[mora_mappings("", "o")]
     オ,
 
-    #[mora_kana("", "e")]
+    #[mora_mappings("", "e")]
     エ,
 
-    #[mora_kana("w", "o")]
+    #[mora_mappings("w", "o")]
     ウォ,
 
-    #[mora_kana("w", "e")]
+    #[mora_mappings("w", "e")]
     ウェ,
 
-    #[mora_kana("w", "i")]
+    #[mora_mappings("w", "i")]
     ウィ,
 
-    #[mora_kana("", "u")]
+    #[mora_mappings("", "u")]
     ウ,
 
-    #[mora_kana("y", "e")]
+    #[mora_mappings("y", "e")]
     イェ,
 
-    #[mora_kana("", "i")]
+    #[mora_mappings("", "i")]
     イ,
 
-    #[mora_kana("", "a")]
+    #[mora_mappings("", "a")]
     ア,
+}
+
+const _: () = assert!(MoraKana::COUNT == 144);
+
+#[cfg(test)]
+mod tests {
+    use pretty_assertions::assert_eq;
+    use strum::EnumCount as _;
+
+    use super::{MoraKana, MORA_KANA_TO_MORA_PHONEMES, MORA_PHONEMES_TO_MORA_KANA};
+
+    #[test]
+    fn mora_phonemes_to_mora_kana_has_the_same_length_as_mora_kana() {
+        assert_eq!(MoraKana::COUNT, MORA_PHONEMES_TO_MORA_KANA.len());
+    }
+
+    #[test]
+    fn mappings_work() {
+        for (mora_kana, &(consonant, vowel)) in &MORA_KANA_TO_MORA_PHONEMES {
+            let consonant = <&str>::from(consonant);
+            let vowel = <&str>::from(vowel);
+            assert_eq!(
+                mora_kana,
+                MORA_PHONEMES_TO_MORA_KANA[&format!("{consonant}{vowel}")]
+            );
+        }
+    }
 }
