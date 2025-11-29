@@ -5,7 +5,7 @@ use smallvec::SmallVec;
 
 use crate::AccentPhrase;
 
-use super::{super::mora_mappings::MORA_PHONEMES_TO_MORA_KANA, open_jtalk::FullcontextExtractor};
+use super::{super::mora_list::MORA_PHONEMES_TO_MORA_KANA, open_jtalk::FullcontextExtractor};
 
 #[derive(thiserror::Error, Debug)]
 #[error("入力テキストからのフルコンテキストラベル抽出に失敗しました: {context}")]
