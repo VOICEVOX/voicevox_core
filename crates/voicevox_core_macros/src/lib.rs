@@ -3,6 +3,7 @@
 //!
 //! SemVerに従わない。
 
+mod check;
 mod extract;
 mod inference_domain;
 mod inference_domains;
