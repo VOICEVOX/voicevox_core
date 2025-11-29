@@ -1,12 +1,10 @@
 use derive_syn_parse::Parse;
-use proc_macro2::Span;
 use quote::quote;
 use syn::{
     braced,
     parse::{Parse, ParseStream},
     spanned::Spanned as _,
-    Attribute, Data, DataEnum, DataStruct, DataUnion, DeriveInput, Expr, Fields, Generics,
-    ItemStatic, LitStr, Token, Variant,
+    Attribute, DeriveInput, Expr, ItemStatic, LitStr, Token,
 };
 
 pub(crate) fn derive_mora_mappings(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
@@ -18,17 +16,17 @@ pub(crate) fn derive_mora_mappings(input: &DeriveInput) -> syn::Result<proc_macr
         ..
     } = input;
 
-    deny_generics(generics)?;
+    crate::check::deny_generics(generics)?;
 
     let OutputStaticItems {
         mut mora_phonemes_to_mora_kana,
         mut mora_kana_to_mora_phonemes,
-    } = find_attr(attrs, input.span())?.parse_args()?;
+    } = find_attr(attrs)?.parse_args()?;
 
-    let variants = unit_enum_variants(data)?
+    let variants = crate::extract::unit_enum_variants(data)?
         .into_iter()
-        .map(|(attrs, mora_kana_variant, span)| {
-            let attr = find_attr(attrs, span)?;
+        .map(|(attrs, mora_kana_variant)| {
+            let attr = find_attr(attrs)?;
             let VariantAttrs {
                 consonant, vowel, ..
             } = attr.parse_args()?;
@@ -109,45 +107,8 @@ pub(crate) fn derive_mora_mappings(input: &DeriveInput) -> syn::Result<proc_macr
         vowel: LitStr,
     }
 
-    fn find_attr(attrs: &[Attribute], span: Span) -> syn::Result<&Attribute> {
-        static ATTR_NAME: &str = "mora_mappings";
-
-        attrs
-            .iter()
-            .find(|a| a.path().is_ident(ATTR_NAME))
-            .ok_or_else(|| syn::Error::new(span, format!("missing `#[{ATTR_NAME}(…)]`")))
-    }
-
-    fn deny_generics(generics: &Generics) -> syn::Result<()> {
-        if !generics.params.is_empty() {
-            return Err(syn::Error::new(generics.params.span(), "must be empty"));
-        }
-        if let Some(where_clause) = &generics.where_clause {
-            return Err(syn::Error::new(where_clause.span(), "must be empty"));
-        }
-        Ok(())
-    }
-
-    fn unit_enum_variants(data: &Data) -> syn::Result<Vec<(&[Attribute], &syn::Ident, Span)>> {
-        let variants = match data {
-            Data::Struct(DataStruct { struct_token, .. }) => {
-                return Err(syn::Error::new(struct_token.span(), "expected an enum"));
-            }
-            Data::Enum(DataEnum { variants, .. }) => variants,
-            Data::Union(DataUnion { union_token, .. }) => {
-                return Err(syn::Error::new(union_token.span(), "expected an enum"));
-            }
-        };
-
-        for Variant { fields, .. } in variants {
-            if *fields != Fields::Unit {
-                return Err(syn::Error::new(fields.span(), "must be unit"));
-            }
-        }
-
-        Ok(variants
-            .iter()
-            .map(|v| (&*v.attrs, &v.ident, v.span()))
-            .collect())
+    fn find_attr(attrs: &[Attribute]) -> syn::Result<&Attribute> {
+        static NAME: &str = "mora_mappings";
+        crate::extract::find_attr(attrs, NAME)
     }
 }
