@@ -604,45 +604,53 @@ impl From<OptionalConsonant> for &'static str {
 
 impl OptionalConsonant {
     pub(super) fn to_phoneme(self) -> Option<Phoneme> {
-        match self {
-            Self::None => None,
-            Self::ConsonantB => Some(Phoneme::ConsonantB),
-            Self::ConsonantBy => Some(Phoneme::ConsonantBy),
-            Self::ConsonantCh => Some(Phoneme::ConsonantCh),
-            Self::ConsonantD => Some(Phoneme::ConsonantD),
-            Self::ConsonantDy => Some(Phoneme::ConsonantDy),
-            Self::ConsonantF => Some(Phoneme::ConsonantF),
-            Self::ConsonantG => Some(Phoneme::ConsonantG),
-            Self::ConsonantGw => Some(Phoneme::ConsonantGw),
-            Self::ConsonantGy => Some(Phoneme::ConsonantGy),
-            Self::ConsonantH => Some(Phoneme::ConsonantH),
-            Self::ConsonantHy => Some(Phoneme::ConsonantHy),
-            Self::ConsonantJ => Some(Phoneme::ConsonantJ),
-            Self::ConsonantK => Some(Phoneme::ConsonantK),
-            Self::ConsonantKw => Some(Phoneme::ConsonantKw),
-            Self::ConsonantKy => Some(Phoneme::ConsonantKy),
-            Self::ConsonantM => Some(Phoneme::ConsonantM),
-            Self::ConsonantMy => Some(Phoneme::ConsonantMy),
-            Self::ConsonantN => Some(Phoneme::ConsonantN),
-            Self::ConsonantNy => Some(Phoneme::ConsonantNy),
-            Self::ConsonantP => Some(Phoneme::ConsonantP),
-            Self::ConsonantPy => Some(Phoneme::ConsonantPy),
-            Self::ConsonantR => Some(Phoneme::ConsonantR),
-            Self::ConsonantRy => Some(Phoneme::ConsonantRy),
-            Self::ConsonantS => Some(Phoneme::ConsonantS),
-            Self::ConsonantSh => Some(Phoneme::ConsonantSh),
-            Self::ConsonantT => Some(Phoneme::ConsonantT),
-            Self::ConsonantTs => Some(Phoneme::ConsonantTs),
-            Self::ConsonantTy => Some(Phoneme::ConsonantTy),
-            Self::ConsonantV => Some(Phoneme::ConsonantV),
-            Self::ConsonantW => Some(Phoneme::ConsonantW),
-            Self::ConsonantY => Some(Phoneme::ConsonantY),
-            Self::ConsonantZ => Some(Phoneme::ConsonantZ),
+        macro_rules! convert {
+            ($($variant:ident),* $(,)?) => {
+                match self {
+                    Self::None => None,
+                    $(Self::$variant => Some(Phoneme::$variant),)*
+                }
+            };
         }
+
+        convert!(
+            ConsonantB,
+            ConsonantBy,
+            ConsonantCh,
+            ConsonantD,
+            ConsonantDy,
+            ConsonantF,
+            ConsonantG,
+            ConsonantGw,
+            ConsonantGy,
+            ConsonantH,
+            ConsonantHy,
+            ConsonantJ,
+            ConsonantK,
+            ConsonantKw,
+            ConsonantKy,
+            ConsonantM,
+            ConsonantMy,
+            ConsonantN,
+            ConsonantNy,
+            ConsonantP,
+            ConsonantPy,
+            ConsonantR,
+            ConsonantRy,
+            ConsonantS,
+            ConsonantSh,
+            ConsonantT,
+            ConsonantTs,
+            ConsonantTy,
+            ConsonantV,
+            ConsonantW,
+            ConsonantY,
+            ConsonantZ,
+        )
     }
 }
 
-#[expect(dead_code, reason = "we use `bytemuck` to construct values instead")]
+#[expect(dead_code, reason = "we use `bytemuck` to construct `MorablePau`")]
 #[derive(Clone, Copy, CheckedBitPattern, NoUninit, EnumCount)]
 #[repr(i64)]
 pub(crate) enum MoraTail {

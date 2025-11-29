@@ -22,21 +22,14 @@ static TEXT2MORA_WITH_UNVOICE: LazyLock<HashMap<String, ValidatedMora<'static>>>
     LazyLock::new(|| {
         let mut text2mora_with_unvoice = HashMap::new();
         for (text, &(consonant, vowel)) in &MORA_KANA_TO_MORA_PHONEMES {
-            fn zero_lengthed(phoneme: impl Into<Phoneme>) -> LengthedPhoneme {
-                LengthedPhoneme {
-                    phoneme: phoneme.into(),
-                    length: 0.,
-                }
-            }
-
             let text = <&str>::from(text);
-            let consonant = consonant.to_phoneme().map(zero_lengthed);
+            let consonant = consonant.to_phoneme().map(Into::into);
 
             if let Some(vowel) = vowel.to_unvoiced() {
                 let unvoice_mora = ValidatedMora {
                     text: text.into(),
                     consonant: consonant.clone(),
-                    vowel: zero_lengthed(vowel),
+                    vowel: Phoneme::from(vowel).into(),
                     pitch: 0.,
                 };
                 text2mora_with_unvoice.insert(UNVOICE_SYMBOL.to_string() + text, unvoice_mora);
@@ -45,7 +38,7 @@ static TEXT2MORA_WITH_UNVOICE: LazyLock<HashMap<String, ValidatedMora<'static>>>
             let mora = ValidatedMora {
                 text: text.into(),
                 consonant,
-                vowel: zero_lengthed(vowel),
+                vowel: Phoneme::from(vowel).into(),
                 pitch: 0.,
             };
             text2mora_with_unvoice.insert(text.to_string(), mora);
