@@ -277,9 +277,13 @@ pub use self::{
         metas::{CharacterMeta, CharacterVersion, StyleId, StyleMeta, StyleType, VoiceModelMeta},
         voice_model::VoiceModelId,
     },
-    engine::talk::{
-        user_dict::{UserDictWord, UserDictWordBuilder, UserDictWordType},
-        AccentPhrase, AudioQuery, Mora,
+    engine::{
+        song::{FrameAudioQuery, FramePhoneme, Note, NoteId, Score},
+        talk::{
+            user_dict::{UserDictWord, UserDictWordBuilder, UserDictWordType},
+            AccentPhrase, AudioQuery, Mora,
+        },
+        Phoneme, Sil,
     },
     error::{Error, ErrorKind},
     result::Result,

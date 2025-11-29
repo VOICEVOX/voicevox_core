@@ -2,12 +2,16 @@ use std::str::FromStr;
 
 use bytemuck::{checked::CheckedCastError, CheckedBitPattern, Contiguous, NoUninit};
 use duplicate::duplicate_item;
+use serde::{
+    de::{self, Deserializer},
+    Deserialize, Serialize, Serializer,
+};
 use strum::EnumCount;
 
-use self::sil::Sil;
+pub use self::sil::Sil;
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, derive_more::Display)]
-pub(crate) enum Phoneme {
+pub enum Phoneme {
     /// `pau`。
     #[display("pau")]
     MorablePau,
@@ -249,6 +253,26 @@ impl FromStr for Phoneme {
                 s => Err(format!("invalid phoneme: {s:?}")),
             }
         }
+    }
+}
+
+impl<'de> Deserialize<'de> for Phoneme {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        String::deserialize(deserializer)?
+            .parse()
+            .map_err(de::Error::custom)
+    }
+}
+
+impl Serialize for Phoneme {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
     }
 }
 
@@ -506,10 +530,122 @@ impl MoraTail {
     }
 }
 
+#[expect(dead_code, reason = "we use `bytemuck` to construct values instead")]
+#[derive(Clone, Copy, CheckedBitPattern, NoUninit, EnumCount)]
+#[repr(i64)]
+pub(crate) enum NonPauPhonemeCode {
+    //None = -1,
+    //MorablePau = 0,
+    UnvoicedVowelA = 1,
+    UnvoicedVowelE = 2,
+    UnvoicedVowelI = 3,
+    MorableN = 4,
+    UnvoicedVowelO = 5,
+    UnvoicedVowelU = 6,
+    VoicedVowelA = 7,
+    ConsonantB = 8,
+    ConsonantBy = 9,
+    ConsonantCh = 10,
+    MorableCl = 11,
+    ConsonantD = 12,
+    ConsonantDy = 13,
+    VoicedVowelE = 14,
+    ConsonantF = 15,
+    ConsonantG = 16,
+    ConsonantGw = 17,
+    ConsonantGy = 18,
+    ConsonantH = 19,
+    ConsonantHy = 20,
+    VoicedVowelI = 21,
+    ConsonantJ = 22,
+    ConsonantK = 23,
+    ConsonantKw = 24,
+    ConsonantKy = 25,
+    ConsonantM = 26,
+    ConsonantMy = 27,
+    ConsonantN = 28,
+    ConsonantNy = 29,
+    VoicedVowelO = 30,
+    ConsonantP = 31,
+    ConsonantPy = 32,
+    ConsonantR = 33,
+    ConsonantRy = 34,
+    ConsonantS = 35,
+    ConsonantSh = 36,
+    ConsonantT = 37,
+    ConsonantTs = 38,
+    ConsonantTy = 39,
+    VoicedVowelU = 40,
+    ConsonantV = 41,
+    ConsonantW = 42,
+    ConsonantY = 43,
+    ConsonantZ = 44,
+}
+
+impl From<NonPauPhonemeCode> for Phoneme {
+    fn from(phoneme: NonPauPhonemeCode) -> Self {
+        macro_rules! convert {
+            ($($variant:ident),* $(,)?) => {
+                match phoneme {
+                    $(NonPauPhonemeCode::$variant => Self::$variant,)*
+                }
+            };
+        }
+
+        convert!(
+            UnvoicedVowelA,
+            UnvoicedVowelE,
+            UnvoicedVowelI,
+            MorableN,
+            UnvoicedVowelO,
+            UnvoicedVowelU,
+            VoicedVowelA,
+            ConsonantB,
+            ConsonantBy,
+            ConsonantCh,
+            MorableCl,
+            ConsonantD,
+            ConsonantDy,
+            VoicedVowelE,
+            ConsonantF,
+            ConsonantG,
+            ConsonantGw,
+            ConsonantGy,
+            ConsonantH,
+            ConsonantHy,
+            VoicedVowelI,
+            ConsonantJ,
+            ConsonantK,
+            ConsonantKw,
+            ConsonantKy,
+            ConsonantM,
+            ConsonantMy,
+            ConsonantN,
+            ConsonantNy,
+            VoicedVowelO,
+            ConsonantP,
+            ConsonantPy,
+            ConsonantR,
+            ConsonantRy,
+            ConsonantS,
+            ConsonantSh,
+            ConsonantT,
+            ConsonantTs,
+            ConsonantTy,
+            VoicedVowelU,
+            ConsonantV,
+            ConsonantW,
+            ConsonantY,
+            ConsonantZ,
+        )
+    }
+}
+
 #[duplicate_item(
     T;
     [ OptionalConsonant ];
     [ MoraTail ];
+    [ NonPauPhonemeCode ];
 )]
 impl TryFrom<PhonemeCode> for T {
     type Error = ();
@@ -530,14 +666,30 @@ const _: () = assert!(PhonemeCode::MAX_VALUE == 44);
 const _: () = assert!(PhonemeCode::COUNT == 45);
 const _: () = assert!(MoraTail::COUNT == 13);
 const _: () = assert!(OptionalConsonant::COUNT == PhonemeCode::COUNT - MoraTail::COUNT + 1);
+const _: () = assert!(NonPauPhonemeCode::COUNT == PhonemeCode::COUNT - 1);
 
 mod sil {
-    use std::{borrow::Cow, str::FromStr};
+    use std::{borrow::Cow, fmt, str::FromStr};
+
+    use serde::{
+        de::{self, Unexpected},
+        Deserialize, Deserializer,
+    };
 
     #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, derive_more::Display)]
-    pub(crate) struct Sil(
+    pub struct Sil(
         Cow<'static, str>, // invariant: must contain "sil"
     );
+
+    impl Sil {
+        pub const DEFAULT: Self = Self(Cow::Borrowed("sil"));
+    }
+
+    impl Default for Sil {
+        fn default() -> Self {
+            Self::DEFAULT
+        }
+    }
 
     impl FromStr for Sil {
         type Err = ();
@@ -550,6 +702,33 @@ mod sil {
                 }))
             } else {
                 Err(())
+            }
+        }
+    }
+
+    impl<'de> Deserialize<'de> for Sil {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            return deserializer.deserialize_str(Visitor);
+
+            struct Visitor;
+
+            impl de::Visitor<'_> for Visitor {
+                type Value = Sil;
+
+                fn expecting(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+                    write!(fmt, "a string that contains \"sil\"")
+                }
+
+                fn visit_str<E>(self, s: &str) -> Result<Self::Value, E>
+                where
+                    E: de::Error,
+                {
+                    s.parse()
+                        .map_err(|()| de::Error::invalid_value(Unexpected::Str(s), &self))
+                }
             }
         }
     }
