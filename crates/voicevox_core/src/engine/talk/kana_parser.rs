@@ -2,7 +2,7 @@ use std::{collections::HashMap, sync::LazyLock};
 
 use super::{
     super::{acoustic_feature_extractor::Phoneme, mora_mappings::MORA_KANA_TO_MORA_PHONEMES},
-    AccentPhrase, LengthedPhoneme, Mora, ValidatedMora,
+    AccentPhrase, Mora, ValidatedMora,
 };
 
 const UNVOICE_SYMBOL: char = '_';
