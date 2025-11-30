@@ -47,6 +47,7 @@ jlabel.workspace = true
 ndarray.workspace = true
 open_jtalk.workspace = true
 ouroboros.workspace = true
+phf = { workspace = true, features = ["macros"] }
 ref-cast.workspace = true
 regex.workspace = true
 serde = { workspace = true, features = ["derive", "rc"] }
