@@ -3,9 +3,10 @@ use std::num::NonZero;
 use typed_floats::PositiveFinite;
 use typeshare::U53;
 
-use super::{super::super::acoustic_feature_extractor::NonPauPhonemeCode, Note, NoteId, Score};
-
-pub(crate) use self::non_empty_string::NonEmptyString;
+use super::{
+    super::super::acoustic_feature_extractor::{MoraTail, NonPauPhonemeCode, OptionalConsonant},
+    Note, NoteId, OptionalLyric, Score,
+};
 
 impl Score {
     pub fn validte(&self) -> crate::Result<()> {
@@ -35,7 +36,7 @@ impl Note {
             frame_length,
         } = self;
 
-        let key_and_lyric = KeyAndLyric::new(key, lyric)?;
+        let key_and_lyric = KeyAndLyric::new(key, &lyric)?;
 
         Ok(ValidatedNote {
             id,
@@ -63,15 +64,15 @@ pub(crate) struct ValidatedNote {
 /// 音階と歌詞。
 pub(crate) struct KeyAndLyric {
     key: U53,
-    lyric: NonEmptyString,
+    lyric: (OptionalConsonant, MoraTail),
 }
 
 impl KeyAndLyric {
-    fn new(key: Option<U53>, lyric: String) -> crate::Result<Option<Self>> {
-        if key.is_some() && lyric.is_empty() {
+    fn new(key: Option<U53>, lyric: &OptionalLyric) -> crate::Result<Option<Self>> {
+        if key.is_some() && lyric.0.is_empty() {
             todo!("lyricが空文字列の場合、keyはnullである必要があります。");
         }
-        if key.is_none() && !lyric.is_empty() {
+        if key.is_none() && !lyric.0.is_empty() {
             todo!("keyがnullの場合、lyricは空文字列である必要があります。");
         }
         todo!();
@@ -109,19 +110,4 @@ pub(crate) struct ContextedNonPauNote {
 pub(crate) struct LengthedNonPauPhoneme {
     phoneme: NonPauPhonemeCode,
     frame_length: U53,
-}
-
-mod non_empty_string {
-    use derive_more::Deref;
-
-    #[derive(Deref)]
-    pub(crate) struct NonEmptyString(
-        String, // invariant: must be non empty
-    );
-
-    impl NonEmptyString {
-        pub(super) fn new(s: String) -> Option<Self> {
-            (!s.is_empty()).then_some(Self(s))
-        }
-    }
 }
