@@ -50,6 +50,7 @@ nonempty-collections = { version = "1.2.1", features = ["serde"] }
 open_jtalk.workspace = true
 ouroboros.workspace = true
 pastey.workspace = true
+phf = { workspace = true, features = ["macros"] }
 ref-cast.workspace = true
 regex.workspace = true
 serde = { workspace = true, features = ["derive", "rc"] }

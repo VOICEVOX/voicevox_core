@@ -10,6 +10,152 @@ use strum::EnumCount;
 
 pub use self::sil::Sil;
 
+macro_rules! optional_consonant {
+    ("") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::None
+    };
+    ("b") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantB
+    };
+    ("by") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantBy
+    };
+    ("ch") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantCh
+    };
+    ("d") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantD
+    };
+    ("dy") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantDy
+    };
+    ("f") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantF
+    };
+    ("g") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantG
+    };
+    ("gw") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantGw
+    };
+    ("gy") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantGy
+    };
+    ("h") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantH
+    };
+    ("hy") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantHy
+    };
+    ("j") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantJ
+    };
+    ("k") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantK
+    };
+    ("kw") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantKw
+    };
+    ("ky") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantKy
+    };
+    ("m") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantM
+    };
+    ("my") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantMy
+    };
+    ("n") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantN
+    };
+    ("ny") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantNy
+    };
+    ("p") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantP
+    };
+    ("py") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantPy
+    };
+    ("r") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantR
+    };
+    ("ry") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantRy
+    };
+    ("s") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantS
+    };
+    ("sh") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantSh
+    };
+    ("t") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantT
+    };
+    ("ts") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantTs
+    };
+    ("ty") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantTy
+    };
+    ("v") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantV
+    };
+    ("w") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantW
+    };
+    ("y") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantY
+    };
+    ("z") => {
+        crate::engine::acoustic_feature_extractor::OptionalConsonant::ConsonantZ
+    };
+}
+
+macro_rules! mora_tail {
+    ("pau") => {
+        crate::engine::acoustic_feature_extractor::MoraTail::MorablePau
+    };
+    ("A") => {
+        crate::engine::acoustic_feature_extractor::MoraTail::UnvoicedVowelA
+    };
+    ("E") => {
+        crate::engine::acoustic_feature_extractor::MoraTail::UnvoicedVowelE
+    };
+    ("I") => {
+        crate::engine::acoustic_feature_extractor::MoraTail::UnvoicedVowelI
+    };
+    ("N") => {
+        crate::engine::acoustic_feature_extractor::MoraTail::MorableN
+    };
+    ("O") => {
+        crate::engine::acoustic_feature_extractor::MoraTail::UnvoicedVowelO
+    };
+    ("U") => {
+        crate::engine::acoustic_feature_extractor::MoraTail::UnvoicedVowelU
+    };
+    ("a") => {
+        crate::engine::acoustic_feature_extractor::MoraTail::VoicedVowelA
+    };
+    ("cl") => {
+        crate::engine::acoustic_feature_extractor::MoraTail::MorableCl
+    };
+    ("e") => {
+        crate::engine::acoustic_feature_extractor::MoraTail::VoicedVowelE
+    };
+    ("i") => {
+        crate::engine::acoustic_feature_extractor::MoraTail::VoicedVowelI
+    };
+    ("o") => {
+        crate::engine::acoustic_feature_extractor::MoraTail::VoicedVowelO
+    };
+    ("u") => {
+        crate::engine::acoustic_feature_extractor::MoraTail::VoicedVowelU
+    };
+}
+
+pub(super) use {mora_tail, optional_consonant};
+
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, derive_more::Display)]
 pub enum Phoneme {
     /// `pau`。
@@ -411,7 +557,6 @@ impl From<PhonemeCode> for usize {
     }
 }
 
-#[expect(dead_code, reason = "we use `bytemuck` to construct values instead")]
 #[derive(Clone, Copy, CheckedBitPattern, NoUninit, EnumCount)]
 #[repr(i64)]
 pub(crate) enum OptionalConsonant {
@@ -463,7 +608,73 @@ pub(crate) enum OptionalConsonant {
     ConsonantZ = 44,
 }
 
-#[expect(dead_code, reason = "we use `bytemuck` to construct values instead")]
+impl From<OptionalConsonant> for &'static str {
+    fn from(phoneme: OptionalConsonant) -> Self {
+        macro_rules! convert {
+            ($($s:tt),* $(,)?) => {
+                match phoneme {
+                    $(optional_consonant!($s) => $s),*
+                }
+            };
+        }
+
+        convert!(
+            "", "b", "by", "ch", "d", "dy", "f", "g", "gw", "gy", "h", "hy", "j", "k", "kw", "ky",
+            "m", "my", "n", "ny", "p", "py", "r", "ry", "s", "sh", "t", "ts", "ty", "v", "w", "y",
+            "z"
+        )
+    }
+}
+
+impl OptionalConsonant {
+    pub(super) fn to_phoneme(self) -> Option<Phoneme> {
+        macro_rules! convert {
+            ($($variant:ident),* $(,)?) => {
+                match self {
+                    Self::None => None,
+                    $(Self::$variant => Some(Phoneme::$variant),)*
+                }
+            };
+        }
+
+        convert!(
+            ConsonantB,
+            ConsonantBy,
+            ConsonantCh,
+            ConsonantD,
+            ConsonantDy,
+            ConsonantF,
+            ConsonantG,
+            ConsonantGw,
+            ConsonantGy,
+            ConsonantH,
+            ConsonantHy,
+            ConsonantJ,
+            ConsonantK,
+            ConsonantKw,
+            ConsonantKy,
+            ConsonantM,
+            ConsonantMy,
+            ConsonantN,
+            ConsonantNy,
+            ConsonantP,
+            ConsonantPy,
+            ConsonantR,
+            ConsonantRy,
+            ConsonantS,
+            ConsonantSh,
+            ConsonantT,
+            ConsonantTs,
+            ConsonantTy,
+            ConsonantV,
+            ConsonantW,
+            ConsonantY,
+            ConsonantZ,
+        )
+    }
+}
+
+#[expect(dead_code, reason = "we use `bytemuck` to construct `MorablePau`")]
 #[derive(Clone, Copy, CheckedBitPattern, NoUninit, EnumCount)]
 #[repr(i64)]
 pub(crate) enum MoraTail {
@@ -526,6 +737,59 @@ impl MoraTail {
                 | Self::UnvoicedVowelO
                 | Self::MorableCl
                 | Self::MorablePau
+        )
+    }
+
+    pub(super) fn to_unvoiced(self) -> Option<Self> {
+        match self {
+            mora_tail!("a") => Some(mora_tail!("A")),
+            mora_tail!("i") => Some(mora_tail!("I")),
+            mora_tail!("u") => Some(mora_tail!("U")),
+            mora_tail!("e") => Some(mora_tail!("E")),
+            mora_tail!("o") => Some(mora_tail!("O")),
+            _ => None,
+        }
+    }
+}
+
+impl From<MoraTail> for &'static str {
+    fn from(phoneme: MoraTail) -> Self {
+        macro_rules! convert {
+            ($($s:tt),* $(,)?) => {
+                match phoneme {
+                    $(mora_tail!($s) => $s),*
+                }
+            };
+        }
+
+        convert!("pau", "A", "E", "I", "N", "O", "U", "a", "cl", "e", "i", "o", "u")
+    }
+}
+
+impl From<MoraTail> for Phoneme {
+    fn from(phoneme: MoraTail) -> Self {
+        macro_rules! convert {
+            ($($variant:ident),* $(,)?) => {
+                match phoneme {
+                    $(MoraTail::$variant => Self::$variant,)*
+                }
+            };
+        }
+
+        convert!(
+            MorablePau,
+            UnvoicedVowelA,
+            UnvoicedVowelE,
+            UnvoicedVowelI,
+            MorableN,
+            UnvoicedVowelO,
+            UnvoicedVowelU,
+            VoicedVowelA,
+            MorableCl,
+            VoicedVowelE,
+            VoicedVowelI,
+            VoicedVowelO,
+            VoicedVowelU,
         )
     }
 }

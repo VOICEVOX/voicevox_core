@@ -287,6 +287,15 @@ impl LengthedPhoneme {
     }
 }
 
+impl From<Phoneme> for LengthedPhoneme {
+    fn from(phoneme: Phoneme) -> Self {
+        Self {
+            phoneme,
+            length: 0.,
+        }
+    }
+}
+
 #[derive(Clone, PartialEq, Debug)]
 pub(crate) struct ValidatedAccentPhrase<'original> {
     pub(crate) moras: Vec<ValidatedMora<'original>>,
