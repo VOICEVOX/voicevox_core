@@ -557,7 +557,7 @@ impl From<PhonemeCode> for usize {
     }
 }
 
-#[derive(Clone, Copy, CheckedBitPattern, NoUninit, EnumCount)]
+#[derive(Clone, Copy, PartialEq, CheckedBitPattern, NoUninit, EnumCount)]
 #[repr(i64)]
 pub(crate) enum OptionalConsonant {
     None = -1,

@@ -1,5 +1,6 @@
 use std::num::NonZero;
 
+use smol_str::SmolStr;
 use typed_floats::PositiveFinite;
 use typeshare::U53;
 
@@ -63,19 +64,35 @@ pub(crate) struct ValidatedNote {
 
 /// 音階と歌詞。
 pub(crate) struct KeyAndLyric {
-    key: U53,
-    lyric: (OptionalConsonant, MoraTail),
+    pub(in super::super) key: U53,
+    pub(in super::super) lyric: Lyric,
 }
 
 impl KeyAndLyric {
     fn new(key: Option<U53>, lyric: &OptionalLyric) -> crate::Result<Option<Self>> {
-        if key.is_some() && lyric.0.is_empty() {
+        if key.is_some() && lyric.text.is_empty() {
             todo!("lyricが空文字列の場合、keyはnullである必要があります。");
         }
-        if key.is_none() && !lyric.0.is_empty() {
+        if key.is_none() && !lyric.text.is_empty() {
             todo!("keyがnullの場合、lyricは空文字列である必要があります。");
         }
         todo!();
+    }
+}
+
+pub(in super::super) struct Lyric {
+    // invariant: `phonemes` must come from `text`.
+    text: SmolStr,
+    pub(in super::super) phonemes: [(OptionalConsonant, MoraTail); 1],
+}
+
+impl Lyric {
+    fn new(optional: &OptionalLyric) -> Option<Self> {
+        let phonemes = optional.phonemes.clone().into_inner().ok()?;
+        Some(Self {
+            text: optional.text.clone(),
+            phonemes,
+        })
     }
 }
 

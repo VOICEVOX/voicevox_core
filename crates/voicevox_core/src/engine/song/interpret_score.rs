@@ -7,7 +7,10 @@ use typeshare::U53;
 
 use crate::NoteId;
 
-use super::ValidatedNote;
+use super::{
+    super::acoustic_feature_extractor::OptionalConsonant,
+    frame_audio_query::{KeyAndLyric, Lyric, ValidatedNote},
+};
 
 pub(crate) struct ScoreFeature<'score> {
     pub(crate) note_lengths: Array1<i64>,
@@ -80,8 +83,36 @@ impl<'score> From<&'score ValidatedNote> for NoteFeature<'score> {
             frame_length,
         }: &'score ValidatedNote,
     ) -> Self {
-        if let Some(key_and_lyric) = key_and_lyric {
-            todo!();
+        if let Some(KeyAndLyric {
+            key,
+            lyric:
+                Lyric {
+                    phonemes: [(consonant, vowel)],
+                    ..
+                },
+        }) = *key_and_lyric
+        {
+            let note_constant = bytemuck::must_cast(consonant);
+            let note_vowel = bytemuck::must_cast(vowel);
+            Self {
+                note_length: frame_length.to_i64(),
+                note_constant,
+                note_vowel,
+                // TODO: Rust 1.91以降なら`std::iter::chain`がある
+                phonemes: itertools::chain(
+                    (consonant != OptionalConsonant::None).then(|| PhonemeFeature {
+                        phoneme: note_constant,
+                        phoneme_key: key.to_i64(),
+                        phoneme_note_id: id.as_ref(),
+                    }),
+                    [PhonemeFeature {
+                        phoneme: note_vowel,
+                        phoneme_key: key.to_i64(),
+                        phoneme_note_id: id.as_ref(),
+                    }],
+                )
+                .collect(),
+            }
         } else {
             Self {
                 note_length: frame_length.to_i64(),

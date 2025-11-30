@@ -19,6 +19,8 @@ use super::super::{
     Phoneme,
 };
 
+pub(super) use self::validated::Lyric;
+
 pub(crate) use self::validated::{KeyAndLyric, ValidatedNote};
 
 /// 音符のID。
@@ -28,6 +30,7 @@ pub struct NoteId(pub Arc<str>);
 #[derive(Clone, derive_more::Display)]
 #[display("{text}")]
 pub struct OptionalLyric {
+    // invariant: `phonemes` must come from `text`.
     text: SmolStr,
     phonemes: ArrayVec<(OptionalConsonant, MoraTail), 1>,
 }
