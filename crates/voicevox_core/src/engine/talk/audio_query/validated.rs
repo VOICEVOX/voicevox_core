@@ -10,11 +10,11 @@ use tracing::warn;
 use crate::error::{ErrorRepr, InvalidQueryErrorKind};
 
 use super::{
-    super::super::{acoustic_feature_extractor::Phoneme, DEFAULT_SAMPLING_RATE},
+    super::super::{
+        acoustic_feature_extractor::Phoneme, sampling_rate::SamplingRate, DEFAULT_SAMPLING_RATE,
+    },
     AccentPhrase, AudioQuery, Mora,
 };
-
-pub(crate) use self::sampling_rate::SamplingRate;
 
 impl Mora {
     /// この構造体をバリデートする。
@@ -498,27 +498,6 @@ impl From<ValidatedAudioQuery<'_>> for AudioQuery {
             output_sampling_rate: output_sampling_rate.get(),
             output_stereo,
             kana,
-        }
-    }
-}
-
-mod sampling_rate {
-    use std::num::NonZero;
-
-    use crate::engine::DEFAULT_SAMPLING_RATE;
-
-    #[derive(Clone, Copy, PartialEq, Debug)]
-    pub(crate) struct SamplingRate(NonZero<u32>);
-
-    impl SamplingRate {
-        pub(super) fn new(n: u32) -> Option<Self> {
-            NonZero::new(n)
-                .filter(|n| n.get() % DEFAULT_SAMPLING_RATE == 0)
-                .map(Self)
-        }
-
-        pub(crate) fn get(self) -> u32 {
-            self.0.get()
         }
     }
 }
