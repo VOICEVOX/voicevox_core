@@ -182,7 +182,11 @@ pub enum ErrorKind {
     UseUserDict,
     /// ユーザー辞書の単語のバリデーションに失敗した。
     InvalidWord,
-    /// AudioQuery、もしくはその一部が不正。
+    /// [`AudioQuery`]、[`FrameAudioQuery`]、[`Score`]、もしくはその一部が不正。
+    ///
+    /// [`AudioQuery`]: crate::AudioQuery
+    /// [`FrameAudioQuery`]: crate::FrameAudioQuery
+    /// [`Score`]: crate::Score
     InvalidQuery,
     #[doc(hidden)]
     __NonExhaustive,
@@ -228,4 +232,6 @@ pub(crate) enum InvalidQueryErrorKind {
     InvalidSamplingRate(u32),
     #[error("音素が不正です: {_0:?}")]
     InvalidPhoneme(String),
+    #[error("不正な歌詞です: {_0:?}")]
+    InvalidLyric(String),
 }

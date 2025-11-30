@@ -5,11 +5,13 @@ use std::{fmt, num::NonZero, str::FromStr, sync::Arc};
 use arrayvec::ArrayVec;
 use serde::{
     de::{self, Unexpected},
-    Deserialize, Deserializer, Serialize,
+    Deserialize, Deserializer, Serialize, Serializer,
 };
 use smol_str::SmolStr;
 use typed_floats::{NonNaNFinite, PositiveFinite};
 use typeshare::U53;
+
+use crate::error::{ErrorRepr, InvalidQueryErrorKind};
 
 use super::super::{
     acoustic_feature_extractor::{MoraTail, OptionalConsonant},
@@ -23,27 +25,38 @@ pub(crate) use self::validated::{KeyAndLyric, ValidatedNote};
 #[derive(Clone, Deserialize, Serialize)]
 pub struct NoteId(pub Arc<str>);
 
-#[derive(Clone)]
-pub struct OptionalLyric(ArrayVec<(OptionalConsonant, MoraTail), 1>);
+#[derive(Clone, derive_more::Display)]
+#[display("{text}")]
+pub struct OptionalLyric {
+    text: SmolStr,
+    phonemes: ArrayVec<(OptionalConsonant, MoraTail), 1>,
+}
 
 impl FromStr for OptionalLyric {
-    type Err = anyhow::Error;
+    type Err = crate::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mora_kana = hira_to_kana(s).parse().map_err(Self::Err::from)?;
-        return Ok(OptionalLyric(
-            [MORA_KANA_TO_MORA_PHONEMES[mora_kana]].into(),
-        ));
+        let mora_kana = hira_to_kana(s)
+            .parse()
+            .map_err(|_| ErrorRepr::InvalidQuery {
+                what: "歌詞",
+                kind: InvalidQueryErrorKind::InvalidLyric(s.to_owned()),
+            })?;
 
-        fn hira_to_kana(s: &str) -> SmolStr {
-            s.chars()
-                .map(|c| match c {
-                    'ぁ'..='ゔ' => (u32::from(c) + 96).try_into().expect("should be OK"),
-                    c => c,
-                })
-                .collect()
-        }
+        Ok(OptionalLyric {
+            text: s.into(),
+            phonemes: [MORA_KANA_TO_MORA_PHONEMES[mora_kana]].into(),
+        })
     }
+}
+
+fn hira_to_kana(s: &str) -> SmolStr {
+    s.chars()
+        .map(|c| match c {
+            'ぁ'..='ゔ' => (u32::from(c) + 96).try_into().expect("should be OK"),
+            c => c,
+        })
+        .collect()
 }
 
 impl<'de> Deserialize<'de> for OptionalLyric {
@@ -70,6 +83,15 @@ impl<'de> Deserialize<'de> for OptionalLyric {
                     .map_err(|_| de::Error::invalid_value(Unexpected::Str(s), &self))
             }
         }
+    }
+}
+
+impl Serialize for OptionalLyric {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.text)
     }
 }
 
@@ -136,4 +158,14 @@ pub struct FrameAudioQuery {
 
     /// 音声データをステレオ出力するか否か。
     pub output_stereo: bool,
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn hira_to_kana_should_not_fail() {
+        for c in 'ぁ'..='ゔ' {
+            super::hira_to_kana(&c.to_string());
+        }
+    }
 }
