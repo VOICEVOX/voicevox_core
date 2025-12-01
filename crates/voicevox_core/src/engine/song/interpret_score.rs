@@ -8,21 +8,21 @@ use typeshare::U53;
 use crate::NoteId;
 
 use super::{
-    super::acoustic_feature_extractor::OptionalConsonant,
-    frame_audio_query::{KeyAndLyric, Lyric, ValidatedNote},
+    super::acoustic_feature_extractor::{OptionalConsonant, PhonemeCode},
+    frame_audio_query::{KeyAndLyric, Lyric, ValidatedNote, ValidatedNoteSeq},
 };
 
 pub(crate) struct ScoreFeature<'score> {
     pub(crate) note_lengths: Array1<i64>,
     pub(crate) note_constants: Array1<i64>,
     pub(crate) note_vowels: Array1<i64>,
-    pub(crate) phonemes: Array1<i64>,
+    pub(crate) phonemes: Vec<PhonemeCode>,
     pub(crate) phoneme_keys: Array1<i64>,
     pub(crate) phoneme_note_ids: Vec<Option<&'score NoteId>>,
 }
 
-impl<'score> From<&'score [ValidatedNote]> for ScoreFeature<'score> {
-    fn from(notes: &'score [ValidatedNote]) -> Self {
+impl<'score> From<&'score ValidatedNoteSeq> for ScoreFeature<'score> {
+    fn from(notes: &'score ValidatedNoteSeq) -> Self {
         let feature = notes.iter().map(Into::into).collect::<Vec<_>>();
 
         duplicate! {
@@ -100,13 +100,13 @@ impl<'score> From<&'score ValidatedNote> for NoteFeature<'score> {
                 note_vowel,
                 // TODO: Rust 1.91以降なら`std::iter::chain`がある
                 phonemes: itertools::chain(
-                    (consonant != OptionalConsonant::None).then(|| PhonemeFeature {
-                        phoneme: note_constant,
+                    consonant.try_into().map(|phoneme| PhonemeFeature {
+                        phoneme,
                         phoneme_key: key.to_i64(),
                         phoneme_note_id: id.as_ref(),
                     }),
                     [PhonemeFeature {
-                        phoneme: note_vowel,
+                        phoneme: vowel.into(),
                         phoneme_key: key.to_i64(),
                         phoneme_note_id: id.as_ref(),
                     }],
@@ -116,10 +116,10 @@ impl<'score> From<&'score ValidatedNote> for NoteFeature<'score> {
         } else {
             Self {
                 note_length: frame_length.to_i64(),
-                note_constant: -1,
-                note_vowel: 0, // pau
+                note_constant: OptionalConsonant::None as _,
+                note_vowel: PhonemeCode::MorablePau as _,
                 phonemes: [PhonemeFeature {
-                    phoneme: 0, // pau
+                    phoneme: PhonemeCode::MorablePau,
                     phoneme_key: -1,
                     phoneme_note_id: id.as_ref(),
                 }]
@@ -132,9 +132,73 @@ impl<'score> From<&'score ValidatedNote> for NoteFeature<'score> {
 
 #[derive(Clone, Copy)]
 struct PhonemeFeature<'score> {
-    phoneme: i64,
+    phoneme: PhonemeCode,
     phoneme_key: i64,
     phoneme_note_id: Option<&'score NoteId>,
+}
+
+pub(crate) fn phoneme_lengths(consonant_lengths: &[i64], note_durations: &[U53]) -> Vec<U53> {
+    if consonant_lengths.len() != note_durations.len() {
+        panic!("must be same length");
+    }
+
+    let (&first_consonant_length, next_consonant_lengths) = consonant_lengths
+        .split_first()
+        .expect("`consonant_lengths` cannot be empty");
+
+    if first_consonant_length != 0 {
+        panic!("`consonant_lengths[0]` cannot be non-zero");
+    }
+
+    let (&last_note_duration, note_durations_till_last) = note_durations
+        .split_last()
+        .expect("`note_durations` cannot be empty");
+
+    let next_consonant_lengths = &{
+        let mut next_consonant_lengths = next_consonant_lengths.to_owned();
+        for (next_consonant_length, &note_duration) in
+            itertools::zip_eq(&mut next_consonant_lengths, note_durations_till_last)
+        {
+            // 次のノートの子音長 (`next_consonant_length`)が以下の条件を満たすなら、
+            // 現在のノート長 (`note_duration`)の半分の値に置き換える。
+            //
+            // - 負
+            // - 現在のノート長を超過する
+            if next_consonant_length.is_negative()
+                || note_duration.to_i64() < *next_consonant_length
+            {
+                *next_consonant_length = note_duration.to_i64() / 2;
+            }
+        }
+        next_consonant_lengths
+    };
+
+    assert!(
+        next_consonant_lengths.iter().any(|&n| n >= 0),
+        "elements should have been replaced with non-negative values",
+    );
+    let next_consonant_lengths = bytemuck::must_cast_slice::<_, u64>(next_consonant_lengths);
+
+    itertools::zip_eq(next_consonant_lengths, note_durations_till_last)
+        .flat_map(|(&next_consonant_length, &note_duration)| {
+            let note_duration = u64::from(note_duration);
+            let vowel_length = note_duration
+                .checked_sub(next_consonant_length)
+                .expect("each `next_consonant_length` should have been replaced with small values")
+                .try_into()
+                .expect("should equal or be smaller than `note_duration`");
+            // TODO: Rust 1.91以降なら`std::iter::chain`がある
+            itertools::chain(
+                [vowel_length],
+                (next_consonant_length > 0).then(|| {
+                    next_consonant_length
+                        .try_into()
+                        .unwrap_or_else(|_| unimplemented!("too large"))
+                }),
+            )
+        })
+        .chain([last_note_duration])
+        .collect()
 }
 
 #[ext]

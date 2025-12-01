@@ -6,10 +6,12 @@ use easy_ext::ext;
 use educe::Educe;
 use enum_map::enum_map;
 use futures_util::TryFutureExt as _;
+use ndarray::ArrayView;
 use std::{
     fmt::{self, Debug},
     future::Future,
     marker::PhantomData,
+    num::NonZero,
     ops::Range,
     sync::Arc,
 };
@@ -39,15 +41,16 @@ use crate::{
         voice_model,
     },
     engine::{
+        song::{self, ScoreFeature, ValidatedNote, ValidatedNoteSeq},
         talk::{
             create_kana, initial_process, parse_kana, split_mora, DecoderFeature, LengthedPhoneme,
             ValidatedAccentPhrase, ValidatedAudioQuery, ValidatedMora,
         },
-        to_s16le_pcm, wav_from_s16le, PhonemeCode, DEFAULT_SAMPLING_RATE,
+        to_s16le_pcm, wav_from_s16le, ArrayBase1Ext as _, PhonemeCode, DEFAULT_SAMPLING_RATE,
     },
     error::ErrorRepr,
     future::FutureExt as _,
-    AccentPhrase, AudioQuery, FrameAudioQuery, FramePhoneme, Note, NoteId, Result, StyleId,
+    AccentPhrase, AudioQuery, FrameAudioQuery, FramePhoneme, Note, NoteId, Result, Score, StyleId,
     VoiceModelId, VoiceModelMeta,
 };
 
@@ -749,13 +752,104 @@ trait AsInner {
         &self,
         notes: &[Note],
         style_id: StyleId,
-    ) -> Result<Vec<FrameAudioQuery>> {
-        todo!();
+    ) -> Result<FrameAudioQuery> {
+        let notes = &ValidatedNoteSeq::new(notes.iter().cloned())?;
+
+        let ScoreFeature {
+            note_lengths,
+            note_constants,
+            note_vowels,
+            phonemes,
+            phoneme_keys,
+            phoneme_note_ids,
+        } = notes.into();
+
+        let consonant_lengths = self
+            .status()
+            .predict_sing_consonant_length::<Self::Async>(
+                note_constants,
+                note_vowels,
+                note_lengths,
+                style_id,
+            )
+            .await?
+            .into_shape_with_order([notes.len().get()])
+            .unwrap_or_else(|e| todo!("{e}"));
+        let consonant_lengths = consonant_lengths.as_standard_layout();
+        let consonant_lengths = consonant_lengths
+            .as_slice()
+            .expect("this should be a standard-layout array");
+
+        if consonant_lengths[0] != 0 {
+            todo!("consonant for a pau note?");
+        }
+
+        let phoneme_lengths = song::phoneme_lengths(
+            consonant_lengths,
+            &notes
+                .iter()
+                .map(|&ValidatedNote { frame_length, .. }| frame_length)
+                .collect::<Vec<_>>(),
+        );
+
+        let (frame_phonemes, frame_keys) = {
+            let phoneme_lengths = phoneme_lengths
+                .iter()
+                .copied()
+                .map(typeshare::usize_from_u53_saturated)
+                .collect::<Vec<_>>();
+            (
+                ArrayView::from(bytemuck::must_cast_slice::<_, i64>(&phonemes))
+                    .repeat(phoneme_lengths.iter().copied()),
+                phoneme_keys.repeat(phoneme_lengths),
+            )
+        };
+
+        let f0s = self
+            .status()
+            .predict_sing_f0::<Self::Async>(frame_phonemes.clone(), frame_keys.clone(), style_id)
+            .await?
+            .into_shape_with_order([frame_keys.len()])
+            .unwrap_or_else(|e| todo!("{e}"));
+
+        let volumes = self
+            .status()
+            .predict_sing_volume::<Self::Async>(frame_phonemes, frame_keys, f0s.clone(), style_id)
+            .await?;
+
+        let f0s = f0s
+            .into_iter()
+            .map(|v| v.try_into().unwrap_or_else(|e| todo!("{e}: {v}")))
+            .collect();
+
+        let volumes = volumes
+            .into_iter()
+            .map(|v| v.try_into().unwrap_or_else(|e| todo!("{e}: {v}")))
+            .collect();
+
+        Ok(FrameAudioQuery {
+            f0: f0s,
+            volume: volumes,
+            phonemes: itertools::zip_eq(
+                phonemes,
+                itertools::zip_eq(phoneme_lengths, phoneme_note_ids),
+            )
+            .map(|(phoneme, (frame_length, note_id))| FramePhoneme {
+                phoneme: phoneme.into(),
+                frame_length,
+                note_id: note_id.cloned(),
+            })
+            .collect(),
+            volume_scale: (1.).try_into().unwrap(),
+            output_sample_rate: NonZero::new(24000).unwrap(),
+            output_stereo: true,
+        })
     }
 
     async fn create_sing_frame_f0(
         &self,
-        phonemes: &[FramePhoneme],
+        score: &Score,
+        frame_audio_query: &FrameAudioQuery,
         style_id: StyleId,
     ) -> Result<ndarray::Array1<f32>> {
         todo!();
@@ -763,14 +857,18 @@ trait AsInner {
 
     async fn create_sing_frame_volume(
         &self,
-        phonemes: &[FramePhoneme],
-        f0: &[f32],
+        score: &Score,
+        frame_audio_query: &FrameAudioQuery,
         style_id: StyleId,
     ) -> Result<ndarray::Array1<f32>> {
         todo!();
     }
 
-    async fn frame_synthesis(&self, query: &FrameAudioQuery, style_id: StyleId) -> Result<Vec<u8>> {
+    async fn frame_synthesis(
+        &self,
+        frame_audio_query: &FrameAudioQuery,
+        style_id: StyleId,
+    ) -> Result<Vec<u8>> {
         todo!();
     }
 
@@ -1372,8 +1470,8 @@ pub(crate) mod blocking {
     use easy_ext::ext;
 
     use crate::{
-        asyncs::SingleTasked, future::FutureExt as _, AccentPhrase, AudioQuery, StyleId,
-        VoiceModelId, VoiceModelMeta,
+        asyncs::SingleTasked, future::FutureExt as _, AccentPhrase, AudioQuery, FrameAudioQuery,
+        Note, Score, StyleId, VoiceModelId, VoiceModelMeta,
     };
 
     use super::{
@@ -1650,6 +1748,48 @@ pub(crate) mod blocking {
                 style_id,
                 options: TtsOptions::default(),
             }
+        }
+
+        pub fn create_sing_frame_audio_query(
+            &self,
+            notes: &[Note],
+            style_id: StyleId,
+        ) -> crate::Result<FrameAudioQuery> {
+            self.0
+                .create_sing_frame_audio_query(notes, style_id)
+                .block_on()
+        }
+
+        pub fn create_sing_frame_f0(
+            &self,
+            score: &Score,
+            frame_audio_query: &FrameAudioQuery,
+            style_id: StyleId,
+        ) -> crate::Result<ndarray::Array1<f32>> {
+            self.0
+                .create_sing_frame_f0(score, frame_audio_query, style_id)
+                .block_on()
+        }
+
+        pub fn create_sing_frame_volume(
+            &self,
+            score: &Score,
+            frame_audio_query: &FrameAudioQuery,
+            style_id: StyleId,
+        ) -> crate::Result<ndarray::Array1<f32>> {
+            self.0
+                .create_sing_frame_volume(score, frame_audio_query, style_id)
+                .block_on()
+        }
+
+        pub fn frame_synthesis(
+            &self,
+            frame_audio_query: &FrameAudioQuery,
+            style_id: StyleId,
+        ) -> crate::Result<Vec<u8>> {
+            self.0
+                .frame_synthesis(frame_audio_query, style_id)
+                .block_on()
         }
     }
 
@@ -2024,8 +2164,8 @@ pub(crate) mod nonblocking {
     use easy_ext::ext;
 
     use crate::{
-        asyncs::BlockingThreadPool, AccentPhrase, AudioQuery, Result, StyleId, VoiceModelId,
-        VoiceModelMeta,
+        asyncs::BlockingThreadPool, AccentPhrase, AudioQuery, FrameAudioQuery, FramePhoneme, Note,
+        Result, Score, StyleId, VoiceModelId, VoiceModelMeta,
     };
 
     use super::{
@@ -2262,6 +2402,44 @@ pub(crate) mod nonblocking {
                 style_id,
                 options: Default::default(),
             }
+        }
+
+        pub async fn create_sing_frame_audio_query(
+            &self,
+            notes: &[Note],
+            style_id: StyleId,
+        ) -> Result<FrameAudioQuery> {
+            self.0.create_sing_frame_audio_query(notes, style_id).await
+        }
+
+        pub async fn create_sing_frame_f0(
+            &self,
+            score: &Score,
+            frame_audio_query: &FrameAudioQuery,
+            style_id: StyleId,
+        ) -> Result<ndarray::Array1<f32>> {
+            self.0
+                .create_sing_frame_f0(score, frame_audio_query, style_id)
+                .await
+        }
+
+        pub async fn create_sing_frame_volume(
+            &self,
+            score: &Score,
+            frame_audio_query: &FrameAudioQuery,
+            style_id: StyleId,
+        ) -> Result<ndarray::Array1<f32>> {
+            self.0
+                .create_sing_frame_volume(score, frame_audio_query, style_id)
+                .await
+        }
+
+        pub async fn frame_synthesis(
+            &self,
+            frame_audio_query: &FrameAudioQuery,
+            style_id: StyleId,
+        ) -> Result<Vec<u8>> {
+            self.0.frame_synthesis(frame_audio_query, style_id).await
         }
     }
 

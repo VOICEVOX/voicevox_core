@@ -423,7 +423,7 @@ impl Serialize for Phoneme {
 }
 
 /// 音素IDのうち、`-1` ([`OptionalConsonant::None`])を除いたもの。
-#[derive(Clone, Copy, Contiguous, NoUninit, EnumCount)]
+#[derive(Clone, Copy, Contiguous, CheckedBitPattern, NoUninit, EnumCount)]
 #[cfg_attr(test, derive(PartialEq, Debug, strum::EnumIter))]
 #[repr(i64)]
 pub(crate) enum PhonemeCode {
@@ -492,6 +492,66 @@ impl From<Phoneme> for PhonemeCode {
                 match phoneme {
                     $(Phoneme::$variant => Self::$variant,)*
                     Phoneme::Sil(_) => Self::space_phoneme(),
+                }
+            };
+        }
+
+        convert!(
+            MorablePau,
+            UnvoicedVowelA,
+            UnvoicedVowelE,
+            UnvoicedVowelI,
+            MorableN,
+            UnvoicedVowelO,
+            UnvoicedVowelU,
+            VoicedVowelA,
+            ConsonantB,
+            ConsonantBy,
+            ConsonantCh,
+            MorableCl,
+            ConsonantD,
+            ConsonantDy,
+            VoicedVowelE,
+            ConsonantF,
+            ConsonantG,
+            ConsonantGw,
+            ConsonantGy,
+            ConsonantH,
+            ConsonantHy,
+            VoicedVowelI,
+            ConsonantJ,
+            ConsonantK,
+            ConsonantKw,
+            ConsonantKy,
+            ConsonantM,
+            ConsonantMy,
+            ConsonantN,
+            ConsonantNy,
+            VoicedVowelO,
+            ConsonantP,
+            ConsonantPy,
+            ConsonantR,
+            ConsonantRy,
+            ConsonantS,
+            ConsonantSh,
+            ConsonantT,
+            ConsonantTs,
+            ConsonantTy,
+            VoicedVowelU,
+            ConsonantV,
+            ConsonantW,
+            ConsonantY,
+            ConsonantZ,
+        )
+    }
+}
+
+impl From<PhonemeCode> for Phoneme {
+    fn from(phoneme: PhonemeCode) -> Self {
+        macro_rules! convert {
+            ($($variant:ident),* $(,)?) => {
+                match phoneme {
+                    $(PhonemeCode::$variant => Self::$variant,)*
                 }
             };
         }
@@ -922,6 +982,26 @@ impl TryFrom<PhonemeCode> for T {
                 "there should be no size/alignment issues",
             );
         })
+    }
+}
+
+impl TryFrom<OptionalConsonant> for PhonemeCode {
+    type Error = ();
+
+    fn try_from(phoneme: OptionalConsonant) -> Result<Self, Self::Error> {
+        bytemuck::checked::try_cast(phoneme).map_err(|err| {
+            assert_eq!(
+                CheckedCastError::InvalidBitPattern,
+                err,
+                "there should be no size/alignment issues",
+            );
+        })
+    }
+}
+
+impl From<MoraTail> for PhonemeCode {
+    fn from(phoneme: MoraTail) -> Self {
+        bytemuck::checked::cast(phoneme)
     }
 }
 

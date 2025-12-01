@@ -234,4 +234,10 @@ pub(crate) enum InvalidQueryErrorKind {
     InvalidPhoneme(String),
     #[error("不正な歌詞です: {_0:?}")]
     InvalidLyric(String),
+    #[error("lyricが空文字列の場合、keyはnullである必要があります。")]
+    UnnecessaryKeyForPau,
+    #[error("keyがnullの場合、lyricは空文字列である必要があります。")]
+    MissingKeyForNonPau,
+    #[error(r#"最初のノートはpau (lyric="")でなくてはなりません"#)]
+    InitialNoteMustBePau,
 }

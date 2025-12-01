@@ -21,13 +21,13 @@ use super::super::{
 
 pub(super) use self::validated::Lyric;
 
-pub(crate) use self::validated::{KeyAndLyric, ValidatedNote};
+pub(crate) use self::validated::{KeyAndLyric, ValidatedNote, ValidatedNoteSeq};
 
 /// 音符のID。
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct NoteId(pub Arc<str>);
 
-#[derive(Clone, derive_more::Display)]
+#[derive(Clone, Default, derive_more::Display)]
 #[display("{text}")]
 pub struct OptionalLyric {
     // invariant: `phonemes` must come from `text`.
@@ -39,6 +39,10 @@ impl FromStr for OptionalLyric {
     type Err = crate::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.is_empty() {
+            return Ok(Self::default());
+        }
+
         let mora_kana = hira_to_kana(s)
             .parse()
             .map_err(|_| ErrorRepr::InvalidQuery {
@@ -99,7 +103,7 @@ impl Serialize for OptionalLyric {
 }
 
 /// 音符ごとの情報。
-#[derive(Clone)]
+#[derive(Clone, Deserialize, Serialize)]
 pub struct Note {
     /// ID。
     pub id: Option<NoteId>,
@@ -115,14 +119,14 @@ pub struct Note {
 }
 
 /// 楽譜情報。
-#[derive(Clone)]
+#[derive(Clone, Deserialize, Serialize)]
 pub struct Score {
     /// 音符のリスト。
     pub notes: Vec<Note>,
 }
 
 /// 音素の情報。
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct FramePhoneme {
     /// 音素。
     pub phoneme: Phoneme,
@@ -141,7 +145,7 @@ pub struct FramePhoneme {
 /// VOICEVOX ENGINEと同じスキーマになっている。ただし今後の破壊的変更にて変わる可能性がある。[データのシリアライゼーション]を参照。
 ///
 /// [データのシリアライゼーション]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/serialization.md
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FrameAudioQuery {
     /// フレームごとの基本周波数。
