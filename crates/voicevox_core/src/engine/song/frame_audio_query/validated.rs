@@ -4,7 +4,10 @@ use smol_str::SmolStr;
 use typed_floats::PositiveFinite;
 use typeshare::U53;
 
-use crate::error::{ErrorRepr, InvalidQueryErrorKind};
+use crate::{
+    error::{ErrorRepr, InvalidQueryErrorKind},
+    SamplingRate,
+};
 
 use super::{
     super::super::acoustic_feature_extractor::{MoraTail, NonPauPhonemeCode, OptionalConsonant},
@@ -170,7 +173,7 @@ pub(crate) struct ContextedFrameAudioQuery {
     pub(crate) head: ContextedPauNote,
     pub(crate) tail: Vec<ContextedNote>,
     pub(crate) volume_scale: PositiveFinite<f32>,
-    pub(crate) output_sample_rate: NonZero<u32>,
+    pub(crate) output_sample_rate: SamplingRate,
     pub(crate) output_stereo: bool,
 }
 

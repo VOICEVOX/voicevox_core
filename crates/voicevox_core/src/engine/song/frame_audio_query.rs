@@ -1,6 +1,6 @@
 mod validated;
 
-use std::{fmt, num::NonZero, str::FromStr, sync::Arc};
+use std::{fmt, str::FromStr, sync::Arc};
 
 use arrayvec::ArrayVec;
 use serde::{
@@ -11,7 +11,10 @@ use smol_str::SmolStr;
 use typed_floats::{NonNaNFinite, PositiveFinite};
 use typeshare::U53;
 
-use crate::error::{ErrorRepr, InvalidQueryErrorKind};
+use crate::{
+    error::{ErrorRepr, InvalidQueryErrorKind},
+    SamplingRate,
+};
 
 use super::super::{
     acoustic_feature_extractor::{MoraTail, OptionalConsonant},
@@ -161,7 +164,7 @@ pub struct FrameAudioQuery {
     pub volume_scale: PositiveFinite<f32>,
 
     /// 音声データの出力サンプリングレート。
-    pub output_sample_rate: NonZero<u32>,
+    pub output_sample_rate: SamplingRate,
 
     /// 音声データをステレオ出力するか否か。
     pub output_stereo: bool,

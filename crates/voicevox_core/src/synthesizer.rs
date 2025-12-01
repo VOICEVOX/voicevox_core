@@ -841,7 +841,7 @@ trait AsInner {
             })
             .collect(),
             volume_scale: (1.).try_into().unwrap(),
-            output_sample_rate: NonZero::new(24000).unwrap(),
+            output_sample_rate: Default::default(),
             output_stereo: true,
         })
     }

@@ -15,4 +15,5 @@ pub(crate) use self::{
 pub use self::{
     acoustic_feature_extractor::{Phoneme, Sil},
     audio_file::wav_from_s16le,
+    sampling_rate::SamplingRate,
 };

@@ -283,7 +283,7 @@ pub use self::{
             user_dict::{UserDictWord, UserDictWordBuilder, UserDictWordType},
             AccentPhrase, AudioQuery, Mora,
         },
-        Phoneme, Sil,
+        Phoneme, SamplingRate, Sil,
     },
     error::{Error, ErrorKind},
     result::Result,
