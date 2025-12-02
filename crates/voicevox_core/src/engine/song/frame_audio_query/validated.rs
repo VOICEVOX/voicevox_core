@@ -14,7 +14,7 @@ use super::{
 };
 
 impl Score {
-    pub fn validte(&self) -> crate::Result<()> {
+    pub fn validate(&self) -> crate::Result<()> {
         self.notes.iter().try_for_each(Note::validate)
     }
 }
