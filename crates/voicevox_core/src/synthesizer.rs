@@ -6,7 +6,7 @@ use easy_ext::ext;
 use educe::Educe;
 use enum_map::enum_map;
 use futures_util::TryFutureExt as _;
-use ndarray::{ArrayView, ArrayView1};
+use ndarray::ArrayView;
 use std::{
     fmt::{self, Debug},
     future::Future,
@@ -41,8 +41,8 @@ use crate::{
     },
     engine::{
         song::{
-            self, ScoreFeature, SfDecoderFeature, ValidatedNote, ValidatedNoteSeq,
-            ValidatedNoteSeqWithConsonantLengths,
+            self, FramePhonemeWithKey, ScoreFeature, SfDecoderFeature, ValidatedNote,
+            ValidatedNoteSeq, ValidatedScore,
         },
         talk::{
             create_kana, initial_process, parse_kana, split_mora, DecoderFeature, LengthedPhoneme,
@@ -769,7 +769,7 @@ trait AsInner {
         notes: &[Note],
         style_id: StyleId,
     ) -> Result<FrameAudioQuery> {
-        let notes = &ValidatedNoteSeq::new(notes.iter().cloned())?;
+        let notes = &ValidatedNoteSeq::new(notes)?;
 
         let ScoreFeature {
             note_lengths,
@@ -788,8 +788,10 @@ trait AsInner {
                 note_lengths,
                 style_id,
             )
-            .await?
-            .into_shape_with_order([notes.len().get()])
+            .await?;
+        let n = consonant_lengths.len();
+        let consonant_lengths = consonant_lengths
+            .into_shape_with_order(n)
             .unwrap_or_else(|e| todo!("{e}"));
         let consonant_lengths = consonant_lengths.as_standard_layout();
         let consonant_lengths = consonant_lengths
@@ -868,27 +870,21 @@ trait AsInner {
         frame_audio_query: &FrameAudioQuery,
         style_id: StyleId,
     ) -> Result<ndarray::Array1<f32>> {
-        let notes = ValidatedNoteSeq::new(score.notes.iter().cloned())?;
+        let ValidatedScore { notes } = score.to_validated()?;
 
-        let ScoreFeature {
-            phonemes,
-            phoneme_keys,
-            ..
-        } = (&notes).into();
+        let phonemes =
+            song::join_frame_phonemes_with_notes(&frame_audio_query.phonemes, notes.as_ref())?
+                .map(|(p, n)| FramePhonemeWithKey::new(p, n));
 
-        let ValidatedNoteSeqWithConsonantLengths {
-            phoneme_lengths, ..
-        } = ValidatedNoteSeqWithConsonantLengths::new(notes, &frame_audio_query.phonemes)?;
-
-        let frame_phonemes = bytemuck::must_cast_slice::<_, i64>(&phonemes);
-        let frame_phonemes =
-            ArrayView1::from(frame_phonemes).repeat(phoneme_lengths.iter().copied());
-
-        let frame_keys = phoneme_keys.repeat(phoneme_lengths);
+        let phonemes_by_frame = phonemes
+            .clone()
+            .flat_map(FramePhonemeWithKey::repeat_phoneme)
+            .collect();
+        let keys_by_frame = phonemes.flat_map(FramePhonemeWithKey::repeat_key).collect();
 
         let f0s = self
             .status()
-            .predict_sing_f0::<Self::Async>(frame_phonemes, frame_keys, style_id)
+            .predict_sing_f0::<Self::Async>(phonemes_by_frame, keys_by_frame, style_id)
             .await?;
 
         let n = f0s.len();
@@ -901,23 +897,17 @@ trait AsInner {
         frame_audio_query: &FrameAudioQuery,
         style_id: StyleId,
     ) -> Result<ndarray::Array1<f32>> {
-        let notes = ValidatedNoteSeq::new(score.notes.iter().cloned())?;
+        let ValidatedScore { notes } = score.to_validated()?;
 
-        let ScoreFeature {
-            phonemes,
-            phoneme_keys,
-            ..
-        } = (&notes).into();
+        let phonemes =
+            song::join_frame_phonemes_with_notes(&frame_audio_query.phonemes, notes.as_ref())?
+                .map(|(p, n)| FramePhonemeWithKey::new(p, n));
 
-        let ValidatedNoteSeqWithConsonantLengths {
-            phoneme_lengths, ..
-        } = ValidatedNoteSeqWithConsonantLengths::new(notes, &frame_audio_query.phonemes)?;
-
-        let frame_phonemes = bytemuck::must_cast_slice::<_, i64>(&phonemes);
-        let frame_phonemes =
-            ArrayView1::from(frame_phonemes).repeat(phoneme_lengths.iter().copied());
-
-        let frame_keys = phoneme_keys.repeat(phoneme_lengths);
+        let phonemes_by_frame = phonemes
+            .clone()
+            .flat_map(FramePhonemeWithKey::repeat_phoneme)
+            .collect();
+        let keys_by_frame = phonemes.flat_map(FramePhonemeWithKey::repeat_key).collect();
 
         let f0s = frame_audio_query
             .f0
@@ -928,7 +918,7 @@ trait AsInner {
 
         let volumes = self
             .status()
-            .predict_sing_volume::<Self::Async>(frame_phonemes, frame_keys, f0s, style_id)
+            .predict_sing_volume::<Self::Async>(phonemes_by_frame, keys_by_frame, f0s, style_id)
             .await?;
 
         let n = volumes.len();

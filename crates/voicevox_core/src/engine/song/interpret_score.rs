@@ -9,7 +9,7 @@ use crate::NoteId;
 
 use super::{
     super::acoustic_feature_extractor::{OptionalConsonant, PhonemeCode},
-    frame_audio_query::{KeyAndLyric, Lyric, ValidatedNote, ValidatedNoteSeq},
+    frame_audio_query::{Lyric, PauOrKeyAndLyric, ValidatedNote, ValidatedNoteSeq},
 };
 
 pub(crate) struct ScoreFeature<'score> {
@@ -79,25 +79,34 @@ impl<'score> From<&'score ValidatedNote> for NoteFeature<'score> {
     fn from(
         ValidatedNote {
             id,
-            key_and_lyric,
+            pau_or_key_and_lyric,
             frame_length,
         }: &'score ValidatedNote,
     ) -> Self {
-        if let Some(KeyAndLyric {
-            key,
-            lyric:
-                Lyric {
-                    phonemes: [(consonant, vowel)],
-                    ..
-                },
-        }) = *key_and_lyric
-        {
-            let note_constant = bytemuck::must_cast(consonant);
-            let note_vowel = bytemuck::must_cast(vowel);
-            Self {
+        match *pau_or_key_and_lyric {
+            PauOrKeyAndLyric::Pau => Self {
                 note_length: frame_length.to_i64(),
-                note_constant,
-                note_vowel,
+                note_constant: OptionalConsonant::None as _,
+                note_vowel: PhonemeCode::MorablePau as _,
+                phonemes: [PhonemeFeature {
+                    phoneme: PhonemeCode::MorablePau,
+                    phoneme_key: -1,
+                    phoneme_note_id: id.as_ref(),
+                }]
+                .into_iter()
+                .collect(),
+            },
+            PauOrKeyAndLyric::KeyAndLyric {
+                key,
+                lyric:
+                    Lyric {
+                        phonemes: [(consonant, vowel)],
+                        ..
+                    },
+            } => Self {
+                note_length: frame_length.to_i64(),
+                note_constant: consonant as _,
+                note_vowel: vowel as _,
                 // TODO: Rust 1.91以降なら`std::iter::chain`がある
                 phonemes: itertools::chain(
                     consonant.try_into().map(|phoneme| PhonemeFeature {
@@ -112,20 +121,7 @@ impl<'score> From<&'score ValidatedNote> for NoteFeature<'score> {
                     }],
                 )
                 .collect(),
-            }
-        } else {
-            Self {
-                note_length: frame_length.to_i64(),
-                note_constant: OptionalConsonant::None as _,
-                note_vowel: PhonemeCode::MorablePau as _,
-                phonemes: [PhonemeFeature {
-                    phoneme: PhonemeCode::MorablePau,
-                    phoneme_key: -1,
-                    phoneme_note_id: id.as_ref(),
-                }]
-                .into_iter()
-                .collect(),
-            }
+            },
         }
     }
 }

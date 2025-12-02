@@ -3,8 +3,10 @@ mod interpret_query;
 mod interpret_score;
 
 pub(crate) use self::{
-    frame_audio_query::{ValidatedNote, ValidatedNoteSeq, ValidatedNoteSeqWithConsonantLengths},
-    interpret_query::SfDecoderFeature,
+    frame_audio_query::{
+        join_frame_phonemes_with_notes, ValidatedNote, ValidatedNoteSeq, ValidatedScore,
+    },
+    interpret_query::{FramePhonemeWithKey, SfDecoderFeature},
     interpret_score::{phoneme_lengths, ScoreFeature},
 };
 

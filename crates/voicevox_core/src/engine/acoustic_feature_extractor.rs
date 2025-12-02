@@ -735,7 +735,7 @@ impl OptionalConsonant {
 }
 
 #[expect(dead_code, reason = "we use `bytemuck` to construct `MorablePau`")]
-#[derive(Clone, Copy, CheckedBitPattern, NoUninit, EnumCount)]
+#[derive(Clone, Copy, PartialEq, CheckedBitPattern, NoUninit, EnumCount)]
 #[repr(i64)]
 pub(crate) enum MoraTail {
     //None = -1,

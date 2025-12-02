@@ -1,6 +1,5 @@
-use std::num::NonZero;
-
 use arrayvec::ArrayVec;
+use nonempty_collections::NEVec;
 use typeshare::U53;
 
 use crate::{
@@ -13,9 +12,41 @@ use super::{
     Note, NoteId, OptionalLyric, Score,
 };
 
+pub(crate) use self::note_seq::ValidatedNoteSeq;
+
+pub(crate) fn join_frame_phonemes_with_notes<'a>(
+    frame_phonemes: &'a [FramePhoneme],
+    notes: &'a [ValidatedNote],
+) -> crate::Result<impl Iterator<Item = (&'a FramePhoneme, &'a ValidatedNote)> + Clone> {
+    let phonemes_from_query = frame_phonemes
+        .iter()
+        .map(|p| (PhonemeCode::from(p.phoneme.clone()), p));
+
+    let phonemes_from_score = notes
+        .iter()
+        .flat_map(|note| note.phonemes().into_iter().map(move |p| (p, note)));
+
+    if !itertools::equal(
+        phonemes_from_query.clone().map(|(p, _)| p),
+        phonemes_from_score.clone().map(|(p, _)| p),
+    ) {
+        todo!();
+    }
+
+    Ok(itertools::zip_eq(
+        phonemes_from_query.map(|(_, p)| p),
+        phonemes_from_score.map(|(_, n)| n),
+    ))
+}
+
 impl Score {
     pub fn validate(&self) -> crate::Result<()> {
-        self.notes.iter().try_for_each(Note::validate)
+        self.to_validated().map(|_| ())
+    }
+
+    pub(crate) fn to_validated(&self) -> crate::Result<ValidatedScore> {
+        let notes = ValidatedNoteSeq::new(&self.notes)?;
+        Ok(ValidatedScore { notes })
     }
 }
 
@@ -32,106 +63,57 @@ impl Note {
             frame_length,
         } = self;
 
-        let key_and_lyric = KeyAndLyric::new(key, &lyric)?;
+        let pau_or_key_and_lyric = PauOrKeyAndLyric::new(key, &lyric)?;
 
         Ok(ValidatedNote {
             id,
-            key_and_lyric,
+            pau_or_key_and_lyric,
             frame_length,
         })
     }
 }
 
-// TODO: nonempty-collectionを導入
-pub(crate) struct ValidatedNoteSeq {
-    pub(in super::super) initial_pau: ValidatedNote, // invariant: must be a pau
-    pub(in super::super) rest_notes: Vec<ValidatedNote>,
-}
-
-impl ValidatedNoteSeq {
-    pub(crate) fn new(notes: impl IntoIterator<Item = Note>) -> crate::Result<Self> {
-        let mut notes = notes.into_iter();
-
-        let initial_pau = {
-            let error = || {
-                ErrorRepr::InvalidQuery {
-                    what: "ノート列",
-                    kind: InvalidQueryErrorKind::InitialNoteMustBePau,
-                }
-                .into()
-            };
-            let head = notes.next().ok_or_else(error)?.into_validated()?;
-            if head.key_and_lyric.is_some() {
-                return Err(error());
-            }
-            head
-        };
-
-        // TODO: `what`を"ノート"から"ノート列"に置き換える
-        let rest_notes = notes.map(Note::into_validated).collect::<Result<_, _>>()?;
-
-        Ok(Self {
-            initial_pau,
-            rest_notes,
-        })
-    }
-}
-
-impl ValidatedNoteSeq {
-    pub(crate) fn len(&self) -> NonZero<usize> {
-        NonZero::new(1 + self.rest_notes.len()).expect("")
-    }
-
-    pub(crate) fn iter(&self) -> impl Iterator<Item = &ValidatedNote> {
-        // TODO: Rust 1.91以降なら`std::iter::chain`がある
-        itertools::chain([&self.initial_pau], &self.rest_notes)
-    }
+pub(crate) struct ValidatedScore {
+    pub(crate) notes: ValidatedNoteSeq,
 }
 
 pub(crate) struct ValidatedNote {
-    /// ID。
     pub(crate) id: Option<NoteId>,
-
-    /// 音階と歌詞。
-    pub(crate) key_and_lyric: Option<KeyAndLyric>,
-
-    /// 音符のフレーム長。
+    pub(crate) pau_or_key_and_lyric: PauOrKeyAndLyric,
     pub(crate) frame_length: U53,
 }
 
 impl ValidatedNote {
     fn phonemes(&self) -> ArrayVec<PhonemeCode, 2> {
-        if let Some(KeyAndLyric {
-            lyric:
-                Lyric {
-                    phonemes: [(consonant, vowel)],
-                    ..
-                },
-            ..
-        }) = self.key_and_lyric
-        {
+        match self.pau_or_key_and_lyric {
+            PauOrKeyAndLyric::Pau => [PhonemeCode::MorablePau].into_iter().collect(),
             // TODO: Rust 1.91以降なら`std::iter::chain`がある
-            itertools::chain(consonant.try_into(), [vowel.into()]).collect()
-        } else {
-            [PhonemeCode::MorablePau].into_iter().collect()
+            PauOrKeyAndLyric::KeyAndLyric {
+                lyric:
+                    Lyric {
+                        phonemes: [(consonant, vowel)],
+                        ..
+                    },
+                ..
+            } => itertools::chain(consonant.try_into(), [vowel.into()]).collect(),
         }
     }
 }
 
-/// 音階と歌詞。
-pub(crate) struct KeyAndLyric {
-    pub(in super::super) key: U53,
-    pub(in super::super) lyric: Lyric,
+#[derive(PartialEq)]
+pub(crate) enum PauOrKeyAndLyric {
+    Pau,
+    KeyAndLyric { key: U53, lyric: Lyric },
 }
 
-impl KeyAndLyric {
-    fn new(key: Option<U53>, lyric: &OptionalLyric) -> crate::Result<Option<Self>> {
+impl PauOrKeyAndLyric {
+    fn new(key: Option<U53>, lyric: &OptionalLyric) -> crate::Result<Self> {
         match (key, &*lyric.phonemes) {
-            (None, []) => Ok(None),
-            (Some(key), &[mora]) => Ok(Some(Self {
+            (None, []) => Ok(Self::Pau),
+            (Some(key), &[mora]) => Ok(Self::KeyAndLyric {
                 key,
                 lyric: Lyric { phonemes: [mora] },
-            })),
+            }),
             (Some(_), []) => Err(ErrorRepr::InvalidQuery {
                 what: "ノート",
                 kind: InvalidQueryErrorKind::UnnecessaryKeyForPau,
@@ -142,37 +124,71 @@ impl KeyAndLyric {
                 kind: InvalidQueryErrorKind::MissingKeyForNonPau,
             }
             .into()),
-            (_, [_, ..]) => unreachable!(),
+            (_, [_, ..]) => unreachable!("the lyric should consist of at most one mora"),
         }
     }
 }
 
-pub(in super::super) struct Lyric {
+#[derive(PartialEq)]
+pub(crate) struct Lyric {
+    // TODO: `NonPauBaseVowel`型 (= a | i | u | e | o | cl | N) を導入する
     pub(in super::super) phonemes: [(OptionalConsonant, MoraTail); 1],
 }
 
-pub(crate) struct ValidatedNoteSeqWithConsonantLengths {
-    //pub(crate) notes: ValidatedNoteSeq,
-    pub(crate) phoneme_lengths: Vec<usize>,
+impl ValidatedNoteSeq {
+    pub(crate) fn new(notes: &[Note]) -> crate::Result<Self> {
+        let notes = notes
+            .iter()
+            .cloned()
+            .map(Note::into_validated)
+            .collect::<Result<Vec<_>, _>>()?;
+
+        NEVec::try_from(notes)
+            .map_err(
+                |nonempty_collections::Error::Empty| ErrorRepr::InvalidQuery {
+                    what: "ノート列",
+                    kind: InvalidQueryErrorKind::InitialNoteMustBePau,
+                },
+            )?
+            .try_into()
+    }
+
+    pub(crate) fn iter(&self) -> impl Iterator<Item = &ValidatedNote> {
+        AsRef::<NEVec<_>>::as_ref(self).iter()
+    }
 }
 
-impl ValidatedNoteSeqWithConsonantLengths {
-    pub(crate) fn new(notes: ValidatedNoteSeq, phonemes: &[FramePhoneme]) -> crate::Result<Self> {
-        let phonemes_from_score = notes.iter().flat_map(ValidatedNote::phonemes);
-        let phonemes_from_query = phonemes
-            .iter()
-            .map(|FramePhoneme { phoneme, .. }| PhonemeCode::from(phoneme.clone()));
-        if !itertools::equal(phonemes_from_score, phonemes_from_query) {
-            todo!();
+impl AsRef<[ValidatedNote]> for ValidatedNoteSeq {
+    fn as_ref(&self) -> &[ValidatedNote] {
+        AsRef::<Vec<_>>::as_ref(AsRef::<NEVec<_>>::as_ref(self).as_ref())
+    }
+}
+
+mod note_seq {
+    use derive_more::AsRef;
+    use nonempty_collections::NEVec;
+
+    use crate::error::{ErrorRepr, InvalidQueryErrorKind};
+
+    use super::{PauOrKeyAndLyric, ValidatedNote};
+
+    #[derive(AsRef)]
+    pub(crate) struct ValidatedNoteSeq(
+        NEVec<ValidatedNote>, // invariant: the first note must be pau
+    );
+
+    impl TryFrom<NEVec<ValidatedNote>> for ValidatedNoteSeq {
+        type Error = crate::Error;
+
+        fn try_from(notes: NEVec<ValidatedNote>) -> Result<Self, Self::Error> {
+            if notes.first().pau_or_key_and_lyric == PauOrKeyAndLyric::Pau {
+                return Err(ErrorRepr::InvalidQuery {
+                    what: "ノート列",
+                    kind: InvalidQueryErrorKind::InitialNoteMustBePau,
+                }
+                .into());
+            }
+            Ok(Self(notes))
         }
-        Ok(Self {
-            //notes,
-            phoneme_lengths: phonemes
-                .iter()
-                .map(|&FramePhoneme { frame_length, .. }| {
-                    typeshare::usize_from_u53_saturated(frame_length)
-                })
-                .collect(),
-        })
     }
 }

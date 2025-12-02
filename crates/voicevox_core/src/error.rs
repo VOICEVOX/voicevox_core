@@ -238,6 +238,6 @@ pub(crate) enum InvalidQueryErrorKind {
     UnnecessaryKeyForPau,
     #[error("keyがnullの場合、lyricは空文字列である必要があります。")]
     MissingKeyForNonPau,
-    #[error(r#"最初のノートはpau (lyric="")でなくてはなりません"#)]
+    #[error(r#"notesはpau (lyric="")から始まる必要があります"#)]
     InitialNoteMustBePau,
 }

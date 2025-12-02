@@ -25,7 +25,8 @@ use super::super::{
 pub(super) use self::validated::Lyric;
 
 pub(crate) use self::validated::{
-    KeyAndLyric, ValidatedNote, ValidatedNoteSeq, ValidatedNoteSeqWithConsonantLengths,
+    join_frame_phonemes_with_notes, PauOrKeyAndLyric, ValidatedNote, ValidatedNoteSeq,
+    ValidatedScore,
 };
 
 /// 音符のID。
@@ -37,6 +38,7 @@ pub struct NoteId(pub Arc<str>);
 pub struct OptionalLyric {
     // invariant: `phonemes` must come from `text`.
     text: SmolStr,
+    // TODO: `NonPauBaseVowel`型 (= a | i | u | e | o | cl | N) を導入する
     phonemes: ArrayVec<(OptionalConsonant, MoraTail), 1>,
 }
 
