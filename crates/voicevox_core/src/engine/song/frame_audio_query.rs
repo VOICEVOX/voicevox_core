@@ -24,7 +24,9 @@ use super::super::{
 
 pub(super) use self::validated::Lyric;
 
-pub(crate) use self::validated::{KeyAndLyric, ValidatedNote, ValidatedNoteSeq};
+pub(crate) use self::validated::{
+    KeyAndLyric, ValidatedNote, ValidatedNoteSeq, ValidatedNoteSeqWithConsonantLengths,
+};
 
 /// 音符のID。
 #[derive(Clone, Debug, Deserialize, Serialize)]

@@ -1,27 +1,21 @@
 use std::num::NonZero;
 
-use smol_str::SmolStr;
-use typed_floats::PositiveFinite;
+use arrayvec::ArrayVec;
 use typeshare::U53;
 
 use crate::{
     error::{ErrorRepr, InvalidQueryErrorKind},
-    SamplingRate,
+    FramePhoneme,
 };
 
 use super::{
-    super::super::acoustic_feature_extractor::{MoraTail, NonPauPhonemeCode, OptionalConsonant},
+    super::super::acoustic_feature_extractor::{MoraTail, OptionalConsonant, PhonemeCode},
     Note, NoteId, OptionalLyric, Score,
 };
 
 impl Score {
     pub fn validte(&self) -> crate::Result<()> {
-        self.clone().into_validated().map(|_| ())
-    }
-
-    pub(crate) fn into_validated(self) -> crate::Result<ValidatedScore> {
-        let notes = ValidatedNoteSeq::new(self.notes)?;
-        Ok(ValidatedScore { notes })
+        self.notes.iter().try_for_each(Note::validate)
     }
 }
 
@@ -46,10 +40,6 @@ impl Note {
             frame_length,
         })
     }
-}
-
-pub(crate) struct ValidatedScore {
-    notes: ValidatedNoteSeq,
 }
 
 // TODO: nonempty-collectionを導入
@@ -110,11 +100,20 @@ pub(crate) struct ValidatedNote {
 }
 
 impl ValidatedNote {
-    pub(in super::super) fn pau(frame_length: U53) -> Self {
-        Self {
-            id: None,
-            key_and_lyric: None,
-            frame_length,
+    fn phonemes(&self) -> ArrayVec<PhonemeCode, 2> {
+        if let Some(KeyAndLyric {
+            lyric:
+                Lyric {
+                    phonemes: [(consonant, vowel)],
+                    ..
+                },
+            ..
+        }) = self.key_and_lyric
+        {
+            // TODO: Rust 1.91以降なら`std::iter::chain`がある
+            itertools::chain(consonant.try_into(), [vowel.into()]).collect()
+        } else {
+            [PhonemeCode::MorablePau].into_iter().collect()
         }
     }
 }
@@ -131,10 +130,7 @@ impl KeyAndLyric {
             (None, []) => Ok(None),
             (Some(key), &[mora]) => Ok(Some(Self {
                 key,
-                lyric: Lyric {
-                    text: lyric.text.clone(),
-                    phonemes: [mora],
-                },
+                lyric: Lyric { phonemes: [mora] },
             })),
             (Some(_), []) => Err(ErrorRepr::InvalidQuery {
                 what: "ノート",
@@ -152,50 +148,31 @@ impl KeyAndLyric {
 }
 
 pub(in super::super) struct Lyric {
-    // invariant: `phonemes` must come from `text`.
-    text: SmolStr,
     pub(in super::super) phonemes: [(OptionalConsonant, MoraTail); 1],
 }
 
-impl Lyric {
-    fn new(optional: &OptionalLyric) -> Option<Self> {
-        let phonemes = optional.phonemes.clone().into_inner().ok()?;
-        Some(Self {
-            text: optional.text.clone(),
-            phonemes,
+pub(crate) struct ValidatedNoteSeqWithConsonantLengths {
+    //pub(crate) notes: ValidatedNoteSeq,
+    pub(crate) phoneme_lengths: Vec<usize>,
+}
+
+impl ValidatedNoteSeqWithConsonantLengths {
+    pub(crate) fn new(notes: ValidatedNoteSeq, phonemes: &[FramePhoneme]) -> crate::Result<Self> {
+        let phonemes_from_score = notes.iter().flat_map(ValidatedNote::phonemes);
+        let phonemes_from_query = phonemes
+            .iter()
+            .map(|FramePhoneme { phoneme, .. }| PhonemeCode::from(phoneme.clone()));
+        if !itertools::equal(phonemes_from_score, phonemes_from_query) {
+            todo!();
+        }
+        Ok(Self {
+            //notes,
+            phoneme_lengths: phonemes
+                .iter()
+                .map(|&FramePhoneme { frame_length, .. }| {
+                    typeshare::usize_from_u53_saturated(frame_length)
+                })
+                .collect(),
         })
     }
-}
-
-pub(crate) struct ContextedFrameAudioQuery {
-    pub(crate) f0: Vec<PositiveFinite<f32>>,
-    pub(crate) volume: Vec<PositiveFinite<f32>>,
-    pub(crate) head: ContextedPauNote,
-    pub(crate) tail: Vec<ContextedNote>,
-    pub(crate) volume_scale: PositiveFinite<f32>,
-    pub(crate) output_sample_rate: SamplingRate,
-    pub(crate) output_stereo: bool,
-}
-
-pub(crate) enum ContextedNote {
-    Pau(ContextedPauNote),
-    NonPau(ContextedPauNote),
-}
-
-pub(crate) struct ContextedPauNote {
-    note_id: Option<NoteId>,
-    frame_length: U53,
-}
-
-pub(crate) struct ContextedNonPauNote {
-    key: U53,
-    lyric: String,
-    note_id: Option<NoteId>,
-    phonemes: Vec<LengthedNonPauPhoneme>,
-}
-
-#[derive(Clone, Copy)]
-pub(crate) struct LengthedNonPauPhoneme {
-    phoneme: NonPauPhonemeCode,
-    frame_length: U53,
 }

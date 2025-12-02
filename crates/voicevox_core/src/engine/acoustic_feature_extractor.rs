@@ -423,8 +423,8 @@ impl Serialize for Phoneme {
 }
 
 /// 音素IDのうち、`-1` ([`OptionalConsonant::None`])を除いたもの。
-#[derive(Clone, Copy, Contiguous, CheckedBitPattern, NoUninit, EnumCount)]
-#[cfg_attr(test, derive(PartialEq, Debug, strum::EnumIter))]
+#[derive(Clone, Copy, PartialEq, Contiguous, CheckedBitPattern, NoUninit, EnumCount)]
+#[cfg_attr(test, derive(Debug, strum::EnumIter))]
 #[repr(i64)]
 pub(crate) enum PhonemeCode {
     //None = -1,

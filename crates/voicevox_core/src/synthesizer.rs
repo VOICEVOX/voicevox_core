@@ -6,7 +6,7 @@ use easy_ext::ext;
 use educe::Educe;
 use enum_map::enum_map;
 use futures_util::TryFutureExt as _;
-use ndarray::ArrayView;
+use ndarray::{ArrayView, ArrayView1};
 use std::{
     fmt::{self, Debug},
     future::Future,
@@ -40,7 +40,10 @@ use crate::{
         voice_model,
     },
     engine::{
-        song::{self, ScoreFeature, SfDecoderFeature, ValidatedNote, ValidatedNoteSeq},
+        song::{
+            self, ScoreFeature, SfDecoderFeature, ValidatedNote, ValidatedNoteSeq,
+            ValidatedNoteSeqWithConsonantLengths,
+        },
         talk::{
             create_kana, initial_process, parse_kana, split_mora, DecoderFeature, LengthedPhoneme,
             ValidatedAccentPhrase, ValidatedAudioQuery, ValidatedMora,
@@ -49,7 +52,7 @@ use crate::{
     },
     error::ErrorRepr,
     future::FutureExt as _,
-    AccentPhrase, AudioQuery, FrameAudioQuery, FramePhoneme, Note, NoteId, Result, Score, StyleId,
+    AccentPhrase, AudioQuery, FrameAudioQuery, FramePhoneme, Note, Result, Score, StyleId,
     VoiceModelId, VoiceModelMeta,
 };
 
@@ -865,7 +868,31 @@ trait AsInner {
         frame_audio_query: &FrameAudioQuery,
         style_id: StyleId,
     ) -> Result<ndarray::Array1<f32>> {
-        todo!();
+        let notes = ValidatedNoteSeq::new(score.notes.iter().cloned())?;
+
+        let ScoreFeature {
+            phonemes,
+            phoneme_keys,
+            ..
+        } = (&notes).into();
+
+        let ValidatedNoteSeqWithConsonantLengths {
+            phoneme_lengths, ..
+        } = ValidatedNoteSeqWithConsonantLengths::new(notes, &frame_audio_query.phonemes)?;
+
+        let frame_phonemes = bytemuck::must_cast_slice::<_, i64>(&phonemes);
+        let frame_phonemes =
+            ArrayView1::from(frame_phonemes).repeat(phoneme_lengths.iter().copied());
+
+        let frame_keys = phoneme_keys.repeat(phoneme_lengths);
+
+        let f0s = self
+            .status()
+            .predict_sing_f0::<Self::Async>(frame_phonemes, frame_keys, style_id)
+            .await?;
+
+        let n = f0s.len();
+        Ok(f0s.into_shape_with_order([n]).expect(""))
     }
 
     async fn create_sing_frame_volume(
@@ -874,7 +901,38 @@ trait AsInner {
         frame_audio_query: &FrameAudioQuery,
         style_id: StyleId,
     ) -> Result<ndarray::Array1<f32>> {
-        todo!();
+        let notes = ValidatedNoteSeq::new(score.notes.iter().cloned())?;
+
+        let ScoreFeature {
+            phonemes,
+            phoneme_keys,
+            ..
+        } = (&notes).into();
+
+        let ValidatedNoteSeqWithConsonantLengths {
+            phoneme_lengths, ..
+        } = ValidatedNoteSeqWithConsonantLengths::new(notes, &frame_audio_query.phonemes)?;
+
+        let frame_phonemes = bytemuck::must_cast_slice::<_, i64>(&phonemes);
+        let frame_phonemes =
+            ArrayView1::from(frame_phonemes).repeat(phoneme_lengths.iter().copied());
+
+        let frame_keys = phoneme_keys.repeat(phoneme_lengths);
+
+        let f0s = frame_audio_query
+            .f0
+            .iter()
+            .copied()
+            .map(Into::into)
+            .collect();
+
+        let volumes = self
+            .status()
+            .predict_sing_volume::<Self::Async>(frame_phonemes, frame_keys, f0s, style_id)
+            .await?;
+
+        let n = volumes.len();
+        Ok(volumes.into_shape_with_order([n]).expect(""))
     }
 
     async fn frame_synthesis(
