@@ -155,7 +155,7 @@ pub struct FrameAudioQuery {
     pub f0: Vec<NonNaNFinite<f32>>,
 
     /// フレームごとの音量。
-    pub volume: Vec<PositiveFinite<f32>>,
+    pub volume: Vec<NonNaNFinite<f32>>,
 
     /// 音素のリスト。
     pub phonemes: Vec<FramePhoneme>,
@@ -164,7 +164,7 @@ pub struct FrameAudioQuery {
     pub volume_scale: PositiveFinite<f32>,
 
     /// 音声データの出力サンプリングレート。
-    pub output_sample_rate: SamplingRate,
+    pub output_sampling_rate: SamplingRate,
 
     /// 音声データをステレオ出力するか否か。
     pub output_stereo: bool,

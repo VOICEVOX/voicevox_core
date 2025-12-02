@@ -11,7 +11,6 @@ use std::{
     fmt::{self, Debug},
     future::Future,
     marker::PhantomData,
-    num::NonZero,
     ops::Range,
     sync::Arc,
 };
@@ -41,7 +40,7 @@ use crate::{
         voice_model,
     },
     engine::{
-        song::{self, ScoreFeature, ValidatedNote, ValidatedNoteSeq},
+        song::{self, ScoreFeature, SfDecoderFeature, ValidatedNote, ValidatedNoteSeq},
         talk::{
             create_kana, initial_process, parse_kana, split_mora, DecoderFeature, LengthedPhoneme,
             ValidatedAccentPhrase, ValidatedAudioQuery, ValidatedMora,
@@ -92,6 +91,20 @@ struct TtsOptions<A: infer::AsyncExt> {
 impl<A: infer::AsyncExt> AsRef<SynthesisOptions<A>> for TtsOptions<A> {
     fn as_ref(&self) -> &SynthesisOptions<A> {
         &self.synthesis
+    }
+}
+
+#[derive(derive_more::Debug)]
+#[debug(bound(A::Cancellable: Debug))]
+struct FrameSysnthesisOptions<A: infer::AsyncExt> {
+    cancellable: A::Cancellable,
+}
+
+impl<A: infer::AsyncExt> Default for FrameSysnthesisOptions<A> {
+    fn default() -> Self {
+        Self {
+            cancellable: A::DEFAULT_HEAVY_INFERENCE_CANCELLABLE,
+        }
     }
 }
 
@@ -841,7 +854,7 @@ trait AsInner {
             })
             .collect(),
             volume_scale: (1.).try_into().unwrap(),
-            output_sample_rate: Default::default(),
+            output_sampling_rate: Default::default(),
             output_stereo: true,
         })
     }
@@ -868,8 +881,33 @@ trait AsInner {
         &self,
         frame_audio_query: &FrameAudioQuery,
         style_id: StyleId,
+        options: &SynthesisOptions<Self::Async>,
     ) -> Result<Vec<u8>> {
-        todo!();
+        let SfDecoderFeature {
+            frame_phonemes,
+            f0s,
+            volumes,
+        } = frame_audio_query.sf_decoder_feature();
+
+        let raw_wave = self
+            .status()
+            .sf_decode::<Self::Async>(frame_phonemes, f0s, volumes, style_id, options.cancellable)
+            .await?;
+
+        if raw_wave.shape()[0] != 1 {
+            todo!();
+        }
+
+        let n = raw_wave.len();
+        let raw_wave = raw_wave.into_shape_with_order([n]).expect("");
+        let raw_wave = raw_wave.as_standard_layout();
+        let raw_wave = raw_wave.as_slice().expect("");
+
+        Ok(wav_from_s16le(
+            &to_s16le_pcm(raw_wave, frame_audio_query),
+            frame_audio_query.output_sampling_rate.get(),
+            frame_audio_query.output_stereo,
+        ))
     }
 
     // TODO: この層を破壊する
@@ -1782,14 +1820,16 @@ pub(crate) mod blocking {
                 .block_on()
         }
 
-        pub fn frame_synthesis(
-            &self,
-            frame_audio_query: &FrameAudioQuery,
+        pub fn frame_synthesis<'a>(
+            &'a self,
+            frame_audio_query: &'a FrameAudioQuery,
             style_id: StyleId,
-        ) -> crate::Result<Vec<u8>> {
-            self.0
-                .frame_synthesis(frame_audio_query, style_id)
-                .block_on()
+        ) -> FrameSysnthesis<'a> {
+            FrameSysnthesis {
+                synthesizer: self.0.without_text_analyzer(),
+                frame_audio_query,
+                style_id,
+            }
         }
     }
 
@@ -2136,6 +2176,23 @@ pub(crate) mod blocking {
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
     #[derive(Debug)]
+    pub struct FrameSysnthesis<'a> {
+        synthesizer: InnerRefWithoutTextAnalyzer<'a, SingleTasked>,
+        frame_audio_query: &'a FrameAudioQuery,
+        style_id: StyleId,
+    }
+
+    impl FrameSysnthesis<'_> {
+        /// 実行する。
+        pub fn perform(self) -> crate::Result<Vec<u8>> {
+            self.synthesizer
+                .frame_synthesis(self.frame_audio_query, self.style_id, &Default::default())
+                .block_on()
+        }
+    }
+
+    #[must_use = "this is a builder. it does nothing until `perform`ed"]
+    #[derive(Debug)]
     pub struct Tts<'a, T> {
         synthesizer: &'a Inner<AssumeSingleTasked<T>, SingleTasked>,
         text: &'a str,
@@ -2164,13 +2221,13 @@ pub(crate) mod nonblocking {
     use easy_ext::ext;
 
     use crate::{
-        asyncs::BlockingThreadPool, AccentPhrase, AudioQuery, FrameAudioQuery, FramePhoneme, Note,
-        Result, Score, StyleId, VoiceModelId, VoiceModelMeta,
+        asyncs::BlockingThreadPool, AccentPhrase, AudioQuery, FrameAudioQuery, Note, Result, Score,
+        StyleId, VoiceModelId, VoiceModelMeta,
     };
 
     use super::{
-        AccelerationMode, AsInner as _, AssumeBlockable, InitializeOptions, Inner,
-        InnerRefWithoutTextAnalyzer, SynthesisOptions, TtsOptions,
+        AccelerationMode, AsInner as _, AssumeBlockable, FrameSysnthesisOptions, InitializeOptions,
+        Inner, InnerRefWithoutTextAnalyzer, SynthesisOptions, TtsOptions,
     };
 
     /// 音声シンセサイザ。
@@ -2434,12 +2491,17 @@ pub(crate) mod nonblocking {
                 .await
         }
 
-        pub async fn frame_synthesis(
-            &self,
-            frame_audio_query: &FrameAudioQuery,
+        pub fn frame_synthesis<'a>(
+            &'a self,
+            frame_audio_query: &'a FrameAudioQuery,
             style_id: StyleId,
-        ) -> Result<Vec<u8>> {
-            self.0.frame_synthesis(frame_audio_query, style_id).await
+        ) -> FrameSysnthesis<'a> {
+            FrameSysnthesis {
+                synthesizer: self.0.without_text_analyzer(),
+                frame_audio_query,
+                style_id,
+                options: Default::default(),
+            }
         }
     }
 
@@ -2661,6 +2723,34 @@ pub(crate) mod nonblocking {
         pub async fn perform(self) -> crate::Result<Vec<u8>> {
             self.synthesizer
                 .tts_from_kana(self.kana, self.style_id, &self.options)
+                .await
+        }
+    }
+
+    #[must_use = "this is a builder. it does nothing until `perform`ed"]
+    #[derive(Debug)]
+    pub struct FrameSysnthesis<'a> {
+        synthesizer: InnerRefWithoutTextAnalyzer<'a, BlockingThreadPool>,
+        frame_audio_query: &'a FrameAudioQuery,
+        style_id: StyleId,
+        options: FrameSysnthesisOptions<BlockingThreadPool>,
+    }
+
+    impl FrameSysnthesis<'_> {
+        /// 音声モデルの実行をキャンセル可能にするかどうか。
+        ///
+        /// このオプションを有効にすると、負荷がかかっている状況下でハングする可能性がある。そのためデフォルトでは無効化されている。[VOICEVOX/voicevox_core#968]を参照。
+        ///
+        /// [VOICEVOX/voicevox_core#968]: https://github.com/VOICEVOX/voicevox_core/issues/968
+        pub fn cancellable(mut self, cancellable: bool) -> Self {
+            self.options.cancellable = cancellable;
+            self
+        }
+
+        /// 実行する。
+        pub async fn perform(self) -> crate::Result<Vec<u8>> {
+            self.synthesizer
+                .frame_synthesis(self.frame_audio_query, self.style_id, &Default::default())
                 .await
         }
     }
