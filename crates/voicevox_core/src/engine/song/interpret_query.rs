@@ -9,29 +9,14 @@ use super::{
     frame_audio_query::{PauOrKeyAndLyric, ValidatedNote},
 };
 
-#[derive(Clone, Copy)]
-pub(crate) struct FramePhonemeWithKey {
-    phoneme: PhonemeCode,
-    frame_length: usize,
-    key: i64,
-}
-
-impl FramePhonemeWithKey {
-    pub(crate) fn new(frame_phoneme: &FramePhoneme, note: &ValidatedNote) -> Self {
-        Self {
-            phoneme: frame_phoneme.phoneme.clone().into(),
-            frame_length: typeshare::usize_from_u53_saturated(frame_phoneme.frame_length),
-            key: note.pau_or_key_and_lyric.key(),
-        }
-    }
-
-    pub(crate) fn repeat_phoneme(self) -> impl Iterator<Item = i64> {
-        iter::repeat_n(self.phoneme as _, self.frame_length)
-    }
-
-    pub(crate) fn repeat_key(self) -> impl Iterator<Item = i64> {
-        iter::repeat_n(self.key, self.frame_length)
-    }
+pub(crate) fn repeat_phoneme_code_and_key(
+    frame_phoneme: &FramePhoneme,
+    note: &ValidatedNote,
+) -> impl Iterator<Item = (i64, i64)> {
+    let phoneme = PhonemeCode::from(frame_phoneme.phoneme.clone()) as _;
+    let key = note.pau_or_key_and_lyric.key();
+    let n = typeshare::usize_from_u53_saturated(frame_phoneme.frame_length);
+    iter::repeat_n((phoneme, key), n)
 }
 
 impl PauOrKeyAndLyric {

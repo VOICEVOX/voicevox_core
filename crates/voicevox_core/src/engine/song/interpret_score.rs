@@ -5,7 +5,10 @@ use ndarray::Array1;
 use pastey::paste;
 use typeshare::U53;
 
-use crate::NoteId;
+use crate::{
+    collections::{NonEmptyIterator as _, NonEmptySlice},
+    NoteId,
+};
 
 use super::{
     super::acoustic_feature_extractor::{OptionalConsonant, PhonemeCode},
@@ -133,22 +136,21 @@ struct PhonemeFeature<'score> {
     phoneme_note_id: Option<&'score NoteId>,
 }
 
-pub(crate) fn phoneme_lengths(consonant_lengths: &[i64], note_durations: &[U53]) -> Vec<U53> {
+pub(crate) fn phoneme_lengths(
+    consonant_lengths: &NonEmptySlice<i64>,
+    note_durations: &NonEmptySlice<U53>,
+) -> Vec<U53> {
     if consonant_lengths.len() != note_durations.len() {
         panic!("must be same length");
     }
 
-    let (&first_consonant_length, next_consonant_lengths) = consonant_lengths
-        .split_first()
-        .expect("`consonant_lengths` cannot be empty");
+    let (&first_consonant_length, next_consonant_lengths) = consonant_lengths.split_first();
 
     if first_consonant_length != 0 {
         panic!("`consonant_lengths[0]` cannot be non-zero");
     }
 
-    let (&last_note_duration, note_durations_till_last) = note_durations
-        .split_last()
-        .expect("`note_durations` cannot be empty");
+    let (&last_note_duration, note_durations_till_last) = note_durations.split_last();
 
     let next_consonant_lengths = &{
         let mut next_consonant_lengths = next_consonant_lengths.to_owned();

@@ -2,7 +2,7 @@ use arrayvec::ArrayVec;
 use typeshare::U53;
 
 use crate::{
-    collections::NonEmptyVec,
+    collections::{NonEmptyIterator, NonEmptyVec},
     error::{ErrorRepr, InvalidQueryErrorKind},
     FramePhoneme,
 };
@@ -151,7 +151,7 @@ impl ValidatedNoteSeq {
             .try_into()
     }
 
-    pub(crate) fn iter(&self) -> impl Iterator<Item = &ValidatedNote> {
+    pub(crate) fn iter(&self) -> impl NonEmptyIterator<Item = &ValidatedNote> {
         AsRef::<NonEmptyVec<_>>::as_ref(self).iter()
     }
 }

@@ -18,6 +18,7 @@ use tracing::info;
 
 use crate::{
     asyncs::{Async, BlockingThreadPool, SingleTasked},
+    collections::{NonEmptyIterator as _, NonEmptySlice, NonEmptyVec},
     core::{
         devices::{self, DeviceSpec, GpuSpec},
         ensure_minimum_phoneme_length,
@@ -41,8 +42,7 @@ use crate::{
     },
     engine::{
         song::{
-            self, FramePhonemeWithKey, ScoreFeature, SfDecoderFeature, ValidatedNote,
-            ValidatedNoteSeq, ValidatedScore,
+            self, ScoreFeature, SfDecoderFeature, ValidatedNote, ValidatedNoteSeq, ValidatedScore,
         },
         talk::{
             create_kana, initial_process, parse_kana, split_mora, DecoderFeature, LengthedPhoneme,
@@ -801,13 +801,14 @@ trait AsInner {
         if consonant_lengths[0] != 0 {
             todo!("consonant for a pau note?");
         }
+        let consonant_lengths = NonEmptySlice::new(consonant_lengths).expect("empty?");
 
         let phoneme_lengths = song::phoneme_lengths(
             consonant_lengths,
             &notes
                 .iter()
                 .map(|&ValidatedNote { frame_length, .. }| frame_length)
-                .collect::<Vec<_>>(),
+                .collect::<NonEmptyVec<_>>(),
         );
 
         let (frame_phonemes, frame_keys) = {
@@ -872,15 +873,12 @@ trait AsInner {
     ) -> Result<ndarray::Array1<f32>> {
         let ValidatedScore { notes } = score.to_validated()?;
 
-        let phonemes =
+        let (phonemes_by_frame, keys_by_frame) =
             song::join_frame_phonemes_with_notes(&frame_audio_query.phonemes, notes.as_ref())?
-                .map(|(p, n)| FramePhonemeWithKey::new(p, n));
-
-        let phonemes_by_frame = phonemes
-            .clone()
-            .flat_map(FramePhonemeWithKey::repeat_phoneme)
-            .collect();
-        let keys_by_frame = phonemes.flat_map(FramePhonemeWithKey::repeat_key).collect();
+                .flat_map(|(p, n)| song::repeat_phoneme_code_and_key(p, n))
+                .unzip::<_, _, Vec<_>, Vec<_>>();
+        let phonemes_by_frame = phonemes_by_frame.into();
+        let keys_by_frame = keys_by_frame.into();
 
         let f0s = self
             .status()
@@ -899,15 +897,12 @@ trait AsInner {
     ) -> Result<ndarray::Array1<f32>> {
         let ValidatedScore { notes } = score.to_validated()?;
 
-        let phonemes =
+        let (phonemes_by_frame, keys_by_frame) =
             song::join_frame_phonemes_with_notes(&frame_audio_query.phonemes, notes.as_ref())?
-                .map(|(p, n)| FramePhonemeWithKey::new(p, n));
-
-        let phonemes_by_frame = phonemes
-            .clone()
-            .flat_map(FramePhonemeWithKey::repeat_phoneme)
-            .collect();
-        let keys_by_frame = phonemes.flat_map(FramePhonemeWithKey::repeat_key).collect();
+                .flat_map(|(p, n)| song::repeat_phoneme_code_and_key(p, n))
+                .unzip::<_, _, Vec<_>, Vec<_>>();
+        let phonemes_by_frame = phonemes_by_frame.into();
+        let keys_by_frame = keys_by_frame.into();
 
         let f0s = frame_audio_query
             .f0

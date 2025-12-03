@@ -6,7 +6,7 @@ pub(crate) use self::{
     frame_audio_query::{
         join_frame_phonemes_with_notes, ValidatedNote, ValidatedNoteSeq, ValidatedScore,
     },
-    interpret_query::{FramePhonemeWithKey, SfDecoderFeature},
+    interpret_query::{repeat_phoneme_code_and_key, SfDecoderFeature},
     interpret_score::{phoneme_lengths, ScoreFeature},
 };
 
