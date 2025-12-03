@@ -1,5 +1,6 @@
 //! 推論の出力の後処理。
 
+use anyhow::anyhow;
 use easy_ext::ext;
 use ndarray::{Array, Array1, Dimension};
 
@@ -19,12 +20,14 @@ pub(crate) fn ensure_minimum_phoneme_length(mut output: Vec<f32>) -> Vec<f32> {
 #[ext(ArrayExt)]
 impl<T, D: Dimension> Array<T, D> {
     pub(crate) fn squeeze_into_1d(self) -> crate::Result<Array1<T>> {
+        let orig_shape = self.dim();
         self.into_dyn()
             .squeeze()
             .into_dimensionality()
-            .map_err(|err| {
-                let err = anyhow::Error::from(err).context("unexpected output shape");
-                ErrorRepr::RunModel(err).into()
+            .map_err(|_| {
+                let sources = anyhow!("could not squeeze a {orig_shape:?} array into a 1D one")
+                    .context("unexpected output shape");
+                ErrorRepr::RunModel(sources).into()
             })
     }
 }
