@@ -66,7 +66,7 @@ class ModelNotFoundError(KeyError):
     ...
 
 class RunModelError(Exception):
-    """推論に失敗した。"""
+    """推論に失敗した、もしくは推論結果が異常。"""
 
     ...
 

@@ -24,7 +24,7 @@ pub enum VoicevoxResultCode {
     VOICEVOX_RESULT_STYLE_NOT_FOUND_ERROR = 6,
     /// 音声モデルIDに対する音声モデルが見つからなかった
     VOICEVOX_RESULT_MODEL_NOT_FOUND_ERROR = 7,
-    /// 推論に失敗した
+    /// 推論に失敗した、もしくは推論結果が異常
     VOICEVOX_RESULT_RUN_MODEL_ERROR = 8,
     /// 入力テキストの解析に失敗した
     VOICEVOX_RESULT_ANALYZE_TEXT_ERROR = 11,
@@ -84,7 +84,7 @@ pub(crate) const fn error_result_to_message(result_code: VoicevoxResultCode) -> 
             c"指定されたIDに対する音声モデルが見つかりませんでした。読み込まれていないか、読み込み\
               が既に解除されています"
         }
-        VOICEVOX_RESULT_RUN_MODEL_ERROR => c"推論に失敗しました",
+        VOICEVOX_RESULT_RUN_MODEL_ERROR => c"正常に推論することができませんでした",
         VOICEVOX_RESULT_ANALYZE_TEXT_ERROR => c"入力テキストの解析に失敗しました",
         VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR => c"入力テキストが無効なUTF-8データでした",
         VOICEVOX_RESULT_PARSE_KANA_ERROR => {
