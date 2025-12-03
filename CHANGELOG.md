@@ -39,7 +39,7 @@
 [#732]: https://github.com/VOICEVOX/voicevox_core/pull/732
 [#896]: https://github.com/VOICEVOX/voicevox_core/pull/896
 [#894]: https://github.com/VOICEVOX/voicevox_core/pull/894
-[#1217]: https://github.com/VOICEVOX/voicevox_core/pull/1208
+[#1217]: https://github.com/VOICEVOX/voicevox_core/pull/1217
 
 ### ストリーミングAPI
 
