@@ -181,7 +181,7 @@ mod note_seq {
         type Error = crate::Error;
 
         fn try_from(notes: NonEmptyVec<ValidatedNote>) -> Result<Self, Self::Error> {
-            if notes.first().pau_or_key_and_lyric == PauOrKeyAndLyric::Pau {
+            if notes.first().pau_or_key_and_lyric != PauOrKeyAndLyric::Pau {
                 return Err(ErrorRepr::InvalidQuery {
                     what: "ノート列",
                     kind: InvalidQueryErrorKind::InitialNoteMustBePau,
