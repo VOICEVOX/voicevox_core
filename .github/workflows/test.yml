@@ -102,6 +102,7 @@ jobs:
           cargo init
           cargo add base64ct@=1.6.0 # TODO: MSRVが1.85以上になったら不要
           cargo add jlabel@=0.1.4 # TODO: 〃
+          cargo add smol_str@=0.3.2 # TODO: 〃
           cargo add --path "$rust_api" --features load-onnxruntime
           cargo check
           cargo rm voicevox_core

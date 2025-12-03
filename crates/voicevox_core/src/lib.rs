@@ -244,6 +244,7 @@ pub mod __doc {
 }
 
 mod asyncs;
+mod collections;
 mod convert;
 mod core;
 /// cbindgen:ignore

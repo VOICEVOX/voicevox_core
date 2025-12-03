@@ -1,8 +1,8 @@
 use arrayvec::ArrayVec;
-use nonempty_collections::NEVec;
 use typeshare::U53;
 
 use crate::{
+    collections::NonEmptyVec,
     error::{ErrorRepr, InvalidQueryErrorKind},
     FramePhoneme,
 };
@@ -143,44 +143,44 @@ impl ValidatedNoteSeq {
             .map(Note::into_validated)
             .collect::<Result<Vec<_>, _>>()?;
 
-        NEVec::try_from(notes)
-            .map_err(
-                |nonempty_collections::Error::Empty| ErrorRepr::InvalidQuery {
-                    what: "ノート列",
-                    kind: InvalidQueryErrorKind::InitialNoteMustBePau,
-                },
-            )?
+        NonEmptyVec::new(notes)
+            .ok_or_else(|| ErrorRepr::InvalidQuery {
+                what: "ノート列",
+                kind: InvalidQueryErrorKind::InitialNoteMustBePau,
+            })?
             .try_into()
     }
 
     pub(crate) fn iter(&self) -> impl Iterator<Item = &ValidatedNote> {
-        AsRef::<NEVec<_>>::as_ref(self).iter()
+        AsRef::<NonEmptyVec<_>>::as_ref(self).iter()
     }
 }
 
 impl AsRef<[ValidatedNote]> for ValidatedNoteSeq {
     fn as_ref(&self) -> &[ValidatedNote] {
-        AsRef::<Vec<_>>::as_ref(AsRef::<NEVec<_>>::as_ref(self).as_ref())
+        AsRef::<NonEmptyVec<_>>::as_ref(self).as_ref()
     }
 }
 
 mod note_seq {
     use derive_more::AsRef;
-    use nonempty_collections::NEVec;
 
-    use crate::error::{ErrorRepr, InvalidQueryErrorKind};
+    use crate::{
+        collections::NonEmptyVec,
+        error::{ErrorRepr, InvalidQueryErrorKind},
+    };
 
     use super::{PauOrKeyAndLyric, ValidatedNote};
 
     #[derive(AsRef)]
     pub(crate) struct ValidatedNoteSeq(
-        NEVec<ValidatedNote>, // invariant: the first note must be pau
+        NonEmptyVec<ValidatedNote>, // invariant: the first note must be pau
     );
 
-    impl TryFrom<NEVec<ValidatedNote>> for ValidatedNoteSeq {
+    impl TryFrom<NonEmptyVec<ValidatedNote>> for ValidatedNoteSeq {
         type Error = crate::Error;
 
-        fn try_from(notes: NEVec<ValidatedNote>) -> Result<Self, Self::Error> {
+        fn try_from(notes: NonEmptyVec<ValidatedNote>) -> Result<Self, Self::Error> {
             if notes.first().pau_or_key_and_lyric == PauOrKeyAndLyric::Pau {
                 return Err(ErrorRepr::InvalidQuery {
                     what: "ノート列",
