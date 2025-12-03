@@ -1,7 +1,7 @@
 //! 推論の出力の後処理。
 
 use easy_ext::ext;
-use ndarray::{Array1, Array2};
+use ndarray::{Array, Array1, Dimension};
 
 use crate::error::ErrorRepr;
 
@@ -16,8 +16,8 @@ pub(crate) fn ensure_minimum_phoneme_length(mut output: Vec<f32>) -> Vec<f32> {
     output
 }
 
-#[ext(Array2Ext)]
-impl<T> Array2<T> {
+#[ext(ArrayExt)]
+impl<T, D: Dimension> Array<T, D> {
     pub(crate) fn squeeze_into_1d(self) -> crate::Result<Array1<T>> {
         self.into_dyn()
             .squeeze()

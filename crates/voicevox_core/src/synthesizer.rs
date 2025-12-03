@@ -36,7 +36,7 @@ use crate::{
         },
         pad_decoder_feature,
         status::Status,
-        voice_model, Array2Ext as _,
+        voice_model, ArrayExt as _,
     },
     engine::{
         talk::{
