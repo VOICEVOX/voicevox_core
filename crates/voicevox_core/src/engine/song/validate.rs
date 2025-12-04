@@ -10,7 +10,7 @@ use crate::{
 
 use super::{
     super::acoustic_feature_extractor::{MoraTail, OptionalConsonant, PhonemeCode},
-    frame_audio_query::{FramePhoneme, Note, NoteId, OptionalLyric, Score},
+    queries::{FramePhoneme, Note, NoteId, OptionalLyric, Score},
 };
 
 pub(crate) use self::note_seq::ValidatedNoteSeq;
