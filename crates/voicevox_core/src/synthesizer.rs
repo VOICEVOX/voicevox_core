@@ -43,7 +43,8 @@ use crate::{
     },
     engine::{
         song::{
-            self, ScoreFeature, SfDecoderFeature, ValidatedNote, ValidatedNoteSeq, ValidatedScore,
+            self, ConsonantLengthsFeature, PhonemeFeature, SfDecoderFeature, ValidatedNote,
+            ValidatedNoteSeq, ValidatedScore,
         },
         talk::{
             create_kana, initial_process, parse_kana, split_mora, DecoderFeature, LengthedPhoneme,
@@ -772,12 +773,10 @@ trait AsInner {
     ) -> Result<FrameAudioQuery> {
         let notes = &ValidatedNoteSeq::new(notes)?;
 
-        let ScoreFeature {
+        let ConsonantLengthsFeature {
             note_lengths,
             note_constants,
             note_vowels,
-            phonemes,
-            phoneme_note_ids,
         } = notes.into();
 
         let consonant_lengths = &self
@@ -810,16 +809,15 @@ trait AsInner {
                 .collect::<NonEmptyVec<_>>(),
         );
 
-        let frame_phonemes = itertools::zip_eq(
-            phonemes,
-            itertools::zip_eq(phoneme_lengths, phoneme_note_ids),
-        )
-        .map(|(phoneme, (frame_length, note_id))| FramePhoneme {
-            phoneme: phoneme.into(),
-            frame_length,
-            note_id: note_id.cloned(),
-        })
-        .collect::<Vec<_>>();
+        let frame_phonemes = itertools::zip_eq(Vec::from(notes), phoneme_lengths)
+            .map(
+                |(PhonemeFeature { phoneme, note_id }, frame_length)| FramePhoneme {
+                    phoneme: phoneme.into(),
+                    frame_length,
+                    note_id,
+                },
+            )
+            .collect::<Vec<_>>();
 
         let (phonemes_by_frame, keys_by_frame) =
             song::join_frame_phonemes_with_notes(&frame_phonemes, notes.as_ref())
@@ -936,14 +934,14 @@ trait AsInner {
             volumes,
         } = frame_audio_query.sf_decoder_feature();
 
-        let raw_wave = &self
+        let wave = &self
             .status()
             .sf_decode::<Self::Async>(frame_phonemes, f0s, volumes, style_id, options.cancellable)
             .await?
             .into_vec();
 
         Ok(wav_from_s16le(
-            &to_s16le_pcm(raw_wave, frame_audio_query),
+            &to_s16le_pcm(wave, frame_audio_query),
             frame_audio_query.output_sampling_rate.get(),
             frame_audio_query.output_stereo,
         ))

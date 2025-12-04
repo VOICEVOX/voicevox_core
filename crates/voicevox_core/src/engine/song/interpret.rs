@@ -17,16 +17,14 @@ use super::{
     validate::{Lyric, PauOrKeyAndLyric, ValidatedNote, ValidatedNoteSeq},
 };
 
-pub(crate) struct ScoreFeature<'score> {
+pub(crate) struct ConsonantLengthsFeature {
     pub(crate) note_lengths: Array1<i64>,
     pub(crate) note_constants: Array1<i64>,
     pub(crate) note_vowels: Array1<i64>,
-    pub(crate) phonemes: Vec<PhonemeCode>,
-    pub(crate) phoneme_note_ids: Vec<Option<&'score NoteId>>,
 }
 
-impl<'score> From<&'score ValidatedNoteSeq> for ScoreFeature<'score> {
-    fn from(notes: &'score ValidatedNoteSeq) -> Self {
+impl From<&'_ ValidatedNoteSeq> for ConsonantLengthsFeature {
+    fn from(notes: &'_ ValidatedNoteSeq) -> Self {
         let feature = notes.iter().map(Into::into).collect::<Vec<_>>();
 
         duplicate! {
@@ -36,99 +34,99 @@ impl<'score> From<&'score ValidatedNoteSeq> for ScoreFeature<'score> {
                 [ note_constant ];
                 [ note_vowel ];
             ]
-            let paste! { [<x s>] } = feature
-                .iter()
-                .map(|&NoteFeature { x, .. }| x)
-                .collect();
+            let paste! { [<x s>] } = feature.iter().map(|&Feature { x, .. }| x).collect();
         }
 
-        let phoneme_features = feature
-            .iter()
-            .flat_map(|NoteFeature { phonemes, .. }| phonemes)
-            .copied()
-            .collect::<Vec<_>>();
-
-        duplicate! {
-            [
-                x;
-                [ phoneme ];
-                [ phoneme_note_id ];
-            ]
-            let paste! { [<x s>] } = phoneme_features
-                .iter()
-                .map(|&PhonemeFeature { x, .. }| x)
-                .collect();
-        }
-
-        Self {
+        return Self {
             note_lengths,
             note_constants,
             note_vowels,
-            phonemes,
-            phoneme_note_ids,
+        };
+
+        struct Feature {
+            note_length: i64,
+            note_constant: i64,
+            note_vowel: i64,
+        }
+
+        impl From<&'_ ValidatedNote> for Feature {
+            fn from(
+                ValidatedNote {
+                    pau_or_key_and_lyric,
+                    frame_length,
+                    ..
+                }: &'_ ValidatedNote,
+            ) -> Self {
+                match *pau_or_key_and_lyric {
+                    PauOrKeyAndLyric::Pau => Self {
+                        note_length: frame_length.to_i64(),
+                        note_constant: OptionalConsonant::None as _,
+                        note_vowel: PhonemeCode::MorablePau as _,
+                    },
+                    PauOrKeyAndLyric::KeyAndLyric {
+                        lyric:
+                            Lyric {
+                                phonemes: [(consonant, vowel)],
+                                ..
+                            },
+                        ..
+                    } => Self {
+                        note_length: frame_length.to_i64(),
+                        note_constant: consonant as _,
+                        note_vowel: vowel as _,
+                    },
+                }
+            }
         }
     }
 }
 
-struct NoteFeature<'score> {
-    note_length: i64,
-    note_constant: i64,
-    note_vowel: i64,
-    phonemes: ArrayVec<PhonemeFeature<'score>, 2>, // 1 or 2 phonemes
+pub(crate) struct PhonemeFeature {
+    pub(crate) phoneme: PhonemeCode,
+    pub(crate) note_id: Option<NoteId>,
 }
 
-impl<'score> From<&'score ValidatedNote> for NoteFeature<'score> {
-    fn from(
-        ValidatedNote {
-            id,
-            pau_or_key_and_lyric,
-            frame_length,
-        }: &'score ValidatedNote,
-    ) -> Self {
-        match *pau_or_key_and_lyric {
-            PauOrKeyAndLyric::Pau => Self {
-                note_length: frame_length.to_i64(),
-                note_constant: OptionalConsonant::None as _,
-                note_vowel: PhonemeCode::MorablePau as _,
-                phonemes: [PhonemeFeature {
+impl From<&'_ ValidatedNoteSeq> for Vec<PhonemeFeature> {
+    fn from(notes: &'_ ValidatedNoteSeq) -> Self {
+        return notes.iter().into_iter().flat_map(from_note).collect();
+
+        fn from_note(
+            ValidatedNote {
+                id,
+                pau_or_key_and_lyric,
+                ..
+            }: &ValidatedNote,
+        ) -> ArrayVec<PhonemeFeature, 2> {
+            match *pau_or_key_and_lyric {
+                PauOrKeyAndLyric::Pau => [PhonemeFeature {
                     phoneme: PhonemeCode::MorablePau,
-                    phoneme_note_id: id.as_ref(),
+                    note_id: id.clone(),
                 }]
                 .into_iter()
                 .collect(),
-            },
-            PauOrKeyAndLyric::KeyAndLyric {
-                lyric:
-                    Lyric {
-                        phonemes: [(consonant, vowel)],
-                        ..
-                    },
-                ..
-            } => Self {
-                note_length: frame_length.to_i64(),
-                note_constant: consonant as _,
-                note_vowel: vowel as _,
+
                 // TODO: Rust 1.91以降なら`std::iter::chain`がある
-                phonemes: itertools::chain(
+                PauOrKeyAndLyric::KeyAndLyric {
+                    lyric:
+                        Lyric {
+                            phonemes: [(consonant, vowel)],
+                            ..
+                        },
+                    ..
+                } => itertools::chain(
                     consonant.try_into().map(|phoneme| PhonemeFeature {
                         phoneme,
-                        phoneme_note_id: id.as_ref(),
+                        note_id: id.clone(),
                     }),
                     [PhonemeFeature {
                         phoneme: vowel.into(),
-                        phoneme_note_id: id.as_ref(),
+                        note_id: id.clone(),
                     }],
                 )
                 .collect(),
-            },
+            }
         }
     }
-}
-
-#[derive(Clone, Copy)]
-struct PhonemeFeature<'score> {
-    phoneme: PhonemeCode,
-    phoneme_note_id: Option<&'score NoteId>,
 }
 
 pub(crate) fn phoneme_lengths(
@@ -194,13 +192,6 @@ pub(crate) fn phoneme_lengths(
         .collect()
 }
 
-#[ext]
-impl U53 {
-    fn to_i64(self) -> i64 {
-        u64::from(self).try_into().expect("this is 53-bit")
-    }
-}
-
 pub(crate) fn repeat_phoneme_code_and_key(
     frame_phoneme: &FramePhoneme,
     note: &ValidatedNote,
@@ -248,5 +239,12 @@ impl FrameAudioQuery {
             f0s: self.f0.iter().copied().map(Into::into).collect(),
             volumes: self.volume.iter().copied().map(Into::into).collect(),
         }
+    }
+}
+
+#[ext]
+impl U53 {
+    fn to_i64(self) -> i64 {
+        u64::from(self).try_into().expect("this is 53-bit")
     }
 }
