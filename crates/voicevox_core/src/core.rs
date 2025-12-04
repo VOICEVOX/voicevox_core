@@ -8,4 +8,7 @@ pub(crate) mod metas;
 pub(crate) mod status;
 pub(crate) mod voice_model;
 
-pub(crate) use self::adjust::{ensure_minimum_phoneme_length, pad_decoder_feature, ArrayExt};
+pub(crate) use self::adjust::{
+    ensure_minimum_phoneme_length, pad_decoder_feature, Array1ExtForPostProcess,
+    Array1ExtForPreProcess, ArrayExt,
+};
