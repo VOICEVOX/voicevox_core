@@ -98,7 +98,7 @@ pub(crate) enum ErrorRepr {
     )]
     ModelNotFound { model_id: VoiceModelId },
 
-    #[error("推論に失敗しました")]
+    #[error("正常に推論することができませんでした")]
     RunModel(#[source] anyhow::Error),
 
     #[error("入力テキストの解析に失敗しました")]
@@ -166,7 +166,7 @@ pub enum ErrorKind {
     StyleNotFound,
     /// 音声モデルIDに対する音声モデルが見つからなかった。
     ModelNotFound,
-    /// 推論に失敗した。
+    /// 推論に失敗した、もしくは推論結果が異常。
     RunModel,
     /// 入力テキストの解析に失敗した。
     AnalyzeText,

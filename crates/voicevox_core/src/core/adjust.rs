@@ -4,6 +4,6 @@ mod post;
 mod pre;
 
 pub(crate) use self::{
-    post::{ensure_minimum_phoneme_length, Array2Ext},
+    post::{ensure_minimum_phoneme_length, ArrayExt},
     pre::pad_decoder_feature,
 };

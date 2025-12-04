@@ -155,7 +155,7 @@ enum VoicevoxResultCode
    */
   VOICEVOX_RESULT_MODEL_NOT_FOUND_ERROR = 7,
   /**
-   * 推論に失敗した
+   * 推論に失敗した、もしくは推論結果が異常
    */
   VOICEVOX_RESULT_RUN_MODEL_ERROR = 8,
   /**
