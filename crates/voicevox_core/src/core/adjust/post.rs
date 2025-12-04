@@ -17,6 +17,20 @@ pub(crate) fn ensure_minimum_phoneme_length(mut output: Vec<f32>) -> Vec<f32> {
     output
 }
 
+#[ext(Array1ExtForPostProcess)]
+impl<T> Array1<T> {
+    pub(crate) fn into_vec(self) -> Vec<T> {
+        let (vec, offset) = self.into_raw_vec_and_offset();
+        // TODO: Rust 2024にしたらlet chainにする
+        if let Some(offset) = offset {
+            if offset != 0 {
+                unimplemented!("offset = {offset}");
+            }
+        }
+        vec
+    }
+}
+
 #[ext(ArrayExt)]
 impl<T, const N: usize> Array<T, Dim<[Ix; N]>>
 where

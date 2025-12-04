@@ -36,7 +36,7 @@ use crate::{
         },
         pad_decoder_feature,
         status::Status,
-        voice_model, ArrayExt as _,
+        voice_model, Array1ExtForPostProcess as _, Array1ExtForPreProcess as _, ArrayExt as _,
     },
     engine::{
         talk::{
@@ -1204,25 +1204,6 @@ impl<R: InferenceRuntime> Status<R> {
             .await?;
 
         wav.squeeze_into_1d()
-    }
-}
-
-#[ext]
-impl<T> ndarray::Array1<T> {
-    fn into_one_row(self) -> ndarray::Array2<T> {
-        let n = self.len();
-        self.into_shape_with_order([1, n]).expect("should be ok")
-    }
-
-    fn into_vec(self) -> Vec<T> {
-        let (vec, offset) = self.into_raw_vec_and_offset();
-        // TODO: Rust 2024にしたらlet chainにする
-        if let Some(offset) = offset {
-            if offset != 0 {
-                unimplemented!("offset = {offset}");
-            }
-        }
-        vec
     }
 }
 
