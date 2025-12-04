@@ -15,6 +15,7 @@ use std::{
     sync::Arc,
 };
 use tracing::info;
+use typed_floats::NonNaNFinite;
 
 use crate::{
     asyncs::{Async, BlockingThreadPool, SingleTasked},
@@ -821,40 +822,20 @@ trait AsInner {
         .collect::<Vec<_>>();
 
         let (phonemes_by_frame, keys_by_frame) =
-            song::join_frame_phonemes_with_notes(&frame_phonemes, notes.as_ref())?
+            song::join_frame_phonemes_with_notes(&frame_phonemes, notes.as_ref())
+                .expect("should be always valid")
                 .flat_map(|(p, n)| song::repeat_phoneme_code_and_key(p, n))
                 .unzip::<_, _, Vec<_>, Vec<_>>();
         let phonemes_by_frame = ndarray::Array1::from(phonemes_by_frame);
         let keys_by_frame = ndarray::Array1::from(keys_by_frame);
 
         let f0s = self
-            .status()
-            .predict_sing_f0::<Self::Async>(
-                phonemes_by_frame.clone(),
-                keys_by_frame.clone(),
-                style_id,
-            )
+            .create_sing_frame_f0_(phonemes_by_frame.clone(), keys_by_frame.clone(), style_id)
             .await?;
 
         let volumes = self
-            .status()
-            .predict_sing_volume::<Self::Async>(
-                phonemes_by_frame,
-                keys_by_frame,
-                f0s.clone(),
-                style_id,
-            )
+            .create_sing_frame_volume_(phonemes_by_frame, keys_by_frame, &f0s, style_id)
             .await?;
-
-        let f0s = f0s
-            .into_iter()
-            .map(|v| v.try_into().unwrap_or_else(|e| todo!("{e}: {v}")))
-            .collect();
-
-        let volumes = volumes
-            .into_iter()
-            .map(|v| v.try_into().unwrap_or_else(|e| todo!("{e}: {v}")))
-            .collect();
 
         Ok(FrameAudioQuery {
             f0: f0s,
@@ -871,7 +852,7 @@ trait AsInner {
         score: &Score,
         frame_audio_query: &FrameAudioQuery,
         style_id: StyleId,
-    ) -> Result<ndarray::Array1<f32>> {
+    ) -> Result<Vec<NonNaNFinite<f32>>> {
         let ValidatedScore { notes } = score.to_validated()?;
 
         let (phonemes_by_frame, keys_by_frame) =
@@ -881,9 +862,23 @@ trait AsInner {
         let phonemes_by_frame = phonemes_by_frame.into();
         let keys_by_frame = keys_by_frame.into();
 
+        self.create_sing_frame_f0_(phonemes_by_frame, keys_by_frame, style_id)
+            .await
+    }
+
+    async fn create_sing_frame_f0_(
+        &self,
+        phonemes_by_frame: ndarray::Array1<i64>,
+        keys_by_frame: ndarray::Array1<i64>,
+        style_id: StyleId,
+    ) -> Result<Vec<NonNaNFinite<f32>>> {
+        // TODO: typed_floatsにissueかPRを出しに行き、スライス変換かbytemuck対応を入れてもらう
         self.status()
             .predict_sing_f0::<Self::Async>(phonemes_by_frame, keys_by_frame, style_id)
-            .await
+            .await?
+            .into_iter()
+            .map(|v| v.try_into().map_err(|e| todo!("{e}: {v}")))
+            .collect()
     }
 
     async fn create_sing_frame_volume(
@@ -891,7 +886,7 @@ trait AsInner {
         score: &Score,
         frame_audio_query: &FrameAudioQuery,
         style_id: StyleId,
-    ) -> Result<ndarray::Array1<f32>> {
+    ) -> Result<Vec<NonNaNFinite<f32>>> {
         let ValidatedScore { notes } = score.to_validated()?;
 
         let (phonemes_by_frame, keys_by_frame) =
@@ -901,16 +896,32 @@ trait AsInner {
         let phonemes_by_frame = phonemes_by_frame.into();
         let keys_by_frame = keys_by_frame.into();
 
-        let f0s = frame_audio_query
-            .f0
-            .iter()
-            .copied()
-            .map(Into::into)
-            .collect();
+        self.create_sing_frame_volume_(
+            phonemes_by_frame,
+            keys_by_frame,
+            &frame_audio_query.f0,
+            style_id,
+        )
+        .await
+    }
+
+    async fn create_sing_frame_volume_(
+        &self,
+        phonemes_by_frame: ndarray::Array1<i64>,
+        keys_by_frame: ndarray::Array1<i64>,
+        f0s: &[NonNaNFinite<f32>],
+        style_id: StyleId,
+    ) -> Result<Vec<NonNaNFinite<f32>>> {
+        // TODO: typed_floatsにissueかPRを出しに行き、スライス変換かbytemuck対応を入れてもらう
+
+        let f0s = f0s.iter().copied().map(Into::into).collect();
 
         self.status()
             .predict_sing_volume::<Self::Async>(phonemes_by_frame, keys_by_frame, f0s, style_id)
-            .await
+            .await?
+            .into_iter()
+            .map(|v| v.try_into().map_err(|e| todo!("{e}: {v}")))
+            .collect()
     }
 
     async fn frame_synthesis(
@@ -1515,6 +1526,7 @@ pub(crate) mod blocking {
     };
 
     use easy_ext::ext;
+    use typed_floats::NonNaNFinite;
 
     use crate::{
         asyncs::SingleTasked, future::FutureExt as _, AccentPhrase, AudioQuery, FrameAudioQuery,
@@ -1812,7 +1824,7 @@ pub(crate) mod blocking {
             score: &Score,
             frame_audio_query: &FrameAudioQuery,
             style_id: StyleId,
-        ) -> crate::Result<ndarray::Array1<f32>> {
+        ) -> crate::Result<Vec<NonNaNFinite<f32>>> {
             self.0
                 .create_sing_frame_f0(score, frame_audio_query, style_id)
                 .block_on()
@@ -1823,7 +1835,7 @@ pub(crate) mod blocking {
             score: &Score,
             frame_audio_query: &FrameAudioQuery,
             style_id: StyleId,
-        ) -> crate::Result<ndarray::Array1<f32>> {
+        ) -> crate::Result<Vec<NonNaNFinite<f32>>> {
             self.0
                 .create_sing_frame_volume(score, frame_audio_query, style_id)
                 .block_on()
@@ -2228,6 +2240,7 @@ pub(crate) mod nonblocking {
     use std::fmt::{self, Debug};
 
     use easy_ext::ext;
+    use typed_floats::NonNaNFinite;
 
     use crate::{
         asyncs::BlockingThreadPool, AccentPhrase, AudioQuery, FrameAudioQuery, Note, Result, Score,
@@ -2483,7 +2496,7 @@ pub(crate) mod nonblocking {
             score: &Score,
             frame_audio_query: &FrameAudioQuery,
             style_id: StyleId,
-        ) -> Result<ndarray::Array1<f32>> {
+        ) -> crate::Result<Vec<NonNaNFinite<f32>>> {
             self.0
                 .create_sing_frame_f0(score, frame_audio_query, style_id)
                 .await
@@ -2494,7 +2507,7 @@ pub(crate) mod nonblocking {
             score: &Score,
             frame_audio_query: &FrameAudioQuery,
             style_id: StyleId,
-        ) -> Result<ndarray::Array1<f32>> {
+        ) -> crate::Result<Vec<NonNaNFinite<f32>>> {
             self.0
                 .create_sing_frame_volume(score, frame_audio_query, style_id)
                 .await

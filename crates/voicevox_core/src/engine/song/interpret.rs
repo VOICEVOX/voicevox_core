@@ -167,7 +167,7 @@ pub(crate) fn phoneme_lengths(
     };
 
     assert!(
-        next_consonant_lengths.iter().any(|&n| n >= 0),
+        next_consonant_lengths.iter().all(|&n| n >= 0),
         "elements should have been replaced with non-negative values",
     );
     let next_consonant_lengths = bytemuck::must_cast_slice::<_, u64>(next_consonant_lengths);
