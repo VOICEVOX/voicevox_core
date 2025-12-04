@@ -1,5 +1,3 @@
-mod validated;
-
 use std::{fmt, str::FromStr, sync::Arc};
 
 use arrayvec::ArrayVec;
@@ -22,13 +20,6 @@ use super::super::{
     Phoneme,
 };
 
-pub(super) use self::validated::Lyric;
-
-pub(crate) use self::validated::{
-    join_frame_phonemes_with_notes, PauOrKeyAndLyric, ValidatedNote, ValidatedNoteSeq,
-    ValidatedScore,
-};
-
 /// 音符のID。
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct NoteId(pub Arc<str>);
@@ -39,7 +30,7 @@ pub struct OptionalLyric {
     // invariant: `phonemes` must come from `text`.
     text: SmolStr,
     // TODO: `NonPauBaseVowel`型 (= a | i | u | e | o | cl | N) を導入する
-    phonemes: ArrayVec<(OptionalConsonant, MoraTail), 1>,
+    pub(super) phonemes: ArrayVec<(OptionalConsonant, MoraTail), 1>,
 }
 
 impl FromStr for OptionalLyric {

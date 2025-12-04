@@ -4,12 +4,11 @@ use typeshare::U53;
 use crate::{
     collections::{NonEmptyIterator, NonEmptyVec},
     error::{ErrorRepr, InvalidQueryErrorKind},
-    FramePhoneme,
 };
 
 use super::{
-    super::super::acoustic_feature_extractor::{MoraTail, OptionalConsonant, PhonemeCode},
-    Note, NoteId, OptionalLyric, Score,
+    super::acoustic_feature_extractor::{MoraTail, OptionalConsonant, PhonemeCode},
+    frame_audio_query::{FramePhoneme, Note, NoteId, OptionalLyric, Score},
 };
 
 pub(crate) use self::note_seq::ValidatedNoteSeq;
@@ -132,7 +131,7 @@ impl PauOrKeyAndLyric {
 #[derive(PartialEq)]
 pub(crate) struct Lyric {
     // TODO: `NonPauBaseVowel`型 (= a | i | u | e | o | cl | N) を導入する
-    pub(in super::super) phonemes: [(OptionalConsonant, MoraTail); 1],
+    pub(super) phonemes: [(OptionalConsonant, MoraTail); 1],
 }
 
 impl ValidatedNoteSeq {
