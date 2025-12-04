@@ -1,19 +1,17 @@
 use std::iter;
 
 use arrayvec::ArrayVec;
-use duplicate::duplicate;
 use easy_ext::ext;
 use ndarray::Array1;
-use pastey::paste;
 use typeshare::U53;
 
-use crate::{
-    collections::{NonEmptyIterator as _, NonEmptySlice},
-    FrameAudioQuery, FramePhoneme, NoteId,
-};
+use crate::{collections::NonEmptySlice, FrameAudioQuery, FramePhoneme, NoteId};
 
 use super::{
-    super::acoustic_feature_extractor::{OptionalConsonant, PhonemeCode},
+    super::{
+        acoustic_feature_extractor::{OptionalConsonant, PhonemeCode},
+        ndarray::IteratorExt as _,
+    },
     validate::{Lyric, PauOrKeyAndLyric, ValidatedNote, ValidatedNoteSeq},
 };
 
@@ -25,17 +23,11 @@ pub(crate) struct ConsonantLengthsFeature {
 
 impl From<&'_ ValidatedNoteSeq> for ConsonantLengthsFeature {
     fn from(notes: &'_ ValidatedNoteSeq) -> Self {
-        let feature = notes.iter().map(Into::into).collect::<Vec<_>>();
-
-        duplicate! {
-            [
-                x;
-                [ note_length ];
-                [ note_constant ];
-                [ note_vowel ];
-            ]
-            let paste! { [<x s>] } = feature.iter().map(|&Feature { x, .. }| x).collect();
-        }
+        let (note_lengths, note_constants, note_vowels) = notes
+            .iter()
+            .into_iter()
+            .map(from_note)
+            .multiunzip_into_array1s();
 
         return Self {
             note_lengths,
@@ -43,39 +35,27 @@ impl From<&'_ ValidatedNoteSeq> for ConsonantLengthsFeature {
             note_vowels,
         };
 
-        struct Feature {
-            note_length: i64,
-            note_constant: i64,
-            note_vowel: i64,
-        }
-
-        impl From<&'_ ValidatedNote> for Feature {
-            fn from(
-                ValidatedNote {
-                    pau_or_key_and_lyric,
-                    frame_length,
+        fn from_note(
+            ValidatedNote {
+                pau_or_key_and_lyric,
+                frame_length,
+                ..
+            }: &ValidatedNote,
+        ) -> (i64, i64, i64) {
+            match *pau_or_key_and_lyric {
+                PauOrKeyAndLyric::Pau => (
+                    frame_length.to_i64(),
+                    OptionalConsonant::None as _,
+                    PhonemeCode::MorablePau as _,
+                ),
+                PauOrKeyAndLyric::KeyAndLyric {
+                    lyric:
+                        Lyric {
+                            phonemes: [(consonant, vowel)],
+                            ..
+                        },
                     ..
-                }: &'_ ValidatedNote,
-            ) -> Self {
-                match *pau_or_key_and_lyric {
-                    PauOrKeyAndLyric::Pau => Self {
-                        note_length: frame_length.to_i64(),
-                        note_constant: OptionalConsonant::None as _,
-                        note_vowel: PhonemeCode::MorablePau as _,
-                    },
-                    PauOrKeyAndLyric::KeyAndLyric {
-                        lyric:
-                            Lyric {
-                                phonemes: [(consonant, vowel)],
-                                ..
-                            },
-                        ..
-                    } => Self {
-                        note_length: frame_length.to_i64(),
-                        note_constant: consonant as _,
-                        note_vowel: vowel as _,
-                    },
-                }
+                } => (frame_length.to_i64(), consonant as _, vowel as _),
             }
         }
     }

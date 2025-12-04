@@ -50,7 +50,7 @@ use crate::{
             create_kana, initial_process, parse_kana, split_mora, DecoderFeature, LengthedPhoneme,
             ValidatedAccentPhrase, ValidatedAudioQuery, ValidatedMora,
         },
-        to_s16le_pcm, wav_from_s16le, PhonemeCode, DEFAULT_SAMPLING_RATE,
+        to_s16le_pcm, wav_from_s16le, IteratorExt as _, PhonemeCode, DEFAULT_SAMPLING_RATE,
     },
     error::ErrorRepr,
     future::FutureExt as _,
@@ -823,9 +823,7 @@ trait AsInner {
             song::join_frame_phonemes_with_notes(&frame_phonemes, notes.as_ref())
                 .expect("should be always valid")
                 .flat_map(|(p, n)| song::repeat_phoneme_code_and_key(p, n))
-                .unzip::<_, _, Vec<_>, Vec<_>>();
-        let phonemes_by_frame = ndarray::Array1::from(phonemes_by_frame);
-        let keys_by_frame = ndarray::Array1::from(keys_by_frame);
+                .unzip_into_array1s();
 
         let f0s = self
             .create_sing_frame_f0_(phonemes_by_frame.clone(), keys_by_frame.clone(), style_id)
@@ -856,9 +854,7 @@ trait AsInner {
         let (phonemes_by_frame, keys_by_frame) =
             song::join_frame_phonemes_with_notes(&frame_audio_query.phonemes, notes.as_ref())?
                 .flat_map(|(p, n)| song::repeat_phoneme_code_and_key(p, n))
-                .unzip::<_, _, Vec<_>, Vec<_>>();
-        let phonemes_by_frame = phonemes_by_frame.into();
-        let keys_by_frame = keys_by_frame.into();
+                .unzip_into_array1s();
 
         self.create_sing_frame_f0_(phonemes_by_frame, keys_by_frame, style_id)
             .await
@@ -890,9 +886,7 @@ trait AsInner {
         let (phonemes_by_frame, keys_by_frame) =
             song::join_frame_phonemes_with_notes(&frame_audio_query.phonemes, notes.as_ref())?
                 .flat_map(|(p, n)| song::repeat_phoneme_code_and_key(p, n))
-                .unzip::<_, _, Vec<_>, Vec<_>>();
-        let phonemes_by_frame = phonemes_by_frame.into();
-        let keys_by_frame = keys_by_frame.into();
+                .unzip_into_array1s();
 
         self.create_sing_frame_volume_(
             phonemes_by_frame,
