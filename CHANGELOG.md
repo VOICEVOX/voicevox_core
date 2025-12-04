@@ -34,10 +34,12 @@
 - fix: fix up #761: JavaとPythonの`StyleType`を埋める ([#895])
 - chore: [0.15] remove obsolete parts ([#896])
 - Merge `0.15.5` ([#894])
+- feat: ソングの推論結果を、コア領域の責務としてsqueezeする (#1217)
 
 [#732]: https://github.com/VOICEVOX/voicevox_core/pull/732
 [#896]: https://github.com/VOICEVOX/voicevox_core/pull/896
 [#894]: https://github.com/VOICEVOX/voicevox_core/pull/894
+[#1217]: https://github.com/VOICEVOX/voicevox_core/pull/1217
 
 ### ストリーミングAPI
 
