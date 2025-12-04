@@ -2,7 +2,7 @@
 
 use anyhow::anyhow;
 use easy_ext::ext;
-use ndarray::{Array, Array1, Dimension};
+use ndarray::{Array, Array1, Dim, Ix, RemoveAxis};
 
 use crate::error::ErrorRepr;
 
@@ -18,7 +18,10 @@ pub(crate) fn ensure_minimum_phoneme_length(mut output: Vec<f32>) -> Vec<f32> {
 }
 
 #[ext(ArrayExt)]
-impl<T, D: Dimension> Array<T, D> {
+impl<T, const N: usize> Array<T, Dim<[Ix; N]>>
+where
+    Dim<[Ix; N]>: RemoveAxis,
+{
     pub(crate) fn squeeze_into_1d(self) -> crate::Result<Array1<T>> {
         let orig_shape = self.dim();
         self.into_dyn()
