@@ -2,11 +2,11 @@
 //!
 //! メインの部分。[`crate::core`]と[`crate::engine`]の二つはここで用いる。
 
+use anyhow::{ensure, Context as _};
 use easy_ext::ext;
 use educe::Educe;
 use enum_map::enum_map;
 use futures_util::TryFutureExt as _;
-use ndarray::ArrayView;
 use std::{
     fmt::{self, Debug},
     future::Future,
@@ -48,7 +48,7 @@ use crate::{
             create_kana, initial_process, parse_kana, split_mora, DecoderFeature, LengthedPhoneme,
             ValidatedAccentPhrase, ValidatedAudioQuery, ValidatedMora,
         },
-        to_s16le_pcm, wav_from_s16le, ArrayBase1Ext as _, PhonemeCode, DEFAULT_SAMPLING_RATE,
+        to_s16le_pcm, wav_from_s16le, PhonemeCode, DEFAULT_SAMPLING_RATE,
     },
     error::ErrorRepr,
     future::FutureExt as _,
@@ -776,11 +776,10 @@ trait AsInner {
             note_constants,
             note_vowels,
             phonemes,
-            phoneme_keys,
             phoneme_note_ids,
         } = notes.into();
 
-        let consonant_lengths = self
+        let consonant_lengths = &self
             .status()
             .predict_sing_consonant_length::<Self::Async>(
                 note_constants,
@@ -788,20 +787,19 @@ trait AsInner {
                 note_lengths,
                 style_id,
             )
-            .await?;
-        let n = consonant_lengths.len();
-        let consonant_lengths = consonant_lengths
-            .into_shape_with_order(n)
-            .unwrap_or_else(|e| todo!("{e}"));
-        let consonant_lengths = consonant_lengths.as_standard_layout();
-        let consonant_lengths = consonant_lengths
-            .as_slice()
-            .expect("this should be a standard-layout array");
-
-        if consonant_lengths[0] != 0 {
-            todo!("consonant for a pau note?");
-        }
-        let consonant_lengths = NonEmptySlice::new(consonant_lengths).expect("empty?");
+            .await?
+            .into_vec();
+        let consonant_lengths = (|| {
+            let consonant_lengths = NonEmptySlice::new(consonant_lengths)
+                .with_context(|| "output is an empty array")?;
+            ensure!(
+                *consonant_lengths.first() == 0,
+                "first phoneme is considered to be a pau"
+            );
+            ensure!(consonant_lengths.len() == notes.len(), "wrong length");
+            Ok(consonant_lengths)
+        })()
+        .map_err(ErrorRepr::RunModel)?;
 
         let phoneme_lengths = song::phoneme_lengths(
             consonant_lengths,
@@ -811,29 +809,41 @@ trait AsInner {
                 .collect::<NonEmptyVec<_>>(),
         );
 
-        let (frame_phonemes, frame_keys) = {
-            let phoneme_lengths = phoneme_lengths
-                .iter()
-                .copied()
-                .map(typeshare::usize_from_u53_saturated)
-                .collect::<Vec<_>>();
-            (
-                ArrayView::from(bytemuck::must_cast_slice::<_, i64>(&phonemes))
-                    .repeat(phoneme_lengths.iter().copied()),
-                phoneme_keys.repeat(phoneme_lengths),
-            )
-        };
+        let frame_phonemes = itertools::zip_eq(
+            phonemes,
+            itertools::zip_eq(phoneme_lengths, phoneme_note_ids),
+        )
+        .map(|(phoneme, (frame_length, note_id))| FramePhoneme {
+            phoneme: phoneme.into(),
+            frame_length,
+            note_id: note_id.cloned(),
+        })
+        .collect::<Vec<_>>();
+
+        let (phonemes_by_frame, keys_by_frame) =
+            song::join_frame_phonemes_with_notes(&frame_phonemes, notes.as_ref())?
+                .flat_map(|(p, n)| song::repeat_phoneme_code_and_key(p, n))
+                .unzip::<_, _, Vec<_>, Vec<_>>();
+        let phonemes_by_frame = ndarray::Array1::from(phonemes_by_frame);
+        let keys_by_frame = ndarray::Array1::from(keys_by_frame);
 
         let f0s = self
             .status()
-            .predict_sing_f0::<Self::Async>(frame_phonemes.clone(), frame_keys.clone(), style_id)
-            .await?
-            .into_shape_with_order([frame_keys.len()])
-            .unwrap_or_else(|e| todo!("{e}"));
+            .predict_sing_f0::<Self::Async>(
+                phonemes_by_frame.clone(),
+                keys_by_frame.clone(),
+                style_id,
+            )
+            .await?;
 
         let volumes = self
             .status()
-            .predict_sing_volume::<Self::Async>(frame_phonemes, frame_keys, f0s.clone(), style_id)
+            .predict_sing_volume::<Self::Async>(
+                phonemes_by_frame,
+                keys_by_frame,
+                f0s.clone(),
+                style_id,
+            )
             .await?;
 
         let f0s = f0s
@@ -849,16 +859,7 @@ trait AsInner {
         Ok(FrameAudioQuery {
             f0: f0s,
             volume: volumes,
-            phonemes: itertools::zip_eq(
-                phonemes,
-                itertools::zip_eq(phoneme_lengths, phoneme_note_ids),
-            )
-            .map(|(phoneme, (frame_length, note_id))| FramePhoneme {
-                phoneme: phoneme.into(),
-                frame_length,
-                note_id: note_id.cloned(),
-            })
-            .collect(),
+            phonemes: frame_phonemes,
             volume_scale: (1.).try_into().unwrap(),
             output_sampling_rate: Default::default(),
             output_stereo: true,
@@ -924,13 +925,11 @@ trait AsInner {
             volumes,
         } = frame_audio_query.sf_decoder_feature();
 
-        let raw_wave = self
+        let raw_wave = &self
             .status()
             .sf_decode::<Self::Async>(frame_phonemes, f0s, volumes, style_id, options.cancellable)
-            .await?;
-
-        let raw_wave = raw_wave.as_standard_layout();
-        let raw_wave = raw_wave.as_slice().expect("");
+            .await?
+            .into_vec();
 
         Ok(wav_from_s16le(
             &to_s16le_pcm(raw_wave, frame_audio_query),

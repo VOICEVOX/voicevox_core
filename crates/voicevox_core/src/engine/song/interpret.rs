@@ -22,7 +22,6 @@ pub(crate) struct ScoreFeature<'score> {
     pub(crate) note_constants: Array1<i64>,
     pub(crate) note_vowels: Array1<i64>,
     pub(crate) phonemes: Vec<PhonemeCode>,
-    pub(crate) phoneme_keys: Array1<i64>,
     pub(crate) phoneme_note_ids: Vec<Option<&'score NoteId>>,
 }
 
@@ -53,7 +52,6 @@ impl<'score> From<&'score ValidatedNoteSeq> for ScoreFeature<'score> {
             [
                 x;
                 [ phoneme ];
-                [ phoneme_key ];
                 [ phoneme_note_id ];
             ]
             let paste! { [<x s>] } = phoneme_features
@@ -67,7 +65,6 @@ impl<'score> From<&'score ValidatedNoteSeq> for ScoreFeature<'score> {
             note_constants,
             note_vowels,
             phonemes,
-            phoneme_keys,
             phoneme_note_ids,
         }
     }
@@ -95,19 +92,18 @@ impl<'score> From<&'score ValidatedNote> for NoteFeature<'score> {
                 note_vowel: PhonemeCode::MorablePau as _,
                 phonemes: [PhonemeFeature {
                     phoneme: PhonemeCode::MorablePau,
-                    phoneme_key: -1,
                     phoneme_note_id: id.as_ref(),
                 }]
                 .into_iter()
                 .collect(),
             },
             PauOrKeyAndLyric::KeyAndLyric {
-                key,
                 lyric:
                     Lyric {
                         phonemes: [(consonant, vowel)],
                         ..
                     },
+                ..
             } => Self {
                 note_length: frame_length.to_i64(),
                 note_constant: consonant as _,
@@ -116,12 +112,10 @@ impl<'score> From<&'score ValidatedNote> for NoteFeature<'score> {
                 phonemes: itertools::chain(
                     consonant.try_into().map(|phoneme| PhonemeFeature {
                         phoneme,
-                        phoneme_key: key.to_i64(),
                         phoneme_note_id: id.as_ref(),
                     }),
                     [PhonemeFeature {
                         phoneme: vowel.into(),
-                        phoneme_key: key.to_i64(),
                         phoneme_note_id: id.as_ref(),
                     }],
                 )
@@ -134,7 +128,6 @@ impl<'score> From<&'score ValidatedNote> for NoteFeature<'score> {
 #[derive(Clone, Copy)]
 struct PhonemeFeature<'score> {
     phoneme: PhonemeCode,
-    phoneme_key: i64,
     phoneme_note_id: Option<&'score NoteId>,
 }
 

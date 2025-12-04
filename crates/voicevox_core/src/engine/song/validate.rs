@@ -1,3 +1,5 @@
+use std::num::NonZero;
+
 use arrayvec::ArrayVec;
 use typeshare::U53;
 
@@ -148,6 +150,10 @@ impl ValidatedNoteSeq {
                 kind: InvalidQueryErrorKind::InitialNoteMustBePau,
             })?
             .try_into()
+    }
+
+    pub(crate) fn len(&self) -> NonZero<usize> {
+        AsRef::<NonEmptyVec<_>>::as_ref(self).len()
     }
 
     pub(crate) fn iter(&self) -> impl NonEmptyIterator<Item = &ValidatedNote> {
