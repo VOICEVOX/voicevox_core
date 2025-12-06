@@ -85,7 +85,7 @@
 
 ### Fixed
 
-- \[ダウンローダー\] <https://jaist.dl.sourceforge.net>が利用できなくなったため、`dict`のダウンロード元がSourceForceからr9y9/open\_jtalkに変更されます ([#1220])。
+- \[ダウンローダー\] `dict`のダウンロード元であるjaist.dl.sourceforge.netが[消失した](https://x.com/zinchang/status/1996112944372044235)ため、代わりに[r9y9/open\_jtalk@`v1.11.1`のリリース](https://github.com/r9y9/open_jtalk/releases/tag/v1.11.1)を利用するようになります ([#1220])。
 
 ## [0.16.2] - 2025-10-28 (+09:00)
 
