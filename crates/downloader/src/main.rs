@@ -70,6 +70,7 @@ static OPEN_JTALK_DIC_REPO: LazyLock<RepoName> = LazyLock::new(|| RepoName {
     repo: "open_jtalk".to_owned(),
 });
 const OPEN_JTALK_DIC_TAG: &str = "v1.11.1";
+const OPEN_JTALK_DIC_FILE: &str = "open_jtalk_dic_utf_8-1.11.tar.gz";
 
 static PROGRESS_STYLE0: LazyLock<ProgressStyle> =
     LazyLock::new(|| ProgressStyle::with_template("{prefix}").unwrap());
@@ -584,7 +585,7 @@ async fn main() -> anyhow::Result<()> {
             octocrab,
             &OPEN_JTALK_DIC_REPO,
             OPEN_JTALK_DIC_TAG,
-            |_, _| Ok("open_jtalk_dic_utf_8-1.11.tar.gz".to_owned()),
+            |_, _| Ok(OPEN_JTALK_DIC_FILE.to_owned()),
         )
     }))
     .await
