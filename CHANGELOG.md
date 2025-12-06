@@ -83,6 +83,10 @@
 - `replace_{phoneme_length,mora_pitch,mora_data}`においてこれまでは[`""`という名の音素を受理してしまって](https://github.com/VOICEVOX/voicevox_core/issues/1202)いましたが、今後は完全に不正な音素となります ([#1203])。
 - \[macOS\] macOS 13がサポート範囲から外れ、バイナリのリリースはmacOS 14で行われるようになります。ただし、macOS 14でビルドされたバイナリでもmacOS 13で動作すると考えられています ([#1174])。
 
+### Fixed
+
+- \[ダウンローダー\] `dict`のダウンロード元であるjaist.dl.sourceforge.netが[消失した](https://x.com/zinchang/status/1996112944372044235)ため、代わりに[r9y9/open\_jtalk@`v1.11.1`のリリース](https://github.com/r9y9/open_jtalk/releases/tag/v1.11.1)を利用するようになります ([#1220])。
+
 ## [0.16.2] - 2025-10-28 (+09:00)
 
 ### Added
@@ -1374,6 +1378,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1197]: https://github.com/VOICEVOX/voicevox_core/pull/1197
 [#1203]: https://github.com/VOICEVOX/voicevox_core/pull/1203
 [#1208]: https://github.com/VOICEVOX/voicevox_core/pull/1208
+[#1220]: https://github.com/VOICEVOX/voicevox_core/pull/1220
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 

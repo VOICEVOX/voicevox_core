@@ -42,7 +42,6 @@ use strum::{Display, IntoStaticStr};
 use tokio::task::{JoinError, JoinSet};
 use tracing::{error, info, warn};
 use unicode_width::UnicodeWidthStr as _;
-use url::Url;
 use zip::ZipArchive;
 
 const DEFAULT_OUTPUT: &str = if cfg!(windows) {
@@ -66,11 +65,12 @@ const MODELS_DIR_NAME: &str = "vvms";
 const MODELS_TERMS_NAME: &str = "VOICEVOX 音声モデル 利用規約";
 const MODELS_TERMS_FILE: &str = "TERMS.txt";
 
-static OPEN_JTALK_DIC_URL: LazyLock<Url> = LazyLock::new(|| {
-    "https://jaist.dl.sourceforge.net/project/open-jtalk/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz"
-        .parse()
-        .unwrap()
+static OPEN_JTALK_DIC_REPO: LazyLock<RepoName> = LazyLock::new(|| RepoName {
+    owner: "r9y9".to_owned(),
+    repo: "open_jtalk".to_owned(),
 });
+const OPEN_JTALK_DIC_TAG: &str = "v1.11.1";
+const OPEN_JTALK_DIC_FILE: &str = "open_jtalk_dic_utf_8-1.11.tar.gz";
 
 static PROGRESS_STYLE0: LazyLock<ProgressStyle> =
     LazyLock::new(|| ProgressStyle::with_template("{prefix}").unwrap());
@@ -580,6 +580,17 @@ async fn main() -> anyhow::Result<()> {
     .await
     .transpose()?;
 
+    let dict = OptionFuture::from(targets.contains(&DownloadTarget::Dict).then(|| {
+        find_gh_asset(
+            octocrab,
+            &OPEN_JTALK_DIC_REPO,
+            OPEN_JTALK_DIC_TAG,
+            |_, _| Ok(OPEN_JTALK_DIC_FILE.to_owned()),
+        )
+    }))
+    .await
+    .transpose()?;
+
     ensure_confirmation(
         &iter::chain(
             models
@@ -645,6 +656,10 @@ async fn main() -> anyhow::Result<()> {
     if let Some(ModelsWithTerms { tag, .. }) = &models {
         info!("ダウンロードモデルバージョン: {tag}");
     }
+    if let Some(GhAsset { tag, .. }) = &dict {
+        assert_eq!(OPEN_JTALK_DIC_TAG, tag);
+        info!("ダウンロードOpen JTalk辞書バージョン: {OPEN_JTALK_DIC_TAG}");
+    }
 
     let progresses = MultiProgress::new();
 
@@ -690,9 +705,9 @@ async fn main() -> anyhow::Result<()> {
             .await?,
         );
     }
-    if targets.contains(&DownloadTarget::Dict) {
-        tasks.spawn(download_and_extract_from_sourceforge(
-            &OPEN_JTALK_DIC_URL,
+    if let Some(dict) = dict {
+        tasks.spawn(download_and_extract_from_gh(
+            dict,
             Stripping::None,
             output.join(DownloadTarget::Dict.dir_name()),
             &progresses,
@@ -1160,48 +1175,6 @@ fn download_and_extract_from_gh(
     }))
 }
 
-/// # Panics
-///
-/// `url`が"sourceforge.net"のものでなければパニックする。
-fn download_and_extract_from_sourceforge(
-    url: &'static Url,
-    stripping: Stripping,
-    output: PathBuf,
-    progresses: &MultiProgress,
-    tries: Tries,
-) -> anyhow::Result<impl Future<Output = anyhow::Result<()>> + use<>> {
-    if !url.host_str().is_some_and(|host| {
-        host.split('.')
-            .collect::<Vec<_>>()
-            .ends_with(&["sourceforge", "net"])
-    }) {
-        panic!("`url` must be for SourceForge");
-    }
-    let name = url
-        .path_segments()
-        .and_then(|s| { s }.next_back())
-        .unwrap_or_default();
-    let archive_kind = ArchiveKind::from_filename(name)?;
-    let pb = add_progress_bar(progresses, 0, name);
-
-    Ok(retry(tries, async move || {
-        let res = reqwest::get(url.clone()).await?.error_for_status()?;
-        let content_length = res.content_length();
-        let bytes_stream = res.bytes_stream().map_err(Into::into);
-
-        download_and_extract(
-            bytes_stream,
-            content_length,
-            archive_kind,
-            stripping,
-            WebService::Sourceforge,
-            &output,
-            pb.clone(),
-        )
-        .await
-    }))
-}
-
 async fn download_models(
     ModelsWithTerms {
         readme,
@@ -1290,7 +1263,7 @@ async fn download_and_extract(
     content_length: Option<u64>,
     archive_kind: ArchiveKind,
     stripping: Stripping,
-    service: WebService,
+    WebService::Github: WebService,
     output: &Path,
     pb: ProgressBar,
 ) -> anyhow::Result<()> {
@@ -1299,7 +1272,7 @@ async fn download_and_extract(
         bytes_stream,
         content_length,
         archive_kind.into(),
-        service,
+        WebService::Github,
         pb.clone(),
     )
     .await?;
@@ -1412,7 +1385,7 @@ async fn download(
     mut bytes_stream: impl Stream<Item = anyhow::Result<Bytes>> + Unpin,
     content_length: Option<u64>,
     kind: FileKind,
-    service: WebService,
+    WebService::Github: WebService,
     pb: ProgressBar,
 ) -> anyhow::Result<Vec<u8>> {
     if let Some(content_length) = content_length {
@@ -1425,7 +1398,7 @@ async fn download(
             downloaded.extend_from_slice(&chunk);
             pos_tx.send(downloaded.len() as _)?;
         }
-        validate_archive_file(downloaded, kind, service)
+        validate_archive_file(downloaded, kind, WebService::Github)
     })
     .await;
 
@@ -1459,12 +1432,15 @@ async fn download(
 fn validate_archive_file(
     content: Vec<u8>,
     content_kind: FileKind,
-    service: WebService,
+    WebService::Github: WebService,
 ) -> anyhow::Result<Vec<u8>> {
     match (content_kind, &*content) {
         (FileKind::ZipOrVvm, [0x50, 0x4b, 0x03, 0x04, ..])
         | (FileKind::Tgz, [0x1f, 0x8b, 0x08, ..]) => Ok(content),
-        (_, content) => Err(error_for_unexpected_file_content(content, service)),
+        (_, content) => Err(error_for_unexpected_file_content(
+            content,
+            WebService::Github,
+        )),
     }
 }
 
@@ -1481,9 +1457,12 @@ fn validate_models_readme_or_terms_txt(content: String) -> anyhow::Result<String
     }
 }
 
-fn error_for_unexpected_file_content(content: &[u8], service: WebService) -> anyhow::Error {
-    let mut msg = format!("予期しない応答を{service}が返しました");
-    if let (WebService::Github, Ok(content)) = (service, str::from_utf8(content)) {
+fn error_for_unexpected_file_content(
+    content: &[u8],
+    WebService::Github: WebService,
+) -> anyhow::Error {
+    let mut msg = format!("予期しない応答を{}が返しました", WebService::Github);
+    if let Ok(content) = str::from_utf8(content) {
         msg += ": ";
         msg += content.trim_end();
         if content.contains("API rate limit exceeded for") {
@@ -1499,9 +1478,6 @@ fn error_for_unexpected_file_content(content: &[u8], service: WebService) -> any
 enum WebService {
     #[strum(to_string = "GitHub")]
     Github,
-
-    #[strum(to_string = "SourceForge")]
-    Sourceforge,
 }
 
 struct GhAsset {
