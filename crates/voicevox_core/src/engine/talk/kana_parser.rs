@@ -1,7 +1,10 @@
 use std::{collections::HashMap, sync::LazyLock};
 
 use super::{
-    super::{acoustic_feature_extractor::Phoneme, mora_list::MORA_KANA_TO_MORA_PHONEMES},
+    super::{
+        acoustic_feature_extractor::{Consonant, NonConsonant},
+        mora_list::MORA_KANA_TO_MORA_PHONEMES,
+    },
     AccentPhrase, Mora, ValidatedMora,
 };
 
@@ -23,13 +26,13 @@ static TEXT2MORA_WITH_UNVOICE: LazyLock<HashMap<String, ValidatedMora<'static>>>
         let mut text2mora_with_unvoice = HashMap::new();
         for (text, &(consonant, vowel)) in &MORA_KANA_TO_MORA_PHONEMES {
             let text = <&str>::from(text);
-            let consonant = consonant.to_phoneme().map(Into::into);
+            let consonant = Option::<Consonant>::from(consonant).map(Into::into);
 
             if let Some(vowel) = vowel.to_unvoiced() {
                 let unvoice_mora = ValidatedMora {
                     text: text.into(),
                     consonant: consonant.clone(),
-                    vowel: Phoneme::from(vowel).into(),
+                    vowel: NonConsonant::from(vowel).into(),
                     pitch: 0.,
                 };
                 text2mora_with_unvoice.insert(UNVOICE_SYMBOL.to_string() + text, unvoice_mora);
@@ -38,7 +41,7 @@ static TEXT2MORA_WITH_UNVOICE: LazyLock<HashMap<String, ValidatedMora<'static>>>
             let mora = ValidatedMora {
                 text: text.into(),
                 consonant,
-                vowel: Phoneme::from(vowel).into(),
+                vowel: NonConsonant::from(vowel).into(),
                 pitch: 0.,
             };
             text2mora_with_unvoice.insert(text.to_string(), mora);

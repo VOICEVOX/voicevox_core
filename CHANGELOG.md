@@ -73,14 +73,17 @@
 
 ### Changed
 
-- `AudioQuery`/`AccentPhrase`/`Mora`において不正な状態というものが定義され、不正な`AudioQuery`もしくは`accent_phrases`が明示的にエラーを引き起こすようになります ([#1203], [#1208])。
+- `AudioQuery`/`AccentPhrase`/`Mora`において不正な状態というものが定義され、不正な`AudioQuery`もしくは`accent_phrases`が明示的にエラーを引き起こすようになります ([#1203], [#1208], [#1221])。
     - \[Rust,Python,Java\] エラーの種類として`InvalidQuery`が追加されます。
     - \[C\] エラーの種類として`VOICEVOX_RESULT_INVALID_MORA_ERROR`が追加されます。
     - メソッドとして`{AudioQuery,AccentPhrase,Mora}::validate`が追加されます。
 
 ### Removed
 
-- `replace_{phoneme_length,mora_pitch,mora_data}`においてこれまでは[`""`という名の音素を受理してしまって](https://github.com/VOICEVOX/voicevox_core/issues/1202)いましたが、今後は完全に不正な音素となります ([#1203])。
+- 以下の音素は完全に不正なものとして扱われます ([#1203], [#1221])。
+    - `""`
+    - `consonant`における母音
+    - `vowel`における子音
 - \[macOS\] macOS 13がサポート範囲から外れ、バイナリのリリースはmacOS 14で行われるようになります。ただし、macOS 14でビルドされたバイナリでもmacOS 13で動作すると考えられています ([#1174])。
 
 ### Fixed
@@ -1379,6 +1382,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1203]: https://github.com/VOICEVOX/voicevox_core/pull/1203
 [#1208]: https://github.com/VOICEVOX/voicevox_core/pull/1208
 [#1220]: https://github.com/VOICEVOX/voicevox_core/pull/1220
+[#1221]: https://github.com/VOICEVOX/voicevox_core/pull/1221
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
