@@ -14,10 +14,13 @@ use super::{
 
 /// ユーザー辞書の単語。
 ///
-/// # Serialization
+/// # Serde
 ///
-/// VOICEVOX ENGINEと同じスキーマになっている。ただし今後の破壊的変更にて変わる可能性がある。[データのシリアライゼーション]を参照。
+/// [Serde]での表現はVOICEVOX
+/// ENGINEに合わせた形となっており、[コンストラクタ]およびゲッターで扱う構造とは大幅に異なる。ただし今後の破壊的変更にて変わる可能性がある。[データのシリアライゼーション]を参照。
 ///
+/// [Serde]: serde
+/// [コンストラクタ]: Self::builder
 /// [データのシリアライゼーション]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/serialization.md
 #[cfg_attr(doc, doc(alias = "VoicevoxUserDictWord"))]
 #[derive(Clone, PartialEq, Debug)]
