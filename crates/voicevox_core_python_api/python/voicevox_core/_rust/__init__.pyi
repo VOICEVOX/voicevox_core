@@ -106,7 +106,7 @@ class InvalidWordError(ValueError):
     ...
 
 class InvalidQueryError(ValueError):
-    """AudioQuery、もしくはその一部が不正。"""
+    """:class:`AudioQuery`, ``FrameAudioQuery``, ``Score``, もしくはその一部が不正。"""
 
     ...
 
