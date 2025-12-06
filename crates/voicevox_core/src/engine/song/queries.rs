@@ -138,10 +138,12 @@ pub struct FramePhoneme {
 
 /// フレームごとの音声合成用のクエリ。
 ///
-/// # Serialization
+/// # Serde
 ///
-/// VOICEVOX ENGINEと同じスキーマになっている。ただし今後の破壊的変更にて変わる可能性がある。[データのシリアライゼーション]を参照。
+/// [Serde]においてはフィールド名はsnake\_caseの形ではなく、VOICEVOX
+/// ENGINEに合わせる形でcamelCaseになっている。ただし今後の破壊的変更にて変わる可能性がある。[データのシリアライゼーション]を参照。
 ///
+/// [Serde]: serde
 /// [データのシリアライゼーション]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/serialization.md
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -156,12 +158,30 @@ pub struct FrameAudioQuery {
     pub phonemes: Vec<FramePhoneme>,
 
     /// 全体の音量。
+    ///
+    /// # Serde
+    ///
+    /// [Serde]においては`volumeScale`という名前で扱われる。
+    ///
+    /// [Serde]: serde
     pub volume_scale: PositiveFinite<f32>,
 
     /// 音声データの出力サンプリングレート。
+    ///
+    /// # Serde
+    ///
+    /// [Serde]においては`outputSamplingRate`という名前で扱われる。
+    ///
+    /// [Serde]: serde
     pub output_sampling_rate: SamplingRate,
 
     /// 音声データをステレオ出力するか否か。
+    ///
+    /// # Serde
+    ///
+    /// [Serde]においては`outputStereo`という名前で扱われる。
+    ///
+    /// [Serde]: serde
     pub output_stereo: bool,
 }
 
