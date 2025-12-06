@@ -7,7 +7,7 @@ use duplicate::duplicate_item;
 use serde::de::DeserializeOwned;
 use tracing::warn;
 
-use crate::error::{ErrorRepr, InvalidQueryErrorKind};
+use crate::error::{InvalidQueryError, InvalidQueryErrorSource};
 
 use super::{
     super::super::{
@@ -46,14 +46,9 @@ impl Mora {
         self.to_validated().map(|_| ())
     }
 
+    // TODO: この層を破壊
     fn to_validated(&self) -> crate::Result<ValidatedMora<'_>> {
-        ValidatedMora::new(self).map_err(|kind| {
-            ErrorRepr::InvalidQuery {
-                what: "モーラ",
-                kind,
-            }
-            .into()
-        })
+        ValidatedMora::new(self).map_err(Into::into)
     }
 }
 
@@ -85,14 +80,9 @@ impl AccentPhrase {
         self.to_validated().map(|_| ())
     }
 
+    // TODO: この層を破壊
     pub(crate) fn to_validated(&self) -> crate::Result<ValidatedAccentPhrase<'_>> {
-        ValidatedAccentPhrase::new(self).map_err(|kind| {
-            ErrorRepr::InvalidQuery {
-                what: "アクセント句",
-                kind,
-            }
-            .into()
-        })
+        ValidatedAccentPhrase::new(self).map_err(Into::into)
     }
 }
 
@@ -134,14 +124,9 @@ impl AudioQuery {
         self.to_validated().map(|_| ())
     }
 
+    // TODO: この層を破壊
     pub(crate) fn to_validated(&self) -> crate::Result<ValidatedAudioQuery<'_>> {
-        ValidatedAudioQuery::new(self).map_err(|kind| {
-            ErrorRepr::InvalidQuery {
-                what: "AudioQuery",
-                kind,
-            }
-            .into()
-        })
+        ValidatedAudioQuery::new(self).map_err(Into::into)
     }
 }
 
@@ -194,7 +179,7 @@ pub(crate) struct ValidatedMora<'original> {
 }
 
 impl<'original> ValidatedMora<'original> {
-    fn new(original: &'original Mora) -> Result<Self, InvalidQueryErrorKind> {
+    fn new(original: &'original Mora) -> Result<Self, InvalidQueryError> {
         let Mora {
             text,
             consonant,
@@ -214,10 +199,25 @@ impl<'original> ValidatedMora<'original> {
         warn_for_non_finite!(pitch);
 
         let consonant = match (consonant, consonant_length) {
-            (Some(phoneme), Some(length)) => Some(LengthedPhoneme::new(phoneme, length)?),
+            (Some(phoneme), Some(length)) => {
+                Some(LengthedPhoneme::new(phoneme, length).map_err(|source| {
+                    error(InvalidQueryErrorSource::InvalidFields {
+                        fields: "`consonant`".to_owned(),
+                        source: source.into(),
+                    })
+                })?)
+            }
             (None, None) => None,
             (Some(_), None) | (None, Some(_)) => {
-                return Err(InvalidQueryErrorKind::MissingConsonantPhonemeOrLength);
+                return Err(error(InvalidQueryErrorSource::InvalidFields {
+                    fields: "`consonant`と`consonant_length`".to_owned(),
+                    source: InvalidQueryError {
+                        what: "組み合わせ",
+                        value: None,
+                        source: InvalidQueryErrorSource::PartiallyPresent.into(),
+                    }
+                    .into(),
+                }));
             }
         };
 
@@ -225,12 +225,20 @@ impl<'original> ValidatedMora<'original> {
 
         let text = text.into();
 
-        Ok(Self {
+        return Ok(Self {
             text,
             consonant,
             vowel,
             pitch,
-        })
+        });
+
+        fn error(source: InvalidQueryErrorSource) -> InvalidQueryError {
+            InvalidQueryError {
+                what: "モーラ",
+                value: None,
+                source: Some(source),
+            }
+        }
     }
 
     fn into_owned(self) -> ValidatedMora<'static> {
@@ -279,10 +287,8 @@ pub(crate) struct LengthedPhoneme {
 }
 
 impl LengthedPhoneme {
-    fn new(phoneme: &str, length: f32) -> Result<Self, InvalidQueryErrorKind> {
-        let phoneme = phoneme
-            .parse()
-            .map_err(|_| InvalidQueryErrorKind::InvalidPhoneme(phoneme.to_owned()))?;
+    fn new(phoneme: &str, length: f32) -> Result<Self, InvalidQueryError> {
+        let phoneme = Phoneme::from_str_with_inner_error(phoneme)?;
         Ok(Self { phoneme, length })
     }
 }
@@ -305,7 +311,7 @@ pub(crate) struct ValidatedAccentPhrase<'original> {
 }
 
 impl<'original> ValidatedAccentPhrase<'original> {
-    fn new(original: &'original AccentPhrase) -> Result<Self, InvalidQueryErrorKind> {
+    fn new(original: &'original AccentPhrase) -> Result<Self, InvalidQueryError> {
         let AccentPhrase {
             moras,
             accent,
@@ -320,17 +326,55 @@ impl<'original> ValidatedAccentPhrase<'original> {
 
         let moras = moras
             .iter()
-            .map(ValidatedMora::new)
+            .enumerate()
+            .map(|(i, mora)| {
+                ValidatedMora::new(mora).map_err(|source| {
+                    error(InvalidQueryErrorSource::InvalidFields {
+                        fields: format!("moras[{i}]"),
+                        source: source.into(),
+                    })
+                })
+            })
             .collect::<Result<_, _>>()?;
-        let accent = NonZero::new(*accent).ok_or(InvalidQueryErrorKind::AccentIsZero)?;
-        let pause_mora = pause_mora.as_ref().map(ValidatedMora::new).transpose()?;
 
-        Ok(Self {
+        let accent = NonZero::new(*accent).ok_or_else(|| {
+            assert_eq!(0, *accent);
+            error(InvalidQueryErrorSource::InvalidFields {
+                fields: "`accent`".to_owned(),
+                source: InvalidQueryError {
+                    what: "アクセント位置",
+                    value: Some(Box::new(0usize)),
+                    source: Some(InvalidQueryErrorSource::IsZero),
+                }
+                .into(),
+            })
+        })?;
+
+        let pause_mora = pause_mora
+            .as_ref()
+            .map(ValidatedMora::new)
+            .transpose()
+            .map_err(|source| {
+                error(InvalidQueryErrorSource::InvalidFields {
+                    fields: "pause_mora".to_owned(),
+                    source: source.into(),
+                })
+            })?;
+
+        return Ok(Self {
             moras,
             accent,
             pause_mora,
             is_interrogative,
-        })
+        });
+
+        fn error(source: InvalidQueryErrorSource) -> InvalidQueryError {
+            InvalidQueryError {
+                what: "アクセント句",
+                value: None,
+                source: Some(source),
+            }
+        }
     }
 
     fn into_owned(self) -> ValidatedAccentPhrase<'static> {
@@ -384,7 +428,7 @@ pub struct ValidatedAudioQuery<'original> {
 }
 
 impl<'original> ValidatedAudioQuery<'original> {
-    fn new(original: &'original AudioQuery) -> Result<Self, InvalidQueryErrorKind> {
+    fn new(original: &'original AudioQuery) -> Result<Self, InvalidQueryError> {
         let AudioQuery {
             accent_phrases,
             speed_scale,
@@ -417,16 +461,32 @@ impl<'original> ValidatedAudioQuery<'original> {
 
         let accent_phrases = accent_phrases
             .iter()
-            .map(ValidatedAccentPhrase::new)
+            .enumerate()
+            .map(|(i, accent_phrase)| {
+                ValidatedAccentPhrase::new(accent_phrase).map_err(|source| {
+                    error(InvalidQueryErrorSource::InvalidFields {
+                        fields: format!("`accent_phrases[{i}]`"),
+                        source: source.into(),
+                    })
+                })
+            })
             .collect::<Result<_, _>>()?;
 
-        let output_sampling_rate = SamplingRate::new(*output_sampling_rate).ok_or(
-            InvalidQueryErrorKind::InvalidSamplingRate(*output_sampling_rate),
-        )?;
+        let output_sampling_rate = SamplingRate::new(*output_sampling_rate).ok_or_else(|| {
+            error(InvalidQueryErrorSource::InvalidFields {
+                fields: "`output_sampling_rate`/`outputSamplingRate`".to_owned(),
+                source: InvalidQueryError {
+                    what: "サンプリングレート",
+                    value: Some(Box::new(*output_sampling_rate) as _),
+                    source: Some(InvalidQueryErrorSource::IsNotMultipleOfBaseSamplingRate),
+                }
+                .into(),
+            })
+        })?;
 
         let kana = kana.clone();
 
-        Ok(Self {
+        return Ok(Self {
             accent_phrases,
             speed_scale,
             pitch_scale,
@@ -437,7 +497,15 @@ impl<'original> ValidatedAudioQuery<'original> {
             output_sampling_rate,
             output_stereo,
             kana,
-        })
+        });
+
+        fn error(source: InvalidQueryErrorSource) -> InvalidQueryError {
+            InvalidQueryError {
+                what: "AudioQuery",
+                value: None,
+                source: Some(source),
+            }
+        }
     }
 
     pub(crate) fn into_owned(self) -> ValidatedAudioQuery<'static> {
