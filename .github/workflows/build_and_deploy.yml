@@ -175,7 +175,7 @@ jobs:
           case "$RUNNER_ARCH",${{ matrix.target }} in
             X64,i686-*) architecture=x86 ;;
             X64,x86_64-*|X64,aarch64-*) architecture=x64 ;;
-            ARM64,aarch64-*) architecture=arm64 ;;
+            ARM64,x86_64-*|ARM64,aarch64-*) architecture=arm64 ;;
             *)
               echo 'unexpected architecture' >&2
               exit 1
