@@ -159,7 +159,6 @@ jobs:
     needs: config
     environment: ${{ inputs.code_signing && 'code_signing' || '' }} # コード署名用のenvironment
     strategy:
-      fail-fast: false
       matrix:
         include: ${{ fromJson(needs.config.outputs.includes) }}
     runs-on: ${{ matrix.os }}
