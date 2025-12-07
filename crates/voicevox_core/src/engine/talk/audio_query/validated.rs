@@ -35,7 +35,6 @@ impl Mora {
     /// 次の状態に対しては[`WARN`]レベルのログを出す。将来的にはエラーになる予定。
     ///
     /// - [`consonant_length`]がNaN、infinity、もしくは負。
-    /// - [`vowel`]が子音。
     /// - [`vowel_length`]がNaN、infinity、もしくは負。
     /// - [`pitch`]がNaNもしくは±infinity。
     ///
