@@ -67,6 +67,8 @@
 [@phenylshima]: https://github.com/phenylshima
 -->
 
+## [0.16.3] - 2025-12-08 (+09:00)
+
 ### Added
 
 - `sil`に対する扱いが、現行のバージョン0.25.0のVOICEVOX ENGINEと同じになります ([#1197])。
@@ -78,6 +80,10 @@
     - \[Rust,Python,Java\] エラーの種類として`InvalidQuery`が追加されます。
     - \[C\] エラーの種類として`VOICEVOX_RESULT_INVALID_MORA_ERROR`が追加されます。
     - メソッドとして`{AudioQuery,AccentPhrase,Mora}::validate`が追加されます。
+- \[Rust\] 依存ライブラリが変化します ([#1190], [#1214], [#1221])。
+    - \[追加\] `bytemuck@1`: `^1.24.0`
+    - \[追加\] `pastey`: `^0.2.0`
+    - \[追加\] `phf`: `^0.13.1`
 
 ### Removed
 
@@ -85,7 +91,7 @@
     - `""`
     - `consonant`における母音
     - `vowel`における子音
-- \[macOS\] macOS 13がサポート範囲から外れます。"arm64"バイナリのリリースはmacOS 14で、"x64"バイナリのリリースはmacOS 15で行われるようになります。([#1174], [#1227])。
+- \[macOS\] macOS 13がサポート範囲から外れます。"arm64"バイナリのリリースはmacOS 14で、"x64"バイナリのリリースはmacOS 15で行われるようになります ([#1174], [#1227])。
 
 ### Fixed
 
@@ -1023,7 +1029,8 @@ Windows版ダウンローダーのビルドに失敗しています。
 
 - \[Python\] モジュールに`__all__`が適切に設定されます ([#415])。
 
-[Unreleased]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.2...HEAD
+[Unreleased]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.3...HEAD
+[0.16.3]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.2...0.16.3
 [0.16.2]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.1...0.16.2
 [0.16.1]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.0...0.16.1
 [0.16.0]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.0-preview.1...0.16.0
@@ -1380,9 +1387,11 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1155]: https://github.com/VOICEVOX/voicevox_core/pull/1155
 [#1164]: https://github.com/VOICEVOX/voicevox_core/pull/1164
 [#1174]: https://github.com/VOICEVOX/voicevox_core/pull/1174
+[#1190]: https://github.com/VOICEVOX/voicevox_core/pull/1190
 [#1197]: https://github.com/VOICEVOX/voicevox_core/pull/1197
 [#1203]: https://github.com/VOICEVOX/voicevox_core/pull/1203
 [#1208]: https://github.com/VOICEVOX/voicevox_core/pull/1208
+[#1214]: https://github.com/VOICEVOX/voicevox_core/pull/1214
 [#1220]: https://github.com/VOICEVOX/voicevox_core/pull/1220
 [#1221]: https://github.com/VOICEVOX/voicevox_core/pull/1221
 [#1222]: https://github.com/VOICEVOX/voicevox_core/pull/1222
