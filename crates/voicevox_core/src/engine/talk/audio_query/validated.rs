@@ -221,7 +221,12 @@ impl<'original> ValidatedMora<'original> {
             }
         };
 
-        let vowel = LengthedPhoneme::new(vowel, vowel_length)?;
+        let vowel = LengthedPhoneme::new(vowel, vowel_length).map_err(|source| {
+            error(InvalidQueryErrorSource::InvalidFields {
+                fields: "`vowel`".to_owned(),
+                source: source.into(),
+            })
+        })?;
 
         let text = text.into();
 
