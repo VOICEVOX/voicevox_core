@@ -222,7 +222,7 @@ impl<'original> ValidatedMora<'original> {
                         source: InvalidQueryErrorSource::PartiallyPresent.into(),
                     }
                     .into(),
-                }))
+                }));
             }
         };
 
