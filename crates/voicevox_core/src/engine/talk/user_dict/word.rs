@@ -334,20 +334,61 @@ impl Default for UserDictWordBuilder {
 }
 
 /// ユーザー辞書の単語の種類。
+///
+/// # Serde
+///
+/// [Serde]においては各バリアント名はSCREAMING\_SNAKE\_CASEとなる。
+///
+/// [Serde]: serde
 #[cfg_attr(doc, doc(alias = "VoicevoxUserDictWordType"))]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum UserDictWordType {
     /// 固有名詞。
+    ///
+    /// # Serde
+    ///
+    /// [Serde]においては`"PROPER_NOUN"`という値で表される。
+    ///
+    /// [Serde]: serde
     ProperNoun,
+
     /// 一般名詞。
+    ///
+    /// # Serde
+    ///
+    /// [Serde]においては`"COMMON_NOUN"`という値で表される。
+    ///
+    /// [Serde]: serde
     CommonNoun,
+
     /// 動詞。
+    ///
+    /// # Serde
+    ///
+    /// [Serde]においては`"VERB"`という値で表される。
+    ///
+    /// [Serde]: serde
     Verb,
+
     /// 形容詞。
+    ///
+    /// # Serde
+    ///
+    /// [Serde]においては`"ADJECTIVE"`という値で表される。
+    ///
+    /// [Serde]: serde
     Adjective,
+
     /// 接尾辞。
+    ///
+    /// # Serde
+    ///
+    /// [Serde]においては`"SUFFIX"`という値で表される。
+    ///
+    /// [Serde]: serde
     Suffix,
+
     #[doc(hidden)]
     __NonExhaustive,
 }
