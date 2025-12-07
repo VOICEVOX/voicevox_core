@@ -212,19 +212,6 @@ jobs:
           fi
       - name: cache target
         uses: Swatinem/rust-cache@v2
-      # ortが余分なリンクを大量に追加してビルドの失敗を起こしているため、どれが原因なのかわからないので全部を停止させるハックを行う
-      - name: Workaround for x86_64-apple-darwin
-        if: matrix.target == 'x86_64-apple-darwin'
-        run: |
-          ort_sys_rev=$(
-            cargo metadata --format-version 1 --manifest-path ./crates/voicevox_core/Cargo.toml |
-              jq -r '.packages[] | select(.name == "voicevox-ort-sys").id' |
-              sed -n 's/.*rev=\(.*\)#.*/\1/p'
-          )
-          cargo add -p voicevox_core --git https://github.com/VOICEVOX/ort.git --rev "$ort_sys_rev" --features disable-linking voicevox-ort-sys
-      - if: matrix.target == 'x86_64-apple-darwin' || matrix.target == 'x86_64-apple-ios'
-        run: |
-          cargo build -p open_jtalk-sys --manifest-path crates/voicevox_core/Cargo.toml --target ${{ matrix.target }} --release
       - name: build voicevox_core_c_api
         shell: bash
         run: |
