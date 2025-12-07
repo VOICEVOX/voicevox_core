@@ -74,7 +74,7 @@
 
 ### Changed
 
-- `AudioQuery`/`AccentPhrase`/`Mora`において不正な状態というものが定義され、不正な`AudioQuery`もしくは`accent_phrases`が明示的にエラーを引き起こすようになります ([#1203], [#1208], [#1222], [#1221])。
+- `AudioQuery`/`AccentPhrase`/`Mora`において不正な状態というものが定義され、不正な`AudioQuery`もしくは`accent_phrases`が明示的にエラーを引き起こすようになります ([#1203], [#1208], [#1222], [#1221], [#1224])。
     - \[Rust,Python,Java\] エラーの種類として`InvalidQuery`が追加されます。
     - \[C\] エラーの種類として`VOICEVOX_RESULT_INVALID_MORA_ERROR`が追加されます。
     - メソッドとして`{AudioQuery,AccentPhrase,Mora}::validate`が追加されます。
@@ -1387,6 +1387,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1221]: https://github.com/VOICEVOX/voicevox_core/pull/1221
 [#1222]: https://github.com/VOICEVOX/voicevox_core/pull/1222
 [#1223]: https://github.com/VOICEVOX/voicevox_core/pull/1223
+[#1224]: https://github.com/VOICEVOX/voicevox_core/pull/1224
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
