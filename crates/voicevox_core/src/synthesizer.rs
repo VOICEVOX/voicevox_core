@@ -559,8 +559,8 @@ trait AsInner {
         return Ok(new_accent_phrases);
 
         #[ext]
-        impl LengthedPhoneme {
-            fn with_length(&self, length: f32) -> LengthedPhoneme {
+        impl<P: Clone> LengthedPhoneme<P> {
+            fn with_length(&self, length: f32) -> LengthedPhoneme<P> {
                 LengthedPhoneme {
                     phoneme: self.phoneme.clone(),
                     length,
