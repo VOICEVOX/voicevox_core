@@ -214,6 +214,10 @@ jobs:
           fi
       - name: cache target
         uses: Swatinem/rust-cache@v2
+      # nixpkgsがやっているハック
+      - name: Workaround for x86_64-apple-darwin
+        if: matrix.target == 'x86_64-apple-darwin'
+        run: echo ORT_LIB_LOCATION=dummy >> "$GITHUB_ENV"
       - name: build voicevox_core_c_api
         shell: bash
         run: |
