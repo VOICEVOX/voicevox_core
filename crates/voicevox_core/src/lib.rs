@@ -241,6 +241,44 @@ pub mod __doc {
         "voicevox_error_result_to_message"
     ))]
     pub mod C_APIには存在するがRust_APIには存在しないアイテム {}
+
+    /// 以下の型は[Serde]でのシリアライズ・デシリアライズに対応している。
+    ///
+    /// - [`SupportedDevices`]（シリアライズのみ）
+    /// - [`VoiceModelId`]
+    /// - <code>[VoiceModelMeta] = [Vec]\<[CharacterMeta]\></code>
+    ///     - [`StyleMeta`]
+    ///         - [`StyleId`]
+    ///         - [`StyleType`]
+    ///     - [`CharacterVersion`]
+    /// - [`UserDictWord`]
+    ///     - [`UserDictWordType`]
+    /// - [`AudioQuery`]
+    ///     - [`AccentPhrase`]
+    ///     - [`Mora`]
+    ///
+    /// [C API]が取り扱うJSONもSerdeの実装に従っている。
+    ///
+    /// VOICEVOX COREとしての方針については[データのシリアライゼーション]を参照。
+    ///
+    /// [Serde]: https://serde.rs
+    /// [`SupportedDevices`]: crate::SupportedDevices
+    /// [`VoiceModelId`]: crate::VoiceModelId
+    /// [VoiceModelMeta]: crate::VoiceModelMeta
+    /// [Vec]: std::vec::Vec
+    /// [CharacterMeta]: crate::CharacterMeta
+    /// [`StyleMeta`]: crate::StyleMeta
+    /// [`StyleId`]: crate::StyleId
+    /// [`StyleType`]: crate::StyleType
+    /// [`CharacterVersion`]: crate::CharacterVersion
+    /// [`UserDictWord`]: crate::UserDictWord
+    /// [`UserDictWordType`]: crate::UserDictWordType
+    /// [`AudioQuery`]: crate::AudioQuery
+    /// [`AccentPhrase`]: crate::AccentPhrase
+    /// [`Mora`]: crate::Mora
+    /// [C API]: https://voicevox.github.io/voicevox_core/apis/c_api/voicevox__core_8h.html
+    /// [データのシリアライゼーション]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/serialization.md
+    pub mod Serde対応 {}
 }
 
 mod asyncs;

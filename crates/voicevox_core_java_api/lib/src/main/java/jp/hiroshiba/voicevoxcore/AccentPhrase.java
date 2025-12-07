@@ -14,7 +14,11 @@ import jp.hiroshiba.voicevoxcore.exceptions.InvalidQueryException;
  * <p>この構造体の状態によっては、{@code Synthesizer}の各メソッドは{@link InvalidQueryException}を発する。詳細は{@link
  * #validate}にて。
  *
- * <p>現在この型はGSONに対応しているが、将来的には <a href="https://github.com/VOICEVOX/voicevox_core/issues/984"
+ * <p>Gsonにおいてはフィールド名はsnake_caseとなる。<a
+ * href="https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/serialization.md"
+ * target="_blank">データのシリアライゼーション</a>を参照。
+ *
+ * <p>Gsonについては将来的には <a href="https://github.com/VOICEVOX/voicevox_core/issues/984"
  * target="_blank">Jacksonに切り替わる予定</a> 。
  */
 public class AccentPhrase {

@@ -22,8 +22,9 @@
  *   </dt>
  *
  *   <dd>
- *     JSONの形式はVOICEVOX ENGINEと同じになっている。ただし今後の破壊的変更にて変わる可能性がある。[データのシリアライゼーション]を参照。
+ *     JSONの形式は[Rust APIのSerde実装]に準じており、おおむねVOICEVOX ENGINEと同じになることを目指している。ただし今後の破壊的変更にて変わる可能性がある。[データのシリアライゼーション]を参照。
  *
+ *     [Rust APIのSerde実装]: ../rust_api/voicevox_core/__doc/Serde対応/index.html
  *     [データのシリアライゼーション]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/serialization.md
  *   </dd>
  * </dl>

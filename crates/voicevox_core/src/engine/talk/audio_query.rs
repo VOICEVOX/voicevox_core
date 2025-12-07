@@ -69,10 +69,13 @@ impl AccentPhrase {
 
 /// AudioQuery (音声合成用のクエリ)。
 ///
-/// # Serialization
+/// # Serde
 ///
-/// VOICEVOX ENGINEと同じスキーマになっている。ただし今後の破壊的変更にて変わる可能性がある。[データのシリアライゼーション]を参照。
+/// [Serde]においては[`accent_phrases`]を除くフィールド名はsnake\_caseの形ではなく、VOICEVOX
+/// ENGINEに合わせる形でcamelCaseになっている。ただし今後の破壊的変更にて変わる可能性がある。[データのシリアライゼーション]を参照。
 ///
+/// [`accent_phrases`]: Self::accent_phrases
+/// [Serde]: serde
 /// [データのシリアライゼーション]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/serialization.md
 ///
 /// # Validation
@@ -87,27 +90,75 @@ pub struct AudioQuery {
     /// アクセント句の配列。
     pub accent_phrases: Vec<AccentPhrase>,
     /// 全体の話速。
+    ///
+    /// # Serde
+    ///
+    /// [Serde]においては`speedScale`という名前で扱われる。
+    ///
+    /// [Serde]: serde
     #[serde(rename = "speedScale")]
     pub speed_scale: f32,
     /// 全体の音高。
+    ///
+    /// # Serde
+    ///
+    /// [Serde]においては`pitchScale`という名前で扱われる。
+    ///
+    /// [Serde]: serde
     #[serde(rename = "pitchScale")]
     pub pitch_scale: f32,
     /// 全体の抑揚。
+    ///
+    /// # Serde
+    ///
+    /// [Serde]においては`intonationScale`という名前で扱われる。
+    ///
+    /// [Serde]: serde
     #[serde(rename = "intonationScale")]
     pub intonation_scale: f32,
     /// 全体の音量。
+    ///
+    /// # Serde
+    ///
+    /// [Serde]においては`volumeScale`という名前で扱われる。
+    ///
+    /// [Serde]: serde
     #[serde(rename = "volumeScale")]
     pub volume_scale: f32,
     /// 音声の前の無音時間。
+    ///
+    /// # Serde
+    ///
+    /// [Serde]においては`prePhonemeLength`という名前で扱われる。
+    ///
+    /// [Serde]: serde
     #[serde(rename = "prePhonemeLength")]
     pub pre_phoneme_length: f32,
     /// 音声の後の無音時間。
+    ///
+    /// # Serde
+    ///
+    /// [Serde]においては`postPhonemeLength`という名前で扱われる。
+    ///
+    /// [Serde]: serde
     #[serde(rename = "postPhonemeLength")]
     pub post_phoneme_length: f32,
     /// 音声データの出力サンプリングレート。
+    ///
+    /// # Serde
+    ///
+    /// [Serde]においては`outputSamplingRate`という名前で扱われる。
+    ///
+    /// [Serde]: serde
     #[serde(rename = "outputSamplingRate")]
     pub output_sampling_rate: u32,
     /// 音声データをステレオ出力するか否か。
+    ///
+    /// # Serde
+    ///
+    /// [Serde]においては`outputStereo`という名前で扱われる。
+    ///
+    /// [Serde]: serde
     #[serde(rename = "outputStereo")]
     pub output_stereo: bool,
     /// \[読み取り専用\] AquesTalk風記法。
