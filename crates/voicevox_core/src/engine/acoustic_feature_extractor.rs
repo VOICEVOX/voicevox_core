@@ -4,6 +4,8 @@ use bytemuck::{checked::CheckedCastError, CheckedBitPattern, Contiguous, NoUnini
 use duplicate::duplicate_item;
 use strum::EnumCount;
 
+use crate::error::InvalidQueryError;
+
 use self::sil::Sil;
 
 macro_rules! optional_consonant {
@@ -339,10 +341,8 @@ pub(crate) enum Phoneme {
     ConsonantZ,
 }
 
-impl FromStr for Phoneme {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+impl Phoneme {
+    pub(super) fn from_str_with_inner_error(s: &str) -> Result<Self, InvalidQueryError> {
         if let Ok(sil) = s.parse() {
             Ok(Self::Sil(sil))
         } else {
@@ -392,9 +392,21 @@ impl FromStr for Phoneme {
                 "w" => Ok(Self::ConsonantW),
                 "y" => Ok(Self::ConsonantY),
                 "z" => Ok(Self::ConsonantZ),
-                s => Err(format!("invalid phoneme: {s:?}")),
+                value => Err(InvalidQueryError {
+                    what: "音素",
+                    value: Some(Box::new(value.to_owned())),
+                    source: None,
+                }),
             }
         }
+    }
+}
+
+impl FromStr for Phoneme {
+    type Err = crate::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::from_str_with_inner_error(s).map_err(Into::into)
     }
 }
 
@@ -826,6 +838,8 @@ mod tests {
     use rstest::rstest;
     use strum::IntoEnumIterator as _;
 
+    use crate::error::{ErrorRepr, InvalidQueryError};
+
     use super::{MoraTail, OptionalConsonant, Phoneme, PhonemeCode};
 
     #[test]
@@ -865,10 +879,16 @@ mod tests {
     #[case("")]
     #[case("invalid")]
     fn test_invalid_phoneme(#[case] s: &str) {
-        assert_eq!(
-            format!("invalid phoneme: {s:?}"),
-            s.parse::<Phoneme>().unwrap_err(),
-        );
+        let err = s.parse::<Phoneme>().unwrap_err();
+        let crate::Error(ErrorRepr::InvalidQuery(InvalidQueryError {
+            what: "音素",
+            value: Some(value),
+            source: None,
+        })) = err
+        else {
+            panic!("unexpected error: {err:?}");
+        };
+        assert_eq!(format!("{s:?}"), format!("{value:?}"));
     }
 
     #[rstest]
