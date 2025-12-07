@@ -238,11 +238,20 @@ pub(crate) enum InvalidQueryErrorSource {
     #[error("この二つの有無は一致していなければなりません")]
     PartiallyPresent,
 
+    #[error("子音ではありません")]
+    IsNotConsonant,
+
+    #[error("子音です")]
+    IsConsonant,
+
     #[error("`0`にすることはできません")]
     IsZero,
 
     #[error("0より大きい{DEFAULT_SAMPLING_RATE}の倍数でなければなりません")]
     IsNotMultipleOfBaseSamplingRate,
+
+    #[error(transparent)]
+    InvalidAsSuperset(Box<InvalidQueryError>),
 
     #[error("{fields}が不正です")]
     InvalidFields {

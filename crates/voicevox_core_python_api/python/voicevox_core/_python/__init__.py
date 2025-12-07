@@ -291,7 +291,8 @@ class Mora:
         次のうちどれかを満たすなら |mora-validate-invalid-query-error|_ を発する。
 
         - :attr:`consonant` と :attr:`consonant_length` の有無が不一致。
-        - :attr:`consonant` もしくは :attr:`vowel` が音素として不正。
+        - :attr:`consonant` が子音以外の音素であるか、もしくは音素として不正。
+        - :attr:`vowel` が子音であるか、もしくは音素として不正。
 
         また次の状態に対しては |mora-validate-logging-warning|_
         レベルのログを出す。将来的にはエラーになる予定。

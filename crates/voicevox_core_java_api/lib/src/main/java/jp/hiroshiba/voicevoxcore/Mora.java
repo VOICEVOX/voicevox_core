@@ -67,7 +67,8 @@ public class Mora implements Cloneable {
    *
    * <ul>
    *   <li>{@link #consonant}と{@link #consonantLength}の有無が不一致。
-   *   <li>{@link #consonant}もしくは{@link #vowel}が音素として不正。
+   *   <li>{@link #consonant}が子音以外の音素であるか、もしくは音素として不正。
+   *   <li>{@link #vowel}が子音であるか、もしくは音素として不正。
    * </ul>
    *
    * <p>また次の状態に対してはログで警告を出す。将来的にはエラーになる予定。

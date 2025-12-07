@@ -592,7 +592,8 @@ pub unsafe extern "C" fn voicevox_accent_phrase_validate(
 /// 次のうちどれかを満たすならエラーを返す。
 ///
 /// - `consonant`と`consonant_length`の有無が不一致。
-/// - `consonant`もしくは`vowel`が音素として不正。
+/// - `consonant`が子音以外の音素であるか、もしくは音素として不正。
+/// - `vowel`が子音であるか、もしくは音素として不正。
 ///
 /// 次の状態に対しては警告のログを出す。将来的にはエラーになる予定。
 ///

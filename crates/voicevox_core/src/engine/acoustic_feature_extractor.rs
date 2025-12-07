@@ -2,9 +2,10 @@ use std::str::FromStr;
 
 use bytemuck::{checked::CheckedCastError, CheckedBitPattern, Contiguous, NoUninit};
 use duplicate::duplicate_item;
+use pastey::paste;
 use strum::EnumCount;
 
-use crate::error::InvalidQueryError;
+use crate::error::{InvalidQueryError, InvalidQueryErrorSource};
 
 use self::sil::Sil;
 
@@ -342,7 +343,7 @@ pub(crate) enum Phoneme {
 }
 
 impl Phoneme {
-    pub(super) fn from_str_with_inner_error(s: &str) -> Result<Self, InvalidQueryError> {
+    fn from_str_with_inner_error(s: &str) -> Result<Self, InvalidQueryError> {
         if let Ok(sil) = s.parse() {
             Ok(Self::Sil(sil))
         } else {
@@ -403,6 +404,315 @@ impl Phoneme {
 }
 
 impl FromStr for Phoneme {
+    type Err = crate::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::from_str_with_inner_error(s).map_err(Into::into)
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, derive_more::Display)]
+pub(crate) enum Consonant {
+    /// `b`。
+    #[display("b")]
+    B,
+
+    /// `by`。
+    #[display("by")]
+    By,
+
+    /// `ch`。
+    #[display("ch")]
+    Ch,
+
+    /// `d`。
+    #[display("d")]
+    D,
+
+    /// `dy`。
+    #[display("dy")]
+    Dy,
+
+    /// `f`。
+    #[display("f")]
+    F,
+
+    /// `g`。
+    #[display("g")]
+    G,
+
+    /// `gw`。
+    #[display("gw")]
+    Gw,
+
+    /// `gy`。
+    #[display("gy")]
+    Gy,
+
+    /// `h`。
+    #[display("h")]
+    H,
+
+    /// `hy`。
+    #[display("hy")]
+    Hy,
+
+    /// `j`。
+    #[display("j")]
+    J,
+
+    /// `k`。
+    #[display("k")]
+    K,
+
+    /// `kw`。
+    #[display("kw")]
+    Kw,
+
+    /// `ky`。
+    #[display("ky")]
+    Ky,
+
+    /// `m`。
+    #[display("m")]
+    M,
+
+    /// `my`。
+    #[display("my")]
+    My,
+
+    /// `n`。
+    #[display("n")]
+    N,
+
+    /// `ny`。
+    #[display("ny")]
+    Ny,
+
+    /// `p`。
+    #[display("p")]
+    P,
+
+    /// `py`。
+    #[display("py")]
+    Py,
+
+    /// `r`。
+    #[display("r")]
+    R,
+
+    /// `ry`。
+    #[display("ry")]
+    Ry,
+
+    /// `s`。
+    #[display("s")]
+    S,
+
+    /// `sh`。
+    #[display("sh")]
+    Sh,
+
+    /// `t`。
+    #[display("t")]
+    T,
+
+    /// `ts`。
+    #[display("ts")]
+    Ts,
+
+    /// `ty`。
+    #[display("ty")]
+    Ty,
+
+    /// `v`。
+    #[display("v")]
+    V,
+
+    /// `w`。
+    #[display("w")]
+    W,
+
+    /// `y`。
+    #[display("y")]
+    Y,
+
+    /// `z`。
+    #[display("z")]
+    Z,
+}
+
+impl Consonant {
+    pub(super) fn from_str_with_inner_error(s: &str) -> Result<Self, InvalidQueryError> {
+        use self::Phoneme::*;
+
+        let error = |source| InvalidQueryError {
+            what: "子音",
+            value: Some(Box::new(s.to_owned()) as _),
+            source: Some(source),
+        };
+
+        let phoneme = Phoneme::from_str_with_inner_error(s)
+            .map_err(|source| error(InvalidQueryErrorSource::InvalidAsSuperset(source.into())))?;
+
+        macro_rules! convert {
+            ($($variant:tt),* $(,)?) => {
+                match phoneme {
+                    $(paste!([<Consonant $variant>]) => Ok(Self::$variant),)*
+                    MorablePau | Sil(_) | UnvoicedVowelA | UnvoicedVowelE | UnvoicedVowelI
+                    | MorableN | UnvoicedVowelO | UnvoicedVowelU | VoicedVowelA | MorableCl
+                    | VoicedVowelE | VoicedVowelI | VoicedVowelO | VoicedVowelU => {
+                        Err(error(InvalidQueryErrorSource::IsNotConsonant))
+                    }
+                }
+            };
+        }
+
+        convert!(
+            B, By, Ch, D, Dy, F, G, Gw, Gy, H, Hy, J, K, Kw, Ky, M, My, N, Ny, P, Py, R, Ry, S, Sh,
+            T, Ts, Ty, V, W, Y, Z,
+        )
+    }
+}
+
+impl FromStr for Consonant {
+    type Err = crate::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::from_str_with_inner_error(s).map_err(Into::into)
+    }
+}
+
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, derive_more::Display)]
+pub(crate) enum NonConsonant {
+    /// `pau`。
+    #[display("pau")]
+    MorablePau,
+
+    /// `sil`。
+    #[display("{_0}")]
+    Sil(Sil),
+
+    /// `A`。
+    #[display("A")]
+    UnvoicedVowelA,
+
+    /// `E`。
+    #[display("E")]
+    UnvoicedVowelE,
+
+    /// `I`。
+    #[display("I")]
+    UnvoicedVowelI,
+
+    /// `N`。
+    #[display("N")]
+    MorableN,
+
+    /// `O`。
+    #[display("O")]
+    UnvoicedVowelO,
+
+    /// `U`。
+    #[display("U")]
+    UnvoicedVowelU,
+
+    /// `a`。
+    #[display("a")]
+    VoicedVowelA,
+
+    /// `cl`。
+    #[display("cl")]
+    MorableCl,
+
+    /// `e`。
+    #[display("e")]
+    VoicedVowelE,
+
+    /// `i`。
+    #[display("i")]
+    VoicedVowelI,
+
+    /// `o`。
+    #[display("o")]
+    VoicedVowelO,
+
+    /// `u`。
+    #[display("u")]
+    VoicedVowelU,
+}
+
+impl NonConsonant {
+    pub(super) fn from_str_with_inner_error(s: &str) -> Result<Self, InvalidQueryError> {
+        let error = |source| InvalidQueryError {
+            what: "非子音",
+            value: Some(Box::new(s.to_owned())),
+            source: Some(source),
+        };
+
+        let phoneme = Phoneme::from_str_with_inner_error(s)
+            .map_err(|source| error(InvalidQueryErrorSource::InvalidAsSuperset(source.into())))?;
+
+        macro_rules! convert {
+            ($($variant:ident),* $(,)?) => {
+                match phoneme {
+                    $(Phoneme::$variant => Ok(Self::$variant),)*
+                    Phoneme::Sil(sil) => Ok(Self::Sil(sil)),
+                    Phoneme::ConsonantB
+                    | Phoneme::ConsonantBy
+                    | Phoneme::ConsonantCh
+                    | Phoneme::ConsonantD
+                    | Phoneme::ConsonantDy
+                    | Phoneme::ConsonantF
+                    | Phoneme::ConsonantG
+                    | Phoneme::ConsonantGw
+                    | Phoneme::ConsonantGy
+                    | Phoneme::ConsonantH
+                    | Phoneme::ConsonantHy
+                    | Phoneme::ConsonantJ
+                    | Phoneme::ConsonantK
+                    | Phoneme::ConsonantKw
+                    | Phoneme::ConsonantKy
+                    | Phoneme::ConsonantM
+                    | Phoneme::ConsonantMy
+                    | Phoneme::ConsonantN
+                    | Phoneme::ConsonantNy
+                    | Phoneme::ConsonantP
+                    | Phoneme::ConsonantPy
+                    | Phoneme::ConsonantR
+                    | Phoneme::ConsonantRy
+                    | Phoneme::ConsonantS
+                    | Phoneme::ConsonantSh
+                    | Phoneme::ConsonantT
+                    | Phoneme::ConsonantTs
+                    | Phoneme::ConsonantTy
+                    | Phoneme::ConsonantV
+                    | Phoneme::ConsonantW
+                    | Phoneme::ConsonantY
+                    | Phoneme::ConsonantZ => Err(error(InvalidQueryErrorSource::IsConsonant)),
+                }
+            };
+        }
+
+        convert!(
+            MorablePau,
+            UnvoicedVowelA,
+            UnvoicedVowelE,
+            UnvoicedVowelI,
+            MorableN,
+            UnvoicedVowelO,
+            UnvoicedVowelU,
+            VoicedVowelA,
+            MorableCl,
+            VoicedVowelE,
+            VoicedVowelI,
+            VoicedVowelO,
+            VoicedVowelU,
+        )
+    }
+}
+
+impl FromStr for NonConsonant {
     type Err = crate::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -534,6 +844,54 @@ impl From<Phoneme> for PhonemeCode {
     }
 }
 
+impl From<Consonant> for PhonemeCode {
+    fn from(consonant: Consonant) -> Self {
+        use PhonemeCode::*;
+
+        macro_rules! convert {
+            ($($variant:tt),* $(,)?) => {
+                match consonant {
+                    $(Consonant::$variant => paste!([<Consonant $variant>])),*
+                }
+            };
+        }
+
+        convert!(
+            B, By, Ch, D, Dy, F, G, Gw, Gy, H, Hy, J, K, Kw, Ky, M, My, N, Ny, P, Py, R, Ry, S, Sh,
+            T, Ts, Ty, V, W, Y, Z,
+        )
+    }
+}
+
+impl From<NonConsonant> for PhonemeCode {
+    fn from(non_consonant: NonConsonant) -> Self {
+        macro_rules! convert {
+            ($($variant:ident),* $(,)?) => {
+                match non_consonant {
+                    $(NonConsonant::$variant => Self::$variant,)*
+                    NonConsonant::Sil(_) => Self::space_phoneme(),
+                }
+            };
+        }
+
+        convert!(
+            MorablePau,
+            UnvoicedVowelA,
+            UnvoicedVowelE,
+            UnvoicedVowelI,
+            MorableN,
+            UnvoicedVowelO,
+            UnvoicedVowelU,
+            VoicedVowelA,
+            MorableCl,
+            VoicedVowelE,
+            VoicedVowelI,
+            VoicedVowelO,
+            VoicedVowelU,
+        )
+    }
+}
+
 impl From<PhonemeCode> for usize {
     fn from(phoneme: PhonemeCode) -> Self {
         const _: () =
@@ -614,50 +972,22 @@ impl From<OptionalConsonant> for &'static str {
     }
 }
 
-impl OptionalConsonant {
-    pub(super) fn to_phoneme(self) -> Option<Phoneme> {
+impl From<OptionalConsonant> for Option<Consonant> {
+    fn from(consonant: OptionalConsonant) -> Self {
+        use OptionalConsonant::*;
+
         macro_rules! convert {
-            ($($variant:ident),* $(,)?) => {
-                match self {
-                    Self::None => None,
-                    $(Self::$variant => Some(Phoneme::$variant),)*
+            ($($variant:tt),* $(,)?) => {
+                match consonant {
+                    None => Option::None,
+                    $(paste!([<Consonant $variant>]) => Some(Consonant::$variant),)*
                 }
             };
         }
 
         convert!(
-            ConsonantB,
-            ConsonantBy,
-            ConsonantCh,
-            ConsonantD,
-            ConsonantDy,
-            ConsonantF,
-            ConsonantG,
-            ConsonantGw,
-            ConsonantGy,
-            ConsonantH,
-            ConsonantHy,
-            ConsonantJ,
-            ConsonantK,
-            ConsonantKw,
-            ConsonantKy,
-            ConsonantM,
-            ConsonantMy,
-            ConsonantN,
-            ConsonantNy,
-            ConsonantP,
-            ConsonantPy,
-            ConsonantR,
-            ConsonantRy,
-            ConsonantS,
-            ConsonantSh,
-            ConsonantT,
-            ConsonantTs,
-            ConsonantTy,
-            ConsonantV,
-            ConsonantW,
-            ConsonantY,
-            ConsonantZ,
+            B, By, Ch, D, Dy, F, G, Gw, Gy, H, Hy, J, K, Kw, Ky, M, My, N, Ny, P, Py, R, Ry, S, Sh,
+            T, Ts, Ty, V, W, Y, Z,
         )
     }
 }
@@ -754,7 +1084,7 @@ impl From<MoraTail> for &'static str {
     }
 }
 
-impl From<MoraTail> for Phoneme {
+impl From<MoraTail> for NonConsonant {
     fn from(phoneme: MoraTail) -> Self {
         macro_rules! convert {
             ($($variant:ident),* $(,)?) => {
@@ -840,7 +1170,7 @@ mod tests {
 
     use crate::error::{ErrorRepr, InvalidQueryError};
 
-    use super::{MoraTail, OptionalConsonant, Phoneme, PhonemeCode};
+    use super::{Consonant, MoraTail, NonConsonant, OptionalConsonant, Phoneme, PhonemeCode};
 
     #[test]
     fn each_phoneme_code_should_be_categorized_into_consonant_xor_mora_tail() {
@@ -884,6 +1214,40 @@ mod tests {
             what: "音素",
             value: Some(value),
             source: None,
+        })) = err
+        else {
+            panic!("unexpected error: {err:?}");
+        };
+        assert_eq!(format!("{s:?}"), format!("{value:?}"));
+    }
+
+    #[rstest]
+    #[case("")]
+    #[case("invalid")]
+    #[case("a")]
+    fn test_invalid_consonant(#[case] s: &str) {
+        let err = s.parse::<Consonant>().unwrap_err();
+        let crate::Error(ErrorRepr::InvalidQuery(InvalidQueryError {
+            what: "子音",
+            value: Some(value),
+            source: Some(_),
+        })) = err
+        else {
+            panic!("unexpected error: {err:?}");
+        };
+        assert_eq!(format!("{s:?}"), format!("{value:?}"));
+    }
+
+    #[rstest]
+    #[case("")]
+    #[case("invalid")]
+    #[case("k")]
+    fn test_invalid_non_consonant(#[case] s: &str) {
+        let err = s.parse::<NonConsonant>().unwrap_err();
+        let crate::Error(ErrorRepr::InvalidQuery(InvalidQueryError {
+            what: "非子音",
+            value: Some(value),
+            source: Some(_),
         })) = err
         else {
             panic!("unexpected error: {err:?}");

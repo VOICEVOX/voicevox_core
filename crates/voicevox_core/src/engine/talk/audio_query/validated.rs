@@ -1,6 +1,7 @@
 use std::{
     borrow::Cow,
     num::{FpCategory, NonZero},
+    str::FromStr,
 };
 
 use duplicate::duplicate_item;
@@ -11,7 +12,9 @@ use crate::error::{InvalidQueryError, InvalidQueryErrorSource};
 
 use super::{
     super::super::{
-        acoustic_feature_extractor::Phoneme, sampling_rate::SamplingRate, DEFAULT_SAMPLING_RATE,
+        acoustic_feature_extractor::{Consonant, NonConsonant},
+        sampling_rate::SamplingRate,
+        DEFAULT_SAMPLING_RATE,
     },
     AccentPhrase, AudioQuery, Mora,
 };
@@ -24,7 +27,8 @@ impl Mora {
     /// 次のうちどれかを満たすなら[`ErrorKind::InvalidQuery`]を表わすエラーを返す。
     ///
     /// - [`consonant`]と[`consonant_length`]の有無が不一致。
-    /// - [`consonant`]もしくは[`vowel`]が音素として不正。
+    /// - [`consonant`]が子音以外の音素であるか、もしくは音素として不正。
+    /// - [`vowel`]が子音であるか、もしくは音素として不正。
     ///
     /// # Warnings
     ///
@@ -173,8 +177,8 @@ macro_rules! warn_for_non_positive_finite {
 #[derive(Clone, PartialEq, Debug)]
 pub(crate) struct ValidatedMora<'original> {
     pub(crate) text: Cow<'original, str>,
-    pub(crate) consonant: Option<LengthedPhoneme>,
-    pub(crate) vowel: LengthedPhoneme,
+    pub(crate) consonant: Option<LengthedPhoneme<Consonant>>,
+    pub(crate) vowel: LengthedPhoneme<NonConsonant>,
     pub(crate) pitch: f32,
 }
 
@@ -286,20 +290,38 @@ impl From<ValidatedMora<'_>> for Mora {
 }
 
 #[derive(Clone, PartialEq, Debug)]
-pub(crate) struct LengthedPhoneme {
-    pub(crate) phoneme: Phoneme,
+pub(crate) struct LengthedPhoneme<P> {
+    pub(crate) phoneme: P,
     pub(crate) length: f32,
 }
 
-impl LengthedPhoneme {
-    fn new(phoneme: &str, length: f32) -> Result<Self, InvalidQueryError> {
-        let phoneme = Phoneme::from_str_with_inner_error(phoneme)?;
+impl<P> LengthedPhoneme<P> {
+    fn new(phoneme: &str, length: f32) -> Result<Self, InvalidQueryError>
+    where
+        P: FromStrWithInnerError,
+    {
+        let phoneme = FromStrWithInnerError::from_str_with_inner_error(phoneme)?;
         Ok(Self { phoneme, length })
     }
 }
 
-impl From<Phoneme> for LengthedPhoneme {
-    fn from(phoneme: Phoneme) -> Self {
+trait FromStrWithInnerError: FromStr {
+    fn from_str_with_inner_error(s: &str) -> Result<Self, InvalidQueryError>;
+}
+
+#[duplicate_item(
+    T;
+    [ Consonant ];
+    [ NonConsonant ];
+)]
+impl FromStrWithInnerError for T {
+    fn from_str_with_inner_error(s: &str) -> Result<Self, InvalidQueryError> {
+        Self::from_str_with_inner_error(s)
+    }
+}
+
+impl<P> From<P> for LengthedPhoneme<P> {
+    fn from(phoneme: P) -> Self {
         Self {
             phoneme,
             length: 0.,
