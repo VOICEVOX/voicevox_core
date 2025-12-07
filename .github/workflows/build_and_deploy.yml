@@ -110,7 +110,7 @@ jobs:
               "can_skip_in_simple_test": false
             },
             {
-              "os": "macos-14",
+              "os": "macos-15-intel",
               "target": "x86_64-apple-darwin",
               "artifact_name": "osx-x64",
               "c_release_format": "plain-cdylib",
@@ -137,7 +137,7 @@ jobs:
               "can_skip_in_simple_test": true
             },
             {
-              "os": "macos-14",
+              "os": "macos-15-intel",
               "target": "x86_64-apple-ios",
               "artifact_name": "ios-x64-cpu",
               "c_release_format": "ios-xcframework",
@@ -176,7 +176,7 @@ jobs:
           case "$RUNNER_ARCH",${{ matrix.target }} in
             X64,i686-*) architecture=x86 ;;
             X64,x86_64-*|X64,aarch64-*) architecture=x64 ;;
-            ARM64,x86_64-*|ARM64,aarch64-*) architecture=arm64 ;;
+            ARM64,aarch64-*) architecture=arm64 ;;
             *)
               echo 'unexpected architecture' >&2
               exit 1

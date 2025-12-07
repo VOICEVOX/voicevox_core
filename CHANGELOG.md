@@ -85,7 +85,7 @@
     - `""`
     - `consonant`における母音
     - `vowel`における子音
-- \[macOS\] macOS 13がサポート範囲から外れ、バイナリのリリースはmacOS 14で行われるようになります。ただし、macOS 14でビルドされたバイナリでもmacOS 13で動作すると考えられています ([#1174])。
+- \[macOS\] macOS 13がサポート範囲から外れます。"arm64"バイナリのリリースはmacOS 14で、"x64"バイナリのリリースはmacOS 15で行われるようになります。([#1174], [#1227])。
 
 ### Fixed
 
@@ -1388,6 +1388,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1222]: https://github.com/VOICEVOX/voicevox_core/pull/1222
 [#1223]: https://github.com/VOICEVOX/voicevox_core/pull/1223
 [#1224]: https://github.com/VOICEVOX/voicevox_core/pull/1224
+[#1227]: https://github.com/VOICEVOX/voicevox_core/pull/1227
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
