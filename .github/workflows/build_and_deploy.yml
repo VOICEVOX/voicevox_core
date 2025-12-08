@@ -20,8 +20,8 @@ on:
 env:
   # releaseタグ名か、workflow_dispatchでのバージョン名か、'0.0.0'が入る
   VERSION: ${{ github.event.release.tag_name || inputs.version || '0.0.0' }}
-  # 簡易テストとするかどうか。releaseとworkflow_dispatch以外は簡易テストとする
-  IS_SIMPLE_TEST: ${{ github.event_name != 'release' && github.event_name != 'workflow_dispatch' }}
+  # 簡易テストとするかどうか。mainブランチ、release、workflow_dispatch以外は簡易テストとする
+  IS_SIMPLE_TEST: ${{ github.ref != 'refs/heads/main' && github.event_name != 'release' && github.event_name != 'workflow_dispatch' }}
 
 defaults:
   run:
