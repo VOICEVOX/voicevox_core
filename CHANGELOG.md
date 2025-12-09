@@ -25,22 +25,6 @@
 
 [#1056]: https://github.com/VOICEVOX/voicevox_core/pull/1056
 
-### ソング
-
-- [project-s] ピッチ輪郭推論を追加 ([#531])
-- [project-s] モデルへの入力の形・データを修正 ([#732])
-- [project-s] スタイルタイプの名称変更 ([#738])
-- `StyleMeta::r#type`を追加し、トークという区分を実装に導入する ([#761])
-- fix: fix up #761: JavaとPythonの`StyleType`を埋める ([#895])
-- chore: [0.15] remove obsolete parts ([#896])
-- Merge `0.15.5` ([#894])
-- feat: ソングの推論結果を、コア領域の責務としてsqueezeする (#1217)
-
-[#732]: https://github.com/VOICEVOX/voicevox_core/pull/732
-[#896]: https://github.com/VOICEVOX/voicevox_core/pull/896
-[#894]: https://github.com/VOICEVOX/voicevox_core/pull/894
-[#1217]: https://github.com/VOICEVOX/voicevox_core/pull/1217
-
 ### ストリーミングAPI
 
 - split decoder into spectrogram and vocoder without changing API ([#851])
@@ -66,6 +50,10 @@
 
 [@phenylshima]: https://github.com/phenylshima
 -->
+
+### Added
+
+- \[Rust\] ソング機能が追加されます ([#531], [#732], [#738], [#761], [#895], [#896], [#894], [#1217], [#1073])。
 
 ## [0.16.3] - 2025-12-08 (+09:00)
 
@@ -1193,6 +1181,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#724]: https://github.com/VOICEVOX/voicevox_core/pull/724
 [#725]: https://github.com/VOICEVOX/voicevox_core/pull/725
 [#728]: https://github.com/VOICEVOX/voicevox_core/pull/728
+[#732]: https://github.com/VOICEVOX/voicevox_core/pull/732
 [#733]: https://github.com/VOICEVOX/voicevox_core/pull/733
 [#738]: https://github.com/VOICEVOX/voicevox_core/pull/738
 [#740]: https://github.com/VOICEVOX/voicevox_core/pull/740
@@ -1245,7 +1234,9 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#887]: https://github.com/VOICEVOX/voicevox_core/pull/887
 [#889]: https://github.com/VOICEVOX/voicevox_core/pull/889
 [#890]: https://github.com/VOICEVOX/voicevox_core/pull/890
+[#894]: https://github.com/VOICEVOX/voicevox_core/pull/894
 [#895]: https://github.com/VOICEVOX/voicevox_core/pull/895
+[#896]: https://github.com/VOICEVOX/voicevox_core/pull/896
 [#898]: https://github.com/VOICEVOX/voicevox_core/pull/898
 [#903]: https://github.com/VOICEVOX/voicevox_core/pull/903
 [#907]: https://github.com/VOICEVOX/voicevox_core/pull/907
@@ -1392,6 +1383,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1203]: https://github.com/VOICEVOX/voicevox_core/pull/1203
 [#1208]: https://github.com/VOICEVOX/voicevox_core/pull/1208
 [#1214]: https://github.com/VOICEVOX/voicevox_core/pull/1214
+[#1217]: https://github.com/VOICEVOX/voicevox_core/pull/1217
 [#1220]: https://github.com/VOICEVOX/voicevox_core/pull/1220
 [#1221]: https://github.com/VOICEVOX/voicevox_core/pull/1221
 [#1222]: https://github.com/VOICEVOX/voicevox_core/pull/1222
