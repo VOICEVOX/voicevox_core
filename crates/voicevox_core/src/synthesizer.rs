@@ -2,7 +2,7 @@
 //!
 //! メインの部分。[`crate::core`]と[`crate::engine`]の二つはここで用いる。
 
-use anyhow::{ensure, Context as _};
+use anyhow::{anyhow, ensure, Context as _};
 use easy_ext::ext;
 use educe::Educe;
 use enum_map::enum_map;
@@ -15,7 +15,7 @@ use std::{
     sync::Arc,
 };
 use tracing::info;
-use typed_floats::NonNaNFinite;
+use typed_floats::{InvalidNumber, NonNaNFinite};
 
 use crate::{
     asyncs::{Async, BlockingThreadPool, SingleTasked},
@@ -52,7 +52,7 @@ use crate::{
         },
         to_s16le_pcm, wav_from_s16le, IteratorExt as _, PhonemeCode, DEFAULT_SAMPLING_RATE,
     },
-    error::ErrorRepr,
+    error::{ErrorRepr, InvalidQueryError},
     future::FutureExt as _,
     AccentPhrase, AudioQuery, FrameAudioQuery, FramePhoneme, Note, Result, Score, StyleId,
     VoiceModelId, VoiceModelMeta,
@@ -852,7 +852,12 @@ trait AsInner {
         let ValidatedScore { notes } = score.to_validated()?;
 
         let (phonemes_by_frame, keys_by_frame) =
-            song::join_frame_phonemes_with_notes(&frame_audio_query.phonemes, notes.as_ref())?
+            song::join_frame_phonemes_with_notes(&frame_audio_query.phonemes, notes.as_ref())
+                .map_err(|source| InvalidQueryError {
+                    what: "`score`と`frame_audio_query`の組み合わせ",
+                    value: None,
+                    source: Some(source),
+                })?
                 .flat_map(|(p, n)| song::repeat_phoneme_code_and_key(p, n))
                 .unzip_into_array1s();
 
@@ -871,8 +876,19 @@ trait AsInner {
             .predict_sing_f0::<Self::Async>(phonemes_by_frame, keys_by_frame, style_id)
             .await?
             .into_iter()
-            .map(|v| v.try_into().map_err(|e| todo!("{e}: {v}")))
-            .collect()
+            .map(TryInto::try_into)
+            .collect::<std::result::Result<_, _>>()
+            .map_err(|source| {
+                ErrorRepr::RunModel(match source {
+                    InvalidNumber::NaN | InvalidNumber::Infinite => {
+                        anyhow!("`predict_sing_f0` returned non-finite value(s)")
+                    }
+                    InvalidNumber::Zero | InvalidNumber::Negative | InvalidNumber::Positive => {
+                        unreachable!();
+                    }
+                })
+                .into()
+            })
     }
 
     async fn create_sing_frame_volume(
@@ -884,7 +900,12 @@ trait AsInner {
         let ValidatedScore { notes } = score.to_validated()?;
 
         let (phonemes_by_frame, keys_by_frame) =
-            song::join_frame_phonemes_with_notes(&frame_audio_query.phonemes, notes.as_ref())?
+            song::join_frame_phonemes_with_notes(&frame_audio_query.phonemes, notes.as_ref())
+                .map_err(|source| InvalidQueryError {
+                    what: "`score`と`frame_audio_query`の組み合わせ",
+                    value: None,
+                    source: Some(source),
+                })?
                 .flat_map(|(p, n)| song::repeat_phoneme_code_and_key(p, n))
                 .unzip_into_array1s();
 
@@ -912,8 +933,19 @@ trait AsInner {
             .predict_sing_volume::<Self::Async>(phonemes_by_frame, keys_by_frame, f0s, style_id)
             .await?
             .into_iter()
-            .map(|v| v.try_into().map_err(|e| todo!("{e}: {v}")))
-            .collect()
+            .map(TryInto::try_into)
+            .collect::<std::result::Result<_, _>>()
+            .map_err(|source| {
+                ErrorRepr::RunModel(match source {
+                    InvalidNumber::NaN | InvalidNumber::Infinite => {
+                        anyhow!("`predict_sing_volume` returned non-finite value(s)")
+                    }
+                    InvalidNumber::Zero | InvalidNumber::Negative | InvalidNumber::Positive => {
+                        unreachable!();
+                    }
+                })
+                .into()
+            })
     }
 
     async fn frame_synthesis(

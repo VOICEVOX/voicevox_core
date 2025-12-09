@@ -18,7 +18,10 @@ pub(crate) use self::note_seq::ValidatedNoteSeq;
 pub(crate) fn join_frame_phonemes_with_notes<'a>(
     frame_phonemes: &'a [FramePhoneme],
     notes: &'a [ValidatedNote],
-) -> crate::Result<impl Iterator<Item = (&'a FramePhoneme, &'a ValidatedNote)> + Clone> {
+) -> Result<
+    impl Iterator<Item = (&'a FramePhoneme, &'a ValidatedNote)> + Clone,
+    InvalidQueryErrorSource,
+> {
     let phonemes_from_query = frame_phonemes
         .iter()
         .map(|p| (PhonemeCode::from(p.phoneme.clone()), p));
@@ -31,7 +34,7 @@ pub(crate) fn join_frame_phonemes_with_notes<'a>(
         phonemes_from_query.clone().map(|(p, _)| p),
         phonemes_from_score.clone().map(|(p, _)| p),
     ) {
-        todo!();
+        return Err(InvalidQueryErrorSource::DifferentPhonemeSeqs);
     }
 
     Ok(itertools::zip_eq(
