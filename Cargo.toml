@@ -69,6 +69,7 @@ open = "5.3.2"
 ouroboros = "0.18.4"
 parking_lot = "0.12.1"
 parse-display = "0.8.2"
+pastey = "0.2.0"
 phf = "0.13.1"
 pollster = "0.3.0"
 predicates = "3.1.2"
@@ -105,7 +106,6 @@ tracing-subscriber = "0.3.18"
 typeshare = { version = "1.0.4", default-features = false }
 typetag = "0.2.18"
 unicode-width = "0.2.0"
-url = "2.5.4"
 uuid = "1.18.1"
 voicevox_core = { path = "crates/voicevox_core" }
 voicevox_core_macros = { path = "crates/voicevox_core_macros" }

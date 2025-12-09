@@ -1315,7 +1315,6 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "unicode-width 0.2.0",
- "url",
  "zip",
 ]
 
@@ -2939,6 +2938,12 @@ dependencies = [
  "rand_core",
  "subtle",
 ]
+
+[[package]]
+name = "pastey"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "57d6c094ee800037dff99e02cab0eaf3142826586742a270ab3d7a62656bd27a"
 
 [[package]]
 name = "pathdiff"
@@ -5075,6 +5080,7 @@ dependencies = [
  "open",
  "open_jtalk",
  "ouroboros",
+ "pastey",
  "phf 0.13.1",
  "pollster",
  "pretty_assertions",

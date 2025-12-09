@@ -22,8 +22,9 @@
  *   </dt>
  *
  *   <dd>
- *     JSONの形式はVOICEVOX ENGINEと同じになっている。ただし今後の破壊的変更にて変わる可能性がある。[データのシリアライゼーション]を参照。
+ *     JSONの形式は[Rust APIのSerde実装]に準じており、おおむねVOICEVOX ENGINEと同じになることを目指している。ただし今後の破壊的変更にて変わる可能性がある。[データのシリアライゼーション]を参照。
  *
+ *     [Rust APIのSerde実装]: ../rust_api/voicevox_core/__doc/Serde対応/index.html
  *     [データのシリアライゼーション]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/serialization.md
  *   </dd>
  * </dl>
@@ -706,15 +707,15 @@ VoicevoxResultCode voicevox_audio_query_create_from_accent_phrases(const char *a
                                                                    char **output_audio_query_json);
 
 /**
- * JSONを[`AudioQuery`型]としてバリデートする。
- *
- * [`AudioQuery`型]: ../rust_api/voicevox_core/struct.AudioQuery.html
+ * JSONを`AudioQuery`型としてバリデートする。
  *
  * 次のうちどれかを満たすならエラーを返す。
  *
+ * - [Rust APIの`AudioQuery`型]としてデシリアライズ不可、もしくはJSONとして不正。
  * - `accent_phrases`の要素のうちいずれかが、 ::voicevox_accent_phrase_validate でエラーになる。
  * - `outputSamplingRate`が`24000`の倍数ではない、もしくは`0` (将来的に解消予定。cf. [#762])。
  *
+ * [Rust APIの`AudioQuery`型]: ../rust_api/voicevox_core/struct.AudioQuery.html
  * [#762]: https://github.com/VOICEVOX/voicevox_core/issues/762
  *
  * 次の状態に対しては警告のログを出す。将来的にはエラーになる予定。
@@ -742,14 +743,15 @@ __declspec(dllimport)
 VoicevoxResultCode voicevox_audio_query_validate(const char *audio_query_json);
 
 /**
- * JSONを[`AccentPhrase`型]としてバリデートする。
- *
- * [`AccentPhrase`型]: ../rust_api/voicevox_core/struct.AccentPhrase.html
+ * JSONを`AccentPhrase`型としてバリデートする。
  *
  * 次のうちどれかを満たすならエラーを返す。
  *
+ * - [Rust APIの`AccentPhrase`型]としてデシリアライズ不可、もしくはJSONとして不正。
  * - `moras`もしくは`pause_mora`の要素のうちいずれかが、 ::voicevox_mora_validate でエラーになる。
  * - `accent`が`0`。
+ *
+ * [Rust APIの`AccentPhrase`型]: ../rust_api/voicevox_core/struct.AccentPhrase.html
  *
  * 次の状態に対しては警告のログを出す。将来的にはエラーになる予定。
  *
@@ -772,14 +774,16 @@ __declspec(dllimport)
 VoicevoxResultCode voicevox_accent_phrase_validate(const char *accent_phrase_json);
 
 /**
- * JSONを[`Mora`型]としてバリデートする。
- *
- * [`Mora`型]: ../rust_api/voicevox_core/struct.Mora.html
+ * JSONを`Mora`型としてバリデートする。
  *
  * 次のうちどれかを満たすならエラーを返す。
  *
+ * - [Rust APIの`Mora`型]としてデシリアライズ不可、もしくはJSONとして不正。
  * - `consonant`と`consonant_length`の有無が不一致。
- * - `consonant`もしくは`vowel`が音素として不正。
+ * - `consonant`が子音以外の音素であるか、もしくは音素として不正。
+ * - `vowel`が子音であるか、もしくは音素として不正。
+ *
+ * [Rust APIの`Mora`型]: ../rust_api/voicevox_core/struct.Mora.html
  *
  * 次の状態に対しては警告のログを出す。将来的にはエラーになる予定。
  *

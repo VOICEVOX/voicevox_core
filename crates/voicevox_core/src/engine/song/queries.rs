@@ -9,10 +9,7 @@ use smol_str::SmolStr;
 use typed_floats::{NonNaNFinite, PositiveFinite};
 use typeshare::U53;
 
-use crate::{
-    error::{ErrorRepr, InvalidQueryErrorKind},
-    SamplingRate,
-};
+use crate::{error::InvalidQueryError, SamplingRate};
 
 use super::super::{
     acoustic_feature_extractor::{MoraTail, OptionalConsonant},
@@ -41,12 +38,11 @@ impl FromStr for OptionalLyric {
             return Ok(Self::default());
         }
 
-        let mora_kana = hira_to_kana(s)
-            .parse()
-            .map_err(|_| ErrorRepr::InvalidQuery {
-                what: "歌詞",
-                kind: InvalidQueryErrorKind::InvalidLyric(s.to_owned()),
-            })?;
+        let mora_kana = hira_to_kana(s).parse().map_err(|_| InvalidQueryError {
+            what: "歌詞",
+            value: Some(Box::new(s.to_owned())),
+            source: None,
+        })?;
 
         Ok(OptionalLyric {
             text: s.into(),

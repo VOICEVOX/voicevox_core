@@ -67,21 +67,36 @@
 [@phenylshima]: https://github.com/phenylshima
 -->
 
+## [0.16.3] - 2025-12-08 (+09:00)
+
 ### Added
 
 - `sil`に対する扱いが、現行のバージョン0.25.0のVOICEVOX ENGINEと同じになります ([#1197])。
+- \[Rust,C,Java\] シリアライズ関係のAPIドキュメントがより詳細になります ([#1223])。
 
 ### Changed
 
-- `AudioQuery`/`AccentPhrase`/`Mora`において不正な状態というものが定義され、不正な`AudioQuery`もしくは`accent_phrases`が明示的にエラーを引き起こすようになります ([#1203], [#1208])。
+- `AudioQuery`/`AccentPhrase`/`Mora`において不正な状態というものが定義され、不正な`AudioQuery`もしくは`accent_phrases`が明示的にエラーを引き起こすようになります ([#1203], [#1208], [#1222], [#1221], [#1224])。
     - \[Rust,Python,Java\] エラーの種類として`InvalidQuery`が追加されます。
     - \[C\] エラーの種類として`VOICEVOX_RESULT_INVALID_MORA_ERROR`が追加されます。
     - メソッドとして`{AudioQuery,AccentPhrase,Mora}::validate`が追加されます。
+- \[Rust\] 依存ライブラリが変化します ([#1190], [#1214], [#1221])。
+    - \[追加\] `bytemuck@1`: `^1.24.0`
+    - \[追加\] `pastey`: `^0.2.0`
+    - \[追加\] `phf`: `^0.13.1`
 
 ### Removed
 
-- `replace_{phoneme_length,mora_pitch,mora_data}`においてこれまでは[`""`という名の音素を受理してしまって](https://github.com/VOICEVOX/voicevox_core/issues/1202)いましたが、今後は完全に不正な音素となります ([#1203])。
-- \[macOS\] macOS 13がサポート範囲から外れ、バイナリのリリースはmacOS 14で行われるようになります。ただし、macOS 14でビルドされたバイナリでもmacOS 13で動作すると考えられています ([#1174])。
+- 以下の音素は完全に不正なものとして扱われます ([#1203], [#1221])。
+    - `""`
+    - `consonant`における母音
+    - `vowel`における子音
+- \[macOS\] macOS 13がサポート範囲から外れます。"arm64"バイナリのリリースはmacOS 14で、"x64"バイナリのリリースはmacOS 15で行われるようになります ([#1174], [#1227])。
+
+### Fixed
+
+- \[ダウンローダー\] `dict`のダウンロード元であるjaist.dl.sourceforge.netが[消失した](https://x.com/zinchang/status/1996112944372044235)ため、代わりに[r9y9/open\_jtalk@`v1.11.1`のリリース](https://github.com/r9y9/open_jtalk/releases/tag/v1.11.1)を利用するようになります ([#1220])。
+- \[Java\] Javadocにおいて`UserDictWord`がGSONに対応しているという誤った情報が訂正されます ([#1223])。
 
 ## [0.16.2] - 2025-10-28 (+09:00)
 
@@ -1014,7 +1029,8 @@ Windows版ダウンローダーのビルドに失敗しています。
 
 - \[Python\] モジュールに`__all__`が適切に設定されます ([#415])。
 
-[Unreleased]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.2...HEAD
+[Unreleased]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.3...HEAD
+[0.16.3]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.2...0.16.3
 [0.16.2]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.1...0.16.2
 [0.16.1]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.0...0.16.1
 [0.16.0]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.0-preview.1...0.16.0
@@ -1371,9 +1387,17 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1155]: https://github.com/VOICEVOX/voicevox_core/pull/1155
 [#1164]: https://github.com/VOICEVOX/voicevox_core/pull/1164
 [#1174]: https://github.com/VOICEVOX/voicevox_core/pull/1174
+[#1190]: https://github.com/VOICEVOX/voicevox_core/pull/1190
 [#1197]: https://github.com/VOICEVOX/voicevox_core/pull/1197
 [#1203]: https://github.com/VOICEVOX/voicevox_core/pull/1203
 [#1208]: https://github.com/VOICEVOX/voicevox_core/pull/1208
+[#1214]: https://github.com/VOICEVOX/voicevox_core/pull/1214
+[#1220]: https://github.com/VOICEVOX/voicevox_core/pull/1220
+[#1221]: https://github.com/VOICEVOX/voicevox_core/pull/1221
+[#1222]: https://github.com/VOICEVOX/voicevox_core/pull/1222
+[#1223]: https://github.com/VOICEVOX/voicevox_core/pull/1223
+[#1224]: https://github.com/VOICEVOX/voicevox_core/pull/1224
+[#1227]: https://github.com/VOICEVOX/voicevox_core/pull/1227
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 

@@ -9,14 +9,14 @@ use crate::{
 //use engine::
 use duplicate::duplicate_item;
 use itertools::Itertools as _;
-use std::{collections::BTreeSet, path::PathBuf};
+use std::{collections::BTreeSet, fmt::Debug, path::PathBuf};
 use thiserror::Error;
 use uuid::Uuid;
 
 /// VOICEVOX COREのエラー。
 #[derive(Error, Debug)]
 #[error(transparent)]
-pub struct Error(#[from] ErrorRepr);
+pub struct Error(#[from] pub(crate) ErrorRepr);
 
 #[duplicate_item(
     E;
@@ -126,12 +126,8 @@ pub(crate) enum ErrorRepr {
     #[error(transparent)]
     InvalidWord(#[from] InvalidWordError),
 
-    #[error("不正な{what}です")]
-    InvalidQuery {
-        what: &'static str,
-        #[source]
-        kind: InvalidQueryErrorKind,
-    },
+    #[error(transparent)]
+    InvalidQuery(#[from] InvalidQueryError),
 }
 
 /// エラーの種類。
@@ -221,23 +217,59 @@ pub(crate) enum LoadModelErrorKind {
 }
 
 #[derive(Error, Debug)]
-pub(crate) enum InvalidQueryErrorKind {
-    #[error("`consonant`と`consonant_length`の有無は一致していなければなりません")]
-    MissingConsonantPhonemeOrLength,
-    #[error("`accent`を`0`にすることはできません")]
-    AccentIsZero,
-    #[error(
-        "サンプリングレートは0より大きい{DEFAULT_SAMPLING_RATE}の倍数でなければなりません: {_0:?}"
-    )]
-    InvalidSamplingRate(u32),
-    #[error("音素が不正です: {_0:?}")]
-    InvalidPhoneme(String),
-    #[error("不正な歌詞です: {_0:?}")]
-    InvalidLyric(String),
+#[error(
+    "不正な{what}です{value}",
+    value = value
+        .as_ref()
+        .map(|value| format!(": {value:?}"))
+        .unwrap_or_default()
+)]
+pub(crate) struct InvalidQueryError {
+    pub(crate) what: &'static str,
+    pub(crate) value: Option<Box<dyn Debug + Send + Sync + 'static>>,
+    #[source]
+    pub(crate) source: Option<InvalidQueryErrorSource>,
+}
+
+impl From<InvalidQueryError> for Error {
+    fn from(err: InvalidQueryError) -> Self {
+        ErrorRepr::InvalidQuery(err).into()
+    }
+}
+
+#[derive(Error, Debug)]
+pub(crate) enum InvalidQueryErrorSource {
+    #[error("この二つの有無は一致していなければなりません")]
+    PartiallyPresent,
+
+    #[error("子音ではありません")]
+    IsNotConsonant,
+
+    #[error("子音です")]
+    IsConsonant,
+
+    #[error("`0`にすることはできません")]
+    IsZero,
+
+    #[error("0より大きい{DEFAULT_SAMPLING_RATE}の倍数でなければなりません")]
+    IsNotMultipleOfBaseSamplingRate,
+
     #[error("lyricが空文字列の場合、keyはnullである必要があります。")]
     UnnecessaryKeyForPau,
+
     #[error("keyがnullの場合、lyricは空文字列である必要があります。")]
     MissingKeyForNonPau,
+
     #[error(r#"notesはpau (lyric="")から始まる必要があります"#)]
     InitialNoteMustBePau,
+
+    #[error(transparent)]
+    InvalidAsSuperset(Box<InvalidQueryError>),
+
+    #[error("{fields}が不正です")]
+    InvalidFields {
+        fields: String,
+        #[source]
+        source: Box<InvalidQueryError>,
+    },
 }

@@ -40,7 +40,6 @@ tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread", "sync
 tracing.workspace = true
 tracing-subscriber = { workspace = true, features = ["env-filter"] }
 unicode-width.workspace = true
-url.workspace = true
 zip.workspace = true
 
 [dev-dependencies]

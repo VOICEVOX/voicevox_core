@@ -12,7 +12,11 @@ import jp.hiroshiba.voicevoxcore.exceptions.InvalidQueryException;
  * <p>この構造体の状態によっては、{@code Synthesizer}の各メソッドは{@link InvalidQueryException}を発する。詳細は{@link
  * #validate}にて。
  *
- * <p>現在この型はGSONに対応しているが、将来的には <a href="https://github.com/VOICEVOX/voicevox_core/issues/984"
+ * <p>Gsonにおいてはフィールド名はsnake_caseとなる。<a
+ * href="https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/serialization.md"
+ * target="_blank">データのシリアライゼーション</a>を参照。
+ *
+ * <p>Gsonについては将来的には <a href="https://github.com/VOICEVOX/voicevox_core/issues/984"
  * target="_blank">Jacksonに切り替わる予定</a> 。
  */
 public class Mora implements Cloneable {
@@ -67,7 +71,8 @@ public class Mora implements Cloneable {
    *
    * <ul>
    *   <li>{@link #consonant}と{@link #consonantLength}の有無が不一致。
-   *   <li>{@link #consonant}もしくは{@link #vowel}が音素として不正。
+   *   <li>{@link #consonant}が子音以外の音素であるか、もしくは音素として不正。
+   *   <li>{@link #vowel}が子音であるか、もしくは音素として不正。
    * </ul>
    *
    * <p>また次の状態に対してはログで警告を出す。将来的にはエラーになる予定。

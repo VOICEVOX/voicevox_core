@@ -5,7 +5,7 @@ use typeshare::U53;
 
 use crate::{
     collections::{NonEmptyIterator, NonEmptyVec},
-    error::{ErrorRepr, InvalidQueryErrorKind},
+    error::{ErrorRepr, InvalidQueryError, InvalidQueryErrorSource},
 };
 
 use super::{
@@ -115,15 +115,17 @@ impl PauOrKeyAndLyric {
                 key,
                 lyric: Lyric { phonemes: [mora] },
             }),
-            (Some(_), []) => Err(ErrorRepr::InvalidQuery {
+            (Some(_), []) => Err(ErrorRepr::InvalidQuery(InvalidQueryError {
                 what: "ノート",
-                kind: InvalidQueryErrorKind::UnnecessaryKeyForPau,
-            }
+                value: None,
+                source: Some(InvalidQueryErrorSource::UnnecessaryKeyForPau),
+            })
             .into()),
-            (None, [_]) => Err(ErrorRepr::InvalidQuery {
+            (None, [_]) => Err(ErrorRepr::InvalidQuery(InvalidQueryError {
                 what: "ノート",
-                kind: InvalidQueryErrorKind::MissingKeyForNonPau,
-            }
+                value: None,
+                source: Some(InvalidQueryErrorSource::MissingKeyForNonPau),
+            })
             .into()),
             (_, [_, ..]) => unreachable!("the lyric should consist of at most one mora"),
         }
@@ -145,9 +147,10 @@ impl ValidatedNoteSeq {
             .collect::<Result<Vec<_>, _>>()?;
 
         NonEmptyVec::new(notes)
-            .ok_or_else(|| ErrorRepr::InvalidQuery {
+            .ok_or_else(|| InvalidQueryError {
                 what: "ノート列",
-                kind: InvalidQueryErrorKind::InitialNoteMustBePau,
+                value: None,
+                source: Some(InvalidQueryErrorSource::InitialNoteMustBePau),
             })?
             .try_into()
     }
@@ -172,7 +175,7 @@ mod note_seq {
 
     use crate::{
         collections::NonEmptyVec,
-        error::{ErrorRepr, InvalidQueryErrorKind},
+        error::{ErrorRepr, InvalidQueryError, InvalidQueryErrorSource},
     };
 
     use super::{PauOrKeyAndLyric, ValidatedNote};
@@ -187,10 +190,11 @@ mod note_seq {
 
         fn try_from(notes: NonEmptyVec<ValidatedNote>) -> Result<Self, Self::Error> {
             if notes.first().pau_or_key_and_lyric != PauOrKeyAndLyric::Pau {
-                return Err(ErrorRepr::InvalidQuery {
+                return Err(ErrorRepr::InvalidQuery(InvalidQueryError {
                     what: "ノート列",
-                    kind: InvalidQueryErrorKind::InitialNoteMustBePau,
-                }
+                    value: None,
+                    source: Some(InvalidQueryErrorSource::InitialNoteMustBePau),
+                })
                 .into());
             }
             Ok(Self(notes))
