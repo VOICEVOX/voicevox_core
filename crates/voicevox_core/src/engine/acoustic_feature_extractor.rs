@@ -1,10 +1,10 @@
-use std::str::FromStr;
+use std::{fmt, str::FromStr};
 
 use bytemuck::{checked::CheckedCastError, CheckedBitPattern, Contiguous, NoUninit};
 use duplicate::duplicate_item;
 use pastey::paste;
 use serde::{
-    de::{self, Deserializer},
+    de::{self, Deserializer, Unexpected},
     Deserialize, Serialize, Serializer,
 };
 use strum::EnumCount;
@@ -1347,6 +1347,47 @@ impl From<MoraTail> for PhonemeCode {
     }
 }
 
+impl Default for Sil {
+    fn default() -> Self {
+        Self::DEFAULT
+    }
+}
+
+impl FromStr for Sil {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::new(s).ok_or(())
+    }
+}
+
+impl<'de> Deserialize<'de> for Sil {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        return deserializer.deserialize_str(Visitor);
+
+        struct Visitor;
+
+        impl de::Visitor<'_> for Visitor {
+            type Value = Sil;
+
+            fn expecting(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+                write!(fmt, "a string that contains \"sil\"")
+            }
+
+            fn visit_str<E>(self, s: &str) -> Result<Self::Value, E>
+            where
+                E: de::Error,
+            {
+                s.parse()
+                    .map_err(|()| de::Error::invalid_value(Unexpected::Str(s), &self))
+            }
+        }
+    }
+}
+
 const _: () = assert!(PhonemeCode::MIN_VALUE == 0);
 const _: () = assert!(PhonemeCode::MAX_VALUE == 44);
 const _: () = assert!(PhonemeCode::COUNT == 45);
@@ -1355,12 +1396,7 @@ const _: () = assert!(OptionalConsonant::COUNT == PhonemeCode::COUNT - MoraTail:
 const _: () = assert!(NonPauPhonemeCode::COUNT == PhonemeCode::COUNT - 1);
 
 mod sil {
-    use std::{borrow::Cow, fmt, str::FromStr};
-
-    use serde::{
-        de::{self, Unexpected},
-        Deserialize, Deserializer,
-    };
+    use std::borrow::Cow;
 
     #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, derive_more::Display)]
     pub struct Sil(
@@ -1368,54 +1404,15 @@ mod sil {
     );
 
     impl Sil {
-        pub const DEFAULT: Self = Self(Cow::Borrowed("sil"));
-    }
+        pub(super) const DEFAULT: Self = Self(Cow::Borrowed("sil"));
 
-    impl Default for Sil {
-        fn default() -> Self {
-            Self::DEFAULT
-        }
-    }
-
-    impl FromStr for Sil {
-        type Err = ();
-
-        fn from_str(s: &str) -> Result<Self, Self::Err> {
-            if s.contains("sil") {
-                Ok(Self(match s {
+        pub(super) fn new(s: &str) -> Option<Self> {
+            s.contains("sil").then(|| {
+                Self(match s {
                     "sil" => "sil".into(),
                     s => s.to_owned().into(),
-                }))
-            } else {
-                Err(())
-            }
-        }
-    }
-
-    impl<'de> Deserialize<'de> for Sil {
-        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: Deserializer<'de>,
-        {
-            return deserializer.deserialize_str(Visitor);
-
-            struct Visitor;
-
-            impl de::Visitor<'_> for Visitor {
-                type Value = Sil;
-
-                fn expecting(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-                    write!(fmt, "a string that contains \"sil\"")
-                }
-
-                fn visit_str<E>(self, s: &str) -> Result<Self::Value, E>
-                where
-                    E: de::Error,
-                {
-                    s.parse()
-                        .map_err(|()| de::Error::invalid_value(Unexpected::Str(s), &self))
-                }
-            }
+                })
+            })
         }
     }
 }
