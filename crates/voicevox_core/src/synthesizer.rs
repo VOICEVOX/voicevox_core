@@ -2838,12 +2838,15 @@ pub(crate) mod nonblocking {
 
 #[cfg(test)]
 mod tests {
+    use std::mem;
+
     use super::{AccelerationMode, AsInner as _, DEFAULT_HEAVY_INFERENCE_CANCELLABLE};
     use crate::{
         asyncs::BlockingThreadPool, engine::talk::Mora, macros::tests::assert_debug_fmt_eq,
-        AccentPhrase, Result, StyleId,
+        AccentPhrase, FramePhoneme, Note, NoteId, Result, Score, StyleId,
     };
     use ::test_util::OPEN_JTALK_DIC_DIR;
+    use itertools::Itertools as _;
     use rstest::rstest;
 
     #[rstest]
@@ -3566,5 +3569,115 @@ mod tests {
     enum Input {
         Japanese(&'static str),
         Kana(&'static str),
+    }
+
+    #[tokio::test]
+    async fn create_sing_methods_works() {
+        let synthesizer = super::nonblocking::Synthesizer::builder(
+            crate::nonblocking::Onnxruntime::from_test_util_data()
+                .await
+                .unwrap(),
+        )
+        .acceleration_mode(AccelerationMode::Cpu)
+        .build()
+        .unwrap();
+
+        let model = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
+        synthesizer.load_voice_model(model).await.unwrap();
+
+        let score = &Score {
+            notes: vec![
+                note("①", None, 15, ""),
+                note("②", Some(60), 45, "ド"),
+                note("③", Some(62), 45, "レ"),
+                note("④", Some(64), 45, "ミ"),
+                note("⑤", None, 15, ""),
+            ],
+        };
+
+        let num_total_frames = score
+            .notes
+            .iter()
+            .map(|&Note { frame_length, .. }| typeshare::usize_from_u53_saturated(frame_length))
+            .sum::<usize>();
+
+        let frame_audio_query = synthesizer
+            .create_sing_frame_audio_query(&score.notes, 6000.into())
+            .await
+            .unwrap();
+
+        assert_eq!(
+            ["pau", "d", "o", "r", "e", "m", "i", "pau"],
+            *frame_audio_query
+                .phonemes
+                .iter()
+                .map(|FramePhoneme { phoneme, .. }| phoneme.to_string())
+                .collect::<Vec<_>>()
+        );
+
+        assert_eq!(
+            ["①", "②", "②", "③", "③", "④", "④", "⑤"],
+            *frame_audio_query
+                .phonemes
+                .iter()
+                .map(|FramePhoneme { note_id, .. }| &*note_id.as_ref().unwrap().0)
+                .collect::<Vec<_>>()
+        );
+
+        assert!([
+            num_total_frames,
+            frame_audio_query
+                .phonemes
+                .iter()
+                .map(
+                    |&FramePhoneme { frame_length, .. }| typeshare::usize_from_u53_saturated(
+                        frame_length
+                    )
+                )
+                .sum::<usize>(),
+            frame_audio_query.f0.len(),
+            frame_audio_query.volume.len(),
+        ]
+        .into_iter()
+        .all_equal());
+
+        let f0s = synthesizer
+            .create_sing_frame_f0(score, &frame_audio_query, 6000.into())
+            .await
+            .unwrap();
+
+        assert_eq!(num_total_frames, f0s.len());
+
+        let volumes = synthesizer
+            .create_sing_frame_volume(score, &frame_audio_query, 6000.into())
+            .await
+            .unwrap();
+
+        assert_eq!(num_total_frames, volumes.len());
+
+        let wav = synthesizer
+            .frame_synthesis(&frame_audio_query, 3000.into())
+            .perform()
+            .await
+            .unwrap();
+
+        assert!(wav.starts_with(b"RIFF"));
+        assert_eq!(
+            num_total_frames
+                * 256
+                * mem::size_of::<u16>()
+                * (1 + usize::from(frame_audio_query.output_stereo)),
+            u32::from_le_bytes(*wav[4..].first_chunk().unwrap()) as usize - 36,
+        );
+        assert_eq!(*b"WAVEfmt ", wav[8..16]);
+
+        fn note(id: &str, key: Option<u32>, frame_length: u32, lyric: &str) -> Note {
+            Note {
+                id: Some(NoteId(id.into())),
+                key: key.map(Into::into),
+                frame_length: frame_length.into(),
+                lyric: lyric.parse().unwrap(),
+            }
+        }
     }
 }
