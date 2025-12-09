@@ -15,7 +15,7 @@ use super::{
 
 use self::note_seq::ValidatedNoteSeq;
 
-pub(crate) fn join_frame_phonemes_with_notes<'a>(
+pub(crate) fn frame_phoneme_note_pairs<'a>(
     frame_phonemes: &'a [FramePhoneme],
     notes: &'a [ValidatedNote],
 ) -> Result<

@@ -109,6 +109,14 @@ impl From<&'_ ValidatedNoteSeq> for Vec<PhonemeFeature> {
     }
 }
 
+/// 子音長と音符長から音素長を計算する。
+///
+/// 子音はノートの頭にくるようにするため、予測された子音長は前のノートの長さを超えないように調整される。
+///
+/// 具体的にはi番目のノートの子音長が以下の条件を満たすなら、i-1番目のノート長の半分の値に置き換える。
+///
+/// - 負
+/// - i-1番目のノート長を超過する
 pub(crate) fn phoneme_lengths(
     consonant_lengths: &NonEmptySlice<i64>,
     note_durations: &NonEmptySlice<U53>,
@@ -130,11 +138,6 @@ pub(crate) fn phoneme_lengths(
         for (next_consonant_length, &note_duration) in
             itertools::zip_eq(&mut next_consonant_lengths, note_durations_till_last)
         {
-            // 次のノートの子音長 (`next_consonant_length`)が以下の条件を満たすなら、
-            // 現在のノート長 (`note_duration`)の半分の値に置き換える。
-            //
-            // - 負
-            // - 現在のノート長を超過する
             if next_consonant_length.is_negative()
                 || note_duration.to_i64() < *next_consonant_length
             {
@@ -186,7 +189,7 @@ impl PauOrKeyAndLyric {
     fn key(&self) -> i64 {
         match *self {
             Self::Pau => -1,
-            Self::KeyAndLyric { key, .. } => u64::from(key) as _,
+            Self::KeyAndLyric { key, .. } => key.to_i64(),
         }
     }
 }
@@ -216,6 +219,7 @@ impl FrameAudioQuery {
                     },
                 )
                 .collect(),
+            // TODO: typed_floatsにissueかPRを出しに行き、スライス変換かbytemuck対応を入れてもらう
             f0s: self.f0.iter().copied().map(Into::into).collect(),
             volumes: self.volume.iter().copied().map(Into::into).collect(),
         }

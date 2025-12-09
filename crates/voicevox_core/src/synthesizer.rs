@@ -821,8 +821,8 @@ trait AsInner {
             .collect::<Vec<_>>();
 
         let (phonemes_by_frame, keys_by_frame) =
-            song::validate::join_frame_phonemes_with_notes(&frame_phonemes, notes.as_ref())
-                .expect("should be always valid")
+            song::validate::frame_phoneme_note_pairs(&frame_phonemes, notes.as_ref())
+                .expect("`frame_phonemes`' phonemes should come from `notes`")
                 .flat_map(|(p, n)| song::interpret::repeat_phoneme_code_and_key(p, n))
                 .unzip_into_array1s();
 
@@ -852,17 +852,15 @@ trait AsInner {
     ) -> Result<Vec<NonNaNFinite<f32>>> {
         let ValidatedScore { notes } = score.to_validated()?;
 
-        let (phonemes_by_frame, keys_by_frame) = song::validate::join_frame_phonemes_with_notes(
-            &frame_audio_query.phonemes,
-            notes.as_ref(),
-        )
-        .map_err(|source| InvalidQueryError {
-            what: "`score`と`frame_audio_query`の組み合わせ",
-            value: None,
-            source: Some(source),
-        })?
-        .flat_map(|(p, n)| song::interpret::repeat_phoneme_code_and_key(p, n))
-        .unzip_into_array1s();
+        let (phonemes_by_frame, keys_by_frame) =
+            song::validate::frame_phoneme_note_pairs(&frame_audio_query.phonemes, notes.as_ref())
+                .map_err(|source| InvalidQueryError {
+                    what: "`score`と`frame_audio_query`の組み合わせ",
+                    value: None,
+                    source: Some(source),
+                })?
+                .flat_map(|(p, n)| song::interpret::repeat_phoneme_code_and_key(p, n))
+                .unzip_into_array1s();
 
         self.create_sing_frame_f0_(phonemes_by_frame, keys_by_frame, style_id)
             .await
@@ -902,17 +900,15 @@ trait AsInner {
     ) -> Result<Vec<NonNaNFinite<f32>>> {
         let ValidatedScore { notes } = score.to_validated()?;
 
-        let (phonemes_by_frame, keys_by_frame) = song::validate::join_frame_phonemes_with_notes(
-            &frame_audio_query.phonemes,
-            notes.as_ref(),
-        )
-        .map_err(|source| InvalidQueryError {
-            what: "`score`と`frame_audio_query`の組み合わせ",
-            value: None,
-            source: Some(source),
-        })?
-        .flat_map(|(p, n)| song::interpret::repeat_phoneme_code_and_key(p, n))
-        .unzip_into_array1s();
+        let (phonemes_by_frame, keys_by_frame) =
+            song::validate::frame_phoneme_note_pairs(&frame_audio_query.phonemes, notes.as_ref())
+                .map_err(|source| InvalidQueryError {
+                    what: "`score`と`frame_audio_query`の組み合わせ",
+                    value: None,
+                    source: Some(source),
+                })?
+                .flat_map(|(p, n)| song::interpret::repeat_phoneme_code_and_key(p, n))
+                .unzip_into_array1s();
 
         self.create_sing_frame_volume_(
             phonemes_by_frame,
