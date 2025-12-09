@@ -102,11 +102,11 @@ impl<A: infer::AsyncExt> AsRef<SynthesisOptions<A>> for TtsOptions<A> {
 
 #[derive(derive_more::Debug)]
 #[debug(bound(A::Cancellable: Debug))]
-struct FrameSysnthesisOptions<A: infer::AsyncExt> {
+struct FrameSynthesisOptions<A: infer::AsyncExt> {
     cancellable: A::Cancellable,
 }
 
-impl<A: infer::AsyncExt> Default for FrameSysnthesisOptions<A> {
+impl<A: infer::AsyncExt> Default for FrameSynthesisOptions<A> {
     fn default() -> Self {
         Self {
             cancellable: A::DEFAULT_HEAVY_INFERENCE_CANCELLABLE,
@@ -1883,8 +1883,8 @@ pub(crate) mod blocking {
             &'a self,
             frame_audio_query: &'a FrameAudioQuery,
             style_id: StyleId,
-        ) -> FrameSysnthesis<'a> {
-            FrameSysnthesis {
+        ) -> FrameSynthesis<'a> {
+            FrameSynthesis {
                 synthesizer: self.0.without_text_analyzer(),
                 frame_audio_query,
                 style_id,
@@ -2235,13 +2235,13 @@ pub(crate) mod blocking {
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
     #[derive(Debug)]
-    pub struct FrameSysnthesis<'a> {
+    pub struct FrameSynthesis<'a> {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, SingleTasked>,
         frame_audio_query: &'a FrameAudioQuery,
         style_id: StyleId,
     }
 
-    impl FrameSysnthesis<'_> {
+    impl FrameSynthesis<'_> {
         /// 実行する。
         pub fn perform(self) -> crate::Result<Vec<u8>> {
             self.synthesizer
@@ -2286,7 +2286,7 @@ pub(crate) mod nonblocking {
     };
 
     use super::{
-        AccelerationMode, AsInner as _, AssumeBlockable, FrameSysnthesisOptions, InitializeOptions,
+        AccelerationMode, AsInner as _, AssumeBlockable, FrameSynthesisOptions, InitializeOptions,
         Inner, InnerRefWithoutTextAnalyzer, SynthesisOptions, TtsOptions,
     };
 
@@ -2568,8 +2568,8 @@ pub(crate) mod nonblocking {
             &'a self,
             frame_audio_query: &'a FrameAudioQuery,
             style_id: StyleId,
-        ) -> FrameSysnthesis<'a> {
-            FrameSysnthesis {
+        ) -> FrameSynthesis<'a> {
+            FrameSynthesis {
                 synthesizer: self.0.without_text_analyzer(),
                 frame_audio_query,
                 style_id,
@@ -2802,14 +2802,14 @@ pub(crate) mod nonblocking {
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
     #[derive(Debug)]
-    pub struct FrameSysnthesis<'a> {
+    pub struct FrameSynthesis<'a> {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, BlockingThreadPool>,
         frame_audio_query: &'a FrameAudioQuery,
         style_id: StyleId,
-        options: FrameSysnthesisOptions<BlockingThreadPool>,
+        options: FrameSynthesisOptions<BlockingThreadPool>,
     }
 
-    impl FrameSysnthesis<'_> {
+    impl FrameSynthesis<'_> {
         /// 音声モデルの実行をキャンセル可能にするかどうか。
         ///
         /// このオプションを有効にすると、負荷がかかっている状況下でハングする可能性がある。そのためデフォルトでは無効化されている。[VOICEVOX/voicevox_core#968]を参照。
