@@ -489,7 +489,7 @@ trait AsInner {
                 .await?;
             return Ok(wav_from_s16le(
                 &to_s16le_pcm(wave, &audio_query),
-                audio_query.output_sampling_rate.get(),
+                audio_query.output_sampling_rate.get().get(),
                 audio_query.output_stereo,
             ));
         }
@@ -969,7 +969,7 @@ trait AsInner {
 
         Ok(wav_from_s16le(
             &to_s16le_pcm(wave, frame_audio_query),
-            frame_audio_query.output_sampling_rate.get(),
+            frame_audio_query.output_sampling_rate.get().get(),
             frame_audio_query.output_stereo,
         ))
     }
@@ -1834,6 +1834,10 @@ pub(crate) mod blocking {
             }
         }
 
+        /// [音符]の列から[歌唱合成用のクエリ]を作成する。
+        ///
+        /// [音符]: Note
+        /// [歌唱合成用のクエリ]: FrameAudioQuery
         pub fn create_sing_frame_audio_query(
             &self,
             notes: &[Note],
@@ -1844,6 +1848,10 @@ pub(crate) mod blocking {
                 .block_on()
         }
 
+        /// [楽譜]と[歌唱合成用のクエリ]から、フレームごとの基本周波数を再生成する。
+        ///
+        /// [楽譜]: Score
+        /// [歌唱合成用のクエリ]: FrameAudioQuery
         pub fn create_sing_frame_f0(
             &self,
             score: &Score,
@@ -1855,6 +1863,10 @@ pub(crate) mod blocking {
                 .block_on()
         }
 
+        /// [楽譜]と[歌唱合成用のクエリ]から、フレームごとの音量を再生成する。
+        ///
+        /// [楽譜]: Score
+        /// [歌唱合成用のクエリ]: FrameAudioQuery
         pub fn create_sing_frame_volume(
             &self,
             score: &Score,
@@ -1866,6 +1878,7 @@ pub(crate) mod blocking {
                 .block_on()
         }
 
+        /// 歌唱音声合成を行う。
         pub fn frame_synthesis<'a>(
             &'a self,
             frame_audio_query: &'a FrameAudioQuery,
@@ -2508,6 +2521,10 @@ pub(crate) mod nonblocking {
             }
         }
 
+        /// [音符]の列から[歌唱合成用のクエリ]を作成する。
+        ///
+        /// [音符]: Note
+        /// [歌唱合成用のクエリ]: FrameAudioQuery
         pub async fn create_sing_frame_audio_query(
             &self,
             notes: &[Note],
@@ -2516,6 +2533,10 @@ pub(crate) mod nonblocking {
             self.0.create_sing_frame_audio_query(notes, style_id).await
         }
 
+        /// [楽譜]と[歌唱合成用のクエリ]から、フレームごとの基本周波数を再生成する。
+        ///
+        /// [楽譜]: Score
+        /// [歌唱合成用のクエリ]: FrameAudioQuery
         pub async fn create_sing_frame_f0(
             &self,
             score: &Score,
@@ -2527,6 +2548,10 @@ pub(crate) mod nonblocking {
                 .await
         }
 
+        /// [楽譜]と[歌唱合成用のクエリ]から、フレームごとの音量を再生成する。
+        ///
+        /// [楽譜]: Score
+        /// [歌唱合成用のクエリ]: FrameAudioQuery
         pub async fn create_sing_frame_volume(
             &self,
             score: &Score,
@@ -2538,6 +2563,7 @@ pub(crate) mod nonblocking {
                 .await
         }
 
+        /// 歌唱音声合成を行う。
         pub fn frame_synthesis<'a>(
             &'a self,
             frame_audio_query: &'a FrameAudioQuery,

@@ -146,6 +146,7 @@ pub struct FrameAudioQuery {
 
 mod optional_lyric {
     use arrayvec::ArrayVec;
+    use derive_more::AsRef;
     use serde_with::SerializeDisplay;
     use smol_str::SmolStr;
 
@@ -154,12 +155,30 @@ mod optional_lyric {
         mora_list::MORA_KANA_TO_MORA_PHONEMES,
     };
 
-    #[derive(Clone, Default, derive_more::Display, SerializeDisplay)]
+    /// 音符の歌詞。`""`は[無音]。
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use voicevox_core::OptionalLyric;
+    /// #
+    /// "ア".parse::<OptionalLyric>()?;
+    /// "ヴォ".parse::<OptionalLyric>()?;
+    /// "ん".parse::<OptionalLyric>()?; // 平仮名
+    /// "".parse::<OptionalLyric>()?; // 無音
+    ///
+    /// "アア".parse::<OptionalLyric>().unwrap_err(); // 複数モーラは現状非対応
+    /// # anyhow::Ok(())
+    /// ```
+    ///
+    /// [無音]: crate::Phoneme::MorablePau
+    #[derive(Clone, Default, Debug, derive_more::Display, AsRef, SerializeDisplay)]
     #[display("{text}")]
     pub struct OptionalLyric {
         /// # Invariant
         ///
         /// `phonemes` must come from this.
+        #[as_ref(str)]
         text: SmolStr,
 
         // TODO: `NonPauBaseVowel`型 (= a | i | u | e | o | cl | N) を導入する

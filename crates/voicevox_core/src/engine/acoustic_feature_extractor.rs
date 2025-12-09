@@ -1,4 +1,8 @@
-use std::{fmt, str::FromStr};
+use std::{
+    cmp, fmt,
+    hash::{Hash, Hasher},
+    str::FromStr,
+};
 
 use bytemuck::{checked::CheckedCastError, CheckedBitPattern, Contiguous, NoUninit};
 use duplicate::duplicate_item;
@@ -159,6 +163,7 @@ macro_rules! mora_tail {
 
 pub(super) use {mora_tail, optional_consonant};
 
+/// 音素。
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, derive_more::Display)]
 pub enum Phoneme {
     /// `pau`。
@@ -433,6 +438,30 @@ impl FromStr for Phoneme {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Self::from_str_with_inner_error(s).map_err(Into::into)
     }
+}
+
+impl PartialEq for Sil {
+    fn eq(&self, _: &Self) -> bool {
+        true
+    }
+}
+
+impl Eq for Sil {}
+
+impl PartialOrd for Sil {
+    fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Sil {
+    fn cmp(&self, _: &Self) -> cmp::Ordering {
+        cmp::Ordering::Equal
+    }
+}
+
+impl Hash for Sil {
+    fn hash<H: Hasher>(&self, _: &mut H) {}
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, derive_more::Display)]
@@ -987,7 +1016,7 @@ impl From<PhonemeCode> for usize {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, CheckedBitPattern, NoUninit, EnumCount)]
+#[derive(Clone, Copy, PartialEq, Debug, CheckedBitPattern, NoUninit, EnumCount)]
 #[repr(i64)]
 pub(crate) enum OptionalConsonant {
     None = -1,
@@ -1077,7 +1106,7 @@ impl From<OptionalConsonant> for Option<Consonant> {
 }
 
 #[expect(dead_code, reason = "we use `bytemuck` to construct `MorablePau`")]
-#[derive(Clone, Copy, PartialEq, CheckedBitPattern, NoUninit, EnumCount)]
+#[derive(Clone, Copy, PartialEq, Debug, CheckedBitPattern, NoUninit, EnumCount)]
 #[repr(i64)]
 pub(crate) enum MoraTail {
     //None = -1,
@@ -1405,7 +1434,24 @@ const _: () = assert!(NonPauPhonemeCode::COUNT == PhonemeCode::COUNT - 1);
 mod sil {
     use std::borrow::Cow;
 
-    #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, derive_more::Display)]
+    use derive_more::AsRef;
+
+    /// `sil` (_silent_)。
+    ///
+    /// 任意の二つの`Sil`は[`Eq`]および[`Ord`]上で等価と判定される。
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use voicevox_core::Sil;
+    /// #
+    /// assert_eq!(
+    ///     "sil".parse::<Sil>().unwrap(),
+    ///     "sil-foo-bar".parse::<Sil>().unwrap(),
+    /// );
+    /// ```
+    #[derive(Clone, Debug, derive_more::Display, AsRef)]
+    #[as_ref(str)]
     pub struct Sil(
         Cow<'static, str>, // invariant: must contain "sil"
     );

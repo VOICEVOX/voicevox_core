@@ -12,7 +12,7 @@ pub(crate) fn to_s16le_pcm(wave: &[f32], query: &impl HasPcmOptions) -> Vec<u8> 
     } = query.pcm_options();
     let num_channels: u16 = if output_stereo { 2 } else { 1 };
     let repeat_count: u32 =
-        (output_sampling_rate.get() / DEFAULT_SAMPLING_RATE) * num_channels as u32;
+        (output_sampling_rate.get().get() / DEFAULT_SAMPLING_RATE) * num_channels as u32;
     let bytes_size = wave.len() as u32 * repeat_count * 2;
     let buf: Vec<u8> = Vec::with_capacity(bytes_size as usize);
     let mut cur = Cursor::new(buf);

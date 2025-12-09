@@ -7,24 +7,26 @@ use serde::{
 
 pub(crate) const DEFAULT_SAMPLING_RATE: u32 = 24000;
 
+/// サンプリングレート（Hz）。
+///
+/// `24000`以外の値は現状推奨されない。
 #[derive(Clone, Copy, PartialEq, Debug, Serialize)]
 pub struct SamplingRate(NonZero<u32>);
 
 impl SamplingRate {
-    pub(super) fn new(n: u32) -> Option<Self> {
-        NonZero::new(n)
-            .filter(|n| n.get() % DEFAULT_SAMPLING_RATE == 0)
-            .map(Self)
+    pub fn new(n: NonZero<u32>) -> Option<Self> {
+        (n.get() % DEFAULT_SAMPLING_RATE == 0).then_some(Self(n))
     }
 
-    pub(crate) fn get(self) -> u32 {
-        self.0.get()
+    pub fn get(self) -> NonZero<u32> {
+        self.0
     }
 }
 
 impl Default for SamplingRate {
     fn default() -> Self {
-        Self::new(DEFAULT_SAMPLING_RATE).unwrap()
+        const _: () = assert!(DEFAULT_SAMPLING_RATE > 0);
+        Self(NonZero::new(DEFAULT_SAMPLING_RATE).expect("should have been asserted"))
     }
 }
 
@@ -48,7 +50,8 @@ impl<'de> Deserialize<'de> for SamplingRate {
             where
                 E: de::Error,
             {
-                SamplingRate::new(n)
+                NonZero::new(n)
+                    .and_then(SamplingRate::new)
                     .ok_or_else(|| de::Error::invalid_value(Unexpected::Unsigned(n.into()), &self))
             }
         }
