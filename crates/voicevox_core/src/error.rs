@@ -248,6 +248,9 @@ pub(crate) enum InvalidQueryErrorSource {
     #[error("子音です")]
     IsConsonant,
 
+    #[error("\"sil\"を含む文字列である必要があります")]
+    MustContainSil,
+
     #[error("`0`にすることはできません")]
     IsZero,
 

@@ -9,7 +9,7 @@ use serde::{
 };
 use strum::EnumCount;
 
-use crate::error::{InvalidQueryError, InvalidQueryErrorSource};
+use crate::error::{ErrorRepr, InvalidQueryError, InvalidQueryErrorSource};
 
 pub use self::sil::Sil;
 
@@ -1354,10 +1354,17 @@ impl Default for Sil {
 }
 
 impl FromStr for Sil {
-    type Err = ();
+    type Err = crate::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::new(s).ok_or(())
+        Self::new(s).ok_or_else(|| {
+            ErrorRepr::InvalidQuery(InvalidQueryError {
+                what: "sil音素",
+                value: Some(Box::new(s.to_owned())),
+                source: Some(InvalidQueryErrorSource::MustContainSil),
+            })
+            .into()
+        })
     }
 }
 
@@ -1382,7 +1389,7 @@ impl<'de> Deserialize<'de> for Sil {
                 E: de::Error,
             {
                 s.parse()
-                    .map_err(|()| de::Error::invalid_value(Unexpected::Str(s), &self))
+                    .map_err(|_| de::Error::invalid_value(Unexpected::Str(s), &self))
             }
         }
     }
