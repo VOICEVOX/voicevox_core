@@ -185,7 +185,10 @@ pub(crate) mod note_seq {
 
     #[derive(AsRef)]
     pub(crate) struct ValidatedNoteSeq(
-        NonEmptyVec<ValidatedNote>, // invariant: the first note must be pau
+        /// # Invariant
+        ///
+        /// The first note must be pau.
+        NonEmptyVec<ValidatedNote>,
     );
 
     impl TryFrom<NonEmptyVec<ValidatedNote>> for ValidatedNoteSeq {

@@ -24,7 +24,9 @@ pub struct NoteId(pub Arc<str>);
 #[derive(Clone, Default, derive_more::Display)]
 #[display("{text}")]
 pub struct OptionalLyric {
-    // invariant: `phonemes` must come from `text`.
+    /// # Invariant
+    ///
+    /// `phonemes` must come from `text`.
     text: SmolStr,
     // TODO: `NonPauBaseVowel`型 (= a | i | u | e | o | cl | N) を導入する
     pub(super) phonemes: ArrayVec<(OptionalConsonant, MoraTail), 1>,

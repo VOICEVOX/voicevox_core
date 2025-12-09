@@ -37,7 +37,9 @@ pub(crate) trait NonEmptyIterator: AssertNonEmpty {
 
 impl<I: AssertNonEmpty> NonEmptyIterator for I {}
 
-/// invariant: the `IntoIter` must be non-empty.
+/// # Invariant
+///
+/// The `IntoIter` must be non-empty.
 pub(crate) trait AssertNonEmpty: IntoIterator {}
 
 pub(crate) trait FromNonEmptyIterator<A>: Sized {
@@ -116,7 +118,10 @@ mod slice {
     #[derive(RefCastCustom, AsRef)]
     #[repr(transparent)]
     pub(crate) struct NonEmptySlice<T>(
-        [T], // invariant: must be non-empty
+        /// # Invariant
+        ///
+        /// This must be non-empty.
+        [T],
     );
 
     impl<T> NonEmptySlice<T> {
@@ -135,7 +140,10 @@ mod slice_iter {
     use super::AssertNonEmpty;
 
     pub(crate) struct NonEmptySliceIter<'a, T>(
-        slice::Iter<'a, T>, // invariant: must be non-empty
+        /// # Invariant
+        ///
+        /// This must be non-empty.
+        slice::Iter<'a, T>,
     );
 
     impl<'a, T> NonEmptySliceIter<'a, T> {
@@ -162,7 +170,10 @@ mod vec {
     #[derive(AsRef)]
     #[as_ref([T])]
     pub(crate) struct NonEmptyVec<T>(
-        Vec<T>, // invariant: must be non-empty
+        /// # Invariant
+        ///
+        /// This must be non-empty.
+        Vec<T>,
     );
 
     impl<T> NonEmptyVec<T> {
