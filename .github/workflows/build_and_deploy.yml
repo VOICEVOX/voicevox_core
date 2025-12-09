@@ -295,7 +295,7 @@ jobs:
           path: java_artifact
 
   build_xcframework:
-    if: ${{ !(github.event_name != 'release' && github.event_name != 'workflow_dispatch') }} # !env.IS_SIMPLE_TEST と同じ
+    if: ${{ !(github.ref != 'refs/heads/main' && github.event_name != 'release' && github.event_name != 'workflow_dispatch') }} # !env.IS_SIMPLE_TEST と同じ
     needs: [config, build_and_deploy]
     runs-on: macos-14
     env:
@@ -340,7 +340,7 @@ jobs:
 
   build_java_package:
     runs-on: ubuntu-latest
-    if: ${{ !(github.event_name != 'release' && github.event_name != 'workflow_dispatch') }} # !env.IS_SIMPLE_TEST と同じ
+    if: ${{ !(github.ref != 'refs/heads/main' && github.event_name != 'release' && github.event_name != 'workflow_dispatch') }} # !env.IS_SIMPLE_TEST と同じ
     needs: [config, build_and_deploy]
     steps:
       - uses: actions/checkout@v5
