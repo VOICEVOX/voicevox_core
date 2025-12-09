@@ -112,7 +112,7 @@ pub(crate) enum PauOrKeyAndLyric {
 
 impl PauOrKeyAndLyric {
     fn new(key: Option<U53>, lyric: &OptionalLyric) -> crate::Result<Self> {
-        match (key, &*lyric.phonemes) {
+        match (key, &**lyric.phonemes()) {
             (None, []) => Ok(Self::Pau),
             (Some(key), &[mora]) => Ok(Self::KeyAndLyric {
                 key,
@@ -149,13 +149,14 @@ impl ValidatedNoteSeq {
             .map(Note::into_validated)
             .collect::<Result<Vec<_>, _>>()?;
 
-        NonEmptyVec::new(notes)
-            .ok_or_else(|| InvalidQueryError {
+        NonEmptyVec::new(notes).and_then(Self::new_).ok_or_else(|| {
+            InvalidQueryError {
                 what: "ノート列",
                 value: None,
                 source: Some(InvalidQueryErrorSource::InitialNoteMustBePau),
-            })?
-            .try_into()
+            }
+            .into()
+        })
     }
 
     pub(crate) fn len(&self) -> NonZero<usize> {
@@ -176,10 +177,7 @@ impl AsRef<[ValidatedNote]> for ValidatedNoteSeq {
 pub(crate) mod note_seq {
     use derive_more::AsRef;
 
-    use crate::{
-        collections::NonEmptyVec,
-        error::{ErrorRepr, InvalidQueryError, InvalidQueryErrorSource},
-    };
+    use crate::collections::NonEmptyVec;
 
     use super::{PauOrKeyAndLyric, ValidatedNote};
 
@@ -191,19 +189,9 @@ pub(crate) mod note_seq {
         NonEmptyVec<ValidatedNote>,
     );
 
-    impl TryFrom<NonEmptyVec<ValidatedNote>> for ValidatedNoteSeq {
-        type Error = crate::Error;
-
-        fn try_from(notes: NonEmptyVec<ValidatedNote>) -> Result<Self, Self::Error> {
-            if notes.first().pau_or_key_and_lyric != PauOrKeyAndLyric::Pau {
-                return Err(ErrorRepr::InvalidQuery(InvalidQueryError {
-                    what: "ノート列",
-                    value: None,
-                    source: Some(InvalidQueryErrorSource::InitialNoteMustBePau),
-                })
-                .into());
-            }
-            Ok(Self(notes))
+    impl ValidatedNoteSeq {
+        pub(super) fn new_(notes: NonEmptyVec<ValidatedNote>) -> Option<Self> {
+            (notes.first().pau_or_key_and_lyric == PauOrKeyAndLyric::Pau).then_some(Self(notes))
         }
     }
 }

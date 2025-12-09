@@ -1,65 +1,35 @@
 use std::{fmt, str::FromStr, sync::Arc};
 
-use arrayvec::ArrayVec;
 use serde::{
     de::{self, Unexpected},
-    Deserialize, Deserializer, Serialize, Serializer,
+    Deserialize, Deserializer, Serialize,
 };
-use smol_str::SmolStr;
 use typed_floats::{NonNaNFinite, PositiveFinite};
 use typeshare::U53;
 
 use crate::{error::InvalidQueryError, SamplingRate};
 
-use super::super::{
-    acoustic_feature_extractor::{MoraTail, OptionalConsonant},
-    mora_list::MORA_KANA_TO_MORA_PHONEMES,
-    Phoneme,
-};
+use super::super::Phoneme;
+
+pub use self::optional_lyric::OptionalLyric;
 
 /// 音符のID。
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct NoteId(pub Arc<str>);
 
-#[derive(Clone, Default, derive_more::Display)]
-#[display("{text}")]
-pub struct OptionalLyric {
-    /// # Invariant
-    ///
-    /// `phonemes` must come from `text`.
-    text: SmolStr,
-    // TODO: `NonPauBaseVowel`型 (= a | i | u | e | o | cl | N) を導入する
-    pub(super) phonemes: ArrayVec<(OptionalConsonant, MoraTail), 1>,
-}
-
 impl FromStr for OptionalLyric {
     type Err = crate::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.is_empty() {
-            return Ok(Self::default());
-        }
-
-        let mora_kana = hira_to_kana(s).parse().map_err(|_| InvalidQueryError {
-            what: "歌詞",
-            value: Some(Box::new(s.to_owned())),
-            source: None,
-        })?;
-
-        Ok(OptionalLyric {
-            text: s.into(),
-            phonemes: [MORA_KANA_TO_MORA_PHONEMES[mora_kana]].into(),
+        Self::new(s).map_err(|()| {
+            InvalidQueryError {
+                what: "歌詞",
+                value: Some(Box::new(s.to_owned())),
+                source: None,
+            }
+            .into()
         })
     }
-}
-
-fn hira_to_kana(s: &str) -> SmolStr {
-    s.chars()
-        .map(|c| match c {
-            'ぁ'..='ゔ' => (u32::from(c) + 96).try_into().expect("should be OK"),
-            c => c,
-        })
-        .collect()
 }
 
 impl<'de> Deserialize<'de> for OptionalLyric {
@@ -82,19 +52,10 @@ impl<'de> Deserialize<'de> for OptionalLyric {
             where
                 E: de::Error,
             {
-                s.parse()
-                    .map_err(|_| de::Error::invalid_value(Unexpected::Str(s), &self))
+                OptionalLyric::new(s)
+                    .map_err(|()| de::Error::invalid_value(Unexpected::Str(s), &self))
             }
         }
-    }
-}
-
-impl Serialize for OptionalLyric {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_str(&self.text)
     }
 }
 
@@ -183,12 +144,66 @@ pub struct FrameAudioQuery {
     pub output_stereo: bool,
 }
 
+mod optional_lyric {
+    use arrayvec::ArrayVec;
+    use serde_with::SerializeDisplay;
+    use smol_str::SmolStr;
+
+    use super::super::super::{
+        acoustic_feature_extractor::{MoraTail, OptionalConsonant},
+        mora_list::MORA_KANA_TO_MORA_PHONEMES,
+    };
+
+    #[derive(Clone, Default, derive_more::Display, SerializeDisplay)]
+    #[display("{text}")]
+    pub struct OptionalLyric {
+        /// # Invariant
+        ///
+        /// `phonemes` must come from this.
+        text: SmolStr,
+
+        // TODO: `NonPauBaseVowel`型 (= a | i | u | e | o | cl | N) を導入する
+        /// # Invariant
+        ///
+        /// This must come from `text`.
+        pub(super) phonemes: ArrayVec<(OptionalConsonant, MoraTail), 1>,
+    }
+
+    impl OptionalLyric {
+        pub(super) fn new(text: &str) -> Result<Self, ()> {
+            if text.is_empty() {
+                return Ok(Self::default());
+            }
+
+            let mora_kana = hira_to_kana(text).parse().map_err(|_| ())?;
+
+            Ok(Self {
+                text: text.into(),
+                phonemes: [MORA_KANA_TO_MORA_PHONEMES[mora_kana]].into(),
+            })
+        }
+
+        pub(in super::super) fn phonemes(&self) -> &ArrayVec<(OptionalConsonant, MoraTail), 1> {
+            &self.phonemes
+        }
+    }
+
+    pub(super) fn hira_to_kana(s: &str) -> SmolStr {
+        s.chars()
+            .map(|c| match c {
+                'ぁ'..='ゔ' => (u32::from(c) + 96).try_into().expect("should be OK"),
+                c => c,
+            })
+            .collect()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #[test]
     fn hira_to_kana_should_not_fail() {
         for c in 'ぁ'..='ゔ' {
-            super::hira_to_kana(&c.to_string());
+            super::optional_lyric::hira_to_kana(&c.to_string());
         }
     }
 }
