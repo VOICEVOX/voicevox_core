@@ -13,7 +13,7 @@ use super::{
     queries::{FramePhoneme, Note, NoteId, OptionalLyric, Score},
 };
 
-pub(crate) use self::note_seq::ValidatedNoteSeq;
+use self::note_seq::ValidatedNoteSeq;
 
 pub(crate) fn join_frame_phonemes_with_notes<'a>(
     frame_phonemes: &'a [FramePhoneme],
@@ -173,7 +173,7 @@ impl AsRef<[ValidatedNote]> for ValidatedNoteSeq {
     }
 }
 
-mod note_seq {
+pub(crate) mod note_seq {
     use derive_more::AsRef;
 
     use crate::{

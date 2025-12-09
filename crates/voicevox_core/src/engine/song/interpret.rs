@@ -12,7 +12,7 @@ use super::{
         acoustic_feature_extractor::{OptionalConsonant, PhonemeCode},
         ndarray::IteratorExt as _,
     },
-    validate::{Lyric, PauOrKeyAndLyric, ValidatedNote, ValidatedNoteSeq},
+    validate::{note_seq::ValidatedNoteSeq, Lyric, PauOrKeyAndLyric, ValidatedNote},
 };
 
 pub(crate) struct ConsonantLengthsFeature {

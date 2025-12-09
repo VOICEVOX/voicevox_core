@@ -43,8 +43,10 @@ use crate::{
     },
     engine::{
         song::{
-            self, ConsonantLengthsFeature, PhonemeFeature, SfDecoderFeature, ValidatedNote,
-            ValidatedNoteSeq, ValidatedScore,
+            self,
+            interpret::{ConsonantLengthsFeature, PhonemeFeature, SfDecoderFeature},
+            queries::{FrameAudioQuery, FramePhoneme, Note, Score},
+            validate::{note_seq::ValidatedNoteSeq, ValidatedNote, ValidatedScore},
         },
         talk::{
             create_kana, initial_process, parse_kana, split_mora, DecoderFeature, LengthedPhoneme,
@@ -54,8 +56,7 @@ use crate::{
     },
     error::{ErrorRepr, InvalidQueryError},
     future::FutureExt as _,
-    AccentPhrase, AudioQuery, FrameAudioQuery, FramePhoneme, Note, Result, Score, StyleId,
-    VoiceModelId, VoiceModelMeta,
+    AccentPhrase, AudioQuery, Result, StyleId, VoiceModelId, VoiceModelMeta,
 };
 
 pub const DEFAULT_CPU_NUM_THREADS: u16 = 0;
@@ -801,7 +802,7 @@ trait AsInner {
         })()
         .map_err(ErrorRepr::RunModel)?;
 
-        let phoneme_lengths = song::phoneme_lengths(
+        let phoneme_lengths = song::interpret::phoneme_lengths(
             consonant_lengths,
             &notes
                 .iter()
@@ -820,9 +821,9 @@ trait AsInner {
             .collect::<Vec<_>>();
 
         let (phonemes_by_frame, keys_by_frame) =
-            song::join_frame_phonemes_with_notes(&frame_phonemes, notes.as_ref())
+            song::validate::join_frame_phonemes_with_notes(&frame_phonemes, notes.as_ref())
                 .expect("should be always valid")
-                .flat_map(|(p, n)| song::repeat_phoneme_code_and_key(p, n))
+                .flat_map(|(p, n)| song::interpret::repeat_phoneme_code_and_key(p, n))
                 .unzip_into_array1s();
 
         let f0s = self
@@ -851,15 +852,17 @@ trait AsInner {
     ) -> Result<Vec<NonNaNFinite<f32>>> {
         let ValidatedScore { notes } = score.to_validated()?;
 
-        let (phonemes_by_frame, keys_by_frame) =
-            song::join_frame_phonemes_with_notes(&frame_audio_query.phonemes, notes.as_ref())
-                .map_err(|source| InvalidQueryError {
-                    what: "`score`と`frame_audio_query`の組み合わせ",
-                    value: None,
-                    source: Some(source),
-                })?
-                .flat_map(|(p, n)| song::repeat_phoneme_code_and_key(p, n))
-                .unzip_into_array1s();
+        let (phonemes_by_frame, keys_by_frame) = song::validate::join_frame_phonemes_with_notes(
+            &frame_audio_query.phonemes,
+            notes.as_ref(),
+        )
+        .map_err(|source| InvalidQueryError {
+            what: "`score`と`frame_audio_query`の組み合わせ",
+            value: None,
+            source: Some(source),
+        })?
+        .flat_map(|(p, n)| song::interpret::repeat_phoneme_code_and_key(p, n))
+        .unzip_into_array1s();
 
         self.create_sing_frame_f0_(phonemes_by_frame, keys_by_frame, style_id)
             .await
@@ -899,15 +902,17 @@ trait AsInner {
     ) -> Result<Vec<NonNaNFinite<f32>>> {
         let ValidatedScore { notes } = score.to_validated()?;
 
-        let (phonemes_by_frame, keys_by_frame) =
-            song::join_frame_phonemes_with_notes(&frame_audio_query.phonemes, notes.as_ref())
-                .map_err(|source| InvalidQueryError {
-                    what: "`score`と`frame_audio_query`の組み合わせ",
-                    value: None,
-                    source: Some(source),
-                })?
-                .flat_map(|(p, n)| song::repeat_phoneme_code_and_key(p, n))
-                .unzip_into_array1s();
+        let (phonemes_by_frame, keys_by_frame) = song::validate::join_frame_phonemes_with_notes(
+            &frame_audio_query.phonemes,
+            notes.as_ref(),
+        )
+        .map_err(|source| InvalidQueryError {
+            what: "`score`と`frame_audio_query`の組み合わせ",
+            value: None,
+            source: Some(source),
+        })?
+        .flat_map(|(p, n)| song::interpret::repeat_phoneme_code_and_key(p, n))
+        .unzip_into_array1s();
 
         self.create_sing_frame_volume_(
             phonemes_by_frame,
