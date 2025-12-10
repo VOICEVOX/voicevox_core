@@ -3,7 +3,7 @@ use std::{collections::HashMap, sync::LazyLock};
 use super::{
     super::{
         acoustic_feature_extractor::{Consonant, NonConsonant},
-        mora_list::MORA_KANA_TO_MORA_PHONEMES,
+        mora_mappings::MORA_KANA_TO_MORA_PHONEMES,
     },
     AccentPhrase, Mora, ValidatedMora,
 };
@@ -193,7 +193,7 @@ mod tests {
     use pretty_assertions::assert_eq;
     use rstest::rstest;
 
-    use super::super::super::mora_list::MORA_KANA_TO_MORA_PHONEMES;
+    use super::super::super::mora_mappings::MORA_KANA_TO_MORA_PHONEMES;
 
     #[rstest]
     #[case(Some("da"), "ダ")]
