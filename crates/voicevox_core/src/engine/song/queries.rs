@@ -152,7 +152,7 @@ mod optional_lyric {
 
     use super::super::super::{
         acoustic_feature_extractor::{MoraTail, OptionalConsonant},
-        mora_list::MORA_KANA_TO_MORA_PHONEMES,
+        mora_mappings::MORA_KANA_TO_MORA_PHONEMES,
     };
 
     /// 音符の歌詞。`""`は[無音]。
