@@ -256,6 +256,16 @@ pub mod __doc {
     /// - [`AudioQuery`]
     ///     - [`AccentPhrase`]
     ///     - [`Mora`]
+    /// - [`Score`]
+    ///     - [`Note`]
+    ///         - [`NoteId`]
+    ///         - [`OptionalLyric`]
+    /// - [`FrameAudioQuery`]
+    ///     - [`FramePhoneme`]
+    ///         - [`Phoneme`]
+    ///             - [`Sil`]
+    ///         - `NoteId`
+    ///     - [`SamplingRate`]
     ///
     /// [C API]が取り扱うJSONもSerdeの実装に従っている。
     ///
@@ -276,12 +286,22 @@ pub mod __doc {
     /// [`AudioQuery`]: crate::AudioQuery
     /// [`AccentPhrase`]: crate::AccentPhrase
     /// [`Mora`]: crate::Mora
+    /// [`Score`]: crate::Score
+    /// [`Note`]: crate::Note
+    /// [`NoteId`]: crate::NoteId
+    /// [`OptionalLyric`]: crate::OptionalLyric
+    /// [`FrameAudioQuery`]: crate::FrameAudioQuery
+    /// [`FramePhoneme`]: crate::FramePhoneme
+    /// [`Phoneme`]: crate::Phoneme
+    /// [`Sil`]: crate::Sil
+    /// [`SamplingRate`]: crate::SamplingRate
     /// [C API]: https://voicevox.github.io/voicevox_core/apis/c_api/voicevox__core_8h.html
     /// [データのシリアライゼーション]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/serialization.md
     pub mod Serde対応 {}
 }
 
 mod asyncs;
+mod collections;
 mod convert;
 mod core;
 /// cbindgen:ignore
@@ -315,9 +335,13 @@ pub use self::{
         metas::{CharacterMeta, CharacterVersion, StyleId, StyleMeta, StyleType, VoiceModelMeta},
         voice_model::VoiceModelId,
     },
-    engine::talk::{
-        user_dict::{UserDictWord, UserDictWordBuilder, UserDictWordType},
-        AccentPhrase, AudioQuery, Mora,
+    engine::{
+        song::queries::{FrameAudioQuery, FramePhoneme, Note, NoteId, OptionalLyric, Score},
+        talk::{
+            user_dict::{UserDictWord, UserDictWordBuilder, UserDictWordType},
+            AccentPhrase, AudioQuery, Mora,
+        },
+        Phoneme, SamplingRate, Sil,
     },
     error::{Error, ErrorKind},
     result::Result,

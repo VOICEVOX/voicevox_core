@@ -2,6 +2,7 @@
 //!
 //! メインの部分。[`crate::core`]と[`crate::engine`]の二つはここで用いる。
 
+use anyhow::{anyhow, ensure, Context as _};
 use easy_ext::ext;
 use educe::Educe;
 use enum_map::enum_map;
@@ -14,9 +15,11 @@ use std::{
     sync::Arc,
 };
 use tracing::info;
+use typed_floats::{InvalidNumber, NonNaNFinite};
 
 use crate::{
     asyncs::{Async, BlockingThreadPool, SingleTasked},
+    collections::{NonEmptyIterator as _, NonEmptySlice, NonEmptyVec},
     core::{
         devices::{self, DeviceSpec, GpuSpec},
         ensure_minimum_phoneme_length,
@@ -39,13 +42,19 @@ use crate::{
         voice_model, Array1ExtForPostProcess as _, Array1ExtForPreProcess as _, ArrayExt as _,
     },
     engine::{
+        song::{
+            self,
+            interpret::{ConsonantLengthsFeature, PhonemeFeature, SfDecoderFeature},
+            queries::{FrameAudioQuery, FramePhoneme, Note, Score},
+            validate::{note_seq::ValidatedNoteSeq, ValidatedNote, ValidatedScore},
+        },
         talk::{
             create_kana, initial_process, parse_kana, split_mora, DecoderFeature, LengthedPhoneme,
             ValidatedAccentPhrase, ValidatedAudioQuery, ValidatedMora,
         },
-        to_s16le_pcm, wav_from_s16le, PhonemeCode, DEFAULT_SAMPLING_RATE,
+        to_s16le_pcm, wav_from_s16le, IteratorExt as _, PhonemeCode, DEFAULT_SAMPLING_RATE,
     },
-    error::ErrorRepr,
+    error::{ErrorRepr, InvalidQueryError},
     future::FutureExt as _,
     AccentPhrase, AudioQuery, Result, StyleId, VoiceModelId, VoiceModelMeta,
 };
@@ -88,6 +97,20 @@ struct TtsOptions<A: infer::AsyncExt> {
 impl<A: infer::AsyncExt> AsRef<SynthesisOptions<A>> for TtsOptions<A> {
     fn as_ref(&self) -> &SynthesisOptions<A> {
         &self.synthesis
+    }
+}
+
+#[derive(derive_more::Debug)]
+#[debug(bound(A::Cancellable: Debug))]
+struct FrameSynthesisOptions<A: infer::AsyncExt> {
+    cancellable: A::Cancellable,
+}
+
+impl<A: infer::AsyncExt> Default for FrameSynthesisOptions<A> {
+    fn default() -> Self {
+        Self {
+            cancellable: A::DEFAULT_HEAVY_INFERENCE_CANCELLABLE,
+        }
     }
 }
 
@@ -466,7 +489,7 @@ trait AsInner {
                 .await?;
             return Ok(wav_from_s16le(
                 &to_s16le_pcm(wave, &audio_query),
-                audio_query.output_sampling_rate.get(),
+                audio_query.output_sampling_rate.get().get(),
                 audio_query.output_stereo,
             ));
         }
@@ -742,6 +765,213 @@ trait AsInner {
         let audio_query = &self.create_audio_query(text, style_id).await?;
         self.synthesis(audio_query, style_id, options.as_ref())
             .await
+    }
+
+    async fn create_sing_frame_audio_query(
+        &self,
+        notes: &[Note],
+        style_id: StyleId,
+    ) -> Result<FrameAudioQuery> {
+        let notes = &ValidatedNoteSeq::new(notes)?;
+
+        let ConsonantLengthsFeature {
+            note_lengths,
+            note_constants,
+            note_vowels,
+        } = notes.into();
+
+        let consonant_lengths = &self
+            .status()
+            .predict_sing_consonant_length::<Self::Async>(
+                note_constants,
+                note_vowels,
+                note_lengths,
+                style_id,
+            )
+            .await?
+            .into_vec();
+        let consonant_lengths = (|| {
+            let consonant_lengths = NonEmptySlice::new(consonant_lengths)
+                .with_context(|| "output is an empty array")?;
+            ensure!(
+                *consonant_lengths.first() == 0,
+                "first phoneme is considered to be a pau"
+            );
+            ensure!(consonant_lengths.len() == notes.len(), "wrong length");
+            Ok(consonant_lengths)
+        })()
+        .map_err(ErrorRepr::RunModel)?;
+
+        let phoneme_lengths = song::interpret::phoneme_lengths(
+            consonant_lengths,
+            &notes
+                .iter()
+                .map(|&ValidatedNote { frame_length, .. }| frame_length)
+                .collect::<NonEmptyVec<_>>(),
+        );
+
+        let frame_phonemes = itertools::zip_eq(Vec::from(notes), phoneme_lengths)
+            .map(
+                |(PhonemeFeature { phoneme, note_id }, frame_length)| FramePhoneme {
+                    phoneme: phoneme.into(),
+                    frame_length,
+                    note_id,
+                },
+            )
+            .collect::<Vec<_>>();
+
+        let (phonemes_by_frame, keys_by_frame) =
+            song::validate::frame_phoneme_note_pairs(&frame_phonemes, notes.as_ref())
+                .expect("`frame_phonemes`' phonemes should come from `notes`")
+                .flat_map(|(p, n)| song::interpret::repeat_phoneme_code_and_key(p, n))
+                .unzip_into_array1s();
+
+        let f0s = self
+            .create_sing_frame_f0_(phonemes_by_frame.clone(), keys_by_frame.clone(), style_id)
+            .await?;
+
+        let volumes = self
+            .create_sing_frame_volume_(phonemes_by_frame, keys_by_frame, &f0s, style_id)
+            .await?;
+
+        Ok(FrameAudioQuery {
+            f0: f0s,
+            volume: volumes,
+            phonemes: frame_phonemes,
+            volume_scale: (1.).try_into().unwrap(),
+            output_sampling_rate: Default::default(),
+            output_stereo: true,
+        })
+    }
+
+    async fn create_sing_frame_f0(
+        &self,
+        score: &Score,
+        frame_audio_query: &FrameAudioQuery,
+        style_id: StyleId,
+    ) -> Result<Vec<NonNaNFinite<f32>>> {
+        let ValidatedScore { notes } = score.to_validated()?;
+
+        let (phonemes_by_frame, keys_by_frame) =
+            song::validate::frame_phoneme_note_pairs(&frame_audio_query.phonemes, notes.as_ref())
+                .map_err(|source| InvalidQueryError {
+                    what: "`score`と`frame_audio_query`の組み合わせ",
+                    value: None,
+                    source: Some(source),
+                })?
+                .flat_map(|(p, n)| song::interpret::repeat_phoneme_code_and_key(p, n))
+                .unzip_into_array1s();
+
+        self.create_sing_frame_f0_(phonemes_by_frame, keys_by_frame, style_id)
+            .await
+    }
+
+    async fn create_sing_frame_f0_(
+        &self,
+        phonemes_by_frame: ndarray::Array1<i64>,
+        keys_by_frame: ndarray::Array1<i64>,
+        style_id: StyleId,
+    ) -> Result<Vec<NonNaNFinite<f32>>> {
+        // TODO: typed_floatsにissueかPRを出しに行き、スライス変換かbytemuck対応を入れてもらう
+        self.status()
+            .predict_sing_f0::<Self::Async>(phonemes_by_frame, keys_by_frame, style_id)
+            .await?
+            .into_iter()
+            .map(TryInto::try_into)
+            .collect::<std::result::Result<_, _>>()
+            .map_err(|source| {
+                ErrorRepr::RunModel(match source {
+                    InvalidNumber::NaN | InvalidNumber::Infinite => {
+                        anyhow!("`predict_sing_f0` returned non-finite value(s)")
+                    }
+                    InvalidNumber::Zero | InvalidNumber::Negative | InvalidNumber::Positive => {
+                        unreachable!();
+                    }
+                })
+                .into()
+            })
+    }
+
+    async fn create_sing_frame_volume(
+        &self,
+        score: &Score,
+        frame_audio_query: &FrameAudioQuery,
+        style_id: StyleId,
+    ) -> Result<Vec<NonNaNFinite<f32>>> {
+        let ValidatedScore { notes } = score.to_validated()?;
+
+        let (phonemes_by_frame, keys_by_frame) =
+            song::validate::frame_phoneme_note_pairs(&frame_audio_query.phonemes, notes.as_ref())
+                .map_err(|source| InvalidQueryError {
+                    what: "`score`と`frame_audio_query`の組み合わせ",
+                    value: None,
+                    source: Some(source),
+                })?
+                .flat_map(|(p, n)| song::interpret::repeat_phoneme_code_and_key(p, n))
+                .unzip_into_array1s();
+
+        self.create_sing_frame_volume_(
+            phonemes_by_frame,
+            keys_by_frame,
+            &frame_audio_query.f0,
+            style_id,
+        )
+        .await
+    }
+
+    async fn create_sing_frame_volume_(
+        &self,
+        phonemes_by_frame: ndarray::Array1<i64>,
+        keys_by_frame: ndarray::Array1<i64>,
+        f0s: &[NonNaNFinite<f32>],
+        style_id: StyleId,
+    ) -> Result<Vec<NonNaNFinite<f32>>> {
+        // TODO: typed_floatsにissueかPRを出しに行き、スライス変換かbytemuck対応を入れてもらう
+
+        let f0s = f0s.iter().copied().map(Into::into).collect();
+
+        self.status()
+            .predict_sing_volume::<Self::Async>(phonemes_by_frame, keys_by_frame, f0s, style_id)
+            .await?
+            .into_iter()
+            .map(TryInto::try_into)
+            .collect::<std::result::Result<_, _>>()
+            .map_err(|source| {
+                ErrorRepr::RunModel(match source {
+                    InvalidNumber::NaN | InvalidNumber::Infinite => {
+                        anyhow!("`predict_sing_volume` returned non-finite value(s)")
+                    }
+                    InvalidNumber::Zero | InvalidNumber::Negative | InvalidNumber::Positive => {
+                        unreachable!();
+                    }
+                })
+                .into()
+            })
+    }
+
+    async fn frame_synthesis(
+        &self,
+        frame_audio_query: &FrameAudioQuery,
+        style_id: StyleId,
+        options: &SynthesisOptions<Self::Async>,
+    ) -> Result<Vec<u8>> {
+        let SfDecoderFeature {
+            frame_phonemes,
+            f0s,
+            volumes,
+        } = frame_audio_query.sf_decoder_feature();
+
+        let wave = &self
+            .status()
+            .sf_decode::<Self::Async>(frame_phonemes, f0s, volumes, style_id, options.cancellable)
+            .await?
+            .into_vec();
+
+        Ok(wav_from_s16le(
+            &to_s16le_pcm(wave, frame_audio_query),
+            frame_audio_query.output_sampling_rate.get().get(),
+            frame_audio_query.output_stereo,
+        ))
     }
 
     // TODO: この層を破壊する
@@ -1321,10 +1551,11 @@ pub(crate) mod blocking {
     };
 
     use easy_ext::ext;
+    use typed_floats::NonNaNFinite;
 
     use crate::{
-        asyncs::SingleTasked, future::FutureExt as _, AccentPhrase, AudioQuery, StyleId,
-        VoiceModelId, VoiceModelMeta,
+        asyncs::SingleTasked, future::FutureExt as _, AccentPhrase, AudioQuery, FrameAudioQuery,
+        Note, Score, StyleId, VoiceModelId, VoiceModelMeta,
     };
 
     use super::{
@@ -1600,6 +1831,63 @@ pub(crate) mod blocking {
                 kana,
                 style_id,
                 options: TtsOptions::default(),
+            }
+        }
+
+        /// [音符]の列から[歌唱合成用のクエリ]を作成する。
+        ///
+        /// [音符]: Note
+        /// [歌唱合成用のクエリ]: FrameAudioQuery
+        pub fn create_sing_frame_audio_query(
+            &self,
+            notes: &[Note],
+            style_id: StyleId,
+        ) -> crate::Result<FrameAudioQuery> {
+            self.0
+                .create_sing_frame_audio_query(notes, style_id)
+                .block_on()
+        }
+
+        /// [楽譜]と[歌唱合成用のクエリ]から、フレームごとの基本周波数を再生成する。
+        ///
+        /// [楽譜]: Score
+        /// [歌唱合成用のクエリ]: FrameAudioQuery
+        pub fn create_sing_frame_f0(
+            &self,
+            score: &Score,
+            frame_audio_query: &FrameAudioQuery,
+            style_id: StyleId,
+        ) -> crate::Result<Vec<NonNaNFinite<f32>>> {
+            self.0
+                .create_sing_frame_f0(score, frame_audio_query, style_id)
+                .block_on()
+        }
+
+        /// [楽譜]と[歌唱合成用のクエリ]から、フレームごとの音量を再生成する。
+        ///
+        /// [楽譜]: Score
+        /// [歌唱合成用のクエリ]: FrameAudioQuery
+        pub fn create_sing_frame_volume(
+            &self,
+            score: &Score,
+            frame_audio_query: &FrameAudioQuery,
+            style_id: StyleId,
+        ) -> crate::Result<Vec<NonNaNFinite<f32>>> {
+            self.0
+                .create_sing_frame_volume(score, frame_audio_query, style_id)
+                .block_on()
+        }
+
+        /// 歌唱音声合成を行う。
+        pub fn frame_synthesis<'a>(
+            &'a self,
+            frame_audio_query: &'a FrameAudioQuery,
+            style_id: StyleId,
+        ) -> FrameSynthesis<'a> {
+            FrameSynthesis {
+                synthesizer: self.0.without_text_analyzer(),
+                frame_audio_query,
+                style_id,
             }
         }
     }
@@ -1947,6 +2235,23 @@ pub(crate) mod blocking {
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
     #[derive(Debug)]
+    pub struct FrameSynthesis<'a> {
+        synthesizer: InnerRefWithoutTextAnalyzer<'a, SingleTasked>,
+        frame_audio_query: &'a FrameAudioQuery,
+        style_id: StyleId,
+    }
+
+    impl FrameSynthesis<'_> {
+        /// 実行する。
+        pub fn perform(self) -> crate::Result<Vec<u8>> {
+            self.synthesizer
+                .frame_synthesis(self.frame_audio_query, self.style_id, &Default::default())
+                .block_on()
+        }
+    }
+
+    #[must_use = "this is a builder. it does nothing until `perform`ed"]
+    #[derive(Debug)]
     pub struct Tts<'a, T> {
         synthesizer: &'a Inner<AssumeSingleTasked<T>, SingleTasked>,
         text: &'a str,
@@ -1973,15 +2278,16 @@ pub(crate) mod nonblocking {
     use std::fmt::{self, Debug};
 
     use easy_ext::ext;
+    use typed_floats::NonNaNFinite;
 
     use crate::{
-        asyncs::BlockingThreadPool, AccentPhrase, AudioQuery, Result, StyleId, VoiceModelId,
-        VoiceModelMeta,
+        asyncs::BlockingThreadPool, AccentPhrase, AudioQuery, FrameAudioQuery, Note, Result, Score,
+        StyleId, VoiceModelId, VoiceModelMeta,
     };
 
     use super::{
-        AccelerationMode, AsInner as _, AssumeBlockable, InitializeOptions, Inner,
-        InnerRefWithoutTextAnalyzer, SynthesisOptions, TtsOptions,
+        AccelerationMode, AsInner as _, AssumeBlockable, FrameSynthesisOptions, InitializeOptions,
+        Inner, InnerRefWithoutTextAnalyzer, SynthesisOptions, TtsOptions,
     };
 
     /// 音声シンセサイザ。
@@ -2214,6 +2520,62 @@ pub(crate) mod nonblocking {
                 options: Default::default(),
             }
         }
+
+        /// [音符]の列から[歌唱合成用のクエリ]を作成する。
+        ///
+        /// [音符]: Note
+        /// [歌唱合成用のクエリ]: FrameAudioQuery
+        pub async fn create_sing_frame_audio_query(
+            &self,
+            notes: &[Note],
+            style_id: StyleId,
+        ) -> Result<FrameAudioQuery> {
+            self.0.create_sing_frame_audio_query(notes, style_id).await
+        }
+
+        /// [楽譜]と[歌唱合成用のクエリ]から、フレームごとの基本周波数を再生成する。
+        ///
+        /// [楽譜]: Score
+        /// [歌唱合成用のクエリ]: FrameAudioQuery
+        pub async fn create_sing_frame_f0(
+            &self,
+            score: &Score,
+            frame_audio_query: &FrameAudioQuery,
+            style_id: StyleId,
+        ) -> crate::Result<Vec<NonNaNFinite<f32>>> {
+            self.0
+                .create_sing_frame_f0(score, frame_audio_query, style_id)
+                .await
+        }
+
+        /// [楽譜]と[歌唱合成用のクエリ]から、フレームごとの音量を再生成する。
+        ///
+        /// [楽譜]: Score
+        /// [歌唱合成用のクエリ]: FrameAudioQuery
+        pub async fn create_sing_frame_volume(
+            &self,
+            score: &Score,
+            frame_audio_query: &FrameAudioQuery,
+            style_id: StyleId,
+        ) -> crate::Result<Vec<NonNaNFinite<f32>>> {
+            self.0
+                .create_sing_frame_volume(score, frame_audio_query, style_id)
+                .await
+        }
+
+        /// 歌唱音声合成を行う。
+        pub fn frame_synthesis<'a>(
+            &'a self,
+            frame_audio_query: &'a FrameAudioQuery,
+            style_id: StyleId,
+        ) -> FrameSynthesis<'a> {
+            FrameSynthesis {
+                synthesizer: self.0.without_text_analyzer(),
+                frame_audio_query,
+                style_id,
+                options: Default::default(),
+            }
+        }
     }
 
     impl<T: crate::nonblocking::TextAnalyzer> self::Synthesizer<T> {
@@ -2440,6 +2802,34 @@ pub(crate) mod nonblocking {
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
     #[derive(Debug)]
+    pub struct FrameSynthesis<'a> {
+        synthesizer: InnerRefWithoutTextAnalyzer<'a, BlockingThreadPool>,
+        frame_audio_query: &'a FrameAudioQuery,
+        style_id: StyleId,
+        options: FrameSynthesisOptions<BlockingThreadPool>,
+    }
+
+    impl FrameSynthesis<'_> {
+        /// 音声モデルの実行をキャンセル可能にするかどうか。
+        ///
+        /// このオプションを有効にすると、負荷がかかっている状況下でハングする可能性がある。そのためデフォルトでは無効化されている。[VOICEVOX/voicevox_core#968]を参照。
+        ///
+        /// [VOICEVOX/voicevox_core#968]: https://github.com/VOICEVOX/voicevox_core/issues/968
+        pub fn cancellable(mut self, cancellable: bool) -> Self {
+            self.options.cancellable = cancellable;
+            self
+        }
+
+        /// 実行する。
+        pub async fn perform(self) -> crate::Result<Vec<u8>> {
+            self.synthesizer
+                .frame_synthesis(self.frame_audio_query, self.style_id, &Default::default())
+                .await
+        }
+    }
+
+    #[must_use = "this is a builder. it does nothing until `perform`ed"]
+    #[derive(Debug)]
     pub struct Tts<'a, T> {
         synthesizer: &'a Inner<T, BlockingThreadPool>,
         text: &'a str,
@@ -2474,12 +2864,15 @@ pub(crate) mod nonblocking {
 
 #[cfg(test)]
 mod tests {
+    use std::mem;
+
     use super::{AccelerationMode, AsInner as _, DEFAULT_HEAVY_INFERENCE_CANCELLABLE};
     use crate::{
         asyncs::BlockingThreadPool, engine::talk::Mora, macros::tests::assert_debug_fmt_eq,
-        AccentPhrase, Result, StyleId,
+        AccentPhrase, FramePhoneme, Note, NoteId, Result, Score, StyleId,
     };
     use ::test_util::OPEN_JTALK_DIC_DIR;
+    use itertools::Itertools as _;
     use rstest::rstest;
 
     #[rstest]
@@ -3202,5 +3595,115 @@ mod tests {
     enum Input {
         Japanese(&'static str),
         Kana(&'static str),
+    }
+
+    #[tokio::test]
+    async fn create_sing_methods_works() {
+        let synthesizer = super::nonblocking::Synthesizer::builder(
+            crate::nonblocking::Onnxruntime::from_test_util_data()
+                .await
+                .unwrap(),
+        )
+        .acceleration_mode(AccelerationMode::Cpu)
+        .build()
+        .unwrap();
+
+        let model = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
+        synthesizer.load_voice_model(model).await.unwrap();
+
+        let score = &Score {
+            notes: vec![
+                note("①", None, 15, ""),
+                note("②", Some(60), 45, "ド"),
+                note("③", Some(62), 45, "レ"),
+                note("④", Some(64), 45, "ミ"),
+                note("⑤", None, 15, ""),
+            ],
+        };
+
+        let num_total_frames = score
+            .notes
+            .iter()
+            .map(|&Note { frame_length, .. }| typeshare::usize_from_u53_saturated(frame_length))
+            .sum::<usize>();
+
+        let frame_audio_query = synthesizer
+            .create_sing_frame_audio_query(&score.notes, 6000.into())
+            .await
+            .unwrap();
+
+        assert_eq!(
+            ["pau", "d", "o", "r", "e", "m", "i", "pau"],
+            *frame_audio_query
+                .phonemes
+                .iter()
+                .map(|FramePhoneme { phoneme, .. }| phoneme.to_string())
+                .collect::<Vec<_>>()
+        );
+
+        assert_eq!(
+            ["①", "②", "②", "③", "③", "④", "④", "⑤"],
+            *frame_audio_query
+                .phonemes
+                .iter()
+                .map(|FramePhoneme { note_id, .. }| &*note_id.as_ref().unwrap().0)
+                .collect::<Vec<_>>()
+        );
+
+        assert!([
+            num_total_frames,
+            frame_audio_query
+                .phonemes
+                .iter()
+                .map(
+                    |&FramePhoneme { frame_length, .. }| typeshare::usize_from_u53_saturated(
+                        frame_length
+                    )
+                )
+                .sum::<usize>(),
+            frame_audio_query.f0.len(),
+            frame_audio_query.volume.len(),
+        ]
+        .into_iter()
+        .all_equal());
+
+        let f0s = synthesizer
+            .create_sing_frame_f0(score, &frame_audio_query, 6000.into())
+            .await
+            .unwrap();
+
+        assert_eq!(num_total_frames, f0s.len());
+
+        let volumes = synthesizer
+            .create_sing_frame_volume(score, &frame_audio_query, 6000.into())
+            .await
+            .unwrap();
+
+        assert_eq!(num_total_frames, volumes.len());
+
+        let wav = synthesizer
+            .frame_synthesis(&frame_audio_query, 3000.into())
+            .perform()
+            .await
+            .unwrap();
+
+        assert!(wav.starts_with(b"RIFF"));
+        assert_eq!(
+            num_total_frames
+                * 256
+                * mem::size_of::<u16>()
+                * (1 + usize::from(frame_audio_query.output_stereo)),
+            u32::from_le_bytes(*wav[4..].first_chunk().unwrap()) as usize - 36,
+        );
+        assert_eq!(*b"WAVEfmt ", wav[8..16]);
+
+        fn note(id: &str, key: Option<u32>, frame_length: u32, lyric: &str) -> Note {
+            Note {
+                id: Some(NoteId(id.into())),
+                key: key.map(Into::into),
+                frame_length: frame_length.into(),
+                lyric: lyric.parse().unwrap(),
+            }
+        }
     }
 }

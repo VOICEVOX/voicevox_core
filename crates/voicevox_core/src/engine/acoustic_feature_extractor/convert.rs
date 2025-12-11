@@ -1,13 +1,24 @@
-use std::str::FromStr;
+use std::{
+    cmp, fmt,
+    hash::{Hash, Hasher},
+    str::FromStr,
+};
 
 use bytemuck::{checked::CheckedCastError, Contiguous as _};
 use duplicate::duplicate_item;
 use pastey::paste;
+use serde::{
+    de::{self, Deserializer, Unexpected},
+    Deserialize, Serialize, Serializer,
+};
 use strum::EnumCount as _;
 
-use crate::error::{InvalidQueryError, InvalidQueryErrorSource};
+use crate::error::{ErrorRepr, InvalidQueryError, InvalidQueryErrorSource};
 
-use super::{Consonant, MoraTail, NonConsonant, OptionalConsonant, Phoneme, PhonemeCode};
+use super::{
+    sil::Sil, Consonant, MoraTail, NonConsonant, NonPauPhonemeCode, OptionalConsonant, Phoneme,
+    PhonemeCode,
+};
 
 macro_rules! optional_consonant {
     ("") => {
@@ -216,6 +227,26 @@ impl Phoneme {
     }
 }
 
+impl<'de> Deserialize<'de> for Phoneme {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        String::deserialize(deserializer)?
+            .parse()
+            .map_err(de::Error::custom)
+    }
+}
+
+impl Serialize for Phoneme {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
 impl FromStr for Phoneme {
     type Err = crate::Error;
 
@@ -343,6 +374,78 @@ impl FromStr for NonConsonant {
     }
 }
 
+impl Default for Sil {
+    fn default() -> Self {
+        Self::DEFAULT
+    }
+}
+
+impl FromStr for Sil {
+    type Err = crate::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::new(s).ok_or_else(|| {
+            ErrorRepr::InvalidQuery(InvalidQueryError {
+                what: "sil音素",
+                value: Some(Box::new(s.to_owned())),
+                source: Some(InvalidQueryErrorSource::MustContainSil),
+            })
+            .into()
+        })
+    }
+}
+
+impl PartialEq for Sil {
+    fn eq(&self, _: &Self) -> bool {
+        true
+    }
+}
+
+impl Eq for Sil {}
+
+impl PartialOrd for Sil {
+    fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Sil {
+    fn cmp(&self, _: &Self) -> cmp::Ordering {
+        cmp::Ordering::Equal
+    }
+}
+
+impl Hash for Sil {
+    fn hash<H: Hasher>(&self, _: &mut H) {}
+}
+
+impl<'de> Deserialize<'de> for Sil {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        return deserializer.deserialize_str(Visitor);
+
+        struct Visitor;
+
+        impl de::Visitor<'_> for Visitor {
+            type Value = Sil;
+
+            fn expecting(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+                write!(fmt, "a string that contains \"sil\"")
+            }
+
+            fn visit_str<E>(self, s: &str) -> Result<Self::Value, E>
+            where
+                E: de::Error,
+            {
+                s.parse()
+                    .map_err(|_| de::Error::invalid_value(Unexpected::Str(s), &self))
+            }
+        }
+    }
+}
+
 impl PhonemeCode {
     pub(crate) const fn num_phoneme() -> usize {
         Self::COUNT
@@ -360,6 +463,66 @@ impl From<Phoneme> for PhonemeCode {
                 match phoneme {
                     $(Phoneme::$variant => Self::$variant,)*
                     Phoneme::Sil(_) => Self::space_phoneme(),
+                }
+            };
+        }
+
+        convert!(
+            MorablePau,
+            UnvoicedVowelA,
+            UnvoicedVowelE,
+            UnvoicedVowelI,
+            MorableN,
+            UnvoicedVowelO,
+            UnvoicedVowelU,
+            VoicedVowelA,
+            ConsonantB,
+            ConsonantBy,
+            ConsonantCh,
+            MorableCl,
+            ConsonantD,
+            ConsonantDy,
+            VoicedVowelE,
+            ConsonantF,
+            ConsonantG,
+            ConsonantGw,
+            ConsonantGy,
+            ConsonantH,
+            ConsonantHy,
+            VoicedVowelI,
+            ConsonantJ,
+            ConsonantK,
+            ConsonantKw,
+            ConsonantKy,
+            ConsonantM,
+            ConsonantMy,
+            ConsonantN,
+            ConsonantNy,
+            VoicedVowelO,
+            ConsonantP,
+            ConsonantPy,
+            ConsonantR,
+            ConsonantRy,
+            ConsonantS,
+            ConsonantSh,
+            ConsonantT,
+            ConsonantTs,
+            ConsonantTy,
+            VoicedVowelU,
+            ConsonantV,
+            ConsonantW,
+            ConsonantY,
+            ConsonantZ,
+        )
+    }
+}
+
+impl From<PhonemeCode> for Phoneme {
+    fn from(phoneme: PhonemeCode) -> Self {
+        macro_rules! convert {
+            ($($variant:ident),* $(,)?) => {
+                match phoneme {
+                    $(PhonemeCode::$variant => Self::$variant,)*
                 }
             };
         }
@@ -579,6 +742,65 @@ impl From<MoraTail> for NonConsonant {
     }
 }
 
+impl From<NonPauPhonemeCode> for Phoneme {
+    fn from(phoneme: NonPauPhonemeCode) -> Self {
+        macro_rules! convert {
+            ($($variant:ident),* $(,)?) => {
+                match phoneme {
+                    $(NonPauPhonemeCode::$variant => Self::$variant,)*
+                }
+            };
+        }
+
+        convert!(
+            UnvoicedVowelA,
+            UnvoicedVowelE,
+            UnvoicedVowelI,
+            MorableN,
+            UnvoicedVowelO,
+            UnvoicedVowelU,
+            VoicedVowelA,
+            ConsonantB,
+            ConsonantBy,
+            ConsonantCh,
+            MorableCl,
+            ConsonantD,
+            ConsonantDy,
+            VoicedVowelE,
+            ConsonantF,
+            ConsonantG,
+            ConsonantGw,
+            ConsonantGy,
+            ConsonantH,
+            ConsonantHy,
+            VoicedVowelI,
+            ConsonantJ,
+            ConsonantK,
+            ConsonantKw,
+            ConsonantKy,
+            ConsonantM,
+            ConsonantMy,
+            ConsonantN,
+            ConsonantNy,
+            VoicedVowelO,
+            ConsonantP,
+            ConsonantPy,
+            ConsonantR,
+            ConsonantRy,
+            ConsonantS,
+            ConsonantSh,
+            ConsonantT,
+            ConsonantTs,
+            ConsonantTy,
+            VoicedVowelU,
+            ConsonantV,
+            ConsonantW,
+            ConsonantY,
+            ConsonantZ,
+        )
+    }
+}
+
 #[duplicate_item(
     T;
     [ OptionalConsonant ];
@@ -595,5 +817,25 @@ impl TryFrom<PhonemeCode> for T {
                 "there should be no size/alignment issues",
             );
         })
+    }
+}
+
+impl TryFrom<OptionalConsonant> for PhonemeCode {
+    type Error = ();
+
+    fn try_from(phoneme: OptionalConsonant) -> Result<Self, Self::Error> {
+        bytemuck::checked::try_cast(phoneme).map_err(|err| {
+            assert_eq!(
+                CheckedCastError::InvalidBitPattern,
+                err,
+                "there should be no size/alignment issues",
+            );
+        })
+    }
+}
+
+impl From<MoraTail> for PhonemeCode {
+    fn from(phoneme: MoraTail) -> Self {
+        bytemuck::checked::cast(phoneme)
     }
 }
