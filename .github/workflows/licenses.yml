@@ -15,7 +15,7 @@ jobs:
   licenses:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Install cargo-deny
         uses: ./.github/actions/install-cargo-deny
       - name: cargo-deny
