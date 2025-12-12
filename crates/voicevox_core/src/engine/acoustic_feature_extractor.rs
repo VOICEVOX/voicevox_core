@@ -552,9 +552,21 @@ mod sil {
     use std::borrow::Cow;
 
     use derive_more::AsRef;
+    use serde_with::SerializeDisplay;
 
     /// `sil` (_silent_)。
-    #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, derive_more::Display, AsRef)]
+    #[derive(
+        Clone,
+        PartialEq,
+        Eq,
+        PartialOrd,
+        Ord,
+        Hash,
+        Debug,
+        derive_more::Display,
+        AsRef,
+        SerializeDisplay,
+    )]
     #[as_ref(str)]
     pub struct Sil(
         Cow<'static, str>, // invariant: must contain "sil"
