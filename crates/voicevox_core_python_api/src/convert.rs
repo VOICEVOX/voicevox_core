@@ -17,7 +17,7 @@ use serde::{Serialize, de::DeserializeOwned};
 use serde_json::json;
 use uuid::Uuid;
 use voicevox_core::{
-    __internal::interop::ToJsonValue as _, AccelerationMode, AccentPhrase, AudioQuery,
+    __internal::interop::ToJsonValue as _, AccelerationMode, AccentPhrase, AudioQuery, Mora,
     SupportedDevices, UserDictWord, VoiceModelMeta,
 };
 
@@ -57,14 +57,26 @@ pub(crate) fn from_audio_query(ob: &Bound<'_, PyAny>) -> PyResult<AudioQuery> {
         .collect::<PyResult<Vec<_>>>()?
         .into_py_dict(py)?;
 
-    serde_pyobject::from_pyobject(fields).map_err(Into::into)
+    serde_pyobject::from_pyobject(fields).map_err(|serde_pyobject::Error(cause)| {
+        let err = InvalidQueryError::new_err("不正なAudioQueryです");
+        err.set_cause(py, Some(cause));
+        err
+    })
 }
 
 pub(crate) fn from_accent_phrases(ob: &Bound<'_, PyAny>) -> PyResult<Vec<AccentPhrase>> {
     ob.downcast::<PyList>()?
         .iter()
-        .map(|p| from_dataclass_via_serde(&p))
+        .map(|p| from_accent_phrase(&p))
         .collect()
+}
+
+pub(crate) fn from_accent_phrase(ob: &Bound<'_, PyAny>) -> PyResult<AccentPhrase> {
+    from_query_like(ob, "アクセント句")
+}
+
+pub(crate) fn from_mora(ob: &Bound<'_, PyAny>) -> PyResult<Mora> {
+    from_query_like(ob, "モーラ")
 }
 
 pub(crate) fn from_utf8_path(ob: &Bound<'_, PyAny>) -> PyResult<Utf8PathBuf> {
@@ -248,11 +260,17 @@ impl<'py> IntoPyObject<'py> for ToPyUuid {
     }
 }
 
-pub(crate) fn from_dataclass_via_serde<T: DeserializeOwned>(
+fn from_query_like<T: DeserializeOwned>(
     instance: &Bound<'_, PyAny>,
+    what: &'static str,
 ) -> PyResult<T> {
+    let py = instance.py();
     let fields = dataclasses_asdict(instance)?;
-    serde_pyobject::from_pyobject(fields).map_err(Into::into)
+    serde_pyobject::from_pyobject(fields).map_err(|serde_pyobject::Error(cause)| {
+        let err = InvalidQueryError::new_err(format!("不正な{what}です"));
+        err.set_cause(py, Some(cause));
+        err
+    })
 }
 
 fn dataclasses_asdict<'py>(instance: &Bound<'py, PyAny>) -> PyResult<Bound<'py, PyDict>> {

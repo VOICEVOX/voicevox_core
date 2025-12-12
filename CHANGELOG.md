@@ -67,6 +67,10 @@
 [@phenylshima]: https://github.com/phenylshima
 -->
 
+### Changed
+
+- \[Python,Java\] `AudioQuery`（もしくはその一部）がRustのオブジェクトとして表現できなかったときのエラーが、`InvalidQuery`エラーに包まれるようになります。これまでは`OverflowError`や`RuntimeError`がそのままraiseされていました ([#1237])。
+
 ## [0.16.3] - 2025-12-08 (+09:00)
 
 ### Added
@@ -1398,6 +1402,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1223]: https://github.com/VOICEVOX/voicevox_core/pull/1223
 [#1224]: https://github.com/VOICEVOX/voicevox_core/pull/1224
 [#1227]: https://github.com/VOICEVOX/voicevox_core/pull/1227
+[#1237]: https://github.com/VOICEVOX/voicevox_core/pull/1237
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 

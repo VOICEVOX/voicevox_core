@@ -340,7 +340,7 @@ class AccentPhrase:
         次のうちどれかを満たすなら |accent-phrase-validate-invalid-query-error|_ を発する。
 
         - :attr:`moras` もしくは :attr:`pause_mora` の要素のうちいずれかが |accent-phrase-validate-mora-validate|_ 。
-        - :attr:`accent` が ``0`` 。
+        - :attr:`accent` が0以下であるか、もしくは :math:`2^{64}-1` (32ビットプラットフォームの場合は :math:`2^{32}-1`)を超過する。
 
         また次の状態に対しては |accent-phrase-validate-logging-warning|_
         レベルのログを出す。将来的にはエラーになる予定。
@@ -421,7 +421,8 @@ class AudioQuery:
         次のうちどれかを満たすなら |audio-query-validate-invalid-query-error|_ を発する。
 
         - :attr:`accent_phrases` の要素のうちいずれかが |audio-query-validate-accent-phrase-validate|_ 。
-        - :attr:`output_sampling_rate` が ``24000`` の倍数ではない、もしくは ``0`` (将来的に解消予定。cf. |audio-query-validate-issue762|_)。
+        - :attr:`output_sampling_rate` が0以下であるか、 :math:`2^{32}-1` を超過する。
+        - もしくは ``24000`` の倍数以外の値 (将来的に解消予定。cf. |audio-query-validate-issue762|_)。
 
         また次の状態に対しては |audio-query-validate-logging-warning|_
         レベルのログを出す。将来的にはエラーになる予定。
