@@ -61,7 +61,10 @@ impl<T: Validate> T {
                 "jp/hiroshiba/voicevoxcore/internal/Convert",
                 "jsonFromQueryLike",
                 "(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/String;",
-                &[JValueGen::Object(&this), (&env.new_string(T::NAME)?).into()],
+                &[
+                    JValueGen::Object(&this),
+                    (&env.new_string(T::validation_error_description())?).into(),
+                ],
             )?
             .l()?
             .into();

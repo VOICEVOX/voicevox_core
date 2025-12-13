@@ -226,7 +226,7 @@ public class Synthesizer {
     if (!Utils.isU32(styleId)) {
       throw new IllegalArgumentException("styleId");
     }
-    String accentPhrasesJson = Convert.jsonFromQueryLike(accentPhrases, "アクセント句の列");
+    String accentPhrasesJson = Convert.jsonFromQueryLike(accentPhrases, "不正なアクセント句の列です");
     String replacedAccentPhrasesJson = rsReplaceMoraData(accentPhrasesJson, styleId, false);
     return new ArrayList<>(
         Arrays.asList(new Gson().fromJson(replacedAccentPhrasesJson, AccentPhrase[].class)));
@@ -246,7 +246,7 @@ public class Synthesizer {
     if (!Utils.isU32(styleId)) {
       throw new IllegalArgumentException("styleId");
     }
-    String accentPhrasesJson = Convert.jsonFromQueryLike(accentPhrases, "アクセント句の列");
+    String accentPhrasesJson = Convert.jsonFromQueryLike(accentPhrases, "不正なアクセント句の列です");
     String replacedAccentPhrasesJson = rsReplacePhonemeLength(accentPhrasesJson, styleId, false);
     return new ArrayList<>(
         Arrays.asList(new Gson().fromJson(replacedAccentPhrasesJson, AccentPhrase[].class)));
@@ -266,7 +266,7 @@ public class Synthesizer {
     if (!Utils.isU32(styleId)) {
       throw new IllegalArgumentException("styleId");
     }
-    String accentPhrasesJson = Convert.jsonFromQueryLike(accentPhrases, "アクセント句の列");
+    String accentPhrasesJson = Convert.jsonFromQueryLike(accentPhrases, "不正なアクセント句の列です");
     String replacedAccentPhrasesJson = rsReplaceMoraPitch(accentPhrasesJson, styleId, false);
     return new ArrayList<>(
         Arrays.asList(new Gson().fromJson(replacedAccentPhrasesJson, AccentPhrase[].class)));
@@ -466,7 +466,7 @@ public class Synthesizer {
       if (!Utils.isU32(styleId)) {
         throw new IllegalArgumentException("styleId");
       }
-      String queryJson = Convert.jsonFromQueryLike(this.audioQuery, "AudioQuery");
+      String queryJson = Convert.jsonFromQueryLike(this.audioQuery, "不正なAudioQueryです");
       return synthesizer.rsSynthesis(queryJson, this.styleId, this.interrogativeUpspeak);
     }
   }
