@@ -27,8 +27,8 @@ impl Mora {
     /// 次のうちどれかを満たすなら[`ErrorKind::InvalidQuery`]を表わすエラーを返す。
     ///
     /// - [`consonant`]と[`consonant_length`]の有無が不一致。
-    /// - [`consonant`]が子音以外の音素であるか、もしくは音素として不正。
-    /// - [`vowel`]が子音であるか、もしくは音素として不正。
+    /// - [`consonant`]が子音以外の音素であるか、もしくは[`Phoneme`]として不正。
+    /// - [`vowel`]が子音であるか、もしくは[`Phoneme`]として不正。
     ///
     /// # Warnings
     ///
@@ -39,6 +39,7 @@ impl Mora {
     /// - [`pitch`]がNaNもしくは±infinity。
     ///
     /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
+    /// [`Phoneme`]: crate::Phoneme
     /// [`WARN`]: tracing::Level::WARN
     /// [`consonant`]: Self::consonant
     /// [`consonant_length`]: Self::consonant_length
@@ -506,15 +507,10 @@ impl<'original> ValidatedAudioQuery<'original> {
             })
             .collect::<Result<_, _>>()?;
 
-        let output_sampling_rate = SamplingRate::new(*output_sampling_rate).ok_or_else(|| {
+        let output_sampling_rate = SamplingRate::new_(*output_sampling_rate).map_err(|source| {
             error(InvalidQueryErrorSource::InvalidFields {
                 fields: "`output_sampling_rate`/`outputSamplingRate`".to_owned(),
-                source: InvalidQueryError {
-                    what: "サンプリングレート",
-                    value: Some(Box::new(*output_sampling_rate) as _),
-                    source: Some(InvalidQueryErrorSource::IsNotMultipleOfBaseSamplingRate),
-                }
-                .into(),
+                source: source.into(),
             })
         })?;
 
@@ -597,7 +593,7 @@ impl From<ValidatedAudioQuery<'_>> for AudioQuery {
             volume_scale,
             pre_phoneme_length,
             post_phoneme_length,
-            output_sampling_rate: output_sampling_rate.get(),
+            output_sampling_rate: output_sampling_rate.get().get(),
             output_stereo,
             kana,
         }

@@ -1,12 +1,16 @@
 pub(super) mod convert;
 
 use bytemuck::{CheckedBitPattern, Contiguous, NoUninit};
+use serde_with::SerializeDisplay;
 use strum::EnumCount;
 
-use self::sil::Sil;
+pub use self::sil::Sil;
 
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, derive_more::Display)]
-pub(crate) enum Phoneme {
+/// 音素。
+#[derive(
+    Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, derive_more::Display, SerializeDisplay,
+)]
+pub enum Phoneme {
     /// `pau`。
     #[display("pau")]
     MorablePau,
@@ -545,25 +549,39 @@ const _: () = assert!(MoraTail::COUNT == 13);
 const _: () = assert!(OptionalConsonant::COUNT == PhonemeCode::COUNT - MoraTail::COUNT + 1);
 
 mod sil {
-    use std::{borrow::Cow, str::FromStr};
+    use std::borrow::Cow;
 
-    #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, derive_more::Display)]
-    pub(crate) struct Sil(
+    use derive_more::AsRef;
+    use serde_with::SerializeDisplay;
+
+    /// `sil` (_silent_)。
+    #[derive(
+        Clone,
+        PartialEq,
+        Eq,
+        PartialOrd,
+        Ord,
+        Hash,
+        Debug,
+        derive_more::Display,
+        AsRef,
+        SerializeDisplay,
+    )]
+    #[as_ref(str)]
+    pub struct Sil(
         Cow<'static, str>, // invariant: must contain "sil"
     );
 
-    impl FromStr for Sil {
-        type Err = ();
+    impl Sil {
+        pub(super) const DEFAULT: Self = Self(Cow::Borrowed("sil"));
 
-        fn from_str(s: &str) -> Result<Self, Self::Err> {
-            if s.contains("sil") {
-                Ok(Self(match s {
+        pub(super) fn new(s: &str) -> Option<Self> {
+            s.contains("sil").then(|| {
+                Self(match s {
                     "sil" => "sil".into(),
                     s => s.to_owned().into(),
-                }))
-            } else {
-                Err(())
-            }
+                })
+            })
         }
     }
 }

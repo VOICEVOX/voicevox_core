@@ -1,13 +1,17 @@
-use std::str::FromStr;
+use std::{fmt, str::FromStr};
 
 use bytemuck::{checked::CheckedCastError, Contiguous as _};
 use duplicate::duplicate_item;
 use pastey::paste;
+use serde::{
+    de::{self, Unexpected},
+    Deserialize, Deserializer,
+};
 use strum::EnumCount as _;
 
-use crate::error::{InvalidQueryError, InvalidQueryErrorSource};
+use crate::error::{ErrorRepr, InvalidQueryError, InvalidQueryErrorSource};
 
-use super::{Consonant, MoraTail, NonConsonant, OptionalConsonant, Phoneme, PhonemeCode};
+use super::{Consonant, MoraTail, NonConsonant, OptionalConsonant, Phoneme, PhonemeCode, Sil};
 
 macro_rules! optional_consonant {
     ("") => {
@@ -224,6 +228,33 @@ impl FromStr for Phoneme {
     }
 }
 
+impl<'de> Deserialize<'de> for Phoneme {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        return deserializer.deserialize_str(Visitor);
+
+        struct Visitor;
+
+        impl de::Visitor<'_> for Visitor {
+            type Value = Phoneme;
+
+            fn expecting(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+                write!(fmt, "a string that represents a phoneme")
+            }
+
+            fn visit_str<E>(self, s: &str) -> Result<Self::Value, E>
+            where
+                E: de::Error,
+            {
+                s.parse()
+                    .map_err(|_| de::Error::invalid_value(Unexpected::Str(s), &self))
+            }
+        }
+    }
+}
+
 impl Consonant {
     pub(in super::super) fn from_str_with_inner_error(s: &str) -> Result<Self, InvalidQueryError> {
         use self::Phoneme::*;
@@ -340,6 +371,60 @@ impl FromStr for NonConsonant {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Self::from_str_with_inner_error(s).map_err(Into::into)
+    }
+}
+
+impl Sil {
+    pub fn get(&self) -> &str {
+        self.as_ref()
+    }
+}
+
+impl Default for Sil {
+    fn default() -> Self {
+        Self::DEFAULT
+    }
+}
+
+impl FromStr for Sil {
+    type Err = crate::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::new(s).ok_or_else(|| {
+            ErrorRepr::InvalidQuery(InvalidQueryError {
+                what: "sil音素",
+                value: Some(Box::new(s.to_owned())),
+                source: Some(InvalidQueryErrorSource::MustContainSil),
+            })
+            .into()
+        })
+    }
+}
+
+impl<'de> Deserialize<'de> for Sil {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        return deserializer.deserialize_str(Visitor);
+
+        struct Visitor;
+
+        impl de::Visitor<'_> for Visitor {
+            type Value = Sil;
+
+            fn expecting(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+                write!(fmt, "a string that contains \"sil\"")
+            }
+
+            fn visit_str<E>(self, s: &str) -> Result<Self::Value, E>
+            where
+                E: de::Error,
+            {
+                s.parse()
+                    .map_err(|_| de::Error::invalid_value(Unexpected::Str(s), &self))
+            }
+        }
     }
 }
 

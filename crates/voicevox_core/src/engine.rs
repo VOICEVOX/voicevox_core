@@ -6,8 +6,12 @@ mod mora_mappings;
 mod sampling_rate;
 pub(crate) mod talk;
 
-pub use self::audio_file::wav_from_s16le;
 pub(crate) use self::{
     acoustic_feature_extractor::PhonemeCode, audio_file::to_s16le_pcm,
     sampling_rate::DEFAULT_SAMPLING_RATE,
+};
+pub use self::{
+    acoustic_feature_extractor::{Phoneme, Sil},
+    audio_file::wav_from_s16le,
+    sampling_rate::SamplingRate,
 };

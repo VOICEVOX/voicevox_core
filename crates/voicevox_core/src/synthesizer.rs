@@ -466,7 +466,7 @@ trait AsInner {
                 .await?;
             return Ok(wav_from_s16le(
                 &to_s16le_pcm(wave, &audio_query),
-                audio_query.output_sampling_rate.get(),
+                audio_query.output_sampling_rate.get().get(),
                 audio_query.output_stereo,
             ));
         }
