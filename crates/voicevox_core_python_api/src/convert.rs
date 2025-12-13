@@ -18,8 +18,7 @@ use serde_json::json;
 use uuid::Uuid;
 use voicevox_core::{
     __internal::interop::{ToJsonValue as _, Validate},
-    AccelerationMode, AccentPhrase, AudioQuery, Mora, SupportedDevices, UserDictWord,
-    VoiceModelMeta,
+    AccelerationMode, AccentPhrase, AudioQuery, SupportedDevices, UserDictWord, VoiceModelMeta,
 };
 
 use crate::{
