@@ -108,8 +108,6 @@ def main() -> None:
     logger.info("%s", f"Creating an AudioQuery from {args.text!r}")
     audio_query = synthesizer.create_audio_query(args.text, args.style_id)
 
-    audio_query.output_sampling_rate = -1
-
     logger.info("%s", f"Synthesizing with {audio_query}")
     wav = synthesizer.synthesis(audio_query, args.style_id)
 
