@@ -339,6 +339,8 @@ class AccentPhrase:
 
         次のうちどれかを満たすなら |accent-phrase-validate-invalid-query-error|_ を発する。
 
+        - |accent-phrase-rust-ty|_ としてデシリアライズ不可。
+            - :attr:`accent` が負であるか、もしくは :math:`2^{64}-1` (32ビットプラットフォームの場合 :math:`2^{32}-1`)を超過する。
         - :attr:`moras` もしくは :attr:`pause_mora` の要素のうちいずれかが |accent-phrase-validate-mora-validate|_ 。
         - :attr:`accent` が ``0`` 。
 
@@ -350,6 +352,8 @@ class AccentPhrase:
 
         .. |accent-phrase-validate-invalid-query-error| replace:: ``InvalidQueryError``
         .. _accent-phrase-validate-invalid-query-error: #voicevox_core.InvalidQueryError
+        .. |accent-phrase-rust-ty| replace:: Rust APIの ``AccentPhrase`` 型
+        .. _accent-phrase-rust-ty: ../../../rust_api/voicevox_core/struct.AccentPhrase.html
         .. |accent-phrase-validate-mora-validate| replace:: 不正
         .. _accent-phrase-validate-mora-validate: #voicevox_core.Mora.validate
         .. |accent-phrase-validate-logging-warning| replace:: ``WARNING``
@@ -420,6 +424,8 @@ class AudioQuery:
 
         次のうちどれかを満たすなら |audio-query-validate-invalid-query-error|_ を発する。
 
+        - |audio-query-rust-ty|_ としてデシリアライズ不可。
+            - :attr:`output_sampling_rate` が負であるか、もしくは :math:`2^{32}-1` を超過する。
         - :attr:`accent_phrases` の要素のうちいずれかが |audio-query-validate-accent-phrase-validate|_ 。
         - :attr:`output_sampling_rate` が ``24000`` の倍数ではない、もしくは ``0`` (将来的に解消予定。cf. |audio-query-validate-issue762|_)。
 
@@ -437,6 +443,8 @@ class AudioQuery:
 
         .. |audio-query-validate-invalid-query-error| replace:: ``InvalidQueryError``
         .. _audio-query-validate-invalid-query-error: #voicevox_core.InvalidQueryError
+        .. |audio-query-rust-ty| replace:: Rust APIの ``AudioQuery`` 型
+        .. _audio-query-rust-ty: ../../../rust_api/voicevox_core/struct.AudioQuery.html
         .. |audio-query-validate-accent-phrase-validate| replace:: 不正
         .. _audio-query-validate-accent-phrase-validate: #voicevox_core.AccentPhrase.validate
         .. |audio-query-validate-issue762| replace:: #762

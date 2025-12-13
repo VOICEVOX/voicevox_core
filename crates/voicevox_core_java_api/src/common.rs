@@ -8,7 +8,7 @@ use jni::{
 };
 use tracing::debug;
 use uuid::Uuid;
-use voicevox_core::__internal::interop::raii::MaybeClosed;
+use voicevox_core::__internal::interop::{Validate, raii::MaybeClosed};
 
 #[macro_export]
 macro_rules! object {
@@ -153,10 +153,20 @@ where
                             env.throw_new("java/lang/IllegalArgumentException", error.to_string())
                         )
                     }
-                    JavaApiError::DeJson(error) => {
-                        or_panic!(
-                            env.throw_new("java/lang/IllegalArgumentException", error.to_string())
-                        )
+                    JavaApiError::DeQuery(description, cause) => {
+                        let description = &or_panic!(env.new_string(description));
+                        let cause = &or_panic!(env.new_string(cause.to_string()));
+                        let cause = &or_panic!(env.new_object(
+                            "java/lang/IllegalArgumentException",
+                            "(Ljava/lang/String;)V",
+                            &[cause.into()],
+                        ));
+                        let exc = JThrowable::from(or_panic!(env.new_object(
+                            "jp/hiroshiba/voicevoxcore/exceptions/InvalidQueryException",
+                            "(Ljava/lang/String;Ljava/lang/Throwable;)V",
+                            &[description.into(), cause.into()],
+                        )));
+                        or_panic!(env.throw(exc));
                     }
                     JavaApiError::IllegalState(msg) => {
                         or_panic!(env.throw_new("java/lang/IllegalStateException", msg))
@@ -166,6 +176,11 @@ where
             fallback
         }
     }
+}
+
+pub(crate) fn query_from_json<T: Validate>(json: &str) -> JavaApiResult<T> {
+    serde_json::from_str(json)
+        .map_err(|e| JavaApiError::DeQuery(T::validation_error_description(), e))
 }
 
 pub(crate) type JavaApiResult<T> = Result<T, JavaApiError>;
@@ -181,7 +196,7 @@ pub(crate) enum JavaApiError {
     #[from]
     Uuid(uuid::Error),
 
-    DeJson(serde_json::Error),
+    DeQuery(String, serde_json::Error),
 
     IllegalState(String),
 }

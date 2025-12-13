@@ -14,6 +14,7 @@ import jp.hiroshiba.voicevoxcore.CharacterMeta;
 import jp.hiroshiba.voicevoxcore.StyleType;
 import jp.hiroshiba.voicevoxcore.exceptions.InvalidModelDataException;
 import jp.hiroshiba.voicevoxcore.exceptions.RunModelException;
+import jp.hiroshiba.voicevoxcore.internal.Convert;
 import jp.hiroshiba.voicevoxcore.internal.Dll;
 
 /**
@@ -225,7 +226,7 @@ public class Synthesizer {
     if (!Utils.isU32(styleId)) {
       throw new IllegalArgumentException("styleId");
     }
-    String accentPhrasesJson = new Gson().toJson(accentPhrases);
+    String accentPhrasesJson = Convert.jsonFromQueryLike(accentPhrases, "不正なアクセント句の列です");
     String replacedAccentPhrasesJson = rsReplaceMoraData(accentPhrasesJson, styleId, false);
     return new ArrayList<>(
         Arrays.asList(new Gson().fromJson(replacedAccentPhrasesJson, AccentPhrase[].class)));
@@ -245,7 +246,7 @@ public class Synthesizer {
     if (!Utils.isU32(styleId)) {
       throw new IllegalArgumentException("styleId");
     }
-    String accentPhrasesJson = new Gson().toJson(accentPhrases);
+    String accentPhrasesJson = Convert.jsonFromQueryLike(accentPhrases, "不正なアクセント句の列です");
     String replacedAccentPhrasesJson = rsReplacePhonemeLength(accentPhrasesJson, styleId, false);
     return new ArrayList<>(
         Arrays.asList(new Gson().fromJson(replacedAccentPhrasesJson, AccentPhrase[].class)));
@@ -265,7 +266,7 @@ public class Synthesizer {
     if (!Utils.isU32(styleId)) {
       throw new IllegalArgumentException("styleId");
     }
-    String accentPhrasesJson = new Gson().toJson(accentPhrases);
+    String accentPhrasesJson = Convert.jsonFromQueryLike(accentPhrases, "不正なアクセント句の列です");
     String replacedAccentPhrasesJson = rsReplaceMoraPitch(accentPhrasesJson, styleId, false);
     return new ArrayList<>(
         Arrays.asList(new Gson().fromJson(replacedAccentPhrasesJson, AccentPhrase[].class)));
@@ -465,8 +466,7 @@ public class Synthesizer {
       if (!Utils.isU32(styleId)) {
         throw new IllegalArgumentException("styleId");
       }
-      Gson gson = new Gson();
-      String queryJson = gson.toJson(this.audioQuery);
+      String queryJson = Convert.jsonFromQueryLike(this.audioQuery, "不正なAudioQueryです");
       return synthesizer.rsSynthesis(queryJson, this.styleId, this.interrogativeUpspeak);
     }
   }

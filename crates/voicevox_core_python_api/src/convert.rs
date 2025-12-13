@@ -17,8 +17,8 @@ use serde::{Serialize, de::DeserializeOwned};
 use serde_json::json;
 use uuid::Uuid;
 use voicevox_core::{
-    __internal::interop::ToJsonValue as _, AccelerationMode, AccentPhrase, AudioQuery,
-    SupportedDevices, UserDictWord, VoiceModelMeta,
+    __internal::interop::{ToJsonValue as _, Validate},
+    AccelerationMode, AccentPhrase, AudioQuery, SupportedDevices, UserDictWord, VoiceModelMeta,
 };
 
 use crate::{
@@ -57,13 +57,17 @@ pub(crate) fn from_audio_query(ob: &Bound<'_, PyAny>) -> PyResult<AudioQuery> {
         .collect::<PyResult<Vec<_>>>()?
         .into_py_dict(py)?;
 
-    serde_pyobject::from_pyobject(fields).map_err(Into::into)
+    serde_pyobject::from_pyobject(fields).map_err(|serde_pyobject::Error(cause)| {
+        let err = InvalidQueryError::new_err(AudioQuery::validation_error_description());
+        err.set_cause(py, Some(cause));
+        err
+    })
 }
 
 pub(crate) fn from_accent_phrases(ob: &Bound<'_, PyAny>) -> PyResult<Vec<AccentPhrase>> {
     ob.downcast::<PyList>()?
         .iter()
-        .map(|p| from_dataclass_via_serde(&p))
+        .map(|p| from_query_like_via_serde(&p))
         .collect()
 }
 
@@ -248,11 +252,14 @@ impl<'py> IntoPyObject<'py> for ToPyUuid {
     }
 }
 
-pub(crate) fn from_dataclass_via_serde<T: DeserializeOwned>(
-    instance: &Bound<'_, PyAny>,
-) -> PyResult<T> {
+pub(crate) fn from_query_like_via_serde<T: Validate>(instance: &Bound<'_, PyAny>) -> PyResult<T> {
+    let py = instance.py();
     let fields = dataclasses_asdict(instance)?;
-    serde_pyobject::from_pyobject(fields).map_err(Into::into)
+    serde_pyobject::from_pyobject(fields).map_err(|serde_pyobject::Error(cause)| {
+        let err = InvalidQueryError::new_err(T::validation_error_description());
+        err.set_cause(py, Some(cause));
+        err
+    })
 }
 
 fn dataclasses_asdict<'py>(instance: &Bound<'py, PyAny>) -> PyResult<Bound<'py, PyDict>> {
