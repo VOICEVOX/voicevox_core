@@ -5,17 +5,37 @@ use serde::{
     Deserialize, Deserializer, Serialize,
 };
 
-pub(crate) const DEFAULT_SAMPLING_RATE: u32 = 24000;
+use crate::error::{InvalidQueryError, InvalidQueryErrorSource};
+
+pub(crate) const DEFAULT_SAMPLING_RATE: u32 = DEFAULT_SAMPLING_RATE_.get();
+
+const DEFAULT_SAMPLING_RATE_: NonZero<u32> = NonZero::new(24000).unwrap();
 
 /// サンプリングレート（Hz）。
 ///
 /// `24000`以外の値は現状推奨されない。
-#[derive(Clone, Copy, PartialEq, Debug, Serialize)]
+#[derive(
+    Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, derive_more::Display, Serialize,
+)]
 pub struct SamplingRate(NonZero<u32>);
 
 impl SamplingRate {
-    pub fn new(n: NonZero<u32>) -> Option<Self> {
-        (n.get() % DEFAULT_SAMPLING_RATE == 0).then_some(Self(n))
+    pub fn new(n: u32) -> crate::Result<Self> {
+        Self::new_(n).map_err(Into::into)
+    }
+
+    pub(super) fn new_(n: u32) -> Result<Self, InvalidQueryError> {
+        let error = |source| InvalidQueryError {
+            what: "サンプリングレート",
+            value: Some(Box::new(n) as _),
+            source: Some(source),
+        };
+
+        let n = NonZero::new(n)
+            .ok_or_else(|| error(InvalidQueryErrorSource::IsNotMultipleOfBaseSamplingRate))?; // TODO: `IsZero`にする
+        (n.get() % DEFAULT_SAMPLING_RATE == 0)
+            .then_some(Self(n))
+            .ok_or_else(|| error(InvalidQueryErrorSource::IsNotMultipleOfBaseSamplingRate))
     }
 
     pub fn get(self) -> NonZero<u32> {
@@ -25,8 +45,29 @@ impl SamplingRate {
 
 impl Default for SamplingRate {
     fn default() -> Self {
-        const _: () = assert!(DEFAULT_SAMPLING_RATE > 0);
-        Self(NonZero::new(DEFAULT_SAMPLING_RATE).expect("should have been asserted"))
+        Self(DEFAULT_SAMPLING_RATE_)
+    }
+}
+
+impl From<SamplingRate> for NonZero<u32> {
+    fn from(sampling_rate: SamplingRate) -> Self {
+        sampling_rate.0
+    }
+}
+
+impl TryFrom<u32> for SamplingRate {
+    type Error = crate::Error;
+
+    fn try_from(n: u32) -> Result<Self, Self::Error> {
+        Self::new(n)
+    }
+}
+
+impl TryFrom<NonZero<u32>> for SamplingRate {
+    type Error = crate::Error;
+
+    fn try_from(n: NonZero<u32>) -> Result<Self, Self::Error> {
+        Self::new(n.get())
     }
 }
 
@@ -50,9 +91,8 @@ impl<'de> Deserialize<'de> for SamplingRate {
             where
                 E: de::Error,
             {
-                NonZero::new(n)
-                    .and_then(SamplingRate::new)
-                    .ok_or_else(|| de::Error::invalid_value(Unexpected::Unsigned(n.into()), &self))
+                SamplingRate::new_(n)
+                    .map_err(|_| de::Error::invalid_value(Unexpected::Unsigned(n.into()), &self))
             }
         }
     }

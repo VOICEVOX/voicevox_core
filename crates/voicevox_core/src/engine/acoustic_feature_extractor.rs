@@ -3,12 +3,15 @@ pub(super) mod convert;
 use std::hash::Hash;
 
 use bytemuck::{CheckedBitPattern, Contiguous, NoUninit};
+use serde_with::SerializeDisplay;
 use strum::EnumCount;
 
 pub use self::sil::Sil;
 
 /// 音素。
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, derive_more::Display)]
+#[derive(
+    Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, derive_more::Display, SerializeDisplay,
+)]
 pub enum Phoneme {
     /// `pau`。
     #[display("pau")]
@@ -604,22 +607,21 @@ mod sil {
     use std::borrow::Cow;
 
     use derive_more::AsRef;
+    use serde_with::SerializeDisplay;
 
     /// `sil` (_silent_)。
-    ///
-    /// 任意の二つの`Sil`は[`Eq`]および[`Ord`]上で等価と判定される。
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use voicevox_core::Sil;
-    /// #
-    /// assert_eq!(
-    ///     "sil".parse::<Sil>().unwrap(),
-    ///     "sil-foo-bar".parse::<Sil>().unwrap(),
-    /// );
-    /// ```
-    #[derive(Clone, Debug, derive_more::Display, AsRef)]
+    #[derive(
+        Clone,
+        PartialEq,
+        Eq,
+        PartialOrd,
+        Ord,
+        Hash,
+        Debug,
+        derive_more::Display,
+        AsRef,
+        SerializeDisplay,
+    )]
     #[as_ref(str)]
     pub struct Sil(
         Cow<'static, str>, // invariant: must contain "sil"

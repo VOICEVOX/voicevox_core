@@ -57,6 +57,12 @@ public class AccentPhrase {
    * <p>次のうちどれかを満たすなら{@link InvalidQueryException}を発する。
    *
    * <ul>
+   *   <li><a
+   *       href="https://voicevox.github.io/voicevox_core/apis/rust_api/voicevox_core/struct.AccentPhrase.html">Rust
+   *       APIの{@code AccentPhrase}型</a>としてデシリアライズ不可。
+   *       <ul>
+   *         <li>{@link #accent}が負であるか、もしくは32ビットプラットフォームの場合2<sup>32</sup>-1を超過する。
+   *       </ul>
    *   <li>{@link #moras}もしくは{@link #pauseMora}の要素のいずれかが不正。
    *   <li>{@link #accent}が{@code 0}。
    * </ul>

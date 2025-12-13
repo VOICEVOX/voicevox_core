@@ -1,15 +1,11 @@
-use std::{
-    cmp, fmt,
-    hash::{Hash, Hasher},
-    str::FromStr,
-};
+use std::{fmt, str::FromStr};
 
 use bytemuck::{checked::CheckedCastError, Contiguous as _};
 use duplicate::duplicate_item;
 use pastey::paste;
 use serde::{
     de::{self, Deserializer, Unexpected},
-    Deserialize, Serialize, Serializer,
+    Deserialize,
 };
 use strum::EnumCount as _;
 
@@ -227,31 +223,38 @@ impl Phoneme {
     }
 }
 
-impl<'de> Deserialize<'de> for Phoneme {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        String::deserialize(deserializer)?
-            .parse()
-            .map_err(de::Error::custom)
-    }
-}
-
-impl Serialize for Phoneme {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_str(&self.to_string())
-    }
-}
-
 impl FromStr for Phoneme {
     type Err = crate::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Self::from_str_with_inner_error(s).map_err(Into::into)
+    }
+}
+
+impl<'de> Deserialize<'de> for Phoneme {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        return deserializer.deserialize_str(Visitor);
+
+        struct Visitor;
+
+        impl de::Visitor<'_> for Visitor {
+            type Value = Phoneme;
+
+            fn expecting(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+                write!(fmt, "a string that represents a phoneme")
+            }
+
+            fn visit_str<E>(self, s: &str) -> Result<Self::Value, E>
+            where
+                E: de::Error,
+            {
+                s.parse()
+                    .map_err(|_| de::Error::invalid_value(Unexpected::Str(s), &self))
+            }
+        }
     }
 }
 
@@ -374,6 +377,12 @@ impl FromStr for NonConsonant {
     }
 }
 
+impl Sil {
+    pub fn get(&self) -> &str {
+        self.as_ref()
+    }
+}
+
 impl Default for Sil {
     fn default() -> Self {
         Self::DEFAULT
@@ -393,30 +402,6 @@ impl FromStr for Sil {
             .into()
         })
     }
-}
-
-impl PartialEq for Sil {
-    fn eq(&self, _: &Self) -> bool {
-        true
-    }
-}
-
-impl Eq for Sil {}
-
-impl PartialOrd for Sil {
-    fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for Sil {
-    fn cmp(&self, _: &Self) -> cmp::Ordering {
-        cmp::Ordering::Equal
-    }
-}
-
-impl Hash for Sil {
-    fn hash<H: Hasher>(&self, _: &mut H) {}
 }
 
 impl<'de> Deserialize<'de> for Sil {

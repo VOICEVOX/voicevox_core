@@ -70,6 +70,12 @@ public class Mora implements Cloneable {
    * <p>次のうちどれかを満たすなら{@link InvalidQueryException}を発する。
    *
    * <ul>
+   *   <li>JSONへのシリアライズが不可。
+   *       <ul>
+   *         <li>{@link #consonantLength}がNaN、infinity、もしくは負。
+   *         <li>{@link #vowelLength}がNaN、infinity、もしくは負。
+   *         <li>{@link #pitch}がNaNもしくは±infinity。
+   *       </ul>
    *   <li>{@link #consonant}と{@link #consonantLength}の有無が不一致。
    *   <li>{@link #consonant}が子音以外の音素であるか、もしくは音素として不正。
    *   <li>{@link #vowel}が子音であるか、もしくは音素として不正。
@@ -78,9 +84,8 @@ public class Mora implements Cloneable {
    * <p>また次の状態に対してはログで警告を出す。将来的にはエラーになる予定。
    *
    * <ul>
-   *   <li>{@link #consonantLength}がNaN、infinity、もしくは負。
-   *   <li>{@link #vowelLength}がNaN、infinity、もしくは負。
-   *   <li>{@link #pitch}がNaNもしくは±infinity。
+   *   <li>{@link #consonantLength}が負。
+   *   <li>{@link #vowelLength}が負。
    * </ul>
    */
   public void validate() {

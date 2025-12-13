@@ -53,7 +53,15 @@
 
 ### Added
 
-- \[Rust\] ソング機能が追加されます ([#531], [#732], [#738], [#761], [#895], [#896], [#894], [#1217], [#1073])。
+- \[Rust\] ソング機能が追加されます ([#531], [#732], [#738], [#761], [#895], [#896], [#894], [#1217], [#1236], [#1073])。
+
+### Changed
+
+- \[Python,Java\] `AudioQuery`（もしくはその一部）がRustのオブジェクトとして表現できなかったときのエラーが、`InvalidQuery`エラーに包まれるようになります。これまでは`OverflowError`や`RuntimeError`がそのままraiseされていました ([#1237])。
+
+### Fixed
+
+- \[Java\] 各`validate`メソッドのJavadocにおいて、浮動小数点数がNaNあるいは±infinityだったときの扱いの記述が実態に則したものへと訂正されます ([#1237])。
 
 ## [0.16.3] - 2025-12-08 (+09:00)
 
@@ -1390,6 +1398,8 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1223]: https://github.com/VOICEVOX/voicevox_core/pull/1223
 [#1224]: https://github.com/VOICEVOX/voicevox_core/pull/1224
 [#1227]: https://github.com/VOICEVOX/voicevox_core/pull/1227
+[#1236]: https://github.com/VOICEVOX/voicevox_core/pull/1236
+[#1237]: https://github.com/VOICEVOX/voicevox_core/pull/1237
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
