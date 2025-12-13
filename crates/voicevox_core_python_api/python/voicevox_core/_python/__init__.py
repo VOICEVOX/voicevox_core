@@ -340,7 +340,7 @@ class AccentPhrase:
         次のうちどれかを満たすなら |accent-phrase-validate-invalid-query-error|_ を発する。
 
         - |accent-phrase-rust-ty|_ としてデシリアライズ不可。
-            - :attr:`accent` が負であるか、もしくは :math:`2^{64}-1` (32ビットプラットフォームの場合は :math:`2^{32}-1`)を超過する。
+            - :attr:`accent` が負であるか、もしくは :math:`2^{64}-1` (32ビットプラットフォームの場合 :math:`2^{32}-1`)を超過する。
         - :attr:`moras` もしくは :attr:`pause_mora` の要素のうちいずれかが |accent-phrase-validate-mora-validate|_ 。
         - :attr:`accent` が ``0`` 。
 

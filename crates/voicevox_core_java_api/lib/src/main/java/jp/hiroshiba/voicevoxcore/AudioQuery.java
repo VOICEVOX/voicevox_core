@@ -8,6 +8,7 @@ import jakarta.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import jp.hiroshiba.voicevoxcore.exceptions.InvalidQueryException;
+import jp.hiroshiba.voicevoxcore.internal.Convert;
 import jp.hiroshiba.voicevoxcore.internal.Dll;
 
 /**
@@ -85,6 +86,21 @@ public class AudioQuery {
    * <p>次のうちどれかを満たすなら{@link InvalidQueryException}を発する。
    *
    * <ul>
+   *   <li>JSONへのシリアライズが不可。
+   *       <ul>
+   *         <li>{@link #speedScale}がNaNもしくは±infinity。
+   *         <li>{@link #pitchScale}がNaNもしくは±infinity。
+   *         <li>{@link #intonationScale}がNaNもしくは±infinity。
+   *         <li>{@link #volumeScale}がNaNもしくは±infinity。
+   *         <li>{@link #prePhonemeLength}がNaNもしくは±infinity。
+   *         <li>{@link #postPhonemeLength}がNaNもしくは±infinity。
+   *       </ul>
+   *   <li><a
+   *       href="https://voicevox.github.io/voicevox_core/apis/rust_api/voicevox_core/struct.AudioQuery.html">Rust
+   *       APIの{@code AudioQuery}型</a>としてデシリアライズ不可。
+   *       <ul>
+   *         <li>{@link #outputSamplingRate}が負であるか、もしくは2<sup>32</sup>-1を超過する。
+   *       </ul>
    *   <li>{@link #accentPhrases}の要素のうちいずれかが不正。
    *   <li>{@link #outputSamplingRate}が{@code 24000}の倍数ではない、もしくは{@code 0} (将来的に解消予定。cf. <a
    *       href="https://github.com/VOICEVOX/voicevox_core/issues/762">#762</a>)
@@ -94,12 +110,10 @@ public class AudioQuery {
    *
    * <ul>
    *   <li>{@link #accentPhrases}の要素のうちいずれかが警告が出る状態。
-   *   <li>{@link #speedScale}がNaN、infinity、もしくは負。
-   *   <li>{@link #pitchScale}がNaNもしくは±infinity。
-   *   <li>{@link #intonationScale}がNaNもしくは±infinity。
-   *   <li>{@link #volumeScale}がNaN、infinity、もしくは負。
-   *   <li>{@link #prePhonemeLength}がNaN、infinity、もしくは負。
-   *   <li>{@link #postPhonemeLength}がNaN、infinity、もしくは負。
+   *   <li>{@link #speedScale}が負。
+   *   <li>{@link #volumeScale}が負。
+   *   <li>{@link #prePhonemeLength}が負。
+   *   <li>{@link #postPhonemeLength}が負。
    *   <li>{@link #outputSamplingRate}が{@code 24000}以外の値（エラーと同様将来的に解消予定）。
    * </ul>
    */
@@ -126,7 +140,8 @@ public class AudioQuery {
 
   public static AudioQuery fromAccentPhrases(List<AccentPhrase> accentPhrases) {
     Gson gson = new Gson();
-    String queryJson = rsFromAccentPhrases(gson.toJson(accentPhrases));
+    String queryJson =
+        rsFromAccentPhrases(Convert.jsonFromQueryLike(accentPhrases, "不正なアクセント句の列です"));
     AudioQuery query = gson.fromJson(queryJson, AudioQuery.class);
     if (query == null) {
       throw new NullPointerException();

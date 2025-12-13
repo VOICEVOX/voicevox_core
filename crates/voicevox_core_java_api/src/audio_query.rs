@@ -1,6 +1,6 @@
 use std::{borrow::Cow, ptr};
 
-use crate::common::{JavaApiError, JavaApiResult, throw_if_err};
+use crate::common::{JavaApiResult, query_from_json, throw_if_err};
 use easy_ext::ext;
 use jni::{
     JNIEnv,
@@ -18,7 +18,7 @@ extern "system" fn Java_jp_hiroshiba_voicevoxcore_AudioQuery_rsFromAccentPhrases
 ) -> jstring {
     throw_if_err(env, ptr::null_mut(), |env| {
         let accent_phrases = &String::from(env.get_string(&accent_phrases)?);
-        let accent_phrases = serde_json::from_str(accent_phrases).map_err(JavaApiError::DeJson)?;
+        let accent_phrases = query_from_json(accent_phrases)?;
         let query = &AudioQuery::from_accent_phrases(accent_phrases);
         let query = serde_json::to_string(query).expect("should not fail");
         let query = env.new_string(query)?;
@@ -56,23 +56,19 @@ extern "system" fn Java_jp_hiroshiba_voicevoxcore_Mora_rsValidate(
 #[ext]
 impl<T: Validate> T {
     fn validate_json(env: &mut JNIEnv<'_>, this: JObject<'_>) -> JavaApiResult<()> {
-        let gson = env.new_object("com/google/gson/Gson", "()V", &[])?;
-
         let this = &env
-            .call_method(
-                gson,
-                "toJson",
-                "(Ljava/lang/Object;)Ljava/lang/String;",
-                &[JValueGen::Object(&this)],
+            .call_static_method(
+                "jp/hiroshiba/voicevoxcore/internal/Convert",
+                "jsonFromQueryLike",
+                "(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/String;",
+                &[JValueGen::Object(&this), (&env.new_string(T::NAME)?).into()],
             )?
             .l()?
             .into();
         let this = &env.get_string(this)?;
         let this = &Cow::from(this);
 
-        serde_json::from_str::<Self>(this)
-            .map_err(JavaApiError::DeJson)?
-            .validate()?;
+        query_from_json::<Self>(this)?.validate()?;
         Ok(())
     }
 }

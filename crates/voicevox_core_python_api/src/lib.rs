@@ -284,7 +284,7 @@ fn _audio_query_to_json(
 
 #[pyfunction]
 fn _validate_mora(
-    #[pyo3(from_py_with = "convert::from_mora")] mora: Mora,
+    #[pyo3(from_py_with = "convert::from_query_like_via_serde")] mora: Mora,
     py: Python<'_>,
 ) -> PyResult<()> {
     mora.validate().into_py_result(py)
@@ -292,7 +292,7 @@ fn _validate_mora(
 
 #[pyfunction]
 fn _validate_accent_phrase(
-    #[pyo3(from_py_with = "convert::from_accent_phrase")] accent_phrase: AccentPhrase,
+    #[pyo3(from_py_with = "convert::from_query_like_via_serde")] accent_phrase: AccentPhrase,
     py: Python<'_>,
 ) -> PyResult<()> {
     accent_phrase.validate().into_py_result(py)

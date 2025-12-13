@@ -17,8 +17,9 @@ use serde::{Serialize, de::DeserializeOwned};
 use serde_json::json;
 use uuid::Uuid;
 use voicevox_core::{
-    __internal::interop::ToJsonValue as _, AccelerationMode, AccentPhrase, AudioQuery, Mora,
-    SupportedDevices, UserDictWord, VoiceModelMeta,
+    __internal::interop::{ToJsonValue as _, Validate},
+    AccelerationMode, AccentPhrase, AudioQuery, Mora, SupportedDevices, UserDictWord,
+    VoiceModelMeta,
 };
 
 use crate::{
@@ -58,7 +59,7 @@ pub(crate) fn from_audio_query(ob: &Bound<'_, PyAny>) -> PyResult<AudioQuery> {
         .into_py_dict(py)?;
 
     serde_pyobject::from_pyobject(fields).map_err(|serde_pyobject::Error(cause)| {
-        let err = InvalidQueryError::new_err("不正なAudioQueryです");
+        let err = InvalidQueryError::new_err(AudioQuery::validation_error_description());
         err.set_cause(py, Some(cause));
         err
     })
@@ -67,16 +68,8 @@ pub(crate) fn from_audio_query(ob: &Bound<'_, PyAny>) -> PyResult<AudioQuery> {
 pub(crate) fn from_accent_phrases(ob: &Bound<'_, PyAny>) -> PyResult<Vec<AccentPhrase>> {
     ob.downcast::<PyList>()?
         .iter()
-        .map(|p| from_accent_phrase(&p))
+        .map(|p| from_query_like_via_serde(&p))
         .collect()
-}
-
-pub(crate) fn from_accent_phrase(ob: &Bound<'_, PyAny>) -> PyResult<AccentPhrase> {
-    from_query_like(ob, "アクセント句")
-}
-
-pub(crate) fn from_mora(ob: &Bound<'_, PyAny>) -> PyResult<Mora> {
-    from_query_like(ob, "モーラ")
 }
 
 pub(crate) fn from_utf8_path(ob: &Bound<'_, PyAny>) -> PyResult<Utf8PathBuf> {
@@ -260,14 +253,11 @@ impl<'py> IntoPyObject<'py> for ToPyUuid {
     }
 }
 
-fn from_query_like<T: DeserializeOwned>(
-    instance: &Bound<'_, PyAny>,
-    what: &'static str,
-) -> PyResult<T> {
+pub(crate) fn from_query_like_via_serde<T: Validate>(instance: &Bound<'_, PyAny>) -> PyResult<T> {
     let py = instance.py();
     let fields = dataclasses_asdict(instance)?;
     serde_pyobject::from_pyobject(fields).map_err(|serde_pyobject::Error(cause)| {
-        let err = InvalidQueryError::new_err(format!("不正な{what}です"));
+        let err = InvalidQueryError::new_err(T::validation_error_description());
         err.set_cause(py, Some(cause));
         err
     })

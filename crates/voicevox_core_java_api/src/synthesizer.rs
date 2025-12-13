@@ -1,5 +1,5 @@
 use crate::{
-    common::{JNIEnvExt as _, JavaApiError, throw_if_err},
+    common::{JNIEnvExt as _, query_from_json, throw_if_err},
     object, object_type, static_field,
 };
 
@@ -386,7 +386,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
     throw_if_err(env, std::ptr::null_mut(), |env| {
         let accent_phrases_json: String = env.get_string(&accent_phrases_json)?.into();
         let accent_phrases: Vec<voicevox_core::AccentPhrase> =
-            serde_json::from_str(&accent_phrases_json).map_err(JavaApiError::DeJson)?;
+            query_from_json(&accent_phrases_json)?;
         let style_id = style_id as u32;
 
         let internal = unsafe {
@@ -423,7 +423,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
     throw_if_err(env, std::ptr::null_mut(), |env| {
         let accent_phrases_json: String = env.get_string(&accent_phrases_json)?.into();
         let accent_phrases: Vec<voicevox_core::AccentPhrase> =
-            serde_json::from_str(&accent_phrases_json).map_err(JavaApiError::DeJson)?;
+            query_from_json(&accent_phrases_json)?;
         let style_id = style_id as u32;
 
         let internal = unsafe {
@@ -460,7 +460,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
     throw_if_err(env, std::ptr::null_mut(), |env| {
         let accent_phrases_json: String = env.get_string(&accent_phrases_json)?.into();
         let accent_phrases: Vec<voicevox_core::AccentPhrase> =
-            serde_json::from_str(&accent_phrases_json).map_err(JavaApiError::DeJson)?;
+            query_from_json(&accent_phrases_json)?;
         let style_id = style_id as u32;
 
         let internal = unsafe {
@@ -497,8 +497,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {
         let audio_query: String = env.get_string(&query_json)?.into();
-        let audio_query: voicevox_core::AudioQuery =
-            serde_json::from_str(&audio_query).map_err(JavaApiError::DeJson)?;
+        let audio_query: voicevox_core::AudioQuery = query_from_json(&audio_query)?;
         let style_id = style_id as u32;
 
         let internal = unsafe {
