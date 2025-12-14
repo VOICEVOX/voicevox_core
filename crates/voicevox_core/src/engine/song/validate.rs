@@ -44,6 +44,17 @@ pub(crate) fn frame_phoneme_note_pairs<'a>(
 }
 
 impl Score {
+    /// この構造体をバリデートする。
+    ///
+    /// # Errors
+    ///
+    /// 次を満たすなら[`ErrorKind::InvalidQuery`]を表わすエラーを返す。
+    ///
+    /// - [`notes`]の要素のうちいずれかが[不正]。
+    ///
+    /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
+    /// [`notes`]: Self::notes
+    /// [不正]: Note::validate
     pub fn validate(&self) -> crate::Result<()> {
         self.to_validated().map(|_| ())
     }
@@ -55,11 +66,24 @@ impl Score {
 }
 
 impl Note {
+    /// この構造体をバリデートする。
+    ///
+    /// # Errors
+    ///
+    /// 次のうちどれかを満たすなら[`ErrorKind::InvalidQuery`]を表わすエラーを返す。
+    ///
+    /// - [`key`]が`None`かつ[`lyric`]が[`PAU`]。
+    /// - [`key`]が`Some(_)`かつ[`lyric`]が[`PAU`]以外。
+    ///
+    /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
+    /// [`key`]: Self::key
+    /// [`lyric`]: Self::lyric
+    /// [`PAU`]: OptionalLyric::PAU
     pub fn validate(&self) -> crate::Result<()> {
         self.clone().into_validated().map(|_| ())
     }
 
-    pub(crate) fn into_validated(self) -> crate::Result<ValidatedNote> {
+    fn into_validated(self) -> crate::Result<ValidatedNote> {
         let Self {
             id,
             key,

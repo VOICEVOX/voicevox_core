@@ -1834,9 +1834,9 @@ pub(crate) mod blocking {
             }
         }
 
-        /// [音符]の列から[歌唱合成用のクエリ]を作成する。
+        /// [楽譜]から[歌唱合成用のクエリ]を作成する。
         ///
-        /// [音符]: Note
+        /// [楽譜]: Score
         /// [歌唱合成用のクエリ]: FrameAudioQuery
         pub fn create_sing_frame_audio_query(
             &self,
@@ -2521,9 +2521,9 @@ pub(crate) mod nonblocking {
             }
         }
 
-        /// [音符]の列から[歌唱合成用のクエリ]を作成する。
+        /// [楽譜]から[歌唱合成用のクエリ]を作成する。
         ///
-        /// [音符]: Note
+        /// [楽譜]: Score
         /// [歌唱合成用のクエリ]: FrameAudioQuery
         pub async fn create_sing_frame_audio_query(
             &self,

@@ -60,6 +60,13 @@ impl<'de> Deserialize<'de> for OptionalLyric {
 }
 
 /// 音符ごとの情報。
+///
+/// # Validation
+///
+/// この構造体の状態によっては、`Synthesizer`の各メソッドは[`ErrorKind::InvalidQuery`]を表わすエラーを返す。詳細は[`validate`メソッド]にて。
+///
+/// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
+/// [`validate`メソッド]: Self::validate
 #[derive(Clone, Deserialize, Serialize)]
 pub struct Note {
     /// ID。
@@ -76,6 +83,13 @@ pub struct Note {
 }
 
 /// 楽譜情報。
+///
+/// # Validation
+///
+/// この構造体の状態によっては、`Synthesizer`の各メソッドは[`ErrorKind::InvalidQuery`]を表わすエラーを返す。詳細は[`validate`メソッド]にて。
+///
+/// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
+/// [`validate`メソッド]: Self::validate
 #[derive(Clone, Deserialize, Serialize)]
 pub struct Score {
     /// 音符のリスト。
@@ -172,7 +186,18 @@ mod optional_lyric {
     /// ```
     ///
     /// [無音]: crate::Phoneme::MorablePau
-    #[derive(Clone, Default, Debug, derive_more::Display, AsRef, SerializeDisplay)]
+    #[derive(
+        Clone,
+        Default,
+        PartialEq,
+        Eq,
+        PartialOrd,
+        Ord,
+        Debug,
+        derive_more::Display,
+        AsRef,
+        SerializeDisplay,
+    )]
     #[display("{text}")]
     pub struct OptionalLyric {
         /// # Invariant
@@ -189,6 +214,21 @@ mod optional_lyric {
     }
 
     impl OptionalLyric {
+        /// [無音]。
+        ///
+        /// ```
+        /// # use voicevox_core::OptionalLyric;
+        /// #
+        /// assert_eq!(OptionalLyric::default(), OptionalLyric::PAU);
+        /// assert_eq!("", OptionalLyric::PAU.as_ref());
+        /// ```
+        ///
+        /// [無音]: crate::Phoneme::MorablePau
+        pub const PAU: Self = Self {
+            text: SmolStr::new_static(""),
+            phonemes: ArrayVec::new_const(),
+        };
+
         pub(super) fn new(text: &str) -> Result<Self, ()> {
             if text.is_empty() {
                 return Ok(Self::default());
