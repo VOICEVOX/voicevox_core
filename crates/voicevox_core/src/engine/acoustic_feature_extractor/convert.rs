@@ -11,10 +11,7 @@ use strum::EnumCount as _;
 
 use crate::error::{ErrorRepr, InvalidQueryError, InvalidQueryErrorSource};
 
-use super::{
-    sil::Sil, Consonant, MoraTail, NonConsonant, NonPauPhonemeCode, OptionalConsonant, Phoneme,
-    PhonemeCode,
-};
+use super::{sil::Sil, Consonant, MoraTail, NonConsonant, OptionalConsonant, Phoneme, PhonemeCode};
 
 macro_rules! optional_consonant {
     ("") => {
@@ -723,65 +720,6 @@ impl From<MoraTail> for NonConsonant {
             VoicedVowelI,
             VoicedVowelO,
             VoicedVowelU,
-        )
-    }
-}
-
-impl From<NonPauPhonemeCode> for Phoneme {
-    fn from(phoneme: NonPauPhonemeCode) -> Self {
-        macro_rules! convert {
-            ($($variant:ident),* $(,)?) => {
-                match phoneme {
-                    $(NonPauPhonemeCode::$variant => Self::$variant,)*
-                }
-            };
-        }
-
-        convert!(
-            UnvoicedVowelA,
-            UnvoicedVowelE,
-            UnvoicedVowelI,
-            MorableN,
-            UnvoicedVowelO,
-            UnvoicedVowelU,
-            VoicedVowelA,
-            ConsonantB,
-            ConsonantBy,
-            ConsonantCh,
-            MorableCl,
-            ConsonantD,
-            ConsonantDy,
-            VoicedVowelE,
-            ConsonantF,
-            ConsonantG,
-            ConsonantGw,
-            ConsonantGy,
-            ConsonantH,
-            ConsonantHy,
-            VoicedVowelI,
-            ConsonantJ,
-            ConsonantK,
-            ConsonantKw,
-            ConsonantKy,
-            ConsonantM,
-            ConsonantMy,
-            ConsonantN,
-            ConsonantNy,
-            VoicedVowelO,
-            ConsonantP,
-            ConsonantPy,
-            ConsonantR,
-            ConsonantRy,
-            ConsonantS,
-            ConsonantSh,
-            ConsonantT,
-            ConsonantTs,
-            ConsonantTy,
-            VoicedVowelU,
-            ConsonantV,
-            ConsonantW,
-            ConsonantY,
-            ConsonantZ,
         )
     }
 }
