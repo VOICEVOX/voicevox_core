@@ -851,6 +851,7 @@ trait AsInner {
         style_id: StyleId,
     ) -> Result<Vec<NonNaNFinite<f32>>> {
         let ValidatedScore { notes } = score.to_validated()?;
+        frame_audio_query.validate();
 
         let (phonemes_by_frame, keys_by_frame) =
             song::validate::frame_phoneme_note_pairs(&frame_audio_query.phonemes, notes.as_ref())
@@ -899,6 +900,7 @@ trait AsInner {
         style_id: StyleId,
     ) -> Result<Vec<NonNaNFinite<f32>>> {
         let ValidatedScore { notes } = score.to_validated()?;
+        frame_audio_query.validate();
 
         let (phonemes_by_frame, keys_by_frame) =
             song::validate::frame_phoneme_note_pairs(&frame_audio_query.phonemes, notes.as_ref())
@@ -955,6 +957,8 @@ trait AsInner {
         style_id: StyleId,
         options: &SynthesisOptions<Self::Async>,
     ) -> Result<Vec<u8>> {
+        frame_audio_query.validate();
+
         let SfDecoderFeature {
             frame_phonemes,
             f0s,

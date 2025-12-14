@@ -1,6 +1,7 @@
 use std::num::NonZero;
 
 use arrayvec::ArrayVec;
+use tracing::warn;
 use typeshare::U53;
 
 use crate::{
@@ -9,8 +10,11 @@ use crate::{
 };
 
 use super::{
-    super::acoustic_feature_extractor::{MoraTail, OptionalConsonant, PhonemeCode},
-    queries::{FramePhoneme, Note, NoteId, OptionalLyric, Score},
+    super::{
+        acoustic_feature_extractor::{MoraTail, OptionalConsonant, PhonemeCode},
+        sampling_rate::SamplingRate,
+    },
+    queries::{FrameAudioQuery, FramePhoneme, Note, NoteId, OptionalLyric, Score},
 };
 
 use self::note_seq::ValidatedNoteSeq;
@@ -98,6 +102,21 @@ impl Note {
             pau_or_key_and_lyric,
             frame_length,
         })
+    }
+}
+
+impl FrameAudioQuery {
+    /// 次の状態に対して[`WARN`]レベルのログを出す。将来的にはエラーになる予定。
+    ///
+    /// - [`output_sampling_rate`]が`24000`以外の値（将来的に解消予定）。
+    ///
+    /// [`WARN`]: tracing::Level::WARN
+    /// [`output_sampling_rate`]: Self::output_sampling_rate
+    /// [#762]: https://github.com/VOICEVOX/voicevox_core/issues/762
+    pub fn validate(&self) {
+        if self.output_sampling_rate != SamplingRate::default() {
+            warn!("`output_sampling_rate` should be `DEFAULT_SAMPLING_RATE`");
+        }
     }
 }
 
