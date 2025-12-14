@@ -106,7 +106,7 @@ impl Note {
 }
 
 impl FrameAudioQuery {
-    /// 次の状態に対して[`WARN`]レベルのログを出す。将来的にはエラーになる予定。
+    /// 次の状態に対して[`WARN`]レベルのログを出す。
     ///
     /// - [`output_sampling_rate`]が`24000`以外の値（将来的に解消予定）。
     ///
@@ -117,6 +117,41 @@ impl FrameAudioQuery {
         if self.output_sampling_rate != SamplingRate::default() {
             warn!("`output_sampling_rate` should be `DEFAULT_SAMPLING_RATE`");
         }
+    }
+
+    /// 与えられた[楽譜]が、基本周波数と音量の再生成に利用できるかどうかを確認する。
+    ///
+    /// # Errors
+    ///
+    /// 次のうちどれかを満たすなら[`ErrorKind::InvalidQuery`]を表わすエラーを返す。
+    ///
+    /// - `score`が[不正]。
+    /// - `self`と`score`が異なる音素列から成り立っている（ただし一部の音素は同一視される）。
+    ///
+    /// # Warnings
+    ///
+    /// 次の状態に対しては[`WARN`]レベルのログを出す。将来的にはエラーになる予定。
+    ///
+    /// - [`Self::validate`]が警告を出す状態。
+    ///
+    /// [楽譜]: Score
+    /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
+    /// [不正]: Score::validate
+    /// [`WARN`]: tracing::Level::WARN
+    pub fn ensure_compatible_with(&self, score: &Score) -> crate::Result<()> {
+        self.validate();
+        let ValidatedScore { notes } = score.to_validated()?;
+
+        frame_phoneme_note_pairs(&self.phonemes, notes.as_ref())
+            .map(|_| ())
+            .map_err(|source| {
+                InvalidQueryError {
+                    what: "`Score`と`FrameAudioQuery`の組み合わせ",
+                    value: None,
+                    source: Some(source),
+                }
+                .into()
+            })
     }
 }
 
