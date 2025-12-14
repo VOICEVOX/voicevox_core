@@ -49,7 +49,7 @@ impl Score {
     }
 
     pub(crate) fn to_validated(&self) -> crate::Result<ValidatedScore> {
-        let notes = ValidatedNoteSeq::new(&self.notes)?;
+        let notes = (&*self.notes).try_into()?;
         Ok(ValidatedScore { notes })
     }
 }
@@ -142,7 +142,19 @@ pub(crate) struct Lyric {
 }
 
 impl ValidatedNoteSeq {
-    pub(crate) fn new(notes: &[Note]) -> crate::Result<Self> {
+    pub(crate) fn len(&self) -> NonZero<usize> {
+        AsRef::<NonEmptyVec<_>>::as_ref(self).len()
+    }
+
+    pub(crate) fn iter(&self) -> impl NonEmptyIterator<Item = &ValidatedNote> {
+        AsRef::<NonEmptyVec<_>>::as_ref(self).iter()
+    }
+}
+
+impl<'a> TryFrom<&'a [Note]> for ValidatedNoteSeq {
+    type Error = crate::Error;
+
+    fn try_from(notes: &'a [Note]) -> Result<Self, Self::Error> {
         let notes = notes
             .iter()
             .cloned()
@@ -157,14 +169,6 @@ impl ValidatedNoteSeq {
             }
             .into()
         })
-    }
-
-    pub(crate) fn len(&self) -> NonZero<usize> {
-        AsRef::<NonEmptyVec<_>>::as_ref(self).len()
-    }
-
-    pub(crate) fn iter(&self) -> impl NonEmptyIterator<Item = &ValidatedNote> {
-        AsRef::<NonEmptyVec<_>>::as_ref(self).iter()
     }
 }
 

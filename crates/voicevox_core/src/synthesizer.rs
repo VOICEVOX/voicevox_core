@@ -45,8 +45,8 @@ use crate::{
         song::{
             self,
             interpret::{ConsonantLengthsFeature, PhonemeFeature, SfDecoderFeature},
-            queries::{FrameAudioQuery, FramePhoneme, Note, Score},
-            validate::{note_seq::ValidatedNoteSeq, ValidatedNote, ValidatedScore},
+            queries::{FrameAudioQuery, FramePhoneme, Score},
+            validate::{ValidatedNote, ValidatedScore},
         },
         talk::{
             create_kana, initial_process, parse_kana, split_mora, DecoderFeature, LengthedPhoneme,
@@ -769,10 +769,10 @@ trait AsInner {
 
     async fn create_sing_frame_audio_query(
         &self,
-        notes: &[Note],
+        score: &Score,
         style_id: StyleId,
     ) -> Result<FrameAudioQuery> {
-        let notes = &ValidatedNoteSeq::new(notes)?;
+        let ValidatedScore { notes } = &score.to_validated()?;
 
         let ConsonantLengthsFeature {
             note_lengths,
@@ -1555,7 +1555,7 @@ pub(crate) mod blocking {
 
     use crate::{
         asyncs::SingleTasked, future::FutureExt as _, AccentPhrase, AudioQuery, FrameAudioQuery,
-        Note, Score, StyleId, VoiceModelId, VoiceModelMeta,
+        Score, StyleId, VoiceModelId, VoiceModelMeta,
     };
 
     use super::{
@@ -1840,11 +1840,11 @@ pub(crate) mod blocking {
         /// [歌唱合成用のクエリ]: FrameAudioQuery
         pub fn create_sing_frame_audio_query(
             &self,
-            notes: &[Note],
+            score: &Score,
             style_id: StyleId,
         ) -> crate::Result<FrameAudioQuery> {
             self.0
-                .create_sing_frame_audio_query(notes, style_id)
+                .create_sing_frame_audio_query(score, style_id)
                 .block_on()
         }
 
@@ -2281,7 +2281,7 @@ pub(crate) mod nonblocking {
     use typed_floats::NonNaNFinite;
 
     use crate::{
-        asyncs::BlockingThreadPool, AccentPhrase, AudioQuery, FrameAudioQuery, Note, Result, Score,
+        asyncs::BlockingThreadPool, AccentPhrase, AudioQuery, FrameAudioQuery, Result, Score,
         StyleId, VoiceModelId, VoiceModelMeta,
     };
 
@@ -2527,10 +2527,10 @@ pub(crate) mod nonblocking {
         /// [歌唱合成用のクエリ]: FrameAudioQuery
         pub async fn create_sing_frame_audio_query(
             &self,
-            notes: &[Note],
+            score: &Score,
             style_id: StyleId,
         ) -> Result<FrameAudioQuery> {
-            self.0.create_sing_frame_audio_query(notes, style_id).await
+            self.0.create_sing_frame_audio_query(score, style_id).await
         }
 
         /// [楽譜]と[歌唱合成用のクエリ]から、フレームごとの基本周波数を再生成する。
@@ -3628,7 +3628,7 @@ mod tests {
             .sum::<usize>();
 
         let frame_audio_query = synthesizer
-            .create_sing_frame_audio_query(&score.notes, 6000.into())
+            .create_sing_frame_audio_query(score, 6000.into())
             .await
             .unwrap();
 
