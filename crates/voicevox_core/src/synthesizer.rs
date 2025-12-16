@@ -1840,6 +1840,47 @@ pub(crate) mod blocking {
 
         /// [楽譜]から[歌唱合成用のクエリ]を作成する。
         ///
+        /// # Example
+        ///
+        /// ```
+        /// # fn main() -> anyhow::Result<()> {
+        /// # use pollster::FutureExt as _;
+        /// # use voicevox_core::__internal::doctest_fixtures::IntoBlocking as _;
+        /// #
+        /// # let synthesizer =
+        /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+        /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
+        /// #         test_util::ONNXRUNTIME_DYLIB_PATH,
+        /// #         test_util::OPEN_JTALK_DIC_DIR,
+        /// #     )
+        /// #     .block_on()?
+        /// #     .into_blocking();
+        /// #
+        /// use voicevox_core::{Score, StyleId};
+        ///
+        /// const SINGING_TEACHER: StyleId = StyleId(6000);
+        ///
+        /// let score = &serde_json::from_str::<Score>(
+        ///     r#"
+        /// {
+        ///   "notes": [
+        ///     { "key": null, "frame_length": 15, "lyric": "" },
+        ///     { "key": 60, "frame_length": 45, "lyric": "ド" },
+        ///     { "key": 62, "frame_length": 45, "lyric": "レ" },
+        ///     { "key": 64, "frame_length": 45, "lyric": "ミ" },
+        ///     { "key": null, "frame_length": 15, "lyric": "" }
+        ///   ]
+        /// }
+        ///     "#,
+        /// )
+        /// .unwrap();
+        ///
+        /// let frame_audio_query = synthesizer.create_sing_frame_audio_query(score, SINGING_TEACHER)?;
+        /// #
+        /// # Ok(())
+        /// # }
+        /// ```
+        ///
         /// [楽譜]: Score
         /// [歌唱合成用のクエリ]: FrameAudioQuery
         pub fn create_sing_frame_audio_query(
@@ -1852,7 +1893,54 @@ pub(crate) mod blocking {
                 .block_on()
         }
 
-        /// [楽譜]と[歌唱合成用のクエリ]から、フレームごとの基本周波数を再生成する。
+        /// [楽譜]と[歌唱合成用のクエリ]から、フレームごとの基本周波数を生成する。
+        ///
+        /// # Example
+        ///
+        /// ```
+        /// # fn main() -> anyhow::Result<()> {
+        /// # use pollster::FutureExt as _;
+        /// # use voicevox_core::__internal::doctest_fixtures::IntoBlocking as _;
+        /// #
+        /// # let synthesizer =
+        /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+        /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
+        /// #         test_util::ONNXRUNTIME_DYLIB_PATH,
+        /// #         test_util::OPEN_JTALK_DIC_DIR,
+        /// #     )
+        /// #     .block_on()?
+        /// #     .into_blocking();
+        /// #
+        /// use voicevox_core::StyleId;
+        ///
+        /// const SINGING_TEACHER: StyleId = StyleId(6000);
+        ///
+        /// # let score = &serde_json::from_str::<voicevox_core::Score>(
+        /// #     r#"
+        /// # {
+        /// #   "notes": [
+        /// #     { "key": null, "frame_length": 15, "lyric": "" },
+        /// #     { "key": 60, "frame_length": 45, "lyric": "ド" },
+        /// #     { "key": 62, "frame_length": 45, "lyric": "レ" },
+        /// #     { "key": 64, "frame_length": 45, "lyric": "ミ" },
+        /// #     { "key": null, "frame_length": 15, "lyric": "" }
+        /// #   ]
+        /// # }
+        /// #     "#,
+        /// # )
+        /// # .unwrap();
+        /// #
+        /// let mut frame_audio_query = synthesizer
+        ///     .create_sing_frame_audio_query(score, SINGING_TEACHER)?;
+        ///
+        /// // ⋮ （`frame_audio_query.phonemes`の`key`や`frame_length`を変更）
+        ///
+        /// let new_f0 = synthesizer.create_sing_frame_f0(score, &frame_audio_query, SINGING_TEACHER)?;
+        /// frame_audio_query.f0 = new_f0;
+        /// #
+        /// # Ok(())
+        /// # }
+        /// ```
         ///
         /// [楽譜]: Score
         /// [歌唱合成用のクエリ]: FrameAudioQuery
@@ -1867,7 +1955,59 @@ pub(crate) mod blocking {
                 .block_on()
         }
 
-        /// [楽譜]と[歌唱合成用のクエリ]から、フレームごとの音量を再生成する。
+        /// [楽譜]と[歌唱合成用のクエリ]から、フレームごとの音量を生成する。
+        ///
+        /// # Example
+        ///
+        /// ```
+        /// # fn main() -> anyhow::Result<()> {
+        /// # use pollster::FutureExt as _;
+        /// # use voicevox_core::__internal::doctest_fixtures::IntoBlocking as _;
+        /// #
+        /// # let synthesizer =
+        /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+        /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
+        /// #         test_util::ONNXRUNTIME_DYLIB_PATH,
+        /// #         test_util::OPEN_JTALK_DIC_DIR,
+        /// #     )
+        /// #     .block_on()?
+        /// #     .into_blocking();
+        /// #
+        /// use voicevox_core::StyleId;
+        ///
+        /// const SINGING_TEACHER: StyleId = StyleId(6000);
+        ///
+        /// # let score = &serde_json::from_str::<voicevox_core::Score>(
+        /// #     r#"
+        /// # {
+        /// #   "notes": [
+        /// #     { "key": null, "frame_length": 15, "lyric": "" },
+        /// #     { "key": 60, "frame_length": 45, "lyric": "ド" },
+        /// #     { "key": 62, "frame_length": 45, "lyric": "レ" },
+        /// #     { "key": 64, "frame_length": 45, "lyric": "ミ" },
+        /// #     { "key": null, "frame_length": 15, "lyric": "" }
+        /// #   ]
+        /// # }
+        /// #     "#,
+        /// # )
+        /// # .unwrap();
+        /// #
+        /// let mut frame_audio_query = synthesizer
+        ///     .create_sing_frame_audio_query(score, SINGING_TEACHER)?;
+        ///
+        /// // ⋮ （`frame_audio_query.phonemes`の`key`や`frame_length`を変更）
+        ///
+        /// let new_f0 = synthesizer.create_sing_frame_f0(score, &frame_audio_query, SINGING_TEACHER)?;
+        /// frame_audio_query.f0 = new_f0;
+        ///
+        /// // 音量の生成には基本周波数が必要であることに注意。
+        /// let new_volume = synthesizer
+        ///     .create_sing_frame_volume(score, &frame_audio_query, SINGING_TEACHER)?;
+        /// frame_audio_query.volume = new_volume;
+        /// #
+        /// # Ok(())
+        /// # }
+        /// ```
         ///
         /// [楽譜]: Score
         /// [歌唱合成用のクエリ]: FrameAudioQuery
@@ -1883,6 +2023,52 @@ pub(crate) mod blocking {
         }
 
         /// 歌唱音声合成を行う。
+        ///
+        /// # Example
+        ///
+        /// ```
+        /// # fn main() -> anyhow::Result<()> {
+        /// # use pollster::FutureExt as _;
+        /// # use voicevox_core::__internal::doctest_fixtures::IntoBlocking as _;
+        /// #
+        /// # let synthesizer =
+        /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+        /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
+        /// #         test_util::ONNXRUNTIME_DYLIB_PATH,
+        /// #         test_util::OPEN_JTALK_DIC_DIR,
+        /// #     )
+        /// #     .block_on()?
+        /// #     .into_blocking();
+        /// #
+        /// use voicevox_core::StyleId;
+        ///
+        /// # const SINGING_TEACHER: StyleId = StyleId(6000);
+        /// const SINGER: StyleId = StyleId(3000);
+        ///
+        /// # let score = &serde_json::from_str::<voicevox_core::Score>(
+        /// #     r#"
+        /// # {
+        /// #   "notes": [
+        /// #     { "key": null, "frame_length": 15, "lyric": "" },
+        /// #     { "key": 60, "frame_length": 45, "lyric": "ド" },
+        /// #     { "key": 62, "frame_length": 45, "lyric": "レ" },
+        /// #     { "key": 64, "frame_length": 45, "lyric": "ミ" },
+        /// #     { "key": null, "frame_length": 15, "lyric": "" }
+        /// #   ]
+        /// # }
+        /// #     "#,
+        /// # )
+        /// # .unwrap();
+        /// #
+        /// # let frame_audio_query = &synthesizer.create_sing_frame_audio_query(score, SINGING_TEACHER)?;
+        /// #
+        /// let wav = synthesizer
+        ///     .frame_synthesis(&frame_audio_query, SINGER)
+        ///     .perform()?;
+        /// #
+        /// # Ok(())
+        /// # }
+        /// ```
         pub fn frame_synthesis<'a>(
             &'a self,
             frame_audio_query: &'a FrameAudioQuery,
@@ -2527,6 +2713,46 @@ pub(crate) mod nonblocking {
 
         /// [楽譜]から[歌唱合成用のクエリ]を作成する。
         ///
+        /// # Example
+        ///
+        /// ```
+        /// # #[pollster::main]
+        /// # async fn main() -> anyhow::Result<()> {
+        /// # let synthesizer =
+        /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+        /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
+        /// #         test_util::ONNXRUNTIME_DYLIB_PATH,
+        /// #         test_util::OPEN_JTALK_DIC_DIR,
+        /// #     )
+        /// #     .await?;
+        /// #
+        /// use voicevox_core::{Score, StyleId};
+        ///
+        /// const SINGING_TEACHER: StyleId = StyleId(6000);
+        ///
+        /// let score = &serde_json::from_str::<Score>(
+        ///     r#"
+        /// {
+        ///   "notes": [
+        ///     { "key": null, "frame_length": 15, "lyric": "" },
+        ///     { "key": 60, "frame_length": 45, "lyric": "ド" },
+        ///     { "key": 62, "frame_length": 45, "lyric": "レ" },
+        ///     { "key": 64, "frame_length": 45, "lyric": "ミ" },
+        ///     { "key": null, "frame_length": 15, "lyric": "" }
+        ///   ]
+        /// }
+        ///     "#,
+        /// )
+        /// .unwrap();
+        ///
+        /// let frame_audio_query = &synthesizer
+        ///     .create_sing_frame_audio_query(score, SINGING_TEACHER)
+        ///     .await?;
+        /// #
+        /// # Ok(())
+        /// # }
+        /// ```
+        ///
         /// [楽譜]: Score
         /// [歌唱合成用のクエリ]: FrameAudioQuery
         pub async fn create_sing_frame_audio_query(
@@ -2537,7 +2763,54 @@ pub(crate) mod nonblocking {
             self.0.create_sing_frame_audio_query(score, style_id).await
         }
 
-        /// [楽譜]と[歌唱合成用のクエリ]から、フレームごとの基本周波数を再生成する。
+        /// [楽譜]と[歌唱合成用のクエリ]から、フレームごとの基本周波数を生成する。
+        ///
+        /// # Example
+        ///
+        /// ```
+        /// # #[pollster::main]
+        /// # async fn main() -> anyhow::Result<()> {
+        /// # let synthesizer =
+        /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+        /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
+        /// #         test_util::ONNXRUNTIME_DYLIB_PATH,
+        /// #         test_util::OPEN_JTALK_DIC_DIR,
+        /// #     )
+        /// #     .await?;
+        /// #
+        /// use voicevox_core::StyleId;
+        ///
+        /// const SINGING_TEACHER: StyleId = StyleId(6000);
+        ///
+        /// # let score = &serde_json::from_str::<voicevox_core::Score>(
+        /// #     r#"
+        /// # {
+        /// #   "notes": [
+        /// #     { "key": null, "frame_length": 15, "lyric": "" },
+        /// #     { "key": 60, "frame_length": 45, "lyric": "ド" },
+        /// #     { "key": 62, "frame_length": 45, "lyric": "レ" },
+        /// #     { "key": 64, "frame_length": 45, "lyric": "ミ" },
+        /// #     { "key": null, "frame_length": 15, "lyric": "" }
+        /// #   ]
+        /// # }
+        /// #     "#,
+        /// # )
+        /// # .unwrap();
+        /// #
+        /// let mut frame_audio_query = synthesizer
+        ///     .create_sing_frame_audio_query(score, SINGING_TEACHER)
+        ///     .await?;
+        ///
+        /// // ⋮ （`frame_audio_query.phonemes`の`key`や`frame_length`を変更）
+        ///
+        /// let new_f0 = synthesizer
+        ///     .create_sing_frame_f0(score, &frame_audio_query, SINGING_TEACHER)
+        ///     .await?;
+        /// frame_audio_query.f0 = new_f0;
+        /// #
+        /// # Ok(())
+        /// # }
+        /// ```
         ///
         /// [楽譜]: Score
         /// [歌唱合成用のクエリ]: FrameAudioQuery
@@ -2552,7 +2825,60 @@ pub(crate) mod nonblocking {
                 .await
         }
 
-        /// [楽譜]と[歌唱合成用のクエリ]から、フレームごとの音量を再生成する。
+        /// [楽譜]と[歌唱合成用のクエリ]から、フレームごとの音量を生成する。
+        ///
+        /// # Example
+        ///
+        /// ```
+        /// # #[pollster::main]
+        /// # async fn main() -> anyhow::Result<()> {
+        /// # let synthesizer =
+        /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+        /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
+        /// #         test_util::ONNXRUNTIME_DYLIB_PATH,
+        /// #         test_util::OPEN_JTALK_DIC_DIR,
+        /// #     )
+        /// #     .await?;
+        /// #
+        /// use voicevox_core::StyleId;
+        ///
+        /// const SINGING_TEACHER: StyleId = StyleId(6000);
+        ///
+        /// # let score = &serde_json::from_str::<voicevox_core::Score>(
+        /// #     r#"
+        /// # {
+        /// #   "notes": [
+        /// #     { "key": null, "frame_length": 15, "lyric": "" },
+        /// #     { "key": 60, "frame_length": 45, "lyric": "ド" },
+        /// #     { "key": 62, "frame_length": 45, "lyric": "レ" },
+        /// #     { "key": 64, "frame_length": 45, "lyric": "ミ" },
+        /// #     { "key": null, "frame_length": 15, "lyric": "" }
+        /// #   ]
+        /// # }
+        /// #     "#,
+        /// # )
+        /// # .unwrap();
+        /// #
+        /// let mut frame_audio_query = synthesizer
+        ///     .create_sing_frame_audio_query(score, SINGING_TEACHER)
+        ///     .await?;
+        ///
+        /// // ⋮ （`frame_audio_query.phonemes`の`key`や`frame_length`を変更）
+        ///
+        /// let new_f0 = synthesizer
+        ///     .create_sing_frame_f0(score, &frame_audio_query, SINGING_TEACHER)
+        ///     .await?;
+        /// frame_audio_query.f0 = new_f0;
+        ///
+        /// // 音量の生成には基本周波数が必要であることに注意。
+        /// let new_volume = synthesizer
+        ///     .create_sing_frame_volume(score, &frame_audio_query, SINGING_TEACHER)
+        ///     .await?;
+        /// frame_audio_query.volume = new_volume;
+        /// #
+        /// # Ok(())
+        /// # }
+        /// ```
         ///
         /// [楽譜]: Score
         /// [歌唱合成用のクエリ]: FrameAudioQuery
@@ -2568,6 +2894,58 @@ pub(crate) mod nonblocking {
         }
 
         /// 歌唱音声合成を行う。
+        ///
+        /// # Caveats
+        ///
+        /// [`cancellable`]を有効化しない限り、非同期タスクとしてキャンセルしても終わるまで停止しない。
+        ///
+        /// # Example
+        ///
+        /// ```
+        /// # #[pollster::main]
+        /// # async fn main() -> anyhow::Result<()> {
+        /// # let synthesizer =
+        /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+        /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
+        /// #         test_util::ONNXRUNTIME_DYLIB_PATH,
+        /// #         test_util::OPEN_JTALK_DIC_DIR,
+        /// #     )
+        /// #     .await?;
+        /// #
+        /// use voicevox_core::StyleId;
+        ///
+        /// # const SINGING_TEACHER: StyleId = StyleId(6000);
+        /// const SINGER: StyleId = StyleId(3000);
+        ///
+        /// # let score = &serde_json::from_str::<voicevox_core::Score>(
+        /// #     r#"
+        /// # {
+        /// #   "notes": [
+        /// #     { "key": null, "frame_length": 15, "lyric": "" },
+        /// #     { "key": 60, "frame_length": 45, "lyric": "ド" },
+        /// #     { "key": 62, "frame_length": 45, "lyric": "レ" },
+        /// #     { "key": 64, "frame_length": 45, "lyric": "ミ" },
+        /// #     { "key": null, "frame_length": 15, "lyric": "" }
+        /// #   ]
+        /// # }
+        /// #     "#,
+        /// # )
+        /// # .unwrap();
+        /// #
+        /// # let frame_audio_query = &synthesizer
+        /// #     .create_sing_frame_audio_query(score, SINGING_TEACHER)
+        /// #     .await?;
+        /// #
+        /// let wav = synthesizer
+        ///     .frame_synthesis(&frame_audio_query, SINGER)
+        ///     .perform()
+        ///     .await?;
+        /// #
+        /// # Ok(())
+        /// # }
+        /// ```
+        ///
+        /// [`cancellable`]: FrameSynthesis::cancellable
         pub fn frame_synthesis<'a>(
             &'a self,
             frame_audio_query: &'a FrameAudioQuery,
