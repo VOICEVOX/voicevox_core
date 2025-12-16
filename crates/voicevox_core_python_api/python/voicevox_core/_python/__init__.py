@@ -260,7 +260,7 @@ class Mora:
     モーラ（子音＋母音）ごとの情報。
 
     この構造体の状態によっては、 ``Synthesizer`` の各メソッドは
-    |mora-invalid-query-error|_ を発する。詳細は :func:`validate` にて。
+    |mora-invalid-query-error|_ を送出する。詳細は :func:`validate` にて。
 
     .. |mora-invalid-query-error| replace:: ``InvalidQueryError``
     .. _mora-invalid-query-error: #voicevox_core.InvalidQueryError
@@ -288,7 +288,7 @@ class Mora:
         """
         このインスタンスをバリデートする。
 
-        次のうちどれかを満たすなら |mora-validate-invalid-query-error|_ を発する。
+        次のうちどれかを満たすなら |mora-validate-invalid-query-error|_ を送出する。
 
         - :attr:`consonant` と :attr:`consonant_length` の有無が不一致。
         - :attr:`consonant` が子音以外の音素であるか、もしくは音素として不正。
@@ -315,7 +315,7 @@ class AccentPhrase:
     AccentPhrase (アクセント句ごとの情報)。
 
     この構造体の状態によっては、 ``Synthesizer`` の各メソッドは
-    |accent-phrase-invalid-query-error|_ を発する。詳細は :func:`validate` にて。
+    |accent-phrase-invalid-query-error|_ を送出する。詳細は :func:`validate` にて。
 
     .. |accent-phrase-invalid-query-error| replace:: ``InvalidQueryError``
     .. _accent-phrase-invalid-query-error: #voicevox_core.InvalidQueryError
@@ -337,7 +337,7 @@ class AccentPhrase:
         """
         このインスタンスをバリデートする。
 
-        次のうちどれかを満たすなら |accent-phrase-validate-invalid-query-error|_ を発する。
+        次のうちどれかを満たすなら |accent-phrase-validate-invalid-query-error|_ を送出する。
 
         - |accent-phrase-rust-ty|_ としてデシリアライズ不可。
             - :attr:`accent` が負であるか、もしくは :math:`2^{64}-1` (32ビットプラットフォームの場合 :math:`2^{32}-1`)を超過する。
@@ -368,7 +368,7 @@ class AudioQuery:
     AudioQuery (音声合成用のクエリ)。
 
     この構造体の状態によっては、 ``Synthesizer`` の各メソッドは
-    |audio-query-invalid-query-error|_ を発する。詳細は :func:`validate` にて。
+    |audio-query-invalid-query-error|_ を送出する。詳細は :func:`validate` にて。
 
     .. |audio-query-invalid-query-error| replace:: ``InvalidQueryError``
     .. _audio-query-invalid-query-error: #voicevox_core.InvalidQueryError
@@ -422,7 +422,7 @@ class AudioQuery:
         """
         このインスタンスをバリデートする。
 
-        次のうちどれかを満たすなら |audio-query-validate-invalid-query-error|_ を発する。
+        次のうちどれかを満たすなら |audio-query-validate-invalid-query-error|_ を送出する。
 
         - |audio-query-rust-ty|_ としてデシリアライズ不可。
             - :attr:`output_sampling_rate` が負であるか、もしくは :math:`2^{32}-1` を超過する。
