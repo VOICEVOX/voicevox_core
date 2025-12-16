@@ -14,7 +14,7 @@ import jp.hiroshiba.voicevoxcore.internal.Dll;
 /**
  * AudioQuery（音声合成用のクエリ）。
  *
- * <p>この構造体の状態によっては、{@code Synthesizer}の各メソッドは{@link InvalidQueryException}を発する。詳細は{@link
+ * <p>この構造体の状態によっては、{@code Synthesizer}の各メソッドは{@link InvalidQueryException}をスローする。詳細は{@link
  * #validate}にて。
  *
  * <p>GsonにおいてはVOICEVOX ENGINEに合わせる形で、フィールド名は{@link
@@ -83,30 +83,7 @@ public class AudioQuery {
   /**
    * このインスタンスをバリデートする。
    *
-   * <p>次のうちどれかを満たすなら{@link InvalidQueryException}を発する。
-   *
-   * <ul>
-   *   <li>JSONへのシリアライズが不可。
-   *       <ul>
-   *         <li>{@link #speedScale}がNaNもしくは±infinity。
-   *         <li>{@link #pitchScale}がNaNもしくは±infinity。
-   *         <li>{@link #intonationScale}がNaNもしくは±infinity。
-   *         <li>{@link #volumeScale}がNaNもしくは±infinity。
-   *         <li>{@link #prePhonemeLength}がNaNもしくは±infinity。
-   *         <li>{@link #postPhonemeLength}がNaNもしくは±infinity。
-   *       </ul>
-   *   <li><a
-   *       href="https://voicevox.github.io/voicevox_core/apis/rust_api/voicevox_core/struct.AudioQuery.html">Rust
-   *       APIの{@code AudioQuery}型</a>としてデシリアライズ不可。
-   *       <ul>
-   *         <li>{@link #outputSamplingRate}が負であるか、もしくは2<sup>32</sup>-1を超過する。
-   *       </ul>
-   *   <li>{@link #accentPhrases}の要素のうちいずれかが不正。
-   *   <li>{@link #outputSamplingRate}が{@code 24000}の倍数ではない、もしくは{@code 0} (将来的に解消予定。cf. <a
-   *       href="https://github.com/VOICEVOX/voicevox_core/issues/762">#762</a>)
-   * </ul>
-   *
-   * <p>また次の状態に対してはログで警告を出す。将来的にはエラーになる予定。
+   * <p>次の状態に対してはログで警告を出す。将来的にはエラーになる予定。
    *
    * <ul>
    *   <li>{@link #accentPhrases}の要素のうちいずれかが警告が出る状態。
@@ -116,6 +93,28 @@ public class AudioQuery {
    *   <li>{@link #postPhonemeLength}が負。
    *   <li>{@link #outputSamplingRate}が{@code 24000}以外の値（エラーと同様将来的に解消予定）。
    * </ul>
+   *
+   * @throws InvalidQueryException 次のうちどれかを満たす場合
+   *     <ul>
+   *       <li>JSONへのシリアライズが不可。
+   *           <ul>
+   *             <li>{@link #speedScale}がNaNもしくは±infinity。
+   *             <li>{@link #pitchScale}がNaNもしくは±infinity。
+   *             <li>{@link #intonationScale}がNaNもしくは±infinity。
+   *             <li>{@link #volumeScale}がNaNもしくは±infinity。
+   *             <li>{@link #prePhonemeLength}がNaNもしくは±infinity。
+   *             <li>{@link #postPhonemeLength}がNaNもしくは±infinity。
+   *           </ul>
+   *       <li><a
+   *           href="https://voicevox.github.io/voicevox_core/apis/rust_api/voicevox_core/struct.AudioQuery.html">Rust
+   *           APIの{@code AudioQuery}型</a>としてデシリアライズ不可。
+   *           <ul>
+   *             <li>{@link #outputSamplingRate}が負であるか、もしくは2<sup>32</sup>-1を超過する。
+   *           </ul>
+   *       <li>{@link #accentPhrases}の要素のうちいずれかが不正。
+   *       <li>{@link #outputSamplingRate}が{@code 24000}の倍数ではない、もしくは{@code 0} (将来的に解消予定。cf. <a
+   *           href="https://github.com/VOICEVOX/voicevox_core/issues/762">#762</a>)
+   *     </ul>
    */
   public void validate() {
     rsValidate();

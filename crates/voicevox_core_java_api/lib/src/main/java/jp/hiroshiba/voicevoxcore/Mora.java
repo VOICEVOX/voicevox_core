@@ -9,7 +9,7 @@ import jp.hiroshiba.voicevoxcore.exceptions.InvalidQueryException;
 /**
  * モーラ（子音＋母音）ごとの情報。
  *
- * <p>この構造体の状態によっては、{@code Synthesizer}の各メソッドは{@link InvalidQueryException}を発する。詳細は{@link
+ * <p>この構造体の状態によっては、{@code Synthesizer}の各メソッドは{@link InvalidQueryException}をスローする。詳細は{@link
  * #validate}にて。
  *
  * <p>Gsonにおいてはフィールド名はsnake_caseとなる。<a
@@ -67,26 +67,25 @@ public class Mora implements Cloneable {
   /**
    * このインスタンスをバリデートする。
    *
-   * <p>次のうちどれかを満たすなら{@link InvalidQueryException}を発する。
-   *
-   * <ul>
-   *   <li>JSONへのシリアライズが不可。
-   *       <ul>
-   *         <li>{@link #consonantLength}がNaN、infinity、もしくは負。
-   *         <li>{@link #vowelLength}がNaN、infinity、もしくは負。
-   *         <li>{@link #pitch}がNaNもしくは±infinity。
-   *       </ul>
-   *   <li>{@link #consonant}と{@link #consonantLength}の有無が不一致。
-   *   <li>{@link #consonant}が子音以外の音素であるか、もしくは音素として不正。
-   *   <li>{@link #vowel}が子音であるか、もしくは音素として不正。
-   * </ul>
-   *
-   * <p>また次の状態に対してはログで警告を出す。将来的にはエラーになる予定。
+   * <p>次の状態に対してはログで警告を出す。将来的にはエラーになる予定。
    *
    * <ul>
    *   <li>{@link #consonantLength}が負。
    *   <li>{@link #vowelLength}が負。
    * </ul>
+   *
+   * @throws InvalidQueryException 次のうちどれかを満たす場合
+   *     <ul>
+   *       <li>JSONへのシリアライズが不可。
+   *           <ul>
+   *             <li>{@link #consonantLength}がNaN、infinity、もしくは負。
+   *             <li>{@link #vowelLength}がNaN、infinity、もしくは負。
+   *             <li>{@link #pitch}がNaNもしくは±infinity。
+   *           </ul>
+   *       <li>{@link #consonant}と{@link #consonantLength}の有無が不一致。
+   *       <li>{@link #consonant}が子音以外の音素であるか、もしくは音素として不正。
+   *       <li>{@link #vowel}が子音であるか、もしくは音素として不正。
+   *     </ul>
    */
   public void validate() {
     rsValidate();

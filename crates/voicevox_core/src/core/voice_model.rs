@@ -565,7 +565,7 @@ impl ModelBytes {
 }
 
 impl InferenceDomainMap<ManifestDomains> {
-    /// manifestとして対応していない`StyleType`に対してエラーを発する。
+    /// manifestとして対応していない`StyleType`に対してエラーを返す。
     ///
     /// `Status`はこのバリデーションを信頼し、`InferenceDomain`の不足時にパニックする。
     fn check_acceptable(&self, metas: &[CharacterMeta]) -> std::result::Result<(), StyleType> {
