@@ -336,7 +336,10 @@ pub use self::{
         voice_model::VoiceModelId,
     },
     engine::{
-        song::queries::{FrameAudioQuery, FramePhoneme, Note, NoteId, OptionalLyric, Score},
+        song::{
+            queries::{FrameAudioQuery, FramePhoneme, Note, NoteId, OptionalLyric, Score},
+            validate::ensure_compatible,
+        },
         talk::{
             user_dict::{UserDictWord, UserDictWordBuilder, UserDictWordType},
             AccentPhrase, AudioQuery, Mora,

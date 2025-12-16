@@ -19,6 +19,43 @@ use super::{
 
 use self::note_seq::ValidatedNoteSeq;
 
+/// 与えられた[楽譜]と[歌唱合成用のクエリ]の組み合わせが、基本周波数と音量の生成に利用できるかどうかを確認する。
+///
+/// # Errors
+///
+/// 次のうちどれかを満たすなら[`ErrorKind::InvalidQuery`]を表わすエラーを返す。
+///
+/// - `score`が[不正]。
+/// - `score`と`frame_audio_query`が異なる音素列から成り立っている。ただし一部の音素は同一視される。
+///
+/// # Warnings
+///
+/// 次の状態に対しては[`WARN`]レベルのログを出す。将来的にはエラーになる予定。
+///
+/// - `frame_audio_query`が[警告を出す]状態。
+///
+/// [楽譜]: Score
+/// [歌唱合成用のクエリ]: FrameAudioQuery
+/// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
+/// [不正]: Score::validate
+/// [`WARN`]: tracing::Level::WARN
+/// [警告を出す]: FrameAudioQuery::validate
+pub fn ensure_compatible(score: &Score, frame_audio_query: &FrameAudioQuery) -> crate::Result<()> {
+    let ValidatedScore { notes } = score.to_validated()?;
+    frame_audio_query.validate();
+
+    frame_phoneme_note_pairs(&frame_audio_query.phonemes, notes.as_ref())
+        .map(|_| ())
+        .map_err(|source| {
+            InvalidQueryError {
+                what: "`Score`と`FrameAudioQuery`の組み合わせ",
+                value: None,
+                source: Some(source),
+            }
+            .into()
+        })
+}
+
 pub(crate) fn frame_phoneme_note_pairs<'a>(
     frame_phonemes: &'a [FramePhoneme],
     notes: &'a [ValidatedNote],
@@ -117,41 +154,6 @@ impl FrameAudioQuery {
         if self.output_sampling_rate != SamplingRate::default() {
             warn!("`output_sampling_rate` should be `DEFAULT_SAMPLING_RATE`");
         }
-    }
-
-    /// 与えられた[楽譜]が、基本周波数と音量の生成に利用できるかどうかを確認する。
-    ///
-    /// # Errors
-    ///
-    /// 次のうちどれかを満たすなら[`ErrorKind::InvalidQuery`]を表わすエラーを返す。
-    ///
-    /// - `score`が[不正]。
-    /// - `self`と`score`が異なる音素列から成り立っている（ただし一部の音素は同一視される）。
-    ///
-    /// # Warnings
-    ///
-    /// 次の状態に対しては[`WARN`]レベルのログを出す。将来的にはエラーになる予定。
-    ///
-    /// - [`Self::validate`]が警告を出す状態。
-    ///
-    /// [楽譜]: Score
-    /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
-    /// [不正]: Score::validate
-    /// [`WARN`]: tracing::Level::WARN
-    pub fn ensure_compatible_with(&self, score: &Score) -> crate::Result<()> {
-        self.validate();
-        let ValidatedScore { notes } = score.to_validated()?;
-
-        frame_phoneme_note_pairs(&self.phonemes, notes.as_ref())
-            .map(|_| ())
-            .map_err(|source| {
-                InvalidQueryError {
-                    what: "`Score`と`FrameAudioQuery`の組み合わせ",
-                    value: None,
-                    source: Some(source),
-                }
-                .into()
-            })
     }
 }
 
