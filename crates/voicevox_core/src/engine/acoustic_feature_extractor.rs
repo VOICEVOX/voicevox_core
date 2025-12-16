@@ -440,7 +440,7 @@ pub(crate) enum PhonemeCode {
 }
 
 #[derive(
-    Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, CheckedBitPattern, NoUninit, EnumCount,
+    Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash, CheckedBitPattern, NoUninit, EnumCount,
 )]
 #[repr(i64)]
 pub(crate) enum OptionalConsonant {
@@ -494,7 +494,7 @@ pub(crate) enum OptionalConsonant {
 
 #[expect(dead_code, reason = "we use `bytemuck` to construct `MorablePau`")]
 #[derive(
-    Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, CheckedBitPattern, NoUninit, EnumCount,
+    Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, CheckedBitPattern, NoUninit, EnumCount,
 )]
 #[repr(i64)]
 pub(crate) enum MoraTail {

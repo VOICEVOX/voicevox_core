@@ -1,5 +1,12 @@
-use std::{fmt, str::FromStr, sync::Arc};
+use std::{
+    convert::{self, Infallible},
+    fmt,
+    str::FromStr,
+    sync::Arc,
+};
 
+use derive_more::AsRef;
+use duplicate::duplicate_item;
 use serde::{
     de::{self, Unexpected},
     Deserialize, Deserializer, Serialize,
@@ -14,8 +21,42 @@ use super::super::Phoneme;
 pub use self::optional_lyric::OptionalLyric;
 
 /// 音符のID。
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(
+    Clone,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Debug,
+    derive_more::Display,
+    AsRef,
+    Deserialize,
+    Serialize,
+)]
+#[as_ref(str)]
 pub struct NoteId(pub Arc<str>);
+
+impl FromStr for NoteId {
+    type Err = Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(s.into()))
+    }
+}
+
+#[duplicate_item(
+    T f;
+    [ Arc<str> ] [ convert::identity ];
+    [ &'_ str ] [ Into::into ];
+    [ &'_ mut str ] [ Into::into ];
+    [ String ] [ Into::into ];
+)]
+impl From<T> for NoteId {
+    fn from(s: T) -> Self {
+        Self(f(s))
+    }
+}
 
 impl FromStr for OptionalLyric {
     type Err = crate::Error;
@@ -67,7 +108,7 @@ impl<'de> Deserialize<'de> for OptionalLyric {
 ///
 /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
 /// [`validate`メソッド]: Self::validate
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct Note {
     /// ID。
@@ -91,7 +132,7 @@ pub struct Note {
 ///
 /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
 /// [`validate`メソッド]: Self::validate
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct Score {
     /// 音符のリスト。
@@ -99,7 +140,7 @@ pub struct Score {
 }
 
 /// 音素の情報。
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct FramePhoneme {
     /// 音素。
@@ -121,7 +162,7 @@ pub struct FramePhoneme {
 ///
 /// [Serde]: serde
 /// [データのシリアライゼーション]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/serialization.md
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct FrameAudioQuery {
@@ -197,6 +238,7 @@ mod optional_lyric {
         Eq,
         PartialOrd,
         Ord,
+        Hash,
         Debug,
         derive_more::Display,
         AsRef,
