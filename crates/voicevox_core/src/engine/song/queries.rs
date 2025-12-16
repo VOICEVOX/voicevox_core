@@ -68,6 +68,7 @@ impl<'de> Deserialize<'de> for OptionalLyric {
 /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
 /// [`validate`メソッド]: Self::validate
 #[derive(Clone, Deserialize, Serialize)]
+#[non_exhaustive]
 pub struct Note {
     /// ID。
     pub id: Option<NoteId>,
@@ -91,6 +92,7 @@ pub struct Note {
 /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
 /// [`validate`メソッド]: Self::validate
 #[derive(Clone, Deserialize, Serialize)]
+#[non_exhaustive]
 pub struct Score {
     /// 音符のリスト。
     pub notes: Vec<Note>,
@@ -98,6 +100,7 @@ pub struct Score {
 
 /// 音素の情報。
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[non_exhaustive]
 pub struct FramePhoneme {
     /// 音素。
     pub phoneme: Phoneme,
@@ -120,6 +123,7 @@ pub struct FramePhoneme {
 /// [データのシリアライゼーション]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/serialization.md
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct FrameAudioQuery {
     /// フレームごとの基本周波数。
     pub f0: Vec<NonNaNFinite<f32>>,
