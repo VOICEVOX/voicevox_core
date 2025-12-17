@@ -58,6 +58,12 @@ impl From<T> for NoteId {
     }
 }
 
+impl From<&'_ NoteId> for serde_json::Value {
+    fn from(value: &'_ NoteId) -> Self {
+        serde_json::to_value(value).expect("should be always serializable")
+    }
+}
+
 impl FromStr for OptionalLyric {
     type Err = crate::Error;
 
@@ -70,6 +76,12 @@ impl FromStr for OptionalLyric {
             }
             .into()
         })
+    }
+}
+
+impl From<&'_ OptionalLyric> for serde_json::Value {
+    fn from(value: &'_ OptionalLyric) -> Self {
+        serde_json::to_value(value).expect("should be always serializable")
     }
 }
 
@@ -124,6 +136,12 @@ pub struct Note {
     pub frame_length: U53,
 }
 
+impl From<&'_ Note> for serde_json::Value {
+    fn from(value: &'_ Note) -> Self {
+        serde_json::to_value(value).expect("all of the fields should be always serializable")
+    }
+}
+
 /// 楽譜情報。
 ///
 /// # Validation
@@ -139,6 +157,12 @@ pub struct Score {
     pub notes: Vec<Note>,
 }
 
+impl From<&'_ Score> for serde_json::Value {
+    fn from(value: &'_ Score) -> Self {
+        serde_json::to_value(value).expect("all of the fields should be always serializable")
+    }
+}
+
 /// 音素の情報。
 #[derive(Clone, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
@@ -151,6 +175,12 @@ pub struct FramePhoneme {
 
     /// 音符のID。
     pub note_id: Option<NoteId>,
+}
+
+impl From<&'_ FramePhoneme> for serde_json::Value {
+    fn from(value: &'_ FramePhoneme) -> Self {
+        serde_json::to_value(value).expect("all of the fields should be always serializable")
+    }
 }
 
 /// フレームごとの音声合成用のクエリ。
@@ -201,6 +231,12 @@ pub struct FrameAudioQuery {
     ///
     /// [Serde]: serde
     pub output_stereo: bool,
+}
+
+impl From<&'_ FrameAudioQuery> for serde_json::Value {
+    fn from(value: &'_ FrameAudioQuery) -> Self {
+        serde_json::to_value(value).expect("all of the fields should be always serializable")
+    }
 }
 
 mod optional_lyric {
