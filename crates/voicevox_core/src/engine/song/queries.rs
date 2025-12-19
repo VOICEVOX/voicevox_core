@@ -197,7 +197,7 @@ impl From<&'_ FramePhoneme> for serde_json::Value {
 #[non_exhaustive]
 pub struct FrameAudioQuery {
     /// フレームごとの基本周波数。
-    pub f0: Vec<NonNaNFinite<f32>>,
+    pub f0: Vec<PositiveFinite<f32>>,
 
     /// フレームごとの音量。
     pub volume: Vec<NonNaNFinite<f32>>,

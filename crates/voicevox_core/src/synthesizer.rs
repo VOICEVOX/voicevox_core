@@ -7,6 +7,7 @@ use easy_ext::ext;
 use educe::Educe;
 use enum_map::enum_map;
 use futures_util::TryFutureExt as _;
+use itertools::{chain, Itertools as _};
 use std::{
     fmt::{self, Debug},
     future::Future,
@@ -15,7 +16,7 @@ use std::{
     sync::Arc,
 };
 use tracing::info;
-use typed_floats::{InvalidNumber, NonNaNFinite};
+use typed_floats::{NonNaNFinite, PositiveFinite};
 
 use crate::{
     asyncs::{Async, BlockingThreadPool, SingleTasked},
@@ -849,7 +850,7 @@ trait AsInner {
         score: &Score,
         frame_audio_query: &FrameAudioQuery,
         style_id: StyleId,
-    ) -> Result<Vec<NonNaNFinite<f32>>> {
+    ) -> Result<Vec<PositiveFinite<f32>>> {
         let ValidatedScore { notes } = score.to_validated()?;
         frame_audio_query.validate();
 
@@ -872,23 +873,32 @@ trait AsInner {
         phonemes_by_frame: ndarray::Array1<i64>,
         keys_by_frame: ndarray::Array1<i64>,
         style_id: StyleId,
-    ) -> Result<Vec<NonNaNFinite<f32>>> {
+    ) -> Result<Vec<PositiveFinite<f32>>> {
         // TODO: typed_floatsにissueかPRを出しに行き、スライス変換かbytemuck対応を入れてもらう
-        self.status()
+
+        let f0s = self
+            .status()
             .predict_sing_f0::<Self::Async>(phonemes_by_frame, keys_by_frame, style_id)
-            .await?
-            .into_iter()
+            .await?;
+
+        f0s.iter()
+            .copied()
             .map(TryInto::try_into)
             .collect::<std::result::Result<_, _>>()
-            .map_err(|source| {
-                ErrorRepr::RunModel(match source {
-                    InvalidNumber::NaN | InvalidNumber::Infinite => {
-                        anyhow!("`predict_sing_f0` returned non-finite value(s)")
-                    }
-                    InvalidNumber::Zero | InvalidNumber::Negative | InvalidNumber::Positive => {
-                        unreachable!();
-                    }
-                })
+            .map_err(|_| {
+                let invalid = chain!(
+                    f0s.iter().copied().any(f32::is_nan).then_some("NaN"),
+                    f0s.iter().copied().any(f32::is_infinite).then_some("inf"),
+                    f0s.iter()
+                        .copied()
+                        .any(f32::is_sign_negative)
+                        .then_some("-inf"),
+                )
+                .join(", ");
+                assert!(!invalid.is_empty());
+                ErrorRepr::RunModel(anyhow!(
+                    "`predict_sing_f0` returned an array that contains: {invalid}"
+                ))
                 .into()
             })
     }
@@ -925,7 +935,7 @@ trait AsInner {
         &self,
         phonemes_by_frame: ndarray::Array1<i64>,
         keys_by_frame: ndarray::Array1<i64>,
-        f0s: &[NonNaNFinite<f32>],
+        f0s: &[PositiveFinite<f32>],
         style_id: StyleId,
     ) -> Result<Vec<NonNaNFinite<f32>>> {
         // TODO: typed_floatsにissueかPRを出しに行き、スライス変換かbytemuck対応を入れてもらう
@@ -936,15 +946,17 @@ trait AsInner {
             .predict_sing_volume::<Self::Async>(phonemes_by_frame, keys_by_frame, f0s, style_id)
             .await?
             .into_iter()
-            .map(TryInto::try_into)
+            .map(|volume| volume.try_into().map_err(|_| volume))
             .collect::<std::result::Result<_, _>>()
-            .map_err(|source| {
-                ErrorRepr::RunModel(match source {
-                    InvalidNumber::NaN | InvalidNumber::Infinite => {
-                        anyhow!("`predict_sing_volume` returned non-finite value(s)")
-                    }
-                    InvalidNumber::Zero | InvalidNumber::Negative | InvalidNumber::Positive => {
-                        unreachable!();
+            .map_err(|volume| {
+                ErrorRepr::RunModel(if volume.is_nan() {
+                    anyhow!("`predict_sing_volume` returned NaN")
+                } else {
+                    assert!(volume.is_infinite());
+                    if volume.is_sign_positive() {
+                        anyhow!("`predict_sing_volume` returned `inf`")
+                    } else {
+                        anyhow!("`predict_sing_volume` returned `-inf`")
                     }
                 })
                 .into()
@@ -1555,7 +1567,7 @@ pub(crate) mod blocking {
     };
 
     use easy_ext::ext;
-    use typed_floats::NonNaNFinite;
+    use typed_floats::{NonNaNFinite, PositiveFinite};
 
     use crate::{
         asyncs::SingleTasked, future::FutureExt as _, AccentPhrase, AudioQuery, FrameAudioQuery,
@@ -1949,7 +1961,7 @@ pub(crate) mod blocking {
             score: &Score,
             frame_audio_query: &FrameAudioQuery,
             style_id: StyleId,
-        ) -> crate::Result<Vec<NonNaNFinite<f32>>> {
+        ) -> crate::Result<Vec<PositiveFinite<f32>>> {
             self.0
                 .create_sing_frame_f0(score, frame_audio_query, style_id)
                 .block_on()
@@ -2468,7 +2480,7 @@ pub(crate) mod nonblocking {
     use std::fmt::{self, Debug};
 
     use easy_ext::ext;
-    use typed_floats::NonNaNFinite;
+    use typed_floats::{NonNaNFinite, PositiveFinite};
 
     use crate::{
         asyncs::BlockingThreadPool, AccentPhrase, AudioQuery, FrameAudioQuery, Result, Score,
@@ -2819,7 +2831,7 @@ pub(crate) mod nonblocking {
             score: &Score,
             frame_audio_query: &FrameAudioQuery,
             style_id: StyleId,
-        ) -> crate::Result<Vec<NonNaNFinite<f32>>> {
+        ) -> crate::Result<Vec<PositiveFinite<f32>>> {
             self.0
                 .create_sing_frame_f0(score, frame_audio_query, style_id)
                 .await
