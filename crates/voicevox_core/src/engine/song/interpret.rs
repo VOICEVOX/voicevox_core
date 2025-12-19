@@ -117,6 +117,13 @@ impl From<&'_ ValidatedNoteSeq> for Vec<PhonemeFeature> {
 ///
 /// - 負
 /// - i-1番目のノート長を超過する
+///
+/// # Panics
+///
+/// 以下のどちらかの条件を満たすときパニックする。
+///
+/// - `consonant_lengths.len() != note_durations.len()`
+/// - `consonant_lengths`の先頭が`0`以外
 pub(crate) fn phoneme_lengths(
     consonant_lengths: &NonEmptySlice<i64>,
     note_durations: &NonEmptySlice<U53>,
