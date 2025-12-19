@@ -98,8 +98,15 @@ pub(crate) enum ErrorRepr {
     )]
     ModelNotFound { model_id: VoiceModelId },
 
-    #[error("正常に推論することができませんでした")]
-    RunModel(#[source] anyhow::Error),
+    #[error(
+        "正常に推論することができませんでした{}",
+        note.as_ref().map(|s| format!("。NOTE: {s}")).unwrap_or_default()
+    )]
+    RunModel {
+        note: Option<&'static str>,
+        #[source]
+        source: anyhow::Error,
+    },
 
     #[error("入力テキストの解析に失敗しました")]
     AnalyzeText {

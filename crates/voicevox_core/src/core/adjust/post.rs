@@ -42,9 +42,9 @@ where
             .squeeze()
             .into_dimensionality()
             .map_err(|_| {
-                let sources = anyhow!("could not squeeze a {orig_shape:?} array into a 1D one")
+                let source = anyhow!("could not squeeze a {orig_shape:?} array into a 1D one")
                     .context("unexpected output shape");
-                ErrorRepr::RunModel(sources).into()
+                ErrorRepr::RunModel { note: None, source }.into()
             })
     }
 }

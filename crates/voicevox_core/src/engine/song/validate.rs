@@ -155,6 +155,28 @@ impl FrameAudioQuery {
             warn!("`output_sampling_rate` should be `DEFAULT_SAMPLING_RATE`");
         }
     }
+
+    pub(crate) fn warn_for_empty(&self) {
+        if self.total_frame_length() == 0 {
+            warn!("zero frames in total. this will error");
+        }
+    }
+
+    pub(crate) fn warn_for_f0_len(&self) {
+        let expected = self.total_frame_length();
+        let actual = self.f0.len();
+        if actual != expected {
+            warn!("length of `f0` should be {expected}, got {actual}. this will error");
+        }
+    }
+
+    pub(crate) fn warn_for_volume_len(&self) {
+        let expected = self.total_frame_length();
+        let actual = self.volume.len();
+        if actual != expected {
+            warn!("length of `volume` should be {expected}, got {actual}. this will error");
+        }
+    }
 }
 
 pub(crate) struct ValidatedScore {
@@ -228,6 +250,20 @@ impl ValidatedNoteSeq {
 
     pub(crate) fn iter(&self) -> impl NonEmptyIterator<Item = &ValidatedNote> {
         AsRef::<NonEmptyVec<_>>::as_ref(self).iter()
+    }
+
+    pub(crate) fn warn_for_empty(&self) {
+        if self.total_frame_length() == 0 {
+            warn!("zero frames in total. this will error");
+        }
+    }
+
+    pub(crate) fn total_frame_length(&self) -> usize {
+        self.iter()
+            .map(|&ValidatedNote { frame_length, .. }| {
+                typeshare::usize_from_u53_saturated(frame_length)
+            })
+            .sum()
     }
 }
 
