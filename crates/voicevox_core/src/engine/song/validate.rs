@@ -1,4 +1,4 @@
-use std::num::NonZero;
+use std::{num::NonZero, slice};
 
 use arrayvec::ArrayVec;
 use tracing::warn;
@@ -235,6 +235,19 @@ impl PauOrKeyAndLyric {
             (_, [_, ..]) => unreachable!("the lyric should consist of at most one mora"),
         }
     }
+
+    pub(crate) fn has_consonant(&self) -> bool {
+        !matches!(
+            self,
+            Self::Pau
+                | Self::KeyAndLyric {
+                    lyric: Lyric {
+                        phonemes: [(OptionalConsonant::None, _)],
+                    },
+                    ..
+                }
+        )
+    }
 }
 
 #[derive(PartialEq)]
@@ -291,6 +304,15 @@ impl<'a> TryFrom<&'a [Note]> for ValidatedNoteSeq {
 impl AsRef<[ValidatedNote]> for ValidatedNoteSeq {
     fn as_ref(&self) -> &[ValidatedNote] {
         AsRef::<NonEmptyVec<_>>::as_ref(self).as_ref()
+    }
+}
+
+impl<'a> IntoIterator for &'a ValidatedNoteSeq {
+    type Item = &'a ValidatedNote;
+    type IntoIter = slice::Iter<'a, ValidatedNote>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        AsRef::<[_]>::as_ref(self).iter()
     }
 }
 

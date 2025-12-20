@@ -120,7 +120,7 @@ impl From<&'_ ValidatedNoteSeq> for Vec<PhonemeFeature> {
 ///
 /// # Panics
 ///
-/// 以下のどちらかの条件を満たすときパニックする。
+/// 以下の条件を満たすときパニックする。
 ///
 /// - `consonant_lengths.len() != note_durations.len()`
 /// - `consonant_lengths`の先頭が`0`以外
@@ -140,38 +140,33 @@ pub(crate) fn phoneme_lengths(
 
     let (&last_note_duration, note_durations_till_last) = note_durations.split_last();
 
-    let next_consonant_lengths = &{
-        let mut next_consonant_lengths = next_consonant_lengths.to_owned();
-        for (next_consonant_length, &note_duration) in
-            itertools::zip_eq(&mut next_consonant_lengths, note_durations_till_last)
-        {
-            if next_consonant_length.is_negative()
-                || note_duration.to_i64() < *next_consonant_length
-            {
-                *next_consonant_length = note_duration.to_i64() / 2;
-            }
-        }
-        next_consonant_lengths
-    };
-
-    assert!(
-        next_consonant_lengths.iter().all(|&n| n >= 0),
-        "elements should have been replaced with non-negative values",
-    );
-    let next_consonant_lengths = bytemuck::must_cast_slice::<_, u64>(next_consonant_lengths);
+    let next_consonant_lengths =
+        itertools::zip_eq(next_consonant_lengths, note_durations_till_last).map(
+            |(&next_consonant_length, &note_duration)| {
+                if next_consonant_length == 0 {
+                    None
+                } else if next_consonant_length.is_negative()
+                    || note_duration.to_i64() < next_consonant_length
+                {
+                    Some(u64::from(note_duration) / 2)
+                } else {
+                    Some(u64::try_from(next_consonant_length).expect("should be positive"))
+                }
+            },
+        );
 
     itertools::zip_eq(next_consonant_lengths, note_durations_till_last)
-        .flat_map(|(&next_consonant_length, &note_duration)| {
+        .flat_map(|(next_consonant_length, &note_duration)| {
             let note_duration = u64::from(note_duration);
             let vowel_length = note_duration
-                .checked_sub(next_consonant_length)
+                .checked_sub(next_consonant_length.unwrap_or(0))
                 .expect("each `next_consonant_length` should have been replaced with small values")
                 .try_into()
                 .expect("should equal or be smaller than `note_duration`");
             // TODO: Rust 1.91以降なら`std::iter::chain`がある
             itertools::chain(
                 [vowel_length],
-                (next_consonant_length > 0).then(|| {
+                next_consonant_length.map(|next_consonant_length| {
                     next_consonant_length
                         .try_into()
                         .unwrap_or_else(|_| unimplemented!("too large"))

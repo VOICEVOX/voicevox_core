@@ -101,6 +101,15 @@ impl<T> NonEmptySlice<T> {
     }
 }
 
+impl<'a, T> IntoIterator for &'a NonEmptySlice<T> {
+    type Item = &'a T;
+    type IntoIter = std::slice::Iter<'a, T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.as_ref().iter()
+    }
+}
+
 impl<T> FromNonEmptyIterator<T> for NonEmptyVec<T> {
     fn from_non_empty_iter<I>(iter: I) -> Self
     where

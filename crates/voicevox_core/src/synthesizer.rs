@@ -2,7 +2,7 @@
 //!
 //! メインの部分。[`crate::core`]と[`crate::engine`]の二つはここで用いる。
 
-use anyhow::{anyhow, ensure, Context as _};
+use anyhow::{anyhow, bail, ensure, Context as _};
 use easy_ext::ext;
 use educe::Educe;
 use enum_map::enum_map;
@@ -797,11 +797,22 @@ trait AsInner {
         let consonant_lengths = (|| {
             let consonant_lengths = NonEmptySlice::new(consonant_lengths)
                 .with_context(|| "output is an empty array")?;
-            ensure!(
-                *consonant_lengths.first() == 0,
-                "first phoneme is considered to be a pau"
-            );
             ensure!(consonant_lengths.len() == notes.len(), "wrong length");
+            for (
+                &consonant_length,
+                ValidatedNote {
+                    pau_or_key_and_lyric,
+                    ..
+                },
+            ) in itertools::zip_eq(consonant_lengths, notes)
+            {
+                if consonant_length == 0 && pau_or_key_and_lyric.has_consonant() {
+                    bail!("inferred `0` for mora with a consonant");
+                }
+                if consonant_length != 0 && !pau_or_key_and_lyric.has_consonant() {
+                    bail!("inferred non-zero for mora without a consonant")
+                }
+            }
             Ok(consonant_lengths)
         })()
         .map_err(|source| ErrorRepr::RunModel { note: None, source })?;
