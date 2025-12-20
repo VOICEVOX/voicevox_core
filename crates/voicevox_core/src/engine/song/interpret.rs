@@ -1,21 +1,20 @@
-use std::iter;
+use std::{iter, num::NonZero};
 
 use arrayvec::ArrayVec;
-use easy_ext::ext;
 use ndarray::Array1;
 use typeshare::U53;
 
-use crate::{
-    collections::{NonEmptyIterator as _, NonEmptySlice},
-    FrameAudioQuery, FramePhoneme, NoteId,
-};
+use crate::{collections::NonEmptySlice, numerics::U53Ext as _, FramePhoneme, NoteId};
 
 use super::{
     super::{
         acoustic_feature_extractor::{OptionalConsonant, PhonemeCode},
         ndarray::IteratorExt as _,
     },
-    validate::{note_seq::ValidatedNoteSeq, Lyric, PauOrKeyAndLyric, ValidatedNote},
+    validate::{
+        validated_frame_audio_query::ValidatedFrameAudioQuery,
+        validated_note_seq::ValidatedNoteSeq, Lyric, PauOrKeyAndLyric, ValidatedNote,
+    },
 };
 
 /// 子音長と音符長から音素長を計算する。
@@ -105,24 +104,17 @@ impl PauOrKeyAndLyric {
     }
 }
 
-impl FrameAudioQuery {
-    pub(crate) fn total_frame_length(&self) -> usize {
-        self.phonemes
+impl ValidatedFrameAudioQuery {
+    pub(crate) fn total_frame_length(&self) -> NonZero<usize> {
+        self.as_ref()
+            .phonemes
             .iter()
             .map(|&FramePhoneme { frame_length, .. }| {
                 typeshare::usize_from_u53_saturated(frame_length)
             })
-            .sum()
-    }
-}
-
-impl ValidatedNoteSeq {
-    pub(crate) fn total_frame_length(&self) -> usize {
-        self.iter()
-            .map(|&ValidatedNote { frame_length, .. }| {
-                typeshare::usize_from_u53_saturated(frame_length)
-            })
-            .sum()
+            .sum::<usize>()
+            .try_into()
+            .expect("the invariant should ensure")
     }
 }
 
@@ -226,10 +218,11 @@ pub(crate) struct SfDecoderFeature {
     pub(crate) volumes: Array1<f32>,
 }
 
-impl From<&'_ FrameAudioQuery> for SfDecoderFeature {
-    fn from(frame_audio_query: &'_ FrameAudioQuery) -> Self {
+impl From<&'_ ValidatedFrameAudioQuery> for SfDecoderFeature {
+    fn from(frame_audio_query: &'_ ValidatedFrameAudioQuery) -> Self {
         SfDecoderFeature {
             frame_phonemes: frame_audio_query
+                .as_ref()
                 .phonemes
                 .iter()
                 .flat_map(
@@ -247,24 +240,19 @@ impl From<&'_ FrameAudioQuery> for SfDecoderFeature {
                 .collect(),
             // TODO: typed_floatsにissueかPRを出しに行き、スライス変換かbytemuck対応を入れてもらう
             f0s: frame_audio_query
+                .as_ref()
                 .f0
                 .iter()
                 .copied()
                 .map(Into::into)
                 .collect(),
             volumes: frame_audio_query
+                .as_ref()
                 .volume
                 .iter()
                 .copied()
                 .map(Into::into)
                 .collect(),
         }
-    }
-}
-
-#[ext]
-impl U53 {
-    fn to_i64(self) -> i64 {
-        u64::from(self).try_into().expect("this is 53-bit")
     }
 }

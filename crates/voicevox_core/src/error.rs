@@ -264,10 +264,13 @@ pub(crate) enum InvalidQueryErrorSource {
     #[error("0より大きい{DEFAULT_SAMPLING_RATE}の倍数でなければなりません")]
     IsNotMultipleOfBaseSamplingRate,
 
-    #[error("lyricが空文字列の場合、keyはnullである必要があります。")]
+    #[error("`frame_length`の合計が`1`以上である必要があります")]
+    TotalFrameLengthIsZero,
+
+    #[error("lyricが空文字列の場合、keyはnullである必要があります")]
     UnnecessaryKeyForPau,
 
-    #[error("keyがnullの場合、lyricは空文字列である必要があります。")]
+    #[error("keyがnullの場合、lyricは空文字列である必要があります")]
     MissingKeyForNonPau,
 
     #[error(r#"notesはpau (lyric="")から始まる必要があります"#)]
