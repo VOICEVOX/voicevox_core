@@ -1,4 +1,4 @@
-use std::{num::NonZero, slice};
+use std::num::NonZero;
 
 use arrayvec::ArrayVec;
 use tracing::warn;
@@ -6,7 +6,7 @@ use typeshare::U53;
 
 use crate::{
     collections::{NonEmptyIterator, NonEmptyVec},
-    error::{ErrorRepr, InvalidQueryError, InvalidQueryErrorSource},
+    error::{InvalidQueryError, InvalidQueryErrorSource},
 };
 
 use super::{
@@ -41,7 +41,7 @@ use self::note_seq::ValidatedNoteSeq;
 /// [`WARN`]: tracing::Level::WARN
 /// [警告を出す]: FrameAudioQuery::validate
 pub fn ensure_compatible(score: &Score, frame_audio_query: &FrameAudioQuery) -> crate::Result<()> {
-    let ValidatedScore { notes } = score.to_validated()?;
+    let ValidatedScore { notes } = score.try_into()?;
     frame_audio_query.validate();
 
     frame_phoneme_note_pairs(&frame_audio_query.phonemes, notes.as_ref())
@@ -97,12 +97,9 @@ impl Score {
     /// [`notes`]: Self::notes
     /// [不正]: Note::validate
     pub fn validate(&self) -> crate::Result<()> {
-        self.to_validated().map(|_| ())
-    }
-
-    pub(crate) fn to_validated(&self) -> crate::Result<ValidatedScore> {
-        let notes = (&*self.notes).try_into()?;
-        Ok(ValidatedScore { notes })
+        ValidatedScore::try_from(self)
+            .map(|_| ())
+            .map_err(Into::into)
     }
 }
 
@@ -121,24 +118,9 @@ impl Note {
     /// [`lyric`]: Self::lyric
     /// [`PAU`]: OptionalLyric::PAU
     pub fn validate(&self) -> crate::Result<()> {
-        self.clone().into_validated().map(|_| ())
-    }
-
-    fn into_validated(self) -> crate::Result<ValidatedNote> {
-        let Self {
-            id,
-            key,
-            lyric,
-            frame_length,
-        } = self;
-
-        let pau_or_key_and_lyric = PauOrKeyAndLyric::new(key, &lyric)?;
-
-        Ok(ValidatedNote {
-            id,
-            pau_or_key_and_lyric,
-            frame_length,
-        })
+        ValidatedNote::try_from(self)
+            .map(|_| ())
+            .map_err(Into::into)
     }
 }
 
@@ -183,6 +165,15 @@ pub(crate) struct ValidatedScore {
     pub(crate) notes: ValidatedNoteSeq,
 }
 
+impl TryFrom<&'_ Score> for ValidatedScore {
+    type Error = InvalidQueryError;
+
+    fn try_from(score: &'_ Score) -> Result<Self, Self::Error> {
+        let notes = (&*score.notes).try_into()?;
+        Ok(Self { notes })
+    }
+}
+
 pub(crate) struct ValidatedNote {
     pub(crate) id: Option<NoteId>,
     pub(crate) pau_or_key_and_lyric: PauOrKeyAndLyric,
@@ -206,6 +197,27 @@ impl ValidatedNote {
     }
 }
 
+impl TryFrom<&'_ Note> for ValidatedNote {
+    type Error = InvalidQueryError;
+
+    fn try_from(note: &'_ Note) -> Result<Self, Self::Error> {
+        let Note {
+            id,
+            key,
+            lyric,
+            frame_length,
+        } = note;
+
+        let pau_or_key_and_lyric = PauOrKeyAndLyric::new(*key, lyric)?;
+
+        Ok(Self {
+            id: id.clone(),
+            pau_or_key_and_lyric,
+            frame_length: *frame_length,
+        })
+    }
+}
+
 #[derive(PartialEq)]
 pub(crate) enum PauOrKeyAndLyric {
     Pau,
@@ -213,25 +225,23 @@ pub(crate) enum PauOrKeyAndLyric {
 }
 
 impl PauOrKeyAndLyric {
-    fn new(key: Option<U53>, lyric: &OptionalLyric) -> crate::Result<Self> {
+    fn new(key: Option<U53>, lyric: &OptionalLyric) -> Result<Self, InvalidQueryError> {
         match (key, &**lyric.phonemes()) {
             (None, []) => Ok(Self::Pau),
             (Some(key), &[mora]) => Ok(Self::KeyAndLyric {
                 key,
                 lyric: Lyric { phonemes: [mora] },
             }),
-            (Some(_), []) => Err(ErrorRepr::InvalidQuery(InvalidQueryError {
+            (Some(_), []) => Err(InvalidQueryError {
                 what: "ノート",
                 value: None,
                 source: Some(InvalidQueryErrorSource::UnnecessaryKeyForPau),
-            })
-            .into()),
-            (None, [_]) => Err(ErrorRepr::InvalidQuery(InvalidQueryError {
+            }),
+            (None, [_]) => Err(InvalidQueryError {
                 what: "ノート",
                 value: None,
                 source: Some(InvalidQueryErrorSource::MissingKeyForNonPau),
-            })
-            .into()),
+            }),
             (_, [_, ..]) => unreachable!("the lyric should consist of at most one mora"),
         }
     }
@@ -270,34 +280,24 @@ impl ValidatedNoteSeq {
             warn!("zero frames in total. this will error");
         }
     }
-
-    pub(crate) fn total_frame_length(&self) -> usize {
-        self.iter()
-            .map(|&ValidatedNote { frame_length, .. }| {
-                typeshare::usize_from_u53_saturated(frame_length)
-            })
-            .sum()
-    }
 }
 
 impl<'a> TryFrom<&'a [Note]> for ValidatedNoteSeq {
-    type Error = crate::Error;
+    type Error = InvalidQueryError;
 
     fn try_from(notes: &'a [Note]) -> Result<Self, Self::Error> {
         let notes = notes
             .iter()
-            .cloned()
-            .map(Note::into_validated)
+            .map(TryInto::try_into)
             .collect::<Result<Vec<_>, _>>()?;
 
-        NonEmptyVec::new(notes).and_then(Self::new_).ok_or_else(|| {
-            InvalidQueryError {
+        NonEmptyVec::new(notes)
+            .and_then(Into::into)
+            .ok_or_else(|| InvalidQueryError {
                 what: "ノート列",
                 value: None,
                 source: Some(InvalidQueryErrorSource::InitialNoteMustBePau),
-            }
-            .into()
-        })
+            })
     }
 }
 
@@ -307,23 +307,15 @@ impl AsRef<[ValidatedNote]> for ValidatedNoteSeq {
     }
 }
 
-impl<'a> IntoIterator for &'a ValidatedNoteSeq {
-    type Item = &'a ValidatedNote;
-    type IntoIter = slice::Iter<'a, ValidatedNote>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        AsRef::<[_]>::as_ref(self).iter()
-    }
-}
-
 pub(crate) mod note_seq {
-    use derive_more::AsRef;
+    use derive_more::{AsRef, IntoIterator};
 
     use crate::collections::NonEmptyVec;
 
     use super::{PauOrKeyAndLyric, ValidatedNote};
 
-    #[derive(AsRef)]
+    #[derive(AsRef, IntoIterator)]
+    #[into_iterator(ref)]
     pub(crate) struct ValidatedNoteSeq(
         /// # Invariant
         ///
@@ -331,9 +323,10 @@ pub(crate) mod note_seq {
         NonEmptyVec<ValidatedNote>,
     );
 
-    impl ValidatedNoteSeq {
-        pub(super) fn new_(notes: NonEmptyVec<ValidatedNote>) -> Option<Self> {
-            (notes.first().pau_or_key_and_lyric == PauOrKeyAndLyric::Pau).then_some(Self(notes))
+    impl From<NonEmptyVec<ValidatedNote>> for Option<ValidatedNoteSeq> {
+        fn from(notes: NonEmptyVec<ValidatedNote>) -> Self {
+            (notes.first().pau_or_key_and_lyric == PauOrKeyAndLyric::Pau)
+                .then_some(ValidatedNoteSeq(notes))
         }
     }
 }

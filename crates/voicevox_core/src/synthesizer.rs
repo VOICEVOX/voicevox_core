@@ -773,7 +773,7 @@ trait AsInner {
         score: &Score,
         style_id: StyleId,
     ) -> Result<FrameAudioQuery> {
-        let ValidatedScore { notes } = &score.to_validated()?;
+        let ValidatedScore { notes } = &score.try_into()?;
 
         notes.warn_for_empty();
 
@@ -873,7 +873,7 @@ trait AsInner {
         frame_audio_query: &FrameAudioQuery,
         style_id: StyleId,
     ) -> Result<Vec<PositiveFinite<f32>>> {
-        let ValidatedScore { notes } = score.to_validated()?;
+        let ValidatedScore { notes } = score.try_into()?;
         frame_audio_query.validate();
 
         frame_audio_query.warn_for_empty();
@@ -942,7 +942,7 @@ trait AsInner {
         frame_audio_query: &FrameAudioQuery,
         style_id: StyleId,
     ) -> Result<Vec<NonNaNFinite<f32>>> {
-        let ValidatedScore { notes } = score.to_validated()?;
+        let ValidatedScore { notes } = score.try_into()?;
         frame_audio_query.validate();
 
         frame_audio_query.warn_for_empty();
@@ -1031,7 +1031,7 @@ trait AsInner {
             frame_phonemes,
             f0s,
             volumes,
-        } = frame_audio_query.sf_decoder_feature();
+        } = frame_audio_query.into();
 
         let wave = &self
             .status()

@@ -1,8 +1,10 @@
-use std::{iter::Sum, num::NonZero, ops::Deref};
+use std::{iter::Sum, num::NonZero, ops::Deref, slice};
 
-use self::slice_iter::NonEmptySliceIter;
+use derive_more::IntoIterator;
 
-pub(crate) use self::{slice::NonEmptySlice, vec::NonEmptyVec};
+use self::non_empty_slice_iter::NonEmptySliceIter;
+
+pub(crate) use self::{non_empty_slice::NonEmptySlice, non_empty_vec::NonEmptyVec};
 
 pub(crate) trait NonEmptyIterator: AssertNonEmpty {
     fn map<B, F>(self, f: F) -> impl NonEmptyIterator<Item = B>
@@ -12,18 +14,10 @@ pub(crate) trait NonEmptyIterator: AssertNonEmpty {
     {
         return Map(self.into_iter().map(f));
 
+        #[derive(IntoIterator)]
         struct Map<I>(I);
 
         impl<I: Iterator> AssertNonEmpty for Map<I> {}
-
-        impl<I: Iterator> IntoIterator for Map<I> {
-            type Item = I::Item;
-            type IntoIter = I;
-
-            fn into_iter(self) -> Self::IntoIter {
-                self.0
-            }
-        }
     }
 
     fn collect<B>(self) -> B
@@ -101,9 +95,11 @@ impl<T> NonEmptySlice<T> {
     }
 }
 
+// `derive_more` v1だと`#[into_iterator(owned)]`を除いてderiveすることができないため、手動実装
+// (v2は未検証)
 impl<'a, T> IntoIterator for &'a NonEmptySlice<T> {
     type Item = &'a T;
-    type IntoIter = std::slice::Iter<'a, T>;
+    type IntoIter = slice::Iter<'a, T>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.as_ref().iter()
@@ -128,7 +124,7 @@ impl<T> Deref for NonEmptyVec<T> {
     }
 }
 
-mod slice {
+mod non_empty_slice {
     use derive_more::AsRef;
     use ref_cast::{ref_cast_custom, RefCastCustom};
 
@@ -151,11 +147,14 @@ mod slice {
     }
 }
 
-mod slice_iter {
+mod non_empty_slice_iter {
     use std::slice;
+
+    use derive_more::IntoIterator;
 
     use super::AssertNonEmpty;
 
+    #[derive(IntoIterator)]
     pub(crate) struct NonEmptySliceIter<'a, T>(
         /// # Invariant
         ///
@@ -170,22 +169,14 @@ mod slice_iter {
     }
 
     impl<'a, T: 'a> AssertNonEmpty for NonEmptySliceIter<'a, T> {}
-
-    impl<'a, T: 'a> IntoIterator for NonEmptySliceIter<'a, T> {
-        type Item = &'a T;
-        type IntoIter = slice::Iter<'a, T>;
-
-        fn into_iter(self) -> Self::IntoIter {
-            self.0
-        }
-    }
 }
 
-mod vec {
-    use derive_more::AsRef;
+mod non_empty_vec {
+    use derive_more::{AsRef, IntoIterator};
 
-    #[derive(AsRef)]
+    #[derive(AsRef, IntoIterator)]
     #[as_ref([T])]
+    #[into_iterator(ref)]
     pub(crate) struct NonEmptyVec<T>(
         /// # Invariant
         ///

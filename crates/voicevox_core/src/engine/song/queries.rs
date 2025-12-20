@@ -233,17 +233,6 @@ pub struct FrameAudioQuery {
     pub output_stereo: bool,
 }
 
-impl FrameAudioQuery {
-    pub(crate) fn total_frame_length(&self) -> usize {
-        self.phonemes
-            .iter()
-            .map(|&FramePhoneme { frame_length, .. }| {
-                typeshare::usize_from_u53_saturated(frame_length)
-            })
-            .sum()
-    }
-}
-
 impl From<&'_ FrameAudioQuery> for serde_json::Value {
     fn from(value: &'_ FrameAudioQuery) -> Self {
         serde_json::to_value(value).expect("all of the fields should be always serializable")

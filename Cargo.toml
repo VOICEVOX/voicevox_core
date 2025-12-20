@@ -103,6 +103,7 @@ tokio = "1.40.0"
 toml = "0.7.2"
 tracing = "0.1.40"
 tracing-subscriber = "0.3.18"
+typed_floats = "1.0.7"
 typeshare = { version = "1.0.4", default-features = false }
 typetag = "0.2.18"
 unicode-width = "0.2.0"

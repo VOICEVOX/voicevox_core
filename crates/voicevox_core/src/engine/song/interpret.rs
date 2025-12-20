@@ -5,7 +5,10 @@ use easy_ext::ext;
 use ndarray::Array1;
 use typeshare::U53;
 
-use crate::{collections::NonEmptySlice, FrameAudioQuery, FramePhoneme, NoteId};
+use crate::{
+    collections::{NonEmptyIterator as _, NonEmptySlice},
+    FrameAudioQuery, FramePhoneme, NoteId,
+};
 
 use super::{
     super::{
@@ -14,6 +17,114 @@ use super::{
     },
     validate::{note_seq::ValidatedNoteSeq, Lyric, PauOrKeyAndLyric, ValidatedNote},
 };
+
+/// 子音長と音符長から音素長を計算する。
+///
+/// 子音はノートの頭にくるようにするため、予測された子音長は前のノートの長さを超えないように調整される。
+///
+/// 具体的にはi番目のノートの子音長が以下の条件を満たすなら、i-1番目のノート長の半分の値に置き換える。
+///
+/// - 負
+/// - i-1番目のノート長を超過する
+///
+/// # Panics
+///
+/// 以下の条件を満たすときパニックする。
+///
+/// - `consonant_lengths.len() != note_durations.len()`
+/// - `consonant_lengths`の先頭が`0`以外
+pub(crate) fn phoneme_lengths(
+    consonant_lengths: &NonEmptySlice<i64>,
+    note_durations: &NonEmptySlice<U53>,
+) -> Vec<U53> {
+    if consonant_lengths.len() != note_durations.len() {
+        panic!("must be same length");
+    }
+
+    let (&first_consonant_length, next_consonant_lengths) = consonant_lengths.split_first();
+
+    if first_consonant_length != 0 {
+        panic!("`consonant_lengths[0]` cannot be non-zero");
+    }
+
+    let (&last_note_duration, note_durations_till_last) = note_durations.split_last();
+
+    let next_consonant_lengths =
+        itertools::zip_eq(next_consonant_lengths, note_durations_till_last).map(
+            |(&next_consonant_length, &note_duration)| {
+                if next_consonant_length == 0 {
+                    None
+                } else if next_consonant_length.is_negative()
+                    || note_duration.to_i64() < next_consonant_length
+                {
+                    Some(u64::from(note_duration) / 2)
+                } else {
+                    Some(u64::try_from(next_consonant_length).expect("should be positive"))
+                }
+            },
+        );
+
+    itertools::zip_eq(next_consonant_lengths, note_durations_till_last)
+        .flat_map(|(next_consonant_length, &note_duration)| {
+            let note_duration = u64::from(note_duration);
+            let vowel_length = note_duration
+                .checked_sub(next_consonant_length.unwrap_or(0))
+                .expect("each `next_consonant_length` should have been replaced with small values")
+                .try_into()
+                .expect("should equal or be smaller than `note_duration`");
+            // TODO: Rust 1.91以降なら`std::iter::chain`がある
+            itertools::chain(
+                [vowel_length],
+                next_consonant_length.map(|next_consonant_length| {
+                    next_consonant_length
+                        .try_into()
+                        .unwrap_or_else(|_| unimplemented!("too large"))
+                }),
+            )
+        })
+        .chain([last_note_duration])
+        .collect()
+}
+
+pub(crate) fn repeat_phoneme_code_and_key(
+    frame_phoneme: &FramePhoneme,
+    note: &ValidatedNote,
+) -> impl Iterator<Item = (i64, i64)> {
+    let phoneme = PhonemeCode::from(frame_phoneme.phoneme.clone()) as _;
+    let key = note.pau_or_key_and_lyric.key();
+    let n = typeshare::usize_from_u53_saturated(frame_phoneme.frame_length);
+    iter::repeat_n((phoneme, key), n)
+}
+
+impl PauOrKeyAndLyric {
+    fn key(&self) -> i64 {
+        match *self {
+            Self::Pau => -1,
+            Self::KeyAndLyric { key, .. } => key.to_i64(),
+        }
+    }
+}
+
+impl FrameAudioQuery {
+    pub(crate) fn total_frame_length(&self) -> usize {
+        self.phonemes
+            .iter()
+            .map(|&FramePhoneme { frame_length, .. }| {
+                typeshare::usize_from_u53_saturated(frame_length)
+            })
+            .sum()
+    }
+}
+
+impl ValidatedNoteSeq {
+    pub(crate) fn total_frame_length(&self) -> usize {
+        self.iter()
+            .map(|&ValidatedNote { frame_length, .. }| {
+                typeshare::usize_from_u53_saturated(frame_length)
+            })
+            .sum()
+    }
+}
 
 pub(crate) struct ConsonantLengthsFeature {
     pub(crate) note_lengths: Array1<i64>,
@@ -109,103 +220,16 @@ impl From<&'_ ValidatedNoteSeq> for Vec<PhonemeFeature> {
     }
 }
 
-/// 子音長と音符長から音素長を計算する。
-///
-/// 子音はノートの頭にくるようにするため、予測された子音長は前のノートの長さを超えないように調整される。
-///
-/// 具体的にはi番目のノートの子音長が以下の条件を満たすなら、i-1番目のノート長の半分の値に置き換える。
-///
-/// - 負
-/// - i-1番目のノート長を超過する
-///
-/// # Panics
-///
-/// 以下の条件を満たすときパニックする。
-///
-/// - `consonant_lengths.len() != note_durations.len()`
-/// - `consonant_lengths`の先頭が`0`以外
-pub(crate) fn phoneme_lengths(
-    consonant_lengths: &NonEmptySlice<i64>,
-    note_durations: &NonEmptySlice<U53>,
-) -> Vec<U53> {
-    if consonant_lengths.len() != note_durations.len() {
-        panic!("must be same length");
-    }
-
-    let (&first_consonant_length, next_consonant_lengths) = consonant_lengths.split_first();
-
-    if first_consonant_length != 0 {
-        panic!("`consonant_lengths[0]` cannot be non-zero");
-    }
-
-    let (&last_note_duration, note_durations_till_last) = note_durations.split_last();
-
-    let next_consonant_lengths =
-        itertools::zip_eq(next_consonant_lengths, note_durations_till_last).map(
-            |(&next_consonant_length, &note_duration)| {
-                if next_consonant_length == 0 {
-                    None
-                } else if next_consonant_length.is_negative()
-                    || note_duration.to_i64() < next_consonant_length
-                {
-                    Some(u64::from(note_duration) / 2)
-                } else {
-                    Some(u64::try_from(next_consonant_length).expect("should be positive"))
-                }
-            },
-        );
-
-    itertools::zip_eq(next_consonant_lengths, note_durations_till_last)
-        .flat_map(|(next_consonant_length, &note_duration)| {
-            let note_duration = u64::from(note_duration);
-            let vowel_length = note_duration
-                .checked_sub(next_consonant_length.unwrap_or(0))
-                .expect("each `next_consonant_length` should have been replaced with small values")
-                .try_into()
-                .expect("should equal or be smaller than `note_duration`");
-            // TODO: Rust 1.91以降なら`std::iter::chain`がある
-            itertools::chain(
-                [vowel_length],
-                next_consonant_length.map(|next_consonant_length| {
-                    next_consonant_length
-                        .try_into()
-                        .unwrap_or_else(|_| unimplemented!("too large"))
-                }),
-            )
-        })
-        .chain([last_note_duration])
-        .collect()
-}
-
-pub(crate) fn repeat_phoneme_code_and_key(
-    frame_phoneme: &FramePhoneme,
-    note: &ValidatedNote,
-) -> impl Iterator<Item = (i64, i64)> {
-    let phoneme = PhonemeCode::from(frame_phoneme.phoneme.clone()) as _;
-    let key = note.pau_or_key_and_lyric.key();
-    let n = typeshare::usize_from_u53_saturated(frame_phoneme.frame_length);
-    iter::repeat_n((phoneme, key), n)
-}
-
-impl PauOrKeyAndLyric {
-    fn key(&self) -> i64 {
-        match *self {
-            Self::Pau => -1,
-            Self::KeyAndLyric { key, .. } => key.to_i64(),
-        }
-    }
-}
-
 pub(crate) struct SfDecoderFeature {
     pub(crate) frame_phonemes: Array1<i64>,
     pub(crate) f0s: Array1<f32>,
     pub(crate) volumes: Array1<f32>,
 }
 
-impl FrameAudioQuery {
-    pub(crate) fn sf_decoder_feature(&self) -> SfDecoderFeature {
+impl From<&'_ FrameAudioQuery> for SfDecoderFeature {
+    fn from(frame_audio_query: &'_ FrameAudioQuery) -> Self {
         SfDecoderFeature {
-            frame_phonemes: self
+            frame_phonemes: frame_audio_query
                 .phonemes
                 .iter()
                 .flat_map(
@@ -222,8 +246,18 @@ impl FrameAudioQuery {
                 )
                 .collect(),
             // TODO: typed_floatsにissueかPRを出しに行き、スライス変換かbytemuck対応を入れてもらう
-            f0s: self.f0.iter().copied().map(Into::into).collect(),
-            volumes: self.volume.iter().copied().map(Into::into).collect(),
+            f0s: frame_audio_query
+                .f0
+                .iter()
+                .copied()
+                .map(Into::into)
+                .collect(),
+            volumes: frame_audio_query
+                .volume
+                .iter()
+                .copied()
+                .map(Into::into)
+                .collect(),
         }
     }
 }
