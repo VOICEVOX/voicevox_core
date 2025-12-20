@@ -27,7 +27,7 @@ use self::{
 ///
 /// 次のうちどれかを満たすなら[`ErrorKind::InvalidQuery`]を表わすエラーを返す。
 ///
-/// - `score`が[不正](struct.Score.html#method.validate)。
+/// - `score`が[不正](./struct.Score.html#method.validate)。
 /// - `frame_audio_query`が[不正](./struct.FrameAudioQuery.html#method.validate)。
 /// - `score`と`frame_audio_query`が異なる音素列から成り立っている。ただし一部の音素は同一視される。
 ///
@@ -307,6 +307,18 @@ impl AsRef<[ValidatedNote]> for ValidatedNoteSeq {
 }
 
 impl ValidatedFrameAudioQuery {
+    pub(crate) fn total_frame_length(&self) -> NonZero<usize> {
+        self.as_ref()
+            .phonemes
+            .iter()
+            .map(|&FramePhoneme { frame_length, .. }| {
+                typeshare::usize_from_u53_saturated(frame_length)
+            })
+            .sum::<usize>()
+            .try_into()
+            .expect("the invariant should ensure")
+    }
+
     pub(crate) fn warn_for_f0_len(&self) {
         let expected = self.total_frame_length().get();
         let actual = self.as_ref().f0.len();
@@ -409,6 +421,114 @@ pub(crate) mod validated_frame_audio_query {
                 .iter()
                 .any(|&FramePhoneme { frame_length, .. }| frame_length > U53::from(0u8))
                 .then_some(ValidatedFrameAudioQuery::new(frame_audio_query))
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::error::{ErrorRepr, InvalidQueryError, InvalidQueryErrorSource};
+
+    use super::super::queries::FrameAudioQuery;
+    use super::super::queries::{FramePhoneme, Note, Score};
+
+    #[test]
+    fn ensure_compatible_works() {
+        super::ensure_compatible(
+            &score([
+                note(None, ""),
+                note(Some(0), "ド"),
+                note(Some(0), "レ"),
+                note(Some(0), "ミ"),
+                note(None, ""),
+            ]),
+            &frame_audio_query([
+                frame_phoneme("pau"),
+                frame_phoneme("d"),
+                frame_phoneme("o"),
+                frame_phoneme("r"),
+                frame_phoneme("e"),
+                frame_phoneme("m"),
+                frame_phoneme("i"),
+                frame_phoneme("pau"),
+            ]),
+        )
+        .unwrap();
+
+        let err = super::ensure_compatible(
+            &score([note(None, ""), note(Some(0), "ア")]),
+            &frame_audio_query([frame_phoneme("pau"), frame_phoneme("i")]),
+        )
+        .unwrap_err();
+        assert!(matches!(
+            err,
+            crate::Error(ErrorRepr::InvalidQuery(InvalidQueryError {
+                what: "`Score`と`FrameAudioQuery`の組み合わせ",
+                value: None,
+                source: Some(InvalidQueryErrorSource::DifferentPhonemeSeqs),
+                ..
+            }))
+        ));
+
+        let err = super::ensure_compatible(
+            &score([note(Some(0), "")]),
+            &frame_audio_query([frame_phoneme("pau")]),
+        )
+        .unwrap_err();
+        assert!(matches!(
+            err,
+            crate::Error(ErrorRepr::InvalidQuery(InvalidQueryError {
+                what: "楽譜",
+                value: None,
+                source: Some(InvalidQueryErrorSource::InvalidFields { .. }),
+                ..
+            }))
+        ));
+
+        let err =
+            super::ensure_compatible(&score([note(None, "")]), &frame_audio_query([])).unwrap_err();
+        assert!(matches!(
+            err,
+            crate::Error(ErrorRepr::InvalidQuery(InvalidQueryError {
+                what: "FrameAudioQuery",
+                value: None,
+                source: Some(InvalidQueryErrorSource::TotalFrameLengthIsZero),
+                ..
+            }))
+        ));
+
+        fn score<const N: usize>(notes: [Note; N]) -> Score {
+            Score {
+                notes: notes.into(),
+            }
+        }
+
+        fn note(key: Option<u32>, lyric: &str) -> Note {
+            Note {
+                id: None,
+                key: key.map(Into::into),
+                lyric: lyric.parse().unwrap(),
+                frame_length: 1u8.into(),
+            }
+        }
+
+        fn frame_audio_query<const N: usize>(phonemes: [FramePhoneme; N]) -> FrameAudioQuery {
+            FrameAudioQuery {
+                f0: [].into(),
+                volume: [].into(),
+                phonemes: phonemes.into(),
+                volume_scale: (1.).try_into().unwrap(),
+                output_sampling_rate: Default::default(),
+                output_stereo: true,
+            }
+        }
+
+        fn frame_phoneme(phoneme: &str) -> FramePhoneme {
+            FramePhoneme {
+                phoneme: phoneme.parse().unwrap(),
+                frame_length: 1u8.into(),
+                note_id: None,
+            }
         }
     }
 }

@@ -1,4 +1,4 @@
-use std::{iter, num::NonZero};
+use std::iter;
 
 use arrayvec::ArrayVec;
 use ndarray::Array1;
@@ -86,12 +86,19 @@ pub(crate) fn phoneme_lengths(
 }
 
 pub(crate) fn repeat_phoneme_code_and_key(
-    frame_phoneme: &FramePhoneme,
-    note: &ValidatedNote,
+    FramePhoneme {
+        phoneme,
+        frame_length,
+        ..
+    }: &FramePhoneme,
+    ValidatedNote {
+        pau_or_key_and_lyric,
+        ..
+    }: &ValidatedNote,
 ) -> impl Iterator<Item = (i64, i64)> {
-    let phoneme = PhonemeCode::from(frame_phoneme.phoneme.clone()) as _;
-    let key = note.pau_or_key_and_lyric.key();
-    let n = typeshare::usize_from_u53_saturated(frame_phoneme.frame_length);
+    let phoneme = PhonemeCode::from(phoneme.clone()) as _;
+    let key = pau_or_key_and_lyric.key();
+    let n = typeshare::usize_from_u53_saturated(*frame_length);
     iter::repeat_n((phoneme, key), n)
 }
 
@@ -101,20 +108,6 @@ impl PauOrKeyAndLyric {
             Self::Pau => -1,
             Self::KeyAndLyric { key, .. } => key.to_i64(),
         }
-    }
-}
-
-impl ValidatedFrameAudioQuery {
-    pub(crate) fn total_frame_length(&self) -> NonZero<usize> {
-        self.as_ref()
-            .phonemes
-            .iter()
-            .map(|&FramePhoneme { frame_length, .. }| {
-                typeshare::usize_from_u53_saturated(frame_length)
-            })
-            .sum::<usize>()
-            .try_into()
-            .expect("the invariant should ensure")
     }
 }
 
@@ -254,5 +247,51 @@ impl From<&'_ ValidatedFrameAudioQuery> for SfDecoderFeature {
                 .map(Into::into)
                 .collect(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use crate::collections::NonEmptySlice;
+
+    #[rstest]
+    #[case(&[0, 0, 0], &[0, 0, 0], &[0, 0, 0])]
+    #[case(&[0, 0, 30], &[0, 10], &[0, 30])]
+    #[case(&[0, 10, 30], &[0, 10], &[10, 30])]
+    #[case(&[5, 4, 30], &[0, 10], &[9, 30])]
+    fn phoneme_lengths_works(
+        #[case] expected: &[u64],
+        #[case] consonant_lengths: &[i64],
+        #[case] note_durations: &[u32],
+    ) {
+        assert_eq!(expected, phoneme_lengths(consonant_lengths, note_durations));
+    }
+
+    #[test]
+    #[should_panic(expected = "must be same length")]
+    fn phoneme_lengths_panics_for_jagged() {
+        phoneme_lengths(&[0], &[0, 0]);
+    }
+
+    #[test]
+    #[should_panic(expected = "`consonant_lengths[0]` cannot be non-zero")]
+    fn phoneme_lengths_panics_for_non_zero_first_consonant_length() {
+        phoneme_lengths(&[1], &[0]);
+    }
+
+    fn phoneme_lengths(consonant_lengths: &[i64], note_durations: &[u32]) -> Vec<u64> {
+        let consonant_lengths = NonEmptySlice::new(consonant_lengths).unwrap();
+        let note_durations = &note_durations
+            .iter()
+            .copied()
+            .map(Into::into)
+            .collect::<Vec<_>>();
+        let note_durations = NonEmptySlice::new(note_durations).unwrap();
+        super::phoneme_lengths(consonant_lengths, note_durations)
+            .into_iter()
+            .map(Into::into)
+            .collect()
     }
 }
