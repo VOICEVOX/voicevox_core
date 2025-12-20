@@ -971,7 +971,7 @@ trait AsInner {
                 *note = if frame_audio_query.total_frame_length() == 0 {
                     Some("おそらく`frame_length`の合計値が`0`であるためです")
                 } else if frame_audio_query.f0.len() != frame_audio_query.total_frame_length() {
-                    Some("おそらく`f0`の大きさが、`frame_length`の合計値と合っていないためです")
+                    Some("おそらく`f0`の長さが、`frame_length`の合計値と異なるためです")
                 } else {
                     None
                 };
@@ -1046,8 +1046,8 @@ trait AsInner {
                         || frame_audio_query.volume.len() != frame_audio_query.total_frame_length()
                     {
                         Some(
-                            "おそらく`f0`もしくは`volume`の大きさが、\
-                             `frame_length`の合計値と合っていないためです",
+                            "おそらく`f0`または`volume`の長さが、
+                             `frame_length`の合計値と異なるためです",
                         )
                     } else {
                         None

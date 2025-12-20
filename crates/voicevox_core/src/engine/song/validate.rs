@@ -140,7 +140,7 @@ impl FrameAudioQuery {
 
     pub(crate) fn warn_for_empty(&self) {
         if self.total_frame_length() == 0 {
-            warn!("zero frames in total. this will error");
+            warn!("total frame length is zero. the inference will fail");
         }
     }
 
@@ -148,7 +148,10 @@ impl FrameAudioQuery {
         let expected = self.total_frame_length();
         let actual = self.f0.len();
         if actual != expected {
-            warn!("length of `f0` should be {expected}, got {actual}. this will error");
+            warn!(
+                "length of `f0` should equal the total frame length: \
+                 expected {expected}, got {actual}. the inference will fail"
+            );
         }
     }
 
@@ -156,7 +159,10 @@ impl FrameAudioQuery {
         let expected = self.total_frame_length();
         let actual = self.volume.len();
         if actual != expected {
-            warn!("length of `volume` should be {expected}, got {actual}. this will error");
+            warn!(
+                "length of `volume` should equal the total frame length: \
+                 expected {expected}, got {actual}. the inference will fail"
+            );
         }
     }
 }
@@ -277,7 +283,7 @@ impl ValidatedNoteSeq {
 
     pub(crate) fn warn_for_empty(&self) {
         if self.total_frame_length() == 0 {
-            warn!("zero frames in total. this will error");
+            warn!("total frame length is zero. the inference will fail");
         }
     }
 }
