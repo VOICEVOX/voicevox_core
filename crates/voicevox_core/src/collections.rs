@@ -1,4 +1,4 @@
-use std::{iter::Sum, num::NonZero, ops::Deref, slice};
+use std::{num::NonZero, ops::Deref, slice};
 
 use derive_more::IntoIterator;
 
@@ -26,14 +26,6 @@ pub(crate) trait NonEmptyIterator: AssertNonEmpty {
         Self: Sized,
     {
         FromNonEmptyIterator::from_non_empty_iter(self)
-    }
-
-    fn sum<S>(self) -> S
-    where
-        S: Sum<Self::Item>,
-        Self: Sized,
-    {
-        self.into_iter().sum()
     }
 }
 

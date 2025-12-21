@@ -147,12 +147,6 @@ impl FrameAudioQuery {
         }
     }
 
-    pub(crate) fn warn_for_empty(&self) {
-        if self.total_frame_length() == 0 {
-            warn!("total frame length is zero. the inference will fail");
-        }
-    }
-
     pub(crate) fn warn_for_f0_len(&self) {
         let expected = self.total_frame_length();
         let actual = self.f0.len();
@@ -205,20 +199,6 @@ impl ValidatedNoteSeq {
 
     pub(crate) fn iter(&self) -> impl NonEmptyIterator<Item = &ValidatedNote> {
         AsRef::<NonEmptyVec<_>>::as_ref(self).iter()
-    }
-
-    pub(crate) fn total_frame_length(&self) -> usize {
-        self.iter()
-            .map(|&ValidatedNote { frame_length, .. }| {
-                typeshare::usize_from_u53_saturated(frame_length)
-            })
-            .sum()
-    }
-
-    pub(crate) fn warn_for_empty(&self) {
-        if self.total_frame_length() == 0 {
-            warn!("total frame length is zero. the inference will fail");
-        }
     }
 }
 

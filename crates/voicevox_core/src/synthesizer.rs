@@ -775,8 +775,6 @@ trait AsInner {
     ) -> Result<FrameAudioQuery> {
         let ValidatedScore { notes } = &score.try_into()?;
 
-        notes.warn_for_empty();
-
         let ConsonantLengthsFeature {
             note_lengths,
             note_constants,
@@ -843,15 +841,7 @@ trait AsInner {
 
         let f0s = self
             .create_sing_frame_f0_(phonemes_by_frame.clone(), keys_by_frame.clone(), style_id)
-            .await
-            .map_err(|mut err| {
-                if let crate::Error(ErrorRepr::RunModel { note, .. }) = &mut err {
-                    assert!(note.is_none());
-                    *note = (notes.total_frame_length() == 0)
-                        .then_some("おそらく`frame_length`の合計値が`0`であるためです");
-                }
-                err
-            })?;
+            .await?;
 
         let volumes = self
             .create_sing_frame_volume_(phonemes_by_frame, keys_by_frame, &f0s, style_id)
@@ -876,8 +866,6 @@ trait AsInner {
         let ValidatedScore { notes } = score.try_into()?;
         frame_audio_query.validate();
 
-        frame_audio_query.warn_for_empty();
-
         let (phonemes_by_frame, keys_by_frame) =
             song::validate::frame_phoneme_note_pairs(&frame_audio_query.phonemes, notes.as_ref())
                 .map_err(|source| InvalidQueryError {
@@ -890,14 +878,6 @@ trait AsInner {
 
         self.create_sing_frame_f0_(phonemes_by_frame, keys_by_frame, style_id)
             .await
-            .map_err(|mut err| {
-                if let crate::Error(ErrorRepr::RunModel { note, .. }) = &mut err {
-                    assert!(note.is_none());
-                    *note = (frame_audio_query.total_frame_length() == 0)
-                        .then_some("おそらく`frame_length`の合計値が`0`であるためです");
-                }
-                err
-            })
     }
 
     async fn create_sing_frame_f0_(
@@ -906,6 +886,12 @@ trait AsInner {
         keys_by_frame: ndarray::Array1<i64>,
         style_id: StyleId,
     ) -> Result<Vec<PositiveFinite<f32>>> {
+        if phonemes_by_frame.is_empty() && keys_by_frame.is_empty() {
+            // 一貫性の観点から、推論を行わない場合でも`StyleNotFound`エラーが出るようにする。
+            self.status().ids_for::<SingingTeacherDomain>(style_id)?;
+            return Ok(vec![]);
+        }
+
         // TODO: typed_floatsにissueかPRを出しに行き、スライス変換かbytemuck対応を入れてもらう
 
         let f0s = self
@@ -945,7 +931,6 @@ trait AsInner {
         let ValidatedScore { notes } = score.try_into()?;
         frame_audio_query.validate();
 
-        frame_audio_query.warn_for_empty();
         frame_audio_query.warn_for_f0_len();
 
         let (phonemes_by_frame, keys_by_frame) =
@@ -968,13 +953,8 @@ trait AsInner {
         .map_err(|mut err| {
             if let crate::Error(ErrorRepr::RunModel { note, .. }) = &mut err {
                 assert!(note.is_none());
-                *note = if frame_audio_query.total_frame_length() == 0 {
-                    Some("おそらく`frame_length`の合計値が`0`であるためです")
-                } else if frame_audio_query.f0.len() != frame_audio_query.total_frame_length() {
-                    Some("おそらく`f0`の長さが、`frame_length`の合計値と異なるためです")
-                } else {
-                    None
-                };
+                *note = (frame_audio_query.f0.len() != frame_audio_query.total_frame_length())
+                    .then_some("おそらく`f0`の長さが、`frame_length`の合計値と異なるためです");
             }
             err
         })
@@ -987,6 +967,12 @@ trait AsInner {
         f0s: &[PositiveFinite<f32>],
         style_id: StyleId,
     ) -> Result<Vec<NonNaNFinite<f32>>> {
+        if phonemes_by_frame.is_empty() && keys_by_frame.is_empty() && f0s.is_empty() {
+            // 一貫性の観点から、推論を行わない場合でも`StyleNotFound`エラーが出るようにする。
+            self.status().ids_for::<SingingTeacherDomain>(style_id)?;
+            return Ok(vec![]);
+        }
+
         // TODO: typed_floatsにissueかPRを出しに行き、スライス変換かbytemuck対応を入れてもらう
 
         let f0s = f0s.iter().copied().map(Into::into).collect();
@@ -1023,7 +1009,6 @@ trait AsInner {
     ) -> Result<Vec<u8>> {
         frame_audio_query.validate();
 
-        frame_audio_query.warn_for_empty();
         frame_audio_query.warn_for_f0_len();
         frame_audio_query.warn_for_volume_len();
 
@@ -1033,29 +1018,36 @@ trait AsInner {
             volumes,
         } = frame_audio_query.into();
 
-        let wave = &self
-            .status()
-            .sf_decode::<Self::Async>(frame_phonemes, f0s, volumes, style_id, options.cancellable)
-            .await
-            .map_err(|mut err| {
-                if let crate::Error(ErrorRepr::RunModel { note, .. }) = &mut err {
-                    assert!(note.is_none());
-                    *note = if frame_audio_query.total_frame_length() == 0 {
-                        Some("おそらく`frame_length`の合計値が`0`であるためです")
-                    } else if frame_audio_query.f0.len() != frame_audio_query.total_frame_length()
-                        || frame_audio_query.volume.len() != frame_audio_query.total_frame_length()
-                    {
-                        Some(
-                            "おそらく`f0`または`volume`の長さが、
+        let wave = &if frame_phonemes.is_empty() && f0s.is_empty() && volumes.is_empty() {
+            // 一貫性の観点から、推論を行わない場合でも`StyleNotFound`エラーが出るようにする。
+            self.status().ids_for::<SingingTeacherDomain>(style_id)?;
+            vec![]
+        } else {
+            self.status()
+                .sf_decode::<Self::Async>(
+                    frame_phonemes,
+                    f0s,
+                    volumes,
+                    style_id,
+                    options.cancellable,
+                )
+                .await
+                .map_err(|mut err| {
+                    if let crate::Error(ErrorRepr::RunModel { note, .. }) = &mut err {
+                        assert!(note.is_none());
+                        *note = (frame_audio_query.f0.len()
+                            != frame_audio_query.total_frame_length()
+                            || frame_audio_query.volume.len()
+                                != frame_audio_query.total_frame_length())
+                        .then_some(
+                            "おそらく`f0`または`volume`の長さが、\
                              `frame_length`の合計値と異なるためです",
-                        )
-                    } else {
-                        None
-                    };
-                }
-                err
-            })?
-            .into_vec();
+                        );
+                    }
+                    err
+                })?
+                .into_vec()
+        };
 
         Ok(wav_from_s16le(
             &to_s16le_pcm(wave, frame_audio_query),
