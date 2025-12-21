@@ -53,7 +53,7 @@ pub(crate) fn derive_mora_mappings(input: &DeriveInput) -> syn::Result<proc_macr
             quote! {
                 (
                     crate::engine::acoustic_feature_extractor::convert::optional_consonant!(#consonant),
-                    crate::engine::acoustic_feature_extractor::convert::mora_tail!(#vowel)
+                    crate::engine::acoustic_feature_extractor::convert::non_pau_base_vowel!(#vowel)
                 )
             }
         });

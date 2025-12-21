@@ -11,7 +11,10 @@ use strum::EnumCount as _;
 
 use crate::error::{ErrorRepr, InvalidQueryError, InvalidQueryErrorSource};
 
-use super::{Consonant, MoraTail, NonConsonant, OptionalConsonant, Phoneme, PhonemeCode, Sil};
+use super::{
+    Consonant, MoraTail, NonConsonant, NonPauBaseVowel, OptionalConsonant, Phoneme, PhonemeCode,
+    Sil,
+};
 
 macro_rules! optional_consonant {
     ("") => {
@@ -115,49 +118,31 @@ macro_rules! optional_consonant {
     };
 }
 
-macro_rules! mora_tail {
-    ("pau") => {
-        crate::engine::acoustic_feature_extractor::MoraTail::MorablePau
-    };
-    ("A") => {
-        crate::engine::acoustic_feature_extractor::MoraTail::UnvoicedVowelA
-    };
-    ("E") => {
-        crate::engine::acoustic_feature_extractor::MoraTail::UnvoicedVowelE
-    };
-    ("I") => {
-        crate::engine::acoustic_feature_extractor::MoraTail::UnvoicedVowelI
-    };
+macro_rules! non_pau_base_vowel {
     ("N") => {
-        crate::engine::acoustic_feature_extractor::MoraTail::MorableN
-    };
-    ("O") => {
-        crate::engine::acoustic_feature_extractor::MoraTail::UnvoicedVowelO
-    };
-    ("U") => {
-        crate::engine::acoustic_feature_extractor::MoraTail::UnvoicedVowelU
+        crate::engine::acoustic_feature_extractor::NonPauBaseVowel::MorableN
     };
     ("a") => {
-        crate::engine::acoustic_feature_extractor::MoraTail::VoicedVowelA
+        crate::engine::acoustic_feature_extractor::NonPauBaseVowel::VoicedVowelA
     };
     ("cl") => {
-        crate::engine::acoustic_feature_extractor::MoraTail::MorableCl
+        crate::engine::acoustic_feature_extractor::NonPauBaseVowel::MorableCl
     };
     ("e") => {
-        crate::engine::acoustic_feature_extractor::MoraTail::VoicedVowelE
+        crate::engine::acoustic_feature_extractor::NonPauBaseVowel::VoicedVowelE
     };
     ("i") => {
-        crate::engine::acoustic_feature_extractor::MoraTail::VoicedVowelI
+        crate::engine::acoustic_feature_extractor::NonPauBaseVowel::VoicedVowelI
     };
     ("o") => {
-        crate::engine::acoustic_feature_extractor::MoraTail::VoicedVowelO
+        crate::engine::acoustic_feature_extractor::NonPauBaseVowel::VoicedVowelO
     };
     ("u") => {
-        crate::engine::acoustic_feature_extractor::MoraTail::VoicedVowelU
+        crate::engine::acoustic_feature_extractor::NonPauBaseVowel::VoicedVowelU
     };
 }
 
-pub(in super::super) use {mora_tail, optional_consonant};
+pub(in super::super) use {non_pau_base_vowel, optional_consonant};
 
 impl Phoneme {
     fn from_str_with_inner_error(s: &str) -> Result<Self, InvalidQueryError> {
@@ -609,31 +594,6 @@ impl MoraTail {
                 | Self::MorablePau
         )
     }
-
-    pub(in super::super) fn to_unvoiced(self) -> Option<Self> {
-        match self {
-            mora_tail!("a") => Some(mora_tail!("A")),
-            mora_tail!("i") => Some(mora_tail!("I")),
-            mora_tail!("u") => Some(mora_tail!("U")),
-            mora_tail!("e") => Some(mora_tail!("E")),
-            mora_tail!("o") => Some(mora_tail!("O")),
-            _ => None,
-        }
-    }
-}
-
-impl From<MoraTail> for &'static str {
-    fn from(phoneme: MoraTail) -> Self {
-        macro_rules! convert {
-            ($($s:tt),* $(,)?) => {
-                match phoneme {
-                    $(mora_tail!($s) => $s),*
-                }
-            };
-        }
-
-        convert!("pau", "A", "E", "I", "N", "O", "U", "a", "cl", "e", "i", "o", "u")
-    }
 }
 
 impl From<MoraTail> for NonConsonant {
@@ -664,6 +624,45 @@ impl From<MoraTail> for NonConsonant {
     }
 }
 
+impl NonPauBaseVowel {
+    pub(in super::super) fn to_unvoiced(self) -> Option<MoraTail> {
+        match self {
+            Self::VoicedVowelA => Some(MoraTail::UnvoicedVowelA),
+            Self::VoicedVowelI => Some(MoraTail::UnvoicedVowelI),
+            Self::VoicedVowelU => Some(MoraTail::UnvoicedVowelU),
+            Self::VoicedVowelE => Some(MoraTail::UnvoicedVowelE),
+            Self::VoicedVowelO => Some(MoraTail::UnvoicedVowelO),
+            _ => None,
+        }
+    }
+}
+
+impl From<NonPauBaseVowel> for &'static str {
+    fn from(phoneme: NonPauBaseVowel) -> Self {
+        macro_rules! convert {
+            ($($s:tt),* $(,)?) => {
+                match phoneme {
+                    $(non_pau_base_vowel!($s) => $s),*
+                }
+            };
+        }
+
+        convert!("N", "a", "cl", "e", "i", "o", "u")
+    }
+}
+
+impl From<NonPauBaseVowel> for MoraTail {
+    fn from(phoneme: NonPauBaseVowel) -> Self {
+        bytemuck::checked::cast(phoneme)
+    }
+}
+
+impl From<NonPauBaseVowel> for NonConsonant {
+    fn from(phoneme: NonPauBaseVowel) -> Self {
+        MoraTail::from(phoneme).into()
+    }
+}
+
 #[duplicate_item(
     T;
     [ OptionalConsonant ];
@@ -680,5 +679,19 @@ impl TryFrom<PhonemeCode> for T {
                 "there should be no size/alignment issues",
             );
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use strum::IntoEnumIterator as _;
+
+    use super::super::{MoraTail, NonPauBaseVowel};
+
+    #[test]
+    fn non_pau_base_vowel_into_mora_tail_works() {
+        for vowel in NonPauBaseVowel::iter() {
+            let _ = MoraTail::from(vowel);
+        }
     }
 }
