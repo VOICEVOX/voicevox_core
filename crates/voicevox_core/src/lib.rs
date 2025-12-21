@@ -309,6 +309,7 @@ mod engine;
 mod error;
 mod future;
 mod macros;
+mod numerics;
 mod result;
 mod synthesizer;
 mod task;

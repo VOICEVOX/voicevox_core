@@ -1,12 +1,12 @@
 use std::iter;
 
 use arrayvec::ArrayVec;
-use easy_ext::ext;
 use ndarray::Array1;
 use typeshare::U53;
 
 use crate::{
     collections::{NonEmptyIterator as _, NonEmptySlice},
+    numerics::U53Ext as _,
     FrameAudioQuery, FramePhoneme, NoteId,
 };
 
@@ -312,12 +312,5 @@ mod tests {
             .into_iter()
             .map(Into::into)
             .collect()
-    }
-}
-
-#[ext]
-impl U53 {
-    fn to_i64(self) -> i64 {
-        u64::from(self).try_into().expect("this is 53-bit")
     }
 }

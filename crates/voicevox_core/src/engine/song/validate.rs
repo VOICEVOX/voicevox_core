@@ -175,7 +175,16 @@ impl TryFrom<&'_ Score> for ValidatedScore {
     type Error = InvalidQueryError;
 
     fn try_from(score: &'_ Score) -> Result<Self, Self::Error> {
-        let notes = (&*score.notes).try_into()?;
+        let notes = (&*score.notes)
+            .try_into()
+            .map_err(|source| InvalidQueryError {
+                what: "楽譜",
+                value: None,
+                source: Some(InvalidQueryErrorSource::InvalidFields {
+                    fields: "`notes`".to_owned(),
+                    source: Box::new(source),
+                }),
+            })?;
         Ok(Self { notes })
     }
 }
@@ -341,8 +350,7 @@ pub(crate) mod note_seq {
 mod tests {
     use crate::error::{ErrorRepr, InvalidQueryError, InvalidQueryErrorSource};
 
-    use super::super::queries::FrameAudioQuery;
-    use super::super::queries::{FramePhoneme, Note, Score};
+    use super::super::queries::{FrameAudioQuery, FramePhoneme, Note, Score};
 
     #[test]
     fn ensure_compatible_works() {
@@ -378,7 +386,6 @@ mod tests {
                 what: "`Score`と`FrameAudioQuery`の組み合わせ",
                 value: None,
                 source: Some(InvalidQueryErrorSource::DifferentPhonemeSeqs),
-                ..
             }))
         ));
 
@@ -393,7 +400,6 @@ mod tests {
                 what: "楽譜",
                 value: None,
                 source: Some(InvalidQueryErrorSource::InvalidFields { .. }),
-                ..
             }))
         ));
 
