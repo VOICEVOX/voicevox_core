@@ -341,6 +341,16 @@ mod optional_lyric {
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
+    #[rstest]
+    #[case("ァ", "ァ")]
+    #[case("ァ", "ぁ")]
+    #[case("ヴ", "ゔ")]
+    fn hira_to_kana_works(#[case] expected: &str, #[case] input: &str) {
+        assert_eq!(expected, super::optional_lyric::hira_to_kana(input));
+    }
+
     #[test]
     fn hira_to_kana_should_not_fail() {
         for c in 'ぁ'..='ゔ' {
