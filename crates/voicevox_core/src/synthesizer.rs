@@ -57,6 +57,7 @@ use crate::{
     },
     error::{ErrorRepr, InvalidQueryError},
     future::FutureExt as _,
+    numerics::positive_finite_f32,
     AccentPhrase, AudioQuery, Result, StyleId, VoiceModelId, VoiceModelMeta,
 };
 
@@ -851,7 +852,7 @@ trait AsInner {
             f0: f0s,
             volume: volumes,
             phonemes: frame_phonemes,
-            volume_scale: (1.).try_into().unwrap(),
+            volume_scale: positive_finite_f32!(1.),
             output_sampling_rate: Default::default(),
             output_stereo: false,
         })

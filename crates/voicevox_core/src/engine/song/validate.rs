@@ -344,7 +344,10 @@ pub(crate) mod note_seq {
 
 #[cfg(test)]
 mod tests {
-    use crate::error::{ErrorRepr, InvalidQueryError, InvalidQueryErrorSource};
+    use crate::{
+        error::{ErrorRepr, InvalidQueryError, InvalidQueryErrorSource},
+        numerics::positive_finite_f32,
+    };
 
     use super::super::queries::{FrameAudioQuery, FramePhoneme, Note, Score};
 
@@ -421,7 +424,7 @@ mod tests {
                 f0: [].into(),
                 volume: [].into(),
                 phonemes: phonemes.into(),
-                volume_scale: (1.).try_into().unwrap(),
+                volume_scale: positive_finite_f32!(1.),
                 output_sampling_rate: Default::default(),
                 output_stereo: true,
             }
