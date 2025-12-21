@@ -246,7 +246,7 @@ mod optional_lyric {
     use smol_str::SmolStr;
 
     use super::super::super::{
-        acoustic_feature_extractor::{MoraTail, OptionalConsonant},
+        acoustic_feature_extractor::{NonPauBaseVowel, OptionalConsonant},
         mora_mappings::MORA_KANA_TO_MORA_PHONEMES,
     };
 
@@ -288,11 +288,10 @@ mod optional_lyric {
         #[as_ref(str)]
         text: SmolStr,
 
-        // TODO: `NonPauBaseVowel`型 (= a | i | u | e | o | cl | N) を導入する
         /// # Invariant
         ///
         /// This must come from `text`.
-        pub(super) phonemes: ArrayVec<(OptionalConsonant, MoraTail), 1>,
+        pub(super) phonemes: ArrayVec<(OptionalConsonant, NonPauBaseVowel), 1>,
     }
 
     impl OptionalLyric {
@@ -324,7 +323,9 @@ mod optional_lyric {
             })
         }
 
-        pub(in super::super) fn phonemes(&self) -> &ArrayVec<(OptionalConsonant, MoraTail), 1> {
+        pub(in super::super) fn phonemes(
+            &self,
+        ) -> &ArrayVec<(OptionalConsonant, NonPauBaseVowel), 1> {
             &self.phonemes
         }
     }

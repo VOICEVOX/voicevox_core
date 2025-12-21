@@ -11,7 +11,7 @@ use crate::{
 
 use super::{
     super::{
-        acoustic_feature_extractor::{MoraTail, OptionalConsonant, PhonemeCode},
+        acoustic_feature_extractor::{NonPauBaseVowel, OptionalConsonant, PhonemeCode},
         sampling_rate::SamplingRate,
     },
     queries::{FrameAudioQuery, FramePhoneme, Note, NoteId, OptionalLyric, Score},
@@ -207,7 +207,7 @@ impl ValidatedNote {
                         ..
                     },
                 ..
-            } => itertools::chain(consonant.try_into(), [vowel.into()]).collect(),
+            } => itertools::chain(Option::from(consonant), [vowel.into()]).collect(),
         }
     }
 }
@@ -277,8 +277,7 @@ impl PauOrKeyAndLyric {
 
 #[derive(PartialEq)]
 pub(crate) struct Lyric {
-    // TODO: `NonPauBaseVowel`型 (= a | i | u | e | o | cl | N) を導入する
-    pub(super) phonemes: [(OptionalConsonant, MoraTail); 1],
+    pub(super) phonemes: [(OptionalConsonant, NonPauBaseVowel); 1],
 }
 
 impl ValidatedNoteSeq {

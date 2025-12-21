@@ -742,22 +742,22 @@ impl TryFrom<PhonemeCode> for T {
     }
 }
 
-impl TryFrom<OptionalConsonant> for PhonemeCode {
-    type Error = ();
-
-    fn try_from(phoneme: OptionalConsonant) -> Result<Self, Self::Error> {
-        bytemuck::checked::try_cast(phoneme).map_err(|err| {
-            assert_eq!(
-                CheckedCastError::InvalidBitPattern,
-                err,
-                "there should be no size/alignment issues",
-            );
-        })
+impl From<OptionalConsonant> for Option<PhonemeCode> {
+    fn from(consonant: OptionalConsonant) -> Self {
+        bytemuck::checked::try_cast(consonant)
+            .inspect_err(|&err| {
+                assert_eq!(
+                    CheckedCastError::InvalidBitPattern,
+                    err,
+                    "there should be no size/alignment issues",
+                );
+            })
+            .ok()
     }
 }
 
-impl From<MoraTail> for PhonemeCode {
-    fn from(phoneme: MoraTail) -> Self {
+impl From<NonPauBaseVowel> for PhonemeCode {
+    fn from(phoneme: NonPauBaseVowel) -> Self {
         bytemuck::checked::cast(phoneme)
     }
 }

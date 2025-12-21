@@ -2,7 +2,7 @@ pub(super) mod convert;
 
 use bytemuck::{CheckedBitPattern, Contiguous, NoUninit};
 use serde_with::SerializeDisplay;
-use strum::{EnumCount, EnumIter};
+use strum::EnumCount;
 
 pub use self::sil::Sil;
 
@@ -493,9 +493,7 @@ pub(crate) enum OptionalConsonant {
 }
 
 #[expect(dead_code, reason = "we use `bytemuck` to construct values")]
-#[derive(
-    Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, CheckedBitPattern, NoUninit, EnumCount,
-)]
+#[derive(Clone, Copy, CheckedBitPattern, NoUninit, EnumCount)]
 #[repr(i64)]
 pub(crate) enum MoraTail {
     //None = -1,
@@ -546,7 +544,8 @@ pub(crate) enum MoraTail {
     //ConsonantZ = 44,
 }
 
-#[derive(Clone, Copy, NoUninit, EnumCount, EnumIter)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, NoUninit, EnumCount)]
+#[cfg_attr(test, derive(strum::EnumIter))]
 #[repr(i64)]
 pub(crate) enum NonPauBaseVowel {
     //None = -1,

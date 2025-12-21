@@ -212,7 +212,7 @@ impl From<&'_ ValidatedNoteSeq> for Vec<PhonemeFeature> {
                         },
                     ..
                 } => itertools::chain(
-                    consonant.try_into().map(|phoneme| PhonemeFeature {
+                    Option::from(consonant).map(|phoneme| PhonemeFeature {
                         phoneme,
                         note_id: id.clone(),
                     }),
