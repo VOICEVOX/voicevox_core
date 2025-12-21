@@ -352,6 +352,8 @@ mod tests {
 
     use super::super::queries::{FrameAudioQuery, FramePhoneme, Note, Score};
 
+    // TODO: トークの方と一緒に、`validated`に関するテストを書く
+
     #[test]
     fn ensure_compatible_works() {
         super::ensure_compatible(
