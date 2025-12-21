@@ -2,7 +2,7 @@ pub(super) mod convert;
 
 use bytemuck::{CheckedBitPattern, Contiguous, NoUninit};
 use serde_with::SerializeDisplay;
-use strum::EnumCount;
+use strum::{EnumCount, EnumIter};
 
 pub use self::sil::Sil;
 
@@ -492,7 +492,7 @@ pub(crate) enum OptionalConsonant {
     ConsonantZ = 44,
 }
 
-#[expect(dead_code, reason = "we use `bytemuck` to construct `MorablePau`")]
+#[expect(dead_code, reason = "we use `bytemuck` to construct values")]
 #[derive(
     Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, CheckedBitPattern, NoUninit, EnumCount,
 )]
@@ -546,10 +546,62 @@ pub(crate) enum MoraTail {
     //ConsonantZ = 44,
 }
 
+#[derive(Clone, Copy, NoUninit, EnumCount, EnumIter)]
+#[repr(i64)]
+pub(crate) enum NonPauBaseVowel {
+    //None = -1,
+    //MorablePau = 0,
+    //UnvoicedVowelA = 1,
+    //UnvoicedVowelE = 2,
+    //UnvoicedVowelI = 3,
+    MorableN = 4,
+    //UnvoicedVowelO = 5,
+    //UnvoicedVowelU = 6,
+    VoicedVowelA = 7,
+    //ConsonantB = 8,
+    //ConsonantBy = 9,
+    //ConsonantCh = 10,
+    MorableCl = 11,
+    //ConsonantD = 12,
+    //ConsonantDy = 13,
+    VoicedVowelE = 14,
+    //ConsonantF = 15,
+    //ConsonantG = 16,
+    //ConsonantGw = 17,
+    //ConsonantGy = 18,
+    //ConsonantH = 19,
+    //ConsonantHy = 20,
+    VoicedVowelI = 21,
+    //ConsonantJ = 22,
+    //ConsonantK = 23,
+    //ConsonantKw = 24,
+    //ConsonantKy = 25,
+    //ConsonantM = 26,
+    //ConsonantMy = 27,
+    //ConsonantN = 28,
+    //ConsonantNy = 29,
+    VoicedVowelO = 30,
+    //ConsonantP = 31,
+    //ConsonantPy = 32,
+    //ConsonantR = 33,
+    //ConsonantRy = 34,
+    //ConsonantS = 35,
+    //ConsonantSh = 36,
+    //ConsonantT = 37,
+    //ConsonantTs = 38,
+    //ConsonantTy = 39,
+    VoicedVowelU = 40,
+    //ConsonantV = 41,
+    //ConsonantW = 42,
+    //ConsonantY = 43,
+    //ConsonantZ = 44,
+}
+
 const _: () = assert!(PhonemeCode::MIN_VALUE == 0);
 const _: () = assert!(PhonemeCode::MAX_VALUE == 44);
 const _: () = assert!(PhonemeCode::COUNT == 45);
 const _: () = assert!(MoraTail::COUNT == 13);
+const _: () = assert!(NonPauBaseVowel::COUNT == 7);
 const _: () = assert!(OptionalConsonant::COUNT == PhonemeCode::COUNT - MoraTail::COUNT + 1);
 
 mod sil {
