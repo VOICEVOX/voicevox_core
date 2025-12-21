@@ -2,10 +2,7 @@ use std::io::{Cursor, Write as _};
 
 use crate::{FrameAudioQuery, SamplingRate};
 
-use super::{
-    song::validate::validated_frame_audio_query::ValidatedFrameAudioQuery,
-    talk::ValidatedAudioQuery, DEFAULT_SAMPLING_RATE,
-};
+use super::{talk::ValidatedAudioQuery, DEFAULT_SAMPLING_RATE};
 
 pub(crate) fn to_s16le_pcm(wave: &[f32], query: &impl HasPcmOptions) -> Vec<u8> {
     let PcmOptions {
@@ -58,14 +55,14 @@ impl HasPcmOptions for ValidatedAudioQuery<'_> {
     }
 }
 
-impl HasPcmOptions for ValidatedFrameAudioQuery {
+impl HasPcmOptions for FrameAudioQuery {
     fn pcm_options(&self) -> PcmOptions {
-        let FrameAudioQuery {
+        let Self {
             volume_scale,
             output_sampling_rate,
             output_stereo,
             ..
-        } = *self.as_ref();
+        } = *self;
 
         PcmOptions {
             volume_scale: volume_scale.into(),

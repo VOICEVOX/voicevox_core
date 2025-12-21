@@ -2,7 +2,7 @@
 //!
 //! メインの部分。[`crate::core`]と[`crate::engine`]の二つはここで用いる。
 
-use anyhow::{anyhow, bail, ensure};
+use anyhow::{anyhow, bail, ensure, Context as _};
 use easy_ext::ext;
 use educe::Educe;
 use enum_map::enum_map;
@@ -47,10 +47,7 @@ use crate::{
             self,
             interpret::{ConsonantLengthsFeature, PhonemeFeature, SfDecoderFeature},
             queries::{FrameAudioQuery, FramePhoneme, Score},
-            validate::{
-                validated_frame_audio_query::ValidatedFrameAudioQuery, ValidatedNote,
-                ValidatedScore,
-            },
+            validate::{ValidatedNote, ValidatedScore},
         },
         talk::{
             create_kana, initial_process, parse_kana, split_mora, DecoderFeature, LengthedPhoneme,
@@ -778,6 +775,8 @@ trait AsInner {
     ) -> Result<FrameAudioQuery> {
         let ValidatedScore { notes } = &score.try_into()?;
 
+        notes.warn_for_empty();
+
         let ConsonantLengthsFeature {
             note_lengths,
             note_constants,
@@ -796,9 +795,9 @@ trait AsInner {
             .into_vec();
 
         let consonant_lengths = (|| {
-            ensure!(consonant_lengths.len() == notes.len().get(), "wrong length");
-            let consonant_lengths =
-                NonEmptySlice::new(consonant_lengths).expect("should have been checked");
+            let consonant_lengths = NonEmptySlice::new(consonant_lengths)
+                .with_context(|| "output is an empty array")?;
+            ensure!(consonant_lengths.len() == notes.len(), "wrong length");
             for (
                 &consonant_length,
                 ValidatedNote {
@@ -844,7 +843,15 @@ trait AsInner {
 
         let f0s = self
             .create_sing_frame_f0_(phonemes_by_frame.clone(), keys_by_frame.clone(), style_id)
-            .await?;
+            .await
+            .map_err(|mut err| {
+                if let crate::Error(ErrorRepr::RunModel { note, .. }) = &mut err {
+                    assert!(note.is_none());
+                    *note = (notes.total_frame_length() == 0)
+                        .then_some("おそらく`frame_length`の合計値が`0`であるためです");
+                }
+                err
+            })?;
 
         let volumes = self
             .create_sing_frame_volume_(phonemes_by_frame, keys_by_frame, &f0s, style_id)
@@ -867,22 +874,30 @@ trait AsInner {
         style_id: StyleId,
     ) -> Result<Vec<PositiveFinite<f32>>> {
         let ValidatedScore { notes } = score.try_into()?;
-        let frame_audio_query = <&ValidatedFrameAudioQuery>::try_from(frame_audio_query)?;
+        frame_audio_query.validate();
 
-        let (phonemes_by_frame, keys_by_frame) = song::validate::frame_phoneme_note_pairs(
-            &frame_audio_query.as_ref().phonemes,
-            notes.as_ref(),
-        )
-        .map_err(|source| InvalidQueryError {
-            what: "`score`と`frame_audio_query`の組み合わせ",
-            value: None,
-            source: Some(source),
-        })?
-        .flat_map(|(p, n)| song::interpret::repeat_phoneme_code_and_key(p, n))
-        .unzip_into_array1s();
+        frame_audio_query.warn_for_empty();
+
+        let (phonemes_by_frame, keys_by_frame) =
+            song::validate::frame_phoneme_note_pairs(&frame_audio_query.phonemes, notes.as_ref())
+                .map_err(|source| InvalidQueryError {
+                    what: "`score`と`frame_audio_query`の組み合わせ",
+                    value: None,
+                    source: Some(source),
+                })?
+                .flat_map(|(p, n)| song::interpret::repeat_phoneme_code_and_key(p, n))
+                .unzip_into_array1s();
 
         self.create_sing_frame_f0_(phonemes_by_frame, keys_by_frame, style_id)
             .await
+            .map_err(|mut err| {
+                if let crate::Error(ErrorRepr::RunModel { note, .. }) = &mut err {
+                    assert!(note.is_none());
+                    *note = (frame_audio_query.total_frame_length() == 0)
+                        .then_some("おそらく`frame_length`の合計値が`0`であるためです");
+                }
+                err
+            })
     }
 
     async fn create_sing_frame_f0_(
@@ -928,35 +943,34 @@ trait AsInner {
         style_id: StyleId,
     ) -> Result<Vec<NonNaNFinite<f32>>> {
         let ValidatedScore { notes } = score.try_into()?;
-        let frame_audio_query = <&ValidatedFrameAudioQuery>::try_from(frame_audio_query)?;
+        frame_audio_query.validate();
 
+        frame_audio_query.warn_for_empty();
         frame_audio_query.warn_for_f0_len();
 
-        let (phonemes_by_frame, keys_by_frame) = song::validate::frame_phoneme_note_pairs(
-            &frame_audio_query.as_ref().phonemes,
-            notes.as_ref(),
-        )
-        .map_err(|source| InvalidQueryError {
-            what: "`score`と`frame_audio_query`の組み合わせ",
-            value: None,
-            source: Some(source),
-        })?
-        .flat_map(|(p, n)| song::interpret::repeat_phoneme_code_and_key(p, n))
-        .unzip_into_array1s();
+        let (phonemes_by_frame, keys_by_frame) =
+            song::validate::frame_phoneme_note_pairs(&frame_audio_query.phonemes, notes.as_ref())
+                .map_err(|source| InvalidQueryError {
+                    what: "`score`と`frame_audio_query`の組み合わせ",
+                    value: None,
+                    source: Some(source),
+                })?
+                .flat_map(|(p, n)| song::interpret::repeat_phoneme_code_and_key(p, n))
+                .unzip_into_array1s();
 
         self.create_sing_frame_volume_(
             phonemes_by_frame,
             keys_by_frame,
-            &frame_audio_query.as_ref().f0,
+            &frame_audio_query.f0,
             style_id,
         )
         .await
         .map_err(|mut err| {
             if let crate::Error(ErrorRepr::RunModel { note, .. }) = &mut err {
                 assert!(note.is_none());
-                *note = if frame_audio_query.as_ref().f0.len()
-                    != frame_audio_query.total_frame_length().get()
-                {
+                *note = if frame_audio_query.total_frame_length() == 0 {
+                    Some("おそらく`frame_length`の合計値が`0`であるためです")
+                } else if frame_audio_query.f0.len() != frame_audio_query.total_frame_length() {
                     Some("おそらく`f0`の長さが、`frame_length`の合計値と異なるためです")
                 } else {
                     None
@@ -1007,8 +1021,9 @@ trait AsInner {
         style_id: StyleId,
         options: &SynthesisOptions<Self::Async>,
     ) -> Result<Vec<u8>> {
-        let frame_audio_query = <&ValidatedFrameAudioQuery>::try_from(frame_audio_query)?;
+        frame_audio_query.validate();
 
+        frame_audio_query.warn_for_empty();
         frame_audio_query.warn_for_f0_len();
         frame_audio_query.warn_for_volume_len();
 
@@ -1025,10 +1040,10 @@ trait AsInner {
             .map_err(|mut err| {
                 if let crate::Error(ErrorRepr::RunModel { note, .. }) = &mut err {
                     assert!(note.is_none());
-                    *note = if frame_audio_query.as_ref().f0.len()
-                        != frame_audio_query.total_frame_length().get()
-                        || frame_audio_query.as_ref().volume.len()
-                            != frame_audio_query.total_frame_length().get()
+                    *note = if frame_audio_query.total_frame_length() == 0 {
+                        Some("おそらく`frame_length`の合計値が`0`であるためです")
+                    } else if frame_audio_query.f0.len() != frame_audio_query.total_frame_length()
+                        || frame_audio_query.volume.len() != frame_audio_query.total_frame_length()
                     {
                         Some(
                             "おそらく`f0`または`volume`の長さが、
@@ -1044,8 +1059,8 @@ trait AsInner {
 
         Ok(wav_from_s16le(
             &to_s16le_pcm(wave, frame_audio_query),
-            frame_audio_query.as_ref().output_sampling_rate.get().get(),
-            frame_audio_query.as_ref().output_stereo,
+            frame_audio_query.output_sampling_rate.get().get(),
+            frame_audio_query.output_stereo,
         ))
     }
 

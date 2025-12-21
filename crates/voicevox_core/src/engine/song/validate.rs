@@ -17,9 +17,7 @@ use super::{
     queries::{FrameAudioQuery, FramePhoneme, Note, NoteId, OptionalLyric, Score},
 };
 
-use self::{
-    validated_frame_audio_query::ValidatedFrameAudioQuery, validated_note_seq::ValidatedNoteSeq,
-};
+use self::note_seq::ValidatedNoteSeq;
 
 /// 与えられた[楽譜]と[歌唱合成用のクエリ]の組み合わせが、基本周波数と音量の生成に利用できるかどうかを確認する。
 ///
@@ -27,8 +25,7 @@ use self::{
 ///
 /// 次のうちどれかを満たすなら[`ErrorKind::InvalidQuery`]を表わすエラーを返す。
 ///
-/// - `score`が[不正](./struct.Score.html#method.validate)。
-/// - `frame_audio_query`が[不正](./struct.FrameAudioQuery.html#method.validate)。
+/// - `score`が[不正]。
 /// - `score`と`frame_audio_query`が異なる音素列から成り立っている。ただし一部の音素は同一視される。
 ///
 /// # Warnings
@@ -40,13 +37,14 @@ use self::{
 /// [楽譜]: Score
 /// [歌唱合成用のクエリ]: FrameAudioQuery
 /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
+/// [不正]: Score::validate
 /// [`WARN`]: tracing::Level::WARN
 /// [警告を出す]: FrameAudioQuery::validate
 pub fn ensure_compatible(score: &Score, frame_audio_query: &FrameAudioQuery) -> crate::Result<()> {
     let ValidatedScore { notes } = score.try_into()?;
-    let frame_audio_query = <&ValidatedFrameAudioQuery>::try_from(frame_audio_query)?;
+    frame_audio_query.validate();
 
-    frame_phoneme_note_pairs(&frame_audio_query.as_ref().phonemes, notes.as_ref())
+    frame_phoneme_note_pairs(&frame_audio_query.phonemes, notes.as_ref())
         .map(|_| ())
         .map_err(|source| {
             InvalidQueryError {
@@ -94,7 +92,6 @@ impl Score {
     /// 次を満たすなら[`ErrorKind::InvalidQuery`]を表わすエラーを返す。
     ///
     /// - [`notes`]の要素のうちいずれかが[不正]。
-    /// - [`Note::frame_length`]の合計が`0`。
     ///
     /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
     /// [`notes`]: Self::notes
@@ -128,31 +125,45 @@ impl Note {
 }
 
 impl FrameAudioQuery {
-    /// この構造体をバリデートする。
-    ///
-    /// # Errors
-    ///
-    /// 次の条件を満たすなら[`ErrorKind::InvalidQuery`]を表わすエラーを返す。
-    ///
-    /// - [`FramePhoneme::frame_length`]の合計が`0`。
-    ///
-    /// # Warnings
-    ///
     /// 次の状態に対して[`WARN`]レベルのログを出す。
     ///
-    /// - [`output_sampling_rate`]が`24000`以外の値（将来的に解消予定。cf. [#762]）。
+    /// - [`output_sampling_rate`]が`24000`以外の値（将来的に解消予定）。
     ///
-    /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
     /// [`WARN`]: tracing::Level::WARN
     /// [`output_sampling_rate`]: Self::output_sampling_rate
     /// [#762]: https://github.com/VOICEVOX/voicevox_core/issues/762
-    pub fn validate(&self) -> crate::Result<()> {
+    pub fn validate(&self) {
         if self.output_sampling_rate != SamplingRate::default() {
             warn!("`output_sampling_rate` should be `DEFAULT_SAMPLING_RATE`");
         }
-        <&ValidatedFrameAudioQuery>::try_from(self)
-            .map(|_| ())
-            .map_err(Into::into)
+    }
+
+    pub(crate) fn warn_for_empty(&self) {
+        if self.total_frame_length() == 0 {
+            warn!("total frame length is zero. the inference will fail");
+        }
+    }
+
+    pub(crate) fn warn_for_f0_len(&self) {
+        let expected = self.total_frame_length();
+        let actual = self.f0.len();
+        if actual != expected {
+            warn!(
+                "length of `f0` should equal the total frame length: \
+                 expected {expected}, got {actual}. the inference will fail"
+            );
+        }
+    }
+
+    pub(crate) fn warn_for_volume_len(&self) {
+        let expected = self.total_frame_length();
+        let actual = self.volume.len();
+        if actual != expected {
+            warn!(
+                "length of `volume` should equal the total frame length: \
+                 expected {expected}, got {actual}. the inference will fail"
+            );
+        }
     }
 }
 
@@ -164,16 +175,7 @@ impl TryFrom<&'_ Score> for ValidatedScore {
     type Error = InvalidQueryError;
 
     fn try_from(score: &'_ Score) -> Result<Self, Self::Error> {
-        let notes = (&*score.notes)
-            .try_into()
-            .map_err(|source| InvalidQueryError {
-                what: "楽譜",
-                value: None,
-                source: Some(InvalidQueryErrorSource::InvalidFields {
-                    fields: "`notes`".to_owned(),
-                    source: Box::new(source),
-                }),
-            })?;
+        let notes = (&*score.notes).try_into()?;
         Ok(Self { notes })
     }
 }
@@ -278,6 +280,12 @@ impl ValidatedNoteSeq {
     pub(crate) fn iter(&self) -> impl NonEmptyIterator<Item = &ValidatedNote> {
         AsRef::<NonEmptyVec<_>>::as_ref(self).iter()
     }
+
+    pub(crate) fn warn_for_empty(&self) {
+        if self.total_frame_length() == 0 {
+            warn!("total frame length is zero. the inference will fail");
+        }
+    }
 }
 
 impl<'a> TryFrom<&'a [Note]> for ValidatedNoteSeq {
@@ -290,12 +298,11 @@ impl<'a> TryFrom<&'a [Note]> for ValidatedNoteSeq {
             .collect::<Result<Vec<_>, _>>()?;
 
         NonEmptyVec::new(notes)
-            .ok_or(InvalidQueryErrorSource::InitialNoteMustBePau)
-            .and_then(TryInto::try_into)
-            .map_err(|source| InvalidQueryError {
+            .and_then(Into::into)
+            .ok_or_else(|| InvalidQueryError {
                 what: "ノート列",
                 value: None,
-                source: Some(source),
+                source: Some(InvalidQueryErrorSource::InitialNoteMustBePau),
             })
     }
 }
@@ -306,62 +313,10 @@ impl AsRef<[ValidatedNote]> for ValidatedNoteSeq {
     }
 }
 
-impl ValidatedFrameAudioQuery {
-    pub(crate) fn total_frame_length(&self) -> NonZero<usize> {
-        self.as_ref()
-            .phonemes
-            .iter()
-            .map(|&FramePhoneme { frame_length, .. }| {
-                typeshare::usize_from_u53_saturated(frame_length)
-            })
-            .sum::<usize>()
-            .try_into()
-            .expect("the invariant should ensure")
-    }
-
-    pub(crate) fn warn_for_f0_len(&self) {
-        let expected = self.total_frame_length().get();
-        let actual = self.as_ref().f0.len();
-        if actual != expected {
-            warn!(
-                "length of `f0` should equal the total frame length: \
-                 expected {expected}, got {actual}. the inference will fail"
-            );
-        }
-    }
-
-    pub(crate) fn warn_for_volume_len(&self) {
-        let expected = self.total_frame_length().get();
-        let actual = self.as_ref().volume.len();
-        if actual != expected {
-            warn!(
-                "length of `volume` should equal the total frame length: \
-                 expected {expected}, got {actual}. the inference will fail"
-            );
-        }
-    }
-}
-
-impl<'a> TryFrom<&'a FrameAudioQuery> for &'a ValidatedFrameAudioQuery {
-    type Error = InvalidQueryError;
-
-    fn try_from(frame_audio_query: &'a FrameAudioQuery) -> Result<Self, Self::Error> {
-        Option::<_>::from(frame_audio_query).ok_or_else(|| InvalidQueryError {
-            what: "FrameAudioQuery",
-            value: None,
-            source: Some(InvalidQueryErrorSource::TotalFrameLengthIsZero),
-        })
-    }
-}
-
-pub(crate) mod validated_note_seq {
+pub(crate) mod note_seq {
     use derive_more::{AsRef, IntoIterator};
-    use typeshare::U53;
 
-    use crate::{
-        collections::{NonEmptyIterator as _, NonEmptyVec},
-        error::InvalidQueryErrorSource,
-    };
+    use crate::collections::NonEmptyVec;
 
     use super::{PauOrKeyAndLyric, ValidatedNote};
 
@@ -370,57 +325,14 @@ pub(crate) mod validated_note_seq {
     pub(crate) struct ValidatedNoteSeq(
         /// # Invariant
         ///
-        /// - The first note must be pau.
-        /// - The sum of `frame_length`s must be non-zero.
+        /// The first note must be pau.
         NonEmptyVec<ValidatedNote>,
     );
 
-    impl TryFrom<NonEmptyVec<ValidatedNote>> for ValidatedNoteSeq {
-        type Error = InvalidQueryErrorSource;
-
-        fn try_from(notes: NonEmptyVec<ValidatedNote>) -> Result<Self, Self::Error> {
-            if notes.first().pau_or_key_and_lyric != PauOrKeyAndLyric::Pau {
-                return Err(InvalidQueryErrorSource::InitialNoteMustBePau);
-            }
-            if !notes
-                .iter()
-                .any(|&ValidatedNote { frame_length, .. }| frame_length > U53::from(0u8))
-            {
-                return Err(InvalidQueryErrorSource::TotalFrameLengthIsZero);
-            }
-            Ok(Self(notes))
-        }
-    }
-}
-
-pub(crate) mod validated_frame_audio_query {
-    use derive_more::AsRef;
-    use ref_cast::{ref_cast_custom, RefCastCustom};
-    use typeshare::U53;
-
-    use super::super::queries::{FrameAudioQuery, FramePhoneme};
-
-    #[derive(AsRef, RefCastCustom)]
-    #[repr(transparent)]
-    pub(crate) struct ValidatedFrameAudioQuery(
-        /// # Invariant
-        ///
-        /// The sum of `frame_length`s must be non-zero.
-        FrameAudioQuery,
-    );
-
-    impl ValidatedFrameAudioQuery {
-        #[ref_cast_custom]
-        fn new(frame_audio_query: &FrameAudioQuery) -> &Self;
-    }
-
-    impl<'a> From<&'a FrameAudioQuery> for Option<&'a ValidatedFrameAudioQuery> {
-        fn from(frame_audio_query: &'a FrameAudioQuery) -> Self {
-            frame_audio_query
-                .phonemes
-                .iter()
-                .any(|&FramePhoneme { frame_length, .. }| frame_length > U53::from(0u8))
-                .then_some(ValidatedFrameAudioQuery::new(frame_audio_query))
+    impl From<NonEmptyVec<ValidatedNote>> for Option<ValidatedNoteSeq> {
+        fn from(notes: NonEmptyVec<ValidatedNote>) -> Self {
+            (notes.first().pau_or_key_and_lyric == PauOrKeyAndLyric::Pau)
+                .then_some(ValidatedNoteSeq(notes))
         }
     }
 }
@@ -481,18 +393,6 @@ mod tests {
                 what: "楽譜",
                 value: None,
                 source: Some(InvalidQueryErrorSource::InvalidFields { .. }),
-                ..
-            }))
-        ));
-
-        let err =
-            super::ensure_compatible(&score([note(None, "")]), &frame_audio_query([])).unwrap_err();
-        assert!(matches!(
-            err,
-            crate::Error(ErrorRepr::InvalidQuery(InvalidQueryError {
-                what: "FrameAudioQuery",
-                value: None,
-                source: Some(InvalidQueryErrorSource::TotalFrameLengthIsZero),
                 ..
             }))
         ));
