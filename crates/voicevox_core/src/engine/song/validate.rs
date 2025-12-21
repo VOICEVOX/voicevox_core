@@ -125,6 +125,15 @@ impl Note {
 }
 
 impl FrameAudioQuery {
+    pub(crate) fn total_frame_length(&self) -> usize {
+        self.phonemes
+            .iter()
+            .map(|&FramePhoneme { frame_length, .. }| {
+                typeshare::usize_from_u53_saturated(frame_length)
+            })
+            .sum()
+    }
+
     /// 次の状態に対して[`WARN`]レベルのログを出す。
     ///
     /// - [`output_sampling_rate`]が`24000`以外の値（将来的に解消予定）。
@@ -186,6 +195,55 @@ impl TryFrom<&'_ Score> for ValidatedScore {
                 }),
             })?;
         Ok(Self { notes })
+    }
+}
+
+impl ValidatedNoteSeq {
+    pub(crate) fn len(&self) -> NonZero<usize> {
+        AsRef::<NonEmptyVec<_>>::as_ref(self).len()
+    }
+
+    pub(crate) fn iter(&self) -> impl NonEmptyIterator<Item = &ValidatedNote> {
+        AsRef::<NonEmptyVec<_>>::as_ref(self).iter()
+    }
+
+    pub(crate) fn total_frame_length(&self) -> usize {
+        self.iter()
+            .map(|&ValidatedNote { frame_length, .. }| {
+                typeshare::usize_from_u53_saturated(frame_length)
+            })
+            .sum()
+    }
+
+    pub(crate) fn warn_for_empty(&self) {
+        if self.total_frame_length() == 0 {
+            warn!("total frame length is zero. the inference will fail");
+        }
+    }
+}
+
+impl<'a> TryFrom<&'a [Note]> for ValidatedNoteSeq {
+    type Error = InvalidQueryError;
+
+    fn try_from(notes: &'a [Note]) -> Result<Self, Self::Error> {
+        let notes = notes
+            .iter()
+            .map(TryInto::try_into)
+            .collect::<Result<Vec<_>, _>>()?;
+
+        NonEmptyVec::new(notes)
+            .and_then(Into::into)
+            .ok_or_else(|| InvalidQueryError {
+                what: "ノート列",
+                value: None,
+                source: Some(InvalidQueryErrorSource::InitialNoteMustBePau),
+            })
+    }
+}
+
+impl AsRef<[ValidatedNote]> for ValidatedNoteSeq {
+    fn as_ref(&self) -> &[ValidatedNote] {
+        AsRef::<NonEmptyVec<_>>::as_ref(self).as_ref()
     }
 }
 
@@ -278,47 +336,6 @@ impl PauOrKeyAndLyric {
 #[derive(PartialEq)]
 pub(crate) struct Lyric {
     pub(super) phonemes: [(OptionalConsonant, NonPauBaseVowel); 1],
-}
-
-impl ValidatedNoteSeq {
-    pub(crate) fn len(&self) -> NonZero<usize> {
-        AsRef::<NonEmptyVec<_>>::as_ref(self).len()
-    }
-
-    pub(crate) fn iter(&self) -> impl NonEmptyIterator<Item = &ValidatedNote> {
-        AsRef::<NonEmptyVec<_>>::as_ref(self).iter()
-    }
-
-    pub(crate) fn warn_for_empty(&self) {
-        if self.total_frame_length() == 0 {
-            warn!("total frame length is zero. the inference will fail");
-        }
-    }
-}
-
-impl<'a> TryFrom<&'a [Note]> for ValidatedNoteSeq {
-    type Error = InvalidQueryError;
-
-    fn try_from(notes: &'a [Note]) -> Result<Self, Self::Error> {
-        let notes = notes
-            .iter()
-            .map(TryInto::try_into)
-            .collect::<Result<Vec<_>, _>>()?;
-
-        NonEmptyVec::new(notes)
-            .and_then(Into::into)
-            .ok_or_else(|| InvalidQueryError {
-                what: "ノート列",
-                value: None,
-                source: Some(InvalidQueryErrorSource::InitialNoteMustBePau),
-            })
-    }
-}
-
-impl AsRef<[ValidatedNote]> for ValidatedNoteSeq {
-    fn as_ref(&self) -> &[ValidatedNote] {
-        AsRef::<NonEmptyVec<_>>::as_ref(self).as_ref()
-    }
 }
 
 pub(crate) mod note_seq {

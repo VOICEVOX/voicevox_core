@@ -5,9 +5,7 @@ use ndarray::Array1;
 use typeshare::U53;
 
 use crate::{
-    collections::{NonEmptyIterator as _, NonEmptySlice},
-    numerics::U53Ext as _,
-    FrameAudioQuery, FramePhoneme, NoteId,
+    collections::NonEmptySlice, numerics::U53Ext as _, FrameAudioQuery, FramePhoneme, NoteId,
 };
 
 use super::{
@@ -109,27 +107,6 @@ impl PauOrKeyAndLyric {
             Self::Pau => -1,
             Self::KeyAndLyric { key, .. } => key.to_i64(),
         }
-    }
-}
-
-impl FrameAudioQuery {
-    pub(crate) fn total_frame_length(&self) -> usize {
-        self.phonemes
-            .iter()
-            .map(|&FramePhoneme { frame_length, .. }| {
-                typeshare::usize_from_u53_saturated(frame_length)
-            })
-            .sum()
-    }
-}
-
-impl ValidatedNoteSeq {
-    pub(crate) fn total_frame_length(&self) -> usize {
-        self.iter()
-            .map(|&ValidatedNote { frame_length, .. }| {
-                typeshare::usize_from_u53_saturated(frame_length)
-            })
-            .sum()
     }
 }
 

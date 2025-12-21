@@ -20,47 +20,54 @@ use super::super::Phoneme;
 
 pub use self::optional_lyric::OptionalLyric;
 
-/// 音符のID。
-#[derive(
-    Clone,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Hash,
-    Debug,
-    derive_more::Display,
-    AsRef,
-    Deserialize,
-    Serialize,
-)]
-#[as_ref(str)]
-pub struct NoteId(pub Arc<str>);
+/// 楽譜情報。
+///
+/// # Validation
+///
+/// この構造体の状態によっては、`Synthesizer`の各メソッドは[`ErrorKind::InvalidQuery`]を表わすエラーを返す。詳細は[`validate`メソッド]にて。
+///
+/// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
+/// [`validate`メソッド]: Self::validate
+#[derive(Clone, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
+#[non_exhaustive]
+pub struct Score {
+    /// 音符のリスト。
+    pub notes: Vec<Note>,
+}
 
-impl FromStr for NoteId {
-    type Err = Infallible;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self(s.into()))
+impl From<&'_ Score> for serde_json::Value {
+    fn from(value: &'_ Score) -> Self {
+        serde_json::to_value(value).expect("all of the fields should be always serializable")
     }
 }
 
-#[duplicate_item(
-    T f;
-    [ Arc<str> ] [ convert::identity ];
-    [ &'_ str ] [ Into::into ];
-    [ &'_ mut str ] [ Into::into ];
-    [ String ] [ Into::into ];
-)]
-impl From<T> for NoteId {
-    fn from(s: T) -> Self {
-        Self(f(s))
-    }
+/// 音符ごとの情報。
+///
+/// # Validation
+///
+/// この構造体の状態によっては、`Synthesizer`の各メソッドは[`ErrorKind::InvalidQuery`]を表わすエラーを返す。詳細は[`validate`メソッド]にて。
+///
+/// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
+/// [`validate`メソッド]: Self::validate
+#[derive(Clone, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
+#[non_exhaustive]
+pub struct Note {
+    /// ID。
+    pub id: Option<NoteId>,
+
+    /// 音階。
+    pub key: Option<U53>,
+
+    /// 歌詞。
+    pub lyric: OptionalLyric,
+
+    /// 音符のフレーム長。
+    pub frame_length: U53,
 }
 
-impl From<&'_ NoteId> for serde_json::Value {
-    fn from(value: &'_ NoteId) -> Self {
-        serde_json::to_value(value).expect("should be always serializable")
+impl From<&'_ Note> for serde_json::Value {
+    fn from(value: &'_ Note) -> Self {
+        serde_json::to_value(value).expect("all of the fields should be always serializable")
     }
 }
 
@@ -109,77 +116,6 @@ impl<'de> Deserialize<'de> for OptionalLyric {
                     .map_err(|()| de::Error::invalid_value(Unexpected::Str(s), &self))
             }
         }
-    }
-}
-
-/// 音符ごとの情報。
-///
-/// # Validation
-///
-/// この構造体の状態によっては、`Synthesizer`の各メソッドは[`ErrorKind::InvalidQuery`]を表わすエラーを返す。詳細は[`validate`メソッド]にて。
-///
-/// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
-/// [`validate`メソッド]: Self::validate
-#[derive(Clone, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
-#[non_exhaustive]
-pub struct Note {
-    /// ID。
-    pub id: Option<NoteId>,
-
-    /// 音階。
-    pub key: Option<U53>,
-
-    /// 歌詞。
-    pub lyric: OptionalLyric,
-
-    /// 音符のフレーム長。
-    pub frame_length: U53,
-}
-
-impl From<&'_ Note> for serde_json::Value {
-    fn from(value: &'_ Note) -> Self {
-        serde_json::to_value(value).expect("all of the fields should be always serializable")
-    }
-}
-
-/// 楽譜情報。
-///
-/// # Validation
-///
-/// この構造体の状態によっては、`Synthesizer`の各メソッドは[`ErrorKind::InvalidQuery`]を表わすエラーを返す。詳細は[`validate`メソッド]にて。
-///
-/// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
-/// [`validate`メソッド]: Self::validate
-#[derive(Clone, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
-#[non_exhaustive]
-pub struct Score {
-    /// 音符のリスト。
-    pub notes: Vec<Note>,
-}
-
-impl From<&'_ Score> for serde_json::Value {
-    fn from(value: &'_ Score) -> Self {
-        serde_json::to_value(value).expect("all of the fields should be always serializable")
-    }
-}
-
-/// 音素の情報。
-#[derive(Clone, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
-#[non_exhaustive]
-pub struct FramePhoneme {
-    /// 音素。
-    pub phoneme: Phoneme,
-
-    /// 音素のフレーム長。
-    pub frame_length: U53,
-
-    /// 音符のID。
-    pub note_id: Option<NoteId>,
-}
-
-impl From<&'_ FramePhoneme> for serde_json::Value {
-    fn from(value: &'_ FramePhoneme) -> Self {
-        serde_json::to_value(value).expect("all of the fields should be always serializable")
     }
 }
 
@@ -236,6 +172,70 @@ pub struct FrameAudioQuery {
 impl From<&'_ FrameAudioQuery> for serde_json::Value {
     fn from(value: &'_ FrameAudioQuery) -> Self {
         serde_json::to_value(value).expect("all of the fields should be always serializable")
+    }
+}
+
+/// 音素の情報。
+#[derive(Clone, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
+#[non_exhaustive]
+pub struct FramePhoneme {
+    /// 音素。
+    pub phoneme: Phoneme,
+
+    /// 音素のフレーム長。
+    pub frame_length: U53,
+
+    /// 音符のID。
+    pub note_id: Option<NoteId>,
+}
+
+impl From<&'_ FramePhoneme> for serde_json::Value {
+    fn from(value: &'_ FramePhoneme) -> Self {
+        serde_json::to_value(value).expect("all of the fields should be always serializable")
+    }
+}
+
+/// 音符のID。
+#[derive(
+    Clone,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Debug,
+    derive_more::Display,
+    AsRef,
+    Deserialize,
+    Serialize,
+)]
+#[as_ref(str)]
+pub struct NoteId(pub Arc<str>);
+
+impl FromStr for NoteId {
+    type Err = Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(s.into()))
+    }
+}
+
+#[duplicate_item(
+    T f;
+    [ Arc<str> ] [ convert::identity ];
+    [ &'_ str ] [ Into::into ];
+    [ &'_ mut str ] [ Into::into ];
+    [ String ] [ Into::into ];
+)]
+impl From<T> for NoteId {
+    fn from(s: T) -> Self {
+        Self(f(s))
+    }
+}
+
+impl From<&'_ NoteId> for serde_json::Value {
+    fn from(value: &'_ NoteId) -> Self {
+        serde_json::to_value(value).expect("should be always serializable")
     }
 }
 
