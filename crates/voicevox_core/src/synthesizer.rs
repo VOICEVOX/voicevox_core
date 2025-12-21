@@ -853,7 +853,7 @@ trait AsInner {
             phonemes: frame_phonemes,
             volume_scale: (1.).try_into().unwrap(),
             output_sampling_rate: Default::default(),
-            output_stereo: true,
+            output_stereo: false,
         })
     }
 
