@@ -53,7 +53,7 @@
 
 ### Added
 
-- \[Rust\] ソング機能が追加されます ([#531], [#732], [#738], [#761], [#895], [#896], [#894], [#1217], [#1236], [#1073])。
+- \[Rust\] ソング機能が追加されます ([#531], [#732], [#738], [#761], [#895], [#896], [#894], [#1217], [#1236], [#1073], [#1242])。
 - \[Python,Java\] 一部のドキュメントの文体が改善されます ([#1238])。
 
 ### Changed
@@ -1402,6 +1402,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1236]: https://github.com/VOICEVOX/voicevox_core/pull/1236
 [#1237]: https://github.com/VOICEVOX/voicevox_core/pull/1237
 [#1238]: https://github.com/VOICEVOX/voicevox_core/pull/1238
+[#1242]: https://github.com/VOICEVOX/voicevox_core/pull/1242
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 

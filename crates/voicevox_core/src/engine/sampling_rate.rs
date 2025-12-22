@@ -1,5 +1,7 @@
 use std::{fmt, num::NonZero};
 
+use duplicate::duplicate_item;
+use pastey::paste;
 use serde::{
     de::{self, Unexpected},
     Deserialize, Deserializer, Serialize,
@@ -84,15 +86,33 @@ impl<'de> Deserialize<'de> for SamplingRate {
             type Value = SamplingRate;
 
             fn expecting(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-                write!(fmt, "a non-zero multiple of {DEFAULT_SAMPLING_RATE}")
+                write!(
+                    fmt,
+                    "a 32-bit unsigned integer that is a non-zero multiple of \
+                     {DEFAULT_SAMPLING_RATE}",
+                )
             }
 
-            fn visit_u32<E>(self, n: u32) -> Result<Self::Value, E>
-            where
-                E: de::Error,
-            {
-                SamplingRate::new_(n)
-                    .map_err(|_| de::Error::invalid_value(Unexpected::Unsigned(n.into()), &self))
+            #[duplicate_item(
+                T to_u32 unexpected ;
+                [ u8 ] [ |v| Some(u32::from(v)) ] [ |v| Unexpected::Unsigned(u64::from(v)) ];
+                [ u16 ] [ |v| Some(u32::from(v)) ] [ |v| Unexpected::Unsigned(u64::from(v)) ];
+                [ u32 ] [ Some ] [ |v| Unexpected::Unsigned(u64::from(v)) ];
+                [ u64 ] [ |v| u32::try_from(v).ok() ] [ |v| Unexpected::Unsigned(v) ];
+                [ i8 ] [ |v| u32::try_from(v).ok() ] [ |v| Unexpected::Signed(i64::from(v)) ];
+                [ i16 ] [ |v| u32::try_from(v).ok() ] [ |v| Unexpected::Signed(i64::from(v)) ];
+                [ i32 ] [ |v| u32::try_from(v).ok() ] [ |v| Unexpected::Signed(i64::from(v)) ];
+                [ i64 ] [ |v| u32::try_from(v).ok() ] [ |v| Unexpected::Signed(v) ];
+            )]
+            paste! {
+                fn [<visit_ T>] <E>(self, v: T) -> Result<Self::Value, E>
+                where
+                    E: de::Error,
+                {
+                    (to_u32)(v)
+                        .and_then(|v| SamplingRate::new_(v).ok())
+                        .ok_or_else(|| de::Error::invalid_value((unexpected)(v), &self))
+                }
             }
         }
     }
