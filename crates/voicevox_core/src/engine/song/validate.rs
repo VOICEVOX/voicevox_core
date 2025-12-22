@@ -110,8 +110,8 @@ impl Note {
     ///
     /// 次のうちどれかを満たすなら[`ErrorKind::InvalidQuery`]を表わすエラーを返す。
     ///
-    /// - [`key`]が`None`かつ[`lyric`]が[`PAU`]。
-    /// - [`key`]が`Some(_)`かつ[`lyric`]が[`PAU`]以外。
+    /// - [`key`]が`None`かつ[`lyric`]が[`PAU`]以外。
+    /// - [`key`]が`Some(_)`かつ[`lyric`]が[`PAU`]。
     ///
     /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
     /// [`key`]: Self::key
