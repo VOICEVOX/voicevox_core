@@ -35,6 +35,7 @@ bypass = [
     { name = "caseless", version = "0.2", build-script = "8ab1dc9ef269f28202fe1156c5c655f286cbc03b6dd4fb20a2f9f9e00763b6f5" }, # https://docs.rs/crate/caseless/0.2.1/source/src/build.rs
     { name = "cbindgen", version = "0.28", build-script = "f0fa57ad2c0dca5855cc2636a2e95acbadb52fa887609216022bdf71ed996dec" }, # https://docs.rs/crate/cbindgen/0.28.0/source/build.rs
     { name = "codspeed-divan-compat", version = "3", build-script = "c389c9c87396d2966977c9fa5933073e3eba788dfeb3e9dc1e99313d0d9085bf" }, # https://docs.rs/crate/codspeed-divan-compat/3.0.5/source/build.rs
+    { name = "const_fn", version = "0.4", build-script = "8de9d55780370383bbb0c5e816d03e343796fafe4e9ce9f3f8905a441823dae7" }, # https://docs.rs/crate/const_fn/0.4.11/source/build.rs
     { name = "crc32fast", version = "1", build-script = "4ccc50c3da67eb27f0b622440d2b7aee2f73fa9c71884571f3c041122231d105" }, # https://docs.rs/crate/crc32fast/1.3.2/source/build.rs
     { name = "crossbeam-epoch", version = "0.9", build-script = "901be3c21843440be5c456ff049f57f72ee5ec365918a772ad2a4751e52f69c5" }, # https://docs.rs/crate/crossbeam-epoch/0.9.13/source/build.rs
     { name = "crossbeam-utils", version = "0.8", build-script = "7a7f9e56ea7fb4f78c4e532b84b9d27be719d600e85eaeb3a2f4b79a4f0b419c" }, # https://docs.rs/crate/crossbeam-utils/0.8.21/source/build.rs
@@ -70,7 +71,7 @@ bypass = [
     { name = "rstest_reuse", version = "0.6", build-script = "c4db8df109a7a9870259a8e63ebceee46ea7eb64ab288433ca4dd3d512278086" }, # https://docs.rs/crate/rstest_reuse/0.6.0/source/build.rs
     { name = "rustix", version = "0.38", build-script = "adc4bc868a30a902f328af6ebd0bfc72868b8e388beb13c6d69d826646931b17" }, # https://docs.rs/crate/rustix/0.38.37/source/build.rs
     { name = "rustls", version = "0.21", build-script = "83af94fa10c4be7653b2b69e1a4656239ecf6fbdfc225341f10e1ec7121b383e" }, # https://docs.rs/crate/rustls/0.21.7/source/build.rs
-    { name = "rustversion", version = "1", build-script = "a5ac3f88a152167bdf624d18346b6db6459828bdbd1162a275fcde9c36e3ade6" }, # https://docs.rs/crate/rustversion/1.0.11/source/build/build.rs
+    { name = "rustversion", version = "1", build-script = "6d869d2230fa9c4f8ae0df956b06438a070df276649135d4309f56eac72ddbe3" }, # https://docs.rs/crate/rustversion/1.0.22/source/build/build.rs
     { name = "selectors", version = "0.25", build-script = "36ba09a8d2089d0cae8e310829ecf0e94bcbaa87e775a6578c7d2f0459a5b6ca" }, # https://docs.rs/crate/selectors/0.25.0/source/build.rs
     { name = "semver", version = "1", build-script = "eedfc19afa205955347175916974cdad121b55cb940e40c61931e5e7629f0e65" }, # https://docs.rs/crate/semver/1.0.14/source/build.rs
     { name = "serde", version = "1", build-script = "8bce1d4e3594972da27e54bac89058e1a73024205535d58008f7d0db5c4b4461" }, # https://docs.rs/crate/serde/1.0.219/source/build.rs
