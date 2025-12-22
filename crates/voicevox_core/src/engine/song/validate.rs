@@ -13,6 +13,7 @@ use super::{
     super::{
         acoustic_feature_extractor::{NonPauBaseVowel, OptionalConsonant, PhonemeCode},
         sampling_rate::SamplingRate,
+        validate::Validate as _,
     },
     queries::{FrameAudioQuery, FramePhoneme, Note, NoteId, OptionalLyric, Score},
 };
@@ -181,7 +182,7 @@ impl TryFrom<&'_ Score> for ValidatedScore {
         let notes = (&*score.notes)
             .try_into()
             .map_err(|source| InvalidQueryError {
-                what: "楽譜",
+                what: Score::NAME,
                 value: None,
                 source: Some(InvalidQueryErrorSource::InvalidFields {
                     fields: "`notes`".to_owned(),
@@ -286,12 +287,12 @@ impl PauOrKeyAndLyric {
                 lyric: Lyric { phonemes: [mora] },
             }),
             (Some(_), []) => Err(InvalidQueryError {
-                what: "ノート",
+                what: Note::NAME,
                 value: None,
                 source: Some(InvalidQueryErrorSource::UnnecessaryKeyForPau),
             }),
             (None, [_]) => Err(InvalidQueryError {
-                what: "ノート",
+                what: Note::NAME,
                 value: None,
                 source: Some(InvalidQueryErrorSource::MissingKeyForNonPau),
             }),
@@ -349,7 +350,10 @@ mod tests {
         numerics::positive_finite_f32,
     };
 
-    use super::super::queries::{FrameAudioQuery, FramePhoneme, Note, Score};
+    use super::super::{
+        super::validate::Validate as _,
+        queries::{FrameAudioQuery, FramePhoneme, Note, Score},
+    };
 
     // TODO: トークの方と一緒に、`validated`に関するテストを書く
 
@@ -398,7 +402,7 @@ mod tests {
         assert!(matches!(
             err,
             crate::Error(ErrorRepr::InvalidQuery(InvalidQueryError {
-                what: "楽譜",
+                what: Score::NAME,
                 value: None,
                 source: Some(InvalidQueryErrorSource::InvalidFields { .. }),
             }))

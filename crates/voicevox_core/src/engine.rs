@@ -7,6 +7,7 @@ mod ndarray;
 mod sampling_rate;
 pub(crate) mod song;
 pub(crate) mod talk;
+pub(crate) mod validate;
 
 pub(crate) use self::{
     acoustic_feature_extractor::PhonemeCode, audio_file::to_s16le_pcm, ndarray::IteratorExt,
