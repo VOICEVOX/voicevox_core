@@ -144,12 +144,17 @@ pub trait Validate: DeserializeOwned {
     }
 }
 
+// TODO: #1243
 #[duplicate_item(
     T S validation;
     [ AudioQuery ] [ "AudioQuery" ] [ Self::validate ];
     [ AccentPhrase ] [ "アクセント句" ] [ Self::validate ];
     [ Mora ] [ "モーラ" ] [ Self::validate ];
     [ Vec<AccentPhrase> ] [ "アクセント句の列" ] [ |this: &Self| this.iter().try_for_each(AccentPhrase::validate) ];
+    [ crate::Note ] [ "ノート" ] [ Self::validate ];
+    [ crate::Score ] [ "楽譜" ] [ Self::validate ];
+    [ crate::FramePhoneme ] [ "FramePhoneme" ] [ |_| Ok(()) ];
+    [ crate::FrameAudioQuery ] [ "FrameAudioQuery" ] [ |this: &Self| { this.validate(); Ok(()) } ];
 )]
 impl Validate for T {
     const NAME: &str = S;

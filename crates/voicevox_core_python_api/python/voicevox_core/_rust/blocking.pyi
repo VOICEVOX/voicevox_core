@@ -8,6 +8,8 @@ if TYPE_CHECKING:
         AccentPhrase,
         AudioQuery,
         CharacterMeta,
+        FrameAudioQuery,
+        Score,
         StyleId,
         SupportedDevices,
         UserDictWord,
@@ -490,6 +492,121 @@ class Synthesizer:
         Returns
         -------
         WAVデータ。
+        """
+        ...
+    def create_sing_frame_audio_query(
+        self,
+        score: Score,
+        style_id: StyleId | int,
+    ) -> FrameAudioQuery:
+        """
+        |blocking-synthesizer-create-sing-frame-audio-query-score|_ から |blocking-synthesizer-create-sing-frame-audio-query-frame-audio-query| を作成する。
+
+        .. code-block::
+
+            from voicevox_core import Note, Score
+
+            SINGING_TEACHER = 6000
+
+            SCORE = Score(
+                [
+                    Note(15, ""),
+                    Note(45, "ド", key=60),
+                    Note(45, "レ", key=62),
+                    Note(45, "ミ", key=64),
+                    Note(15, ""),
+                ],
+            )
+
+            frame_audio_query = synthesizer.create_sing_frame_audio_query(
+                SCORE, SINGING_TEACHER
+            )
+
+        .. |blocking-synthesizer-create-sing-frame-audio-query-score| replace:: 楽譜
+        .. _blocking-synthesizer-create-sing-frame-audio-query-score: #voicevox_core.Score
+        .. |blocking-synthesizer-create-sing-frame-audio-query-frame-audio-query| replace:: 歌唱合成用のクエリ
+        .. _blocking-synthesizer-create-sing-frame-audio-query-frame-audio-query: #voicevox_core.FrameAudioQuery
+        """
+        ...
+    def create_sing_frame_f0(
+        self,
+        score: Score,
+        frame_audio_query: FrameAudioQuery,
+        style_id: StyleId | int,
+    ) -> list[float]:
+        """
+        |blocking-synthesizer-create-sing-frame-f0-score|_ と |blocking-synthesizer-create-sing-frame-f0-frame-audio-query| から、フレームごとの基本周波数を再生成する。
+
+        .. code-block::
+
+            SINGING_TEACHER = 6000
+
+            frame_audio_query = synthesizer.create_sing_frame_audio_query(
+                score, SINGING_TEACHER
+            )
+
+            # ⋮ （`frame_audio_query.phonemes`の`key`や`frame_length`を変更）
+
+            new_f0 = synthesizer.create_sing_frame_f0(
+                SCORE, frame_audio_query, SINGING_TEACHER
+            )
+            frame_audio_query.f0 = new_f0
+
+        .. |blocking-synthesizer-create-sing-frame-f0-score| replace:: 楽譜
+        .. _blocking-synthesizer-create-sing-frame-f0-score: #voicevox_core.Score
+        .. |blocking-synthesizer-create-sing-frame-f0-frame-audio-query| replace:: 歌唱合成用のクエリ
+        .. _blocking-synthesizer-create-sing-frame-f0-frame-audio-query: #voicevox_core.FrameAudioQuery
+        """
+        ...
+    def create_sing_frame_volume(
+        self,
+        score: Score,
+        frame_audio_query: FrameAudioQuery,
+        style_id: StyleId | int,
+    ) -> list[float]:
+        """
+        |blocking-synthesizer-create-sing-frame-volume-score|_ と |blocking-synthesizer-create-sing-frame-volume-frame-audio-query| から、フレームごとの音量を再生成する。
+
+        .. code-block::
+
+            SINGING_TEACHER = 6000
+
+            frame_audio_query = synthesizer.create_sing_frame_audio_query(
+                score, SINGING_TEACHER
+            )
+
+            # ⋮ （`frame_audio_query.phonemes`の`key`や`frame_length`を変更）
+
+            new_f0 = synthesizer.create_sing_frame_f0(
+                SCORE, frame_audio_query, SINGING_TEACHER
+            )
+            frame_audio_query.f0 = new_f0
+
+            # 音量の生成には基本周波数が必要であることに注意。
+            new_volume = synthesizer.create_sing_frame_volume(
+                SCORE, frame_audio_query, SINGING_TEACHER
+            )
+            frame_audio_query.volume = new_volume
+
+        .. |blocking-synthesizer-create-sing-frame-volume-score| replace:: 楽譜
+        .. _blocking-synthesizer-create-sing-frame-volume-score: #voicevox_core.Score
+        .. |blocking-synthesizer-create-sing-frame-volume-frame-audio-query| replace:: 歌唱合成用のクエリ
+        .. _blocking-synthesizer-create-sing-frame-volume-frame-audio-query: #voicevox_core.FrameAudioQuery
+        """
+        ...
+    def frame_synthesis(
+        self,
+        frame_audio_query: FrameAudioQuery,
+        style_id: StyleId | int,
+    ) -> bytes:
+        """
+        歌唱音声合成を行う。
+
+        .. code-block::
+
+            SINGER = 3000
+
+            wav = synthesizer.frame_synthesis(frame_audio_query, SINGER)
         """
         ...
     def close(self) -> None: ...

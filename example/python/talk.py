@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+"""TTSを行うサンプルコードです。"""
+
 import dataclasses
 import logging
 import multiprocessing

@@ -1,16 +1,15 @@
 #!/usr/bin/env python
 
-"""asyncio版のサンプルコードです。"""
+"""歌唱音声合成を行うサンプルコードです。"""
 
-import asyncio
 import dataclasses
 import logging
 import multiprocessing
 from argparse import ArgumentParser
 from pathlib import Path
 
-from voicevox_core import AccelerationMode
-from voicevox_core.asyncio import Onnxruntime, OpenJtalk, Synthesizer, VoiceModelFile
+from voicevox_core import AccelerationMode, Note, Score
+from voicevox_core.blocking import Onnxruntime, OpenJtalk, Synthesizer, VoiceModelFile
 
 
 @dataclasses.dataclass
@@ -19,9 +18,9 @@ class Args:
     vvm: Path
     onnxruntime: str
     dict_dir: Path
-    text: str
     out: Path
-    style_id: int
+    singing_teacher: int
+    singer: int
 
     @staticmethod
     def parse_args() -> "Args":
@@ -49,21 +48,22 @@ class Args:
             help="Open JTalkの辞書ディレクトリ",
         )
         argparser.add_argument(
-            "--text",
-            default="この音声は、ボイスボックスを使用して、出力されています。",
-            help="読み上げさせたい文章",
-        )
-        argparser.add_argument(
             "--out",
             default="./output.wav",
             type=Path,
             help="出力wavファイルのパス",
         )
         argparser.add_argument(
-            "--style-id",
-            default=0,
+            "--singing-teacher",
+            default=6000,
             type=int,
-            help="話者IDを指定",
+            help="",
+        )
+        argparser.add_argument(
+            "--singer",
+            default=3000,
+            type=int,
+            help="",
         )
         args = argparser.parse_args()
         return Args(
@@ -71,13 +71,13 @@ class Args:
             args.vvm,
             args.onnxruntime,
             args.dict_dir,
-            args.text,
             args.out,
-            args.style_id,
+            args.singing_teacher,
+            args.singer,
         )
 
 
-async def main() -> None:
+def main() -> None:
     logging.basicConfig(format="[%(levelname)s] %(name)s: %(message)s")
     logger = logging.getLogger(__name__)
     logger.setLevel("DEBUG")
@@ -87,14 +87,13 @@ async def main() -> None:
     args = Args.parse_args()
 
     logger.info("%s", f"Loading ONNX Runtime ({args.onnxruntime=})")
-    onnxruntime = await Onnxruntime.load_once(filename=args.onnxruntime)
-
+    onnxruntime = Onnxruntime.load_once(filename=args.onnxruntime)
     logger.debug("%s", f"{onnxruntime.supported_devices()=}")
 
     logger.info("%s", f"Initializing ({args.mode=}, {args.dict_dir=})")
     synthesizer = Synthesizer(
         onnxruntime,
-        await OpenJtalk.new(args.dict_dir),
+        OpenJtalk(args.dict_dir),
         acceleration_mode=args.mode,
         cpu_num_threads=max(
             multiprocessing.cpu_count(), 2
@@ -103,19 +102,31 @@ async def main() -> None:
     logger.debug("%s", f"{synthesizer.is_gpu_mode=}")
 
     logger.info("%s", f"Loading `{args.vvm}`")
-    async with await VoiceModelFile.open(args.vvm) as model:
-        await synthesizer.load_voice_model(model)
+    with VoiceModelFile.open(args.vvm) as model:
+        synthesizer.load_voice_model(model)
     logger.debug("%s", f"{synthesizer.metas()=}")
 
-    logger.info("%s", f"Creating an AudioQuery from {args.text!r}")
-    audio_query = await synthesizer.create_audio_query(args.text, args.style_id)
+    SCORE = Score(
+        [
+            Note(15, ""),
+            Note(45, "ド", key=60),
+            Note(45, "レ", key=62),
+            Note(45, "ミ", key=64),
+            Note(15, ""),
+        ],
+    )
 
-    logger.info("%s", f"Synthesizing with {audio_query}")
-    wav = await synthesizer.synthesis(audio_query, args.style_id)
+    logger.info("%s", f"Creating an AudioQuery from {SCORE}")
+    frame_audio_query = synthesizer.create_sing_frame_audio_query(
+        SCORE, args.singing_teacher
+    )
+
+    logger.info("%s", f"Synthesizing with {frame_audio_query}")
+    wav = synthesizer.frame_synthesis(frame_audio_query, args.singer)
 
     args.out.write_bytes(wav)
     logger.info("%s", f"Wrote `{args.out}`")
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
