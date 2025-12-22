@@ -3,11 +3,13 @@
 mod acoustic_feature_extractor;
 mod audio_file;
 mod mora_mappings;
+mod ndarray;
 mod sampling_rate;
+pub(crate) mod song;
 pub(crate) mod talk;
 
 pub(crate) use self::{
-    acoustic_feature_extractor::PhonemeCode, audio_file::to_s16le_pcm,
+    acoustic_feature_extractor::PhonemeCode, audio_file::to_s16le_pcm, ndarray::IteratorExt,
     sampling_rate::DEFAULT_SAMPLING_RATE,
 };
 pub use self::{

@@ -16,9 +16,11 @@
 //! [`Onnxruntime`]: blocking::Onnxruntime
 //! [ONNX RuntimeのGPU機能]: https://onnxruntime.ai/docs/execution-providers/
 //!
-//! # Example
+//! # Examples
 //!
 //! ```
+//! //! トーク
+//!
 //! use std::{io::Write as _, panic};
 //!
 //! use anyhow::Context as _;
@@ -79,6 +81,121 @@
 //!
 //! eprintln!("Synthesizing");
 //! let wav = &synth.tts(TEXT, style_id).perform()?;
+//!
+//! eprintln!("Playing the WAV");
+//! # if false {
+//! play(wav)?;
+//! # }
+//!
+//! fn play(wav: &[u8]) -> anyhow::Result<()> {
+//!     let tempfile = tempfile::Builder::new().suffix(".wav").tempfile()?;
+//!     (&tempfile).write_all(wav)?;
+//!     let tempfile = &tempfile.into_temp_path();
+//!     open::that_in_background(tempfile)
+//!         .join()
+//!         .unwrap_or_else(|e| panic::resume_unwind(e))?;
+//!     Ok(())
+//! }
+//! # Ok::<_, anyhow::Error>(())
+//! ```
+//!
+//! ```
+//! //! ソング
+//!
+//! use std::{io::Write as _, panic};
+//!
+//! use anyhow::Context as _;
+//! use const_format::concatcp;
+//!
+//! use voicevox_core::{
+//!     blocking::{Onnxruntime, Synthesizer, VoiceModelFile},
+//!     CharacterMeta, Score, StyleMeta, StyleType,
+//! };
+//!
+//! // ダウンローダーにて`onnxruntime`としてダウンロードできるもの
+//! # #[cfg(any())]
+//! const VVORT: &str = concatcp!(
+//!     "./voicevox_core/onnxruntime/lib/",
+//!     Onnxruntime::LIB_VERSIONED_FILENAME,
+//! );
+//! # use test_util::ONNXRUNTIME_DYLIB_PATH as VVORT;
+//!
+//! // ダウンローダーにて`models`としてダウンロードできるもの
+//! # #[cfg(any())]
+//! const VVM: &str = "./voicevox_core/models/vvms/s0.vvm";
+//! # use test_util::SAMPLE_VOICE_MODEL_FILE_PATH as VVM;
+//!
+//! # #[cfg(any())]
+//! const SINGING_TEACHER_CHARACTER_NAME: &str = "波音リツ";
+//! # const SINGING_TEACHER_CHARACTER_NAME: &str = "dummy4";
+//! #
+//! # #[cfg(any())]
+//! const SINGING_TEACHER_STYLE_NAME: &str = "ノーマル";
+//! # const SINGING_TEACHER_STYLE_NAME: &str = "style4-2";
+//! #
+//! # #[cfg(any())]
+//! const SINGER_CHARACTER_NAME: &str = "ずんだもん";
+//! # const SINGER_CHARACTER_NAME: &str = "dummy4";
+//! #
+//! # #[cfg(any())]
+//! const SINGER_STYLE_NAME: &str = "ノーマル";
+//! # const SINGER_STYLE_NAME: &str = "style4-1";
+//!
+//! let synth = {
+//!     let ort = Onnxruntime::load_once().filename(VVORT).perform()?;
+//!     Synthesizer::builder(ort).build()?
+//! };
+//!
+//! dbg!(synth.is_gpu_mode());
+//!
+//! synth.load_voice_model(&VoiceModelFile::open(VVM)?)?;
+//!
+//! let metas = &synth.metas();
+//! let find_style = |character_name, style_name, style_types: &[_]| {
+//!     metas
+//!         .iter()
+//!         .filter(|CharacterMeta { name, .. }| name == character_name)
+//!         .flat_map(|CharacterMeta { styles, .. }| styles)
+//!         .find(|StyleMeta { name, r#type, .. }| {
+//!             name == style_name && style_types.contains(r#type)
+//!         })
+//!         .map(|&StyleMeta { id, .. }| id)
+//!         .with_context(|| format!("could not find \"{character_name} ({style_name})\""))
+//! };
+//!
+//! let singing_teacher = find_style(
+//!     SINGING_TEACHER_CHARACTER_NAME,
+//!     SINGING_TEACHER_STYLE_NAME,
+//!     &[StyleType::SingingTeacher, StyleType::Sing],
+//! )?;
+//!
+//! let singer = find_style(
+//!     SINGER_CHARACTER_NAME,
+//!     SINGER_STYLE_NAME,
+//!     &[StyleType::FrameDecode],
+//! )?;
+//!
+//! let score = &serde_json::from_str::<Score>(
+//!     r#"
+//! {
+//!   "notes": [
+//!     { "key": null, "frame_length": 15, "lyric": "" },
+//!     { "key": 60, "frame_length": 45, "lyric": "ド" },
+//!     { "key": 62, "frame_length": 45, "lyric": "レ" },
+//!     { "key": 64, "frame_length": 45, "lyric": "ミ" },
+//!     { "key": null, "frame_length": 15, "lyric": "" }
+//!   ]
+//! }
+//!     "#,
+//! )
+//! .unwrap();
+//!
+//! let frame_audio_query = &synth.create_sing_frame_audio_query(score, singing_teacher)?;
+//!
+//! eprintln!("Synthesizing");
+//! let wav = &synth
+//!     .frame_synthesis(&frame_audio_query, singer)
+//!     .perform()?;
 //!
 //! eprintln!("Playing the WAV");
 //! # if false {
@@ -256,6 +373,16 @@ pub mod __doc {
     /// - [`AudioQuery`]
     ///     - [`AccentPhrase`]
     ///     - [`Mora`]
+    /// - [`Score`]
+    ///     - [`Note`]
+    ///         - [`NoteId`]
+    ///         - [`OptionalLyric`]
+    /// - [`FrameAudioQuery`]
+    ///     - [`FramePhoneme`]
+    ///         - [`Phoneme`]
+    ///             - [`Sil`]
+    ///         - `NoteId`
+    ///     - [`SamplingRate`]
     ///
     /// [C API]が取り扱うJSONもSerdeの実装に従っている。
     ///
@@ -276,12 +403,22 @@ pub mod __doc {
     /// [`AudioQuery`]: crate::AudioQuery
     /// [`AccentPhrase`]: crate::AccentPhrase
     /// [`Mora`]: crate::Mora
+    /// [`Score`]: crate::Score
+    /// [`Note`]: crate::Note
+    /// [`NoteId`]: crate::NoteId
+    /// [`OptionalLyric`]: crate::OptionalLyric
+    /// [`FrameAudioQuery`]: crate::FrameAudioQuery
+    /// [`FramePhoneme`]: crate::FramePhoneme
+    /// [`Phoneme`]: crate::Phoneme
+    /// [`Sil`]: crate::Sil
+    /// [`SamplingRate`]: crate::SamplingRate
     /// [C API]: https://voicevox.github.io/voicevox_core/apis/c_api/voicevox__core_8h.html
     /// [データのシリアライゼーション]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/serialization.md
     pub mod Serde対応 {}
 }
 
 mod asyncs;
+mod collections;
 mod convert;
 mod core;
 /// cbindgen:ignore
@@ -289,6 +426,7 @@ mod engine;
 mod error;
 mod future;
 mod macros;
+mod numerics;
 mod result;
 mod synthesizer;
 mod task;
@@ -316,6 +454,10 @@ pub use self::{
         voice_model::VoiceModelId,
     },
     engine::{
+        song::{
+            queries::{FrameAudioQuery, FramePhoneme, Note, NoteId, OptionalLyric, Score},
+            validate::ensure_compatible,
+        },
         talk::{
             user_dict::{UserDictWord, UserDictWordBuilder, UserDictWordType},
             AccentPhrase, AudioQuery, Mora,

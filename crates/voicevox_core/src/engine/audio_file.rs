@@ -1,16 +1,15 @@
 use std::io::{Cursor, Write as _};
 
+use crate::{FrameAudioQuery, SamplingRate};
+
 use super::{talk::ValidatedAudioQuery, DEFAULT_SAMPLING_RATE};
 
-pub(crate) fn to_s16le_pcm(
-    wave: &[f32],
-    &ValidatedAudioQuery {
+pub(crate) fn to_s16le_pcm(wave: &[f32], query: &impl HasPcmOptions) -> Vec<u8> {
+    let PcmOptions {
         volume_scale,
         output_sampling_rate,
         output_stereo,
-        ..
-    }: &ValidatedAudioQuery<'_>,
-) -> Vec<u8> {
+    } = query.pcm_options();
     let num_channels: u16 = if output_stereo { 2 } else { 1 };
     let repeat_count: u32 =
         (output_sampling_rate.get().get() / DEFAULT_SAMPLING_RATE) * num_channels as u32;
@@ -27,6 +26,50 @@ pub(crate) fn to_s16le_pcm(
     }
 
     cur.into_inner()
+}
+
+pub(crate) struct PcmOptions {
+    volume_scale: f32,
+    output_sampling_rate: SamplingRate,
+    output_stereo: bool,
+}
+
+pub(crate) trait HasPcmOptions {
+    fn pcm_options(&self) -> PcmOptions;
+}
+
+impl HasPcmOptions for ValidatedAudioQuery<'_> {
+    fn pcm_options(&self) -> PcmOptions {
+        let Self {
+            volume_scale,
+            output_sampling_rate,
+            output_stereo,
+            ..
+        } = *self;
+
+        PcmOptions {
+            volume_scale,
+            output_sampling_rate,
+            output_stereo,
+        }
+    }
+}
+
+impl HasPcmOptions for FrameAudioQuery {
+    fn pcm_options(&self) -> PcmOptions {
+        let Self {
+            volume_scale,
+            output_sampling_rate,
+            output_stereo,
+            ..
+        } = *self;
+
+        PcmOptions {
+            volume_scale: volume_scale.into(),
+            output_sampling_rate,
+            output_stereo,
+        }
+    }
 }
 
 /// 16bit PCMにヘッダを付加しWAVフォーマットのバイナリを生成する。

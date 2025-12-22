@@ -4,16 +4,16 @@ use bytemuck::{checked::CheckedCastError, Contiguous as _};
 use duplicate::duplicate_item;
 use pastey::paste;
 use serde::{
-    de::{self, Unexpected},
-    Deserialize, Deserializer,
+    de::{self, Deserializer, Unexpected},
+    Deserialize,
 };
 use strum::EnumCount as _;
 
 use crate::error::{ErrorRepr, InvalidQueryError, InvalidQueryErrorSource};
 
 use super::{
-    Consonant, MoraTail, NonConsonant, NonPauBaseVowel, OptionalConsonant, Phoneme, PhonemeCode,
-    Sil,
+    sil::Sil, Consonant, MoraTail, NonConsonant, NonPauBaseVowel, OptionalConsonant, Phoneme,
+    PhonemeCode,
 };
 
 macro_rules! optional_consonant {
@@ -484,6 +484,66 @@ impl From<Phoneme> for PhonemeCode {
     }
 }
 
+impl From<PhonemeCode> for Phoneme {
+    fn from(phoneme: PhonemeCode) -> Self {
+        macro_rules! convert {
+            ($($variant:ident),* $(,)?) => {
+                match phoneme {
+                    $(PhonemeCode::$variant => Self::$variant,)*
+                }
+            };
+        }
+
+        convert!(
+            MorablePau,
+            UnvoicedVowelA,
+            UnvoicedVowelE,
+            UnvoicedVowelI,
+            MorableN,
+            UnvoicedVowelO,
+            UnvoicedVowelU,
+            VoicedVowelA,
+            ConsonantB,
+            ConsonantBy,
+            ConsonantCh,
+            MorableCl,
+            ConsonantD,
+            ConsonantDy,
+            VoicedVowelE,
+            ConsonantF,
+            ConsonantG,
+            ConsonantGw,
+            ConsonantGy,
+            ConsonantH,
+            ConsonantHy,
+            VoicedVowelI,
+            ConsonantJ,
+            ConsonantK,
+            ConsonantKw,
+            ConsonantKy,
+            ConsonantM,
+            ConsonantMy,
+            ConsonantN,
+            ConsonantNy,
+            VoicedVowelO,
+            ConsonantP,
+            ConsonantPy,
+            ConsonantR,
+            ConsonantRy,
+            ConsonantS,
+            ConsonantSh,
+            ConsonantT,
+            ConsonantTs,
+            ConsonantTy,
+            VoicedVowelU,
+            ConsonantV,
+            ConsonantW,
+            ConsonantY,
+            ConsonantZ,
+        )
+    }
+}
+
 impl From<Consonant> for PhonemeCode {
     fn from(consonant: Consonant) -> Self {
         use PhonemeCode::*;
@@ -679,6 +739,26 @@ impl TryFrom<PhonemeCode> for T {
                 "there should be no size/alignment issues",
             );
         })
+    }
+}
+
+impl From<OptionalConsonant> for Option<PhonemeCode> {
+    fn from(consonant: OptionalConsonant) -> Self {
+        bytemuck::checked::try_cast(consonant)
+            .inspect_err(|&err| {
+                assert_eq!(
+                    CheckedCastError::InvalidBitPattern,
+                    err,
+                    "there should be no size/alignment issues",
+                );
+            })
+            .ok()
+    }
+}
+
+impl From<NonPauBaseVowel> for PhonemeCode {
+    fn from(phoneme: NonPauBaseVowel) -> Self {
+        bytemuck::checked::cast(phoneme)
     }
 }
 

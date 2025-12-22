@@ -98,8 +98,15 @@ pub(crate) enum ErrorRepr {
     )]
     ModelNotFound { model_id: VoiceModelId },
 
-    #[error("正常に推論することができませんでした")]
-    RunModel(#[source] anyhow::Error),
+    #[error(
+        "正常に推論することができませんでした{}",
+        note.as_ref().map(|s| format!("。NOTE: {s}")).unwrap_or_default()
+    )]
+    RunModel {
+        note: Option<&'static str>,
+        #[source]
+        source: anyhow::Error,
+    },
 
     #[error("入力テキストの解析に失敗しました")]
     AnalyzeText {
@@ -178,7 +185,11 @@ pub enum ErrorKind {
     UseUserDict,
     /// ユーザー辞書の単語のバリデーションに失敗した。
     InvalidWord,
-    /// AudioQuery、もしくはその一部が不正。
+    /// [`AudioQuery`]、[`FrameAudioQuery`]、[`Score`]、もしくはその一部が不正。
+    ///
+    /// [`AudioQuery`]: crate::AudioQuery
+    /// [`FrameAudioQuery`]: crate::FrameAudioQuery
+    /// [`Score`]: crate::Score
     InvalidQuery,
     #[doc(hidden)]
     __NonExhaustive,
@@ -252,6 +263,18 @@ pub(crate) enum InvalidQueryErrorSource {
 
     #[error("0より大きい{DEFAULT_SAMPLING_RATE}の倍数でなければなりません")]
     IsNotMultipleOfBaseSamplingRate,
+
+    #[error("lyricが空文字列の場合、keyはnullである必要があります。")]
+    UnnecessaryKeyForPau,
+
+    #[error("keyがnullの場合、lyricは空文字列である必要があります。")]
+    MissingKeyForNonPau,
+
+    #[error(r#"notesはpau (lyric="")から始まる必要があります"#)]
+    InitialNoteMustBePau,
+
+    #[error("同じ音素列から成り立っている必要があります")]
+    DifferentPhonemeSeqs,
 
     #[error(transparent)]
     InvalidAsSuperset(Box<InvalidQueryError>),

@@ -23,6 +23,7 @@ link-onnxruntime = []
 
 [dependencies]
 anyhow.workspace = true
+arrayvec.workspace = true
 async-fs.workspace = true
 async-lock.workspace = true
 async_zip = { workspace = true, features = ["deflate"] }
@@ -32,7 +33,7 @@ camino.workspace = true
 const_format.workspace = true
 derive-getters.workspace = true
 derive-new.workspace = true
-derive_more = { workspace = true, features = ["add", "as_ref", "debug", "deref", "display", "from", "from_str", "index", "into"] }
+derive_more = { workspace = true, features = ["add", "as_ref", "debug", "deref", "display", "from", "from_str", "index", "into", "into_iterator"] }
 duplicate.workspace = true
 easy-ext.workspace = true
 educe.workspace = true
@@ -55,10 +56,13 @@ serde = { workspace = true, features = ["derive", "rc"] }
 serde_json = { workspace = true, features = ["preserve_order"] }
 serde_with.workspace = true
 smallvec.workspace = true
+smol_str.workspace = true
 strum = { workspace = true, features = ["derive"] }
 tempfile.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
+typed_floats = { workspace = true, features = ["serde"] }
+typeshare = { workspace = true, default-features = false }
 uuid = { workspace = true, features = ["v4", "serde"] }
 voicevox-ort = { workspace = true, features = ["download-binaries", "__init-for-voicevox"] }
 voicevox_core_macros.workspace = true

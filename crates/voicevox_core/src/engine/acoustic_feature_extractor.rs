@@ -2,7 +2,7 @@ pub(super) mod convert;
 
 use bytemuck::{CheckedBitPattern, Contiguous, NoUninit};
 use serde_with::SerializeDisplay;
-use strum::{EnumCount, EnumIter};
+use strum::EnumCount;
 
 pub use self::sil::Sil;
 
@@ -387,8 +387,8 @@ pub(crate) enum NonConsonant {
 }
 
 /// 音素IDのうち、`-1` ([`OptionalConsonant::None`])を除いたもの。
-#[derive(Clone, Copy, Contiguous, NoUninit, EnumCount)]
-#[cfg_attr(test, derive(PartialEq, Debug, strum::EnumIter))]
+#[derive(Clone, Copy, PartialEq, Contiguous, CheckedBitPattern, NoUninit, EnumCount)]
+#[cfg_attr(test, derive(Debug, strum::EnumIter))]
 #[repr(i64)]
 pub(crate) enum PhonemeCode {
     //None = -1,
@@ -439,7 +439,9 @@ pub(crate) enum PhonemeCode {
     ConsonantZ = 44,
 }
 
-#[derive(Clone, Copy, CheckedBitPattern, NoUninit, EnumCount)]
+#[derive(
+    Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash, CheckedBitPattern, NoUninit, EnumCount,
+)]
 #[repr(i64)]
 pub(crate) enum OptionalConsonant {
     None = -1,
@@ -542,7 +544,8 @@ pub(crate) enum MoraTail {
     //ConsonantZ = 44,
 }
 
-#[derive(Clone, Copy, NoUninit, EnumCount, EnumIter)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, NoUninit, EnumCount)]
+#[cfg_attr(test, derive(strum::EnumIter))]
 #[repr(i64)]
 pub(crate) enum NonPauBaseVowel {
     //None = -1,
