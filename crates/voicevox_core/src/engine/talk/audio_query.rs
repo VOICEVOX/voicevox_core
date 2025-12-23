@@ -6,8 +6,6 @@ pub(crate) use self::validated::{
     LengthedPhoneme, ValidatedAccentPhrase, ValidatedAudioQuery, ValidatedMora,
 };
 
-pub use self::validated::Validate;
-
 /* 各フィールドのjsonフィールド名はsnake_caseとする*/
 
 /// モーラ（子音＋母音）ごとの情報。

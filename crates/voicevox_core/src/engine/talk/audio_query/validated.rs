@@ -5,7 +5,6 @@ use std::{
 };
 
 use duplicate::duplicate_item;
-use serde::de::DeserializeOwned;
 use tracing::warn;
 
 use crate::error::{InvalidQueryError, InvalidQueryErrorSource};
@@ -14,6 +13,7 @@ use super::{
     super::super::{
         acoustic_feature_extractor::{Consonant, NonConsonant},
         sampling_rate::SamplingRate,
+        validate::Validate as _,
         DEFAULT_SAMPLING_RATE,
     },
     AccentPhrase, AudioQuery, Mora,
@@ -132,35 +132,6 @@ impl AudioQuery {
     // TODO: この層を破壊
     pub(crate) fn to_validated(&self) -> crate::Result<ValidatedAudioQuery<'_>> {
         ValidatedAudioQuery::new(self).map_err(Into::into)
-    }
-}
-
-pub trait Validate: DeserializeOwned {
-    const NAME: &str;
-    fn validate(&self) -> crate::Result<()>;
-
-    fn validation_error_description() -> String {
-        format!("不正な{}です", Self::NAME)
-    }
-}
-
-// TODO: #1243
-#[duplicate_item(
-    T S validation;
-    [ AudioQuery ] [ "AudioQuery" ] [ Self::validate ];
-    [ AccentPhrase ] [ "アクセント句" ] [ Self::validate ];
-    [ Mora ] [ "モーラ" ] [ Self::validate ];
-    [ Vec<AccentPhrase> ] [ "アクセント句の列" ] [ |this: &Self| this.iter().try_for_each(AccentPhrase::validate) ];
-    [ crate::Note ] [ "ノート" ] [ Self::validate ];
-    [ crate::Score ] [ "楽譜" ] [ Self::validate ];
-    [ crate::FramePhoneme ] [ "FramePhoneme" ] [ |_| Ok(()) ];
-    [ crate::FrameAudioQuery ] [ "FrameAudioQuery" ] [ |this: &Self| { this.validate(); Ok(()) } ];
-)]
-impl Validate for T {
-    const NAME: &str = S;
-
-    fn validate(&self) -> crate::Result<()> {
-        (validation)(self)
     }
 }
 
