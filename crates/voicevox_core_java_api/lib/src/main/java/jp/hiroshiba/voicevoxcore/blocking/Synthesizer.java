@@ -11,6 +11,8 @@ import jp.hiroshiba.voicevoxcore.AccelerationMode;
 import jp.hiroshiba.voicevoxcore.AccentPhrase;
 import jp.hiroshiba.voicevoxcore.AudioQuery;
 import jp.hiroshiba.voicevoxcore.CharacterMeta;
+import jp.hiroshiba.voicevoxcore.FrameAudioQuery;
+import jp.hiroshiba.voicevoxcore.Score;
 import jp.hiroshiba.voicevoxcore.StyleType;
 import jp.hiroshiba.voicevoxcore.exceptions.InvalidModelDataException;
 import jp.hiroshiba.voicevoxcore.exceptions.RunModelException;
@@ -314,6 +316,62 @@ public class Synthesizer {
     return new TtsConfigurator(this, text, styleId);
   }
 
+  @Nonnull
+  public FrameAudioQuery createSingFrameAudioQuery(Score score, int styleId)
+      throws RunModelException {
+    if (!Utils.isU32(styleId)) {
+      throw new IllegalArgumentException("styleId");
+    }
+
+    String scoreJson = Convert.jsonFromQueryLike(score, "TODO");
+
+    Gson gson = new Gson();
+    String frameAudioQueryJson = rsCreateSingFrameAudioQuery(scoreJson, styleId);
+    FrameAudioQuery frameAudioQuery = gson.fromJson(frameAudioQueryJson, FrameAudioQuery.class);
+    if (frameAudioQuery == null) {
+      throw new NullPointerException("frame_audio_query");
+    }
+    return frameAudioQuery;
+  }
+
+  @Nonnull
+  public float[] createSingF0(Score score, FrameAudioQuery frameAudioQuery, int styleId)
+      throws RunModelException {
+    if (!Utils.isU32(styleId)) {
+      throw new IllegalArgumentException("styleId");
+    }
+
+    String scoreJson = Convert.jsonFromQueryLike(score, "TODO");
+    String frameAudioQueryJson = Convert.jsonFromQueryLike(frameAudioQuery, "TODO");
+
+    return rsCreateSingFrameF0(scoreJson, frameAudioQueryJson, styleId);
+  }
+
+  @Nonnull
+  public float[] createSingVolume(Score score, FrameAudioQuery frameAudioQuery, int styleId)
+      throws RunModelException {
+    if (!Utils.isU32(styleId)) {
+      throw new IllegalArgumentException("styleId");
+    }
+
+    String scoreJson = Convert.jsonFromQueryLike(score, "TODO");
+    String frameAudioQueryJson = Convert.jsonFromQueryLike(frameAudioQuery, "TODO");
+
+    return rsCreateSingFrameVolume(scoreJson, frameAudioQueryJson, styleId);
+  }
+
+  @Nonnull
+  public byte[] frameSynthesis(FrameAudioQuery frameAudioQuery, int styleId)
+      throws RunModelException {
+    if (!Utils.isU32(styleId)) {
+      throw new IllegalArgumentException("styleId");
+    }
+
+    String frameAudioQueryJson = Convert.jsonFromQueryLike(frameAudioQuery, "TODO");
+
+    return rsFrameSynthesis(frameAudioQueryJson, styleId);
+  }
+
   private native void rsNew(Onnxruntime onnxruntime, OpenJtalk openJtalk, Builder builder);
 
   private native boolean rsIsGpuMode();
@@ -362,6 +420,22 @@ public class Synthesizer {
 
   @Nonnull
   private native byte[] rsTts(String text, int styleId, boolean enableInterrogativeUpspeak)
+      throws RunModelException;
+
+  @Nonnull
+  private native String rsCreateSingFrameAudioQuery(String score, int styleId)
+      throws RunModelException;
+
+  @Nonnull
+  private native float[] rsCreateSingFrameF0(String score, String frameAudioQuery, int styleId)
+      throws RunModelException;
+
+  @Nonnull
+  private native float[] rsCreateSingFrameVolume(String score, String frameAudioQuery, int styleId)
+      throws RunModelException;
+
+  @Nonnull
+  private native byte[] rsFrameSynthesis(String frameAudioQuery, int styleId)
       throws RunModelException;
 
   private native void rsDrop();

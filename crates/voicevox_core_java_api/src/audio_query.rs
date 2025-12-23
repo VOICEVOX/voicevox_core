@@ -7,7 +7,10 @@ use jni::{
     objects::{JClass, JObject, JString, JValueGen},
     sys::jstring,
 };
-use voicevox_core::{__internal::interop::Validate, AccentPhrase, AudioQuery, Mora};
+use voicevox_core::{
+    __internal::interop::Validate, AccentPhrase, AudioQuery, FrameAudioQuery, FramePhoneme, Mora,
+    Note, Score,
+};
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
@@ -51,6 +54,42 @@ extern "system" fn Java_jp_hiroshiba_voicevoxcore_Mora_rsValidate(
     this: JObject<'_>,
 ) {
     throw_if_err(env, (), |env| Mora::validate_json(env, this))
+}
+
+// SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+#[unsafe(no_mangle)]
+extern "system" fn Java_jp_hiroshiba_voicevoxcore_Score_rsValidate(
+    env: JNIEnv<'_>,
+    this: JObject<'_>,
+) {
+    throw_if_err(env, (), |env| Score::validate_json(env, this))
+}
+
+// SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+#[unsafe(no_mangle)]
+extern "system" fn Java_jp_hiroshiba_voicevoxcore_Note_rsValidate(
+    env: JNIEnv<'_>,
+    this: JObject<'_>,
+) {
+    throw_if_err(env, (), |env| Note::validate_json(env, this))
+}
+
+// SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+#[unsafe(no_mangle)]
+extern "system" fn Java_jp_hiroshiba_voicevoxcore_FrameAudioQuery_rsValidate(
+    env: JNIEnv<'_>,
+    this: JObject<'_>,
+) {
+    throw_if_err(env, (), |env| FrameAudioQuery::validate_json(env, this))
+}
+
+// SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+#[unsafe(no_mangle)]
+extern "system" fn Java_jp_hiroshiba_voicevoxcore_FramePhoneme_rsValidate(
+    env: JNIEnv<'_>,
+    this: JObject<'_>,
+) {
+    throw_if_err(env, (), |env| FramePhoneme::validate_json(env, this))
 }
 
 #[ext]
