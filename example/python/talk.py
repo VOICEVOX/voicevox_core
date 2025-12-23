@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""TTSを行うサンプルコードです。"""
+"""テキスト音声合成を行うサンプルコードです。"""
 
 import dataclasses
 import logging

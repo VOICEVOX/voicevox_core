@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""asyncio版の、TTSを行うサンプルコードです。"""
+"""asyncio版の、テキスト音声合成を行うサンプルコードです。"""
 
 import asyncio
 import dataclasses
