@@ -1,9 +1,15 @@
 use easy_ext::ext;
-use std::{error::Error as _, ffi::CStr, fmt::Debug, iter};
+use std::{
+    error::Error as _,
+    ffi::{CStr, CString},
+    fmt::Debug,
+    iter,
+};
+use typed_floats::{NonNaNFinite, PositiveFinite};
 use uuid::Uuid;
 use voicevox_core::{
-    __internal::interop::Validate, AccelerationMode, AccentPhrase, AudioQuery, Mora, UserDictWord,
-    VoiceModelId,
+    __internal::interop::Validate, AccelerationMode, AccentPhrase, AudioQuery, FrameAudioQuery,
+    FramePhoneme, Mora, Note, Score, UserDictWord, VoiceModelId,
 };
 
 use duplicate::duplicate_item;
@@ -63,7 +69,14 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
             Err(InvalidAudioQuery(_)) => VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR,
             Err(InvalidAccentPhrase(_)) => VOICEVOX_RESULT_INVALID_ACCENT_PHRASE_ERROR,
             Err(InvalidMora(_)) => VOICEVOX_RESULT_INVALID_MORA_ERROR,
+            Err(InvalidScore(_)) => VOICEVOX_RESULT_INVALID_SCORE_ERROR,
+            Err(InvalidNote(_)) => VOICEVOX_RESULT_INVALID_NOTE_ERROR,
+            Err(InvalidFrameAudioQuery(_)) => VOICEVOX_RESULT_INVALID_FRAME_AUDIO_QUERY_ERROR,
+            Err(InvalidFramePhoneme(_)) => VOICEVOX_RESULT_INVALID_FRAME_PHONEME_ERROR,
             Err(InvalidUuid(_)) => VOICEVOX_RESULT_INVALID_UUID_ERROR,
+            Err(IncompatibleScoreAndFrameAudioQuery(_)) => {
+                VOICEVOX_RESULT_INCOMPATIBLE_SCORE_AND_FRAME_AUDIO_QUERY_ERROR
+            }
         }
     }
 }
@@ -90,8 +103,18 @@ pub(crate) enum CApiError {
     InvalidAccentPhrase(Either<serde_json::Error, String>),
     #[error("無効なモーラです: {0}")]
     InvalidMora(Either<serde_json::Error, String>),
+    #[error("無効な楽譜です: {0}")]
+    InvalidScore(Either<serde_json::Error, String>),
+    #[error("無効なノートです: {0}")]
+    InvalidNote(Either<serde_json::Error, String>),
+    #[error("無効なFrameAudioQueryです: {0}")]
+    InvalidFrameAudioQuery(Either<serde_json::Error, String>),
+    #[error("無効なFramePhonemeです: {0}")]
+    InvalidFramePhoneme(Either<serde_json::Error, String>),
     #[error("無効なUUIDです: {0}")]
     InvalidUuid(uuid::Error),
+    #[error("無効なScoreとFrameAudioQueryの組み合わせです: {0}")]
+    IncompatibleScoreAndFrameAudioQuery(String),
 }
 
 pub(crate) trait ValidateJson: Validate {
@@ -124,6 +147,10 @@ pub(crate) trait ValidateJson: Validate {
     [ AccentPhrase ] [ InvalidAccentPhrase ];
     [ Mora ] [ InvalidMora ];
     [ Vec<AccentPhrase> ] [ InvalidAccentPhrase ];
+    [ Score ] [ InvalidScore ];
+    [ Note ] [ InvalidNote ];
+    [ FrameAudioQuery ] [ InvalidFrameAudioQuery ];
+    [ FramePhoneme ] [ InvalidFramePhoneme ];
 )]
 impl ValidateJson for T {
     fn error(source: Either<serde_json::Error, String>) -> CApiError {
@@ -137,6 +164,34 @@ pub(crate) fn audio_query_model_to_json(audio_query_model: &AudioQuery) -> Strin
 
 pub(crate) fn accent_phrases_to_json(audio_query_model: &[AccentPhrase]) -> String {
     serde_json::to_string(audio_query_model).expect("should be always valid")
+}
+
+pub(crate) trait ToCJson {
+    fn to_json(&self) -> String;
+
+    fn to_c_json(&self) -> CString {
+        CString::new(self.to_json()).expect("a JSON should not contain '\\0'")
+    }
+}
+
+impl<T> ToCJson for T
+where
+    for<'a> &'a T: Into<serde_json::Value>,
+{
+    fn to_json(&self) -> String {
+        self.into().to_string()
+    }
+}
+
+#[duplicate_item(
+    T;
+    [ NonNaNFinite<f32> ];
+    [ PositiveFinite<f32> ];
+)]
+impl ToCJson for [T] {
+    fn to_json(&self) -> String {
+        serde_json::to_string(self).expect("should be always JSON serializable")
+    }
 }
 
 pub(crate) fn ensure_utf8(s: &CStr) -> CApiResult<&str> {

@@ -62,6 +62,16 @@ pub enum VoicevoxResultCode {
     VOICEVOX_RESULT_INVALID_UUID_ERROR = 25,
     /// 無効なMora
     VOICEVOX_RESULT_INVALID_MORA_ERROR = 30,
+    /// 無効な楽譜
+    VOICEVOX_RESULT_INVALID_SCORE_ERROR = 31,
+    /// 無効なノート
+    VOICEVOX_RESULT_INVALID_NOTE_ERROR = 32,
+    /// 無効なFrameAudioQuery
+    VOICEVOX_RESULT_INVALID_FRAME_AUDIO_QUERY_ERROR = 33,
+    /// 無効なFramePhoneme
+    VOICEVOX_RESULT_INVALID_FRAME_PHONEME_ERROR = 34,
+    /// 無効な楽譜とFrameAudioQueryの組み合わせ
+    VOICEVOX_RESULT_INCOMPATIBLE_SCORE_AND_FRAME_AUDIO_QUERY_ERROR = 35,
 }
 
 pub(crate) const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'static CStr {
@@ -109,5 +119,12 @@ pub(crate) const fn error_result_to_message(result_code: VoicevoxResultCode) -> 
         }
         VOICEVOX_RESULT_INVALID_UUID_ERROR => c"UUIDの変換に失敗しました",
         VOICEVOX_RESULT_INVALID_MORA_ERROR => c"無効なモーラです",
+        VOICEVOX_RESULT_INVALID_SCORE_ERROR => c"無効な楽譜です",
+        VOICEVOX_RESULT_INVALID_NOTE_ERROR => c"無効なノートです",
+        VOICEVOX_RESULT_INVALID_FRAME_AUDIO_QUERY_ERROR => c"無効なFrameAudioQueryです",
+        VOICEVOX_RESULT_INVALID_FRAME_PHONEME_ERROR => c"無効なFramePhonemeです",
+        VOICEVOX_RESULT_INCOMPATIBLE_SCORE_AND_FRAME_AUDIO_QUERY_ERROR => {
+            c"無効な楽譜とFramePhonemeの組み合わせです"
+        }
     }
 }

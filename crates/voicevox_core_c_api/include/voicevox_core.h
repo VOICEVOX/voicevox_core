@@ -231,6 +231,26 @@ enum VoicevoxResultCode
    * 無効なMora
    */
   VOICEVOX_RESULT_INVALID_MORA_ERROR = 30,
+  /**
+   * 無効な楽譜
+   */
+  VOICEVOX_RESULT_INVALID_SCORE_ERROR = 31,
+  /**
+   * 無効なノート
+   */
+  VOICEVOX_RESULT_INVALID_NOTE_ERROR = 32,
+  /**
+   * 無効なFrameAudioQuery
+   */
+  VOICEVOX_RESULT_INVALID_FRAME_AUDIO_QUERY_ERROR = 33,
+  /**
+   * 無効なFramePhoneme
+   */
+  VOICEVOX_RESULT_INVALID_FRAME_PHONEME_ERROR = 34,
+  /**
+   * 無効な楽譜とFrameAudioQueryの組み合わせ
+   */
+  VOICEVOX_RESULT_INCOMPATIBLE_SCORE_AND_FRAME_AUDIO_QUERY_ERROR = 35,
 };
 #ifndef __cplusplus
 typedef int32_t VoicevoxResultCode;
@@ -804,6 +824,32 @@ VoicevoxResultCode voicevox_accent_phrase_validate(const char *accent_phrase_jso
 __declspec(dllimport)
 #endif
 VoicevoxResultCode voicevox_mora_validate(const char *mora_json);
+
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_score_validate(const char *score_json);
+
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_note_validate(const char *note_json);
+
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_frame_audio_query_validate(const char *frame_audio_query_json);
+
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_frame_phoneme_validate(const char *frame_phoneme_json);
+
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_ensure_compatible(const char *score_json,
+                                              const char *frame_phoneme_json);
 
 /**
  * VVMファイルを開く。
@@ -1412,6 +1458,41 @@ VoicevoxResultCode voicevox_synthesizer_tts(const struct VoicevoxSynthesizer *sy
                                             struct VoicevoxTtsOptions options,
                                             uintptr_t *output_wav_length,
                                             uint8_t **output_wav);
+
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_synthesizer_create_sing_frame_audio_query(const struct VoicevoxSynthesizer *synthesizer,
+                                                                      const char *score_json,
+                                                                      VoicevoxStyleId style_id,
+                                                                      char **output_frame_audio_query_json);
+
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_synthesizer_create_sing_frame_f0(const struct VoicevoxSynthesizer *synthesizer,
+                                                             const char *score_json,
+                                                             const char *frame_audio_query_json,
+                                                             VoicevoxStyleId style_id,
+                                                             char **output_f0_json);
+
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_synthesizer_create_sing_frame_volume(const struct VoicevoxSynthesizer *synthesizer,
+                                                                 const char *score_json,
+                                                                 const char *frame_audio_query_json,
+                                                                 VoicevoxStyleId style_id,
+                                                                 char **output_volume_json);
+
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_synthesizer_frame_synthesis(const struct VoicevoxSynthesizer *synthesizer,
+                                                        const char *frame_audio_query_json,
+                                                        VoicevoxStyleId style_id,
+                                                        uintptr_t *output_wav_length,
+                                                        uint8_t **output_wav);
 
 /**
  * JSON文字列を解放する。

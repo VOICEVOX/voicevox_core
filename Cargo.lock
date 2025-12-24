@@ -5148,6 +5148,7 @@ dependencies = [
  "toml 0.7.2",
  "tracing",
  "tracing-subscriber",
+ "typed_floats",
  "typetag",
  "uuid",
  "voicevox_core",

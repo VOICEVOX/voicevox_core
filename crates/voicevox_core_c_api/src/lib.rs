@@ -13,14 +13,15 @@ mod helpers;
 mod object;
 mod result_code;
 mod slice_owner;
+
 use self::drop_check::C_STRING_DROP_CHECKER;
 use self::helpers::{
-    CApiError, UuidBytesExt as _, ValidateJson, accent_phrases_to_json, audio_query_model_to_json,
-    ensure_utf8, into_result_code_with_error,
+    CApiError, ToCJson as _, UuidBytesExt as _, ValidateJson, accent_phrases_to_json,
+    audio_query_model_to_json, ensure_utf8, into_result_code_with_error,
 };
 use self::object::{CApiObject as _, CApiObjectPtrExt as _};
 use self::result_code::VoicevoxResultCode;
-use self::slice_owner::U8_SLICE_OWNER;
+use self::slice_owner::{F32_SLICE_OWNER, U8_SLICE_OWNER};
 use anstream::{AutoStream, stream::RawStream};
 use c_impls::{VoicevoxSynthesizerPtrExt as _, VoicevoxVoiceModelFilePtrExt as _};
 use chrono::SecondsFormat;
@@ -41,7 +42,9 @@ use uuid::Uuid;
 use voicevox_core::__internal::interop::{
     BlockingTextAnalyzerExt as _, DEFAULT_PRIORITY, DEFAULT_WORD_TYPE, ToJsonValue as _,
 };
-use voicevox_core::{AccentPhrase, AudioQuery, Mora, StyleId};
+use voicevox_core::{
+    AccentPhrase, AudioQuery, FrameAudioQuery, FramePhoneme, Mora, Note, Score, StyleId,
+};
 
 fn init_logger_once() {
     static ONCE: Once = Once::new();
@@ -617,6 +620,66 @@ pub unsafe extern "C" fn voicevox_mora_validate(mora_json: *const c_char) -> Voi
     // SAFETY: The safety contract must be upheld by the caller.
     let mora_json = unsafe { CStr::from_ptr(mora_json) };
     into_result_code_with_error(Mora::validate_json(mora_json).map(|_| ()))
+}
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn voicevox_score_validate(score_json: *const c_char) -> VoicevoxResultCode {
+    init_logger_once();
+    // SAFETY: The safety contract must be upheld by the caller.
+    let score_json = unsafe { CStr::from_ptr(score_json) };
+    into_result_code_with_error(Score::validate_json(score_json).map(|_| ()))
+}
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn voicevox_note_validate(note_json: *const c_char) -> VoicevoxResultCode {
+    init_logger_once();
+    // SAFETY: The safety contract must be upheld by the caller.
+    let note_json = unsafe { CStr::from_ptr(note_json) };
+    into_result_code_with_error(Note::validate_json(note_json).map(|_| ()))
+}
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn voicevox_frame_audio_query_validate(
+    frame_audio_query_json: *const c_char,
+) -> VoicevoxResultCode {
+    init_logger_once();
+    // SAFETY: The safety contract must be upheld by the caller.
+    let frame_audio_query_json = unsafe { CStr::from_ptr(frame_audio_query_json) };
+    into_result_code_with_error(FrameAudioQuery::validate_json(frame_audio_query_json).map(|_| ()))
+}
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn voicevox_frame_phoneme_validate(
+    frame_phoneme_json: *const c_char,
+) -> VoicevoxResultCode {
+    init_logger_once();
+    // SAFETY: The safety contract must be upheld by the caller.
+    let frame_phoneme_json = unsafe { CStr::from_ptr(frame_phoneme_json) };
+    into_result_code_with_error(FramePhoneme::validate_json(frame_phoneme_json).map(|_| ()))
+}
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn voicevox_ensure_compatible(
+    score_json: *const c_char,
+    frame_phoneme_json: *const c_char,
+) -> VoicevoxResultCode {
+    init_logger_once();
+
+    // SAFETY: The safety contract must be upheld by the caller.
+    let score_json = unsafe { CStr::from_ptr(score_json) };
+    let frame_audio_query_json = unsafe { CStr::from_ptr(frame_phoneme_json) };
+
+    into_result_code_with_error((|| {
+        let score = &Score::validate_json(score_json)?;
+        let frame_audio_query = &FrameAudioQuery::validate_json(frame_audio_query_json)?;
+        voicevox_core::ensure_compatible(score, frame_audio_query)
+            .map_err(|e| CApiError::IncompatibleScoreAndFrameAudioQuery(e.to_string()))
+    })())
 }
 
 /// 音声モデルファイル。
@@ -1502,6 +1565,143 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
             .tts(text, StyleId::new(style_id))
             .enable_interrogative_upspeak(enable_interrogative_upspeak)
             .perform()?;
+        // SAFETY: The safety contract must be upheld by the caller.
+        unsafe { U8_SLICE_OWNER.own_and_lend(output, output_wav, output_wav_length) };
+        Ok(())
+    })())
+}
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn voicevox_synthesizer_create_sing_frame_audio_query(
+    synthesizer: *const VoicevoxSynthesizer,
+    score_json: *const c_char,
+    style_id: VoicevoxStyleId,
+    output_frame_audio_query_json: NonNull<*mut c_char>,
+) -> VoicevoxResultCode {
+    init_logger_once();
+    into_result_code_with_error((|| {
+        // SAFETY: The safety contract must be upheld by the caller.
+        let score_json = unsafe { CStr::from_ptr(score_json) };
+
+        let score = &Score::validate_json(score_json)?;
+
+        let frame_audio_query = synthesizer
+            .body()
+            .create_sing_frame_audio_query(score, StyleId::new(style_id))?
+            .to_c_json();
+
+        unsafe {
+            // SAFETY: The safety contract must be upheld by the caller.
+            output_frame_audio_query_json.write_unaligned(
+                C_STRING_DROP_CHECKER
+                    .whitelist(frame_audio_query)
+                    .into_raw(),
+            );
+        }
+        Ok(())
+    })())
+}
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn voicevox_synthesizer_create_sing_frame_f0(
+    synthesizer: *const VoicevoxSynthesizer,
+    score_json: *const c_char,
+    frame_audio_query_json: *const c_char,
+    style_id: VoicevoxStyleId,
+    output_f0_json: NonNull<*mut c_char>,
+) -> VoicevoxResultCode {
+    init_logger_once();
+    into_result_code_with_error((|| {
+        // SAFETY: The safety contract must be upheld by the caller.
+        let score_json = unsafe { CStr::from_ptr(score_json) };
+        let frame_audio_query_json = unsafe { CStr::from_ptr(frame_audio_query_json) };
+
+        let score = &Score::validate_json(score_json)?;
+        let frame_audio_query = &FrameAudioQuery::validate_json(frame_audio_query_json)?;
+
+        let f0 = synthesizer
+            .body()
+            .create_sing_frame_f0(score, frame_audio_query, StyleId::new(style_id))
+            .map_err(|err| match err.kind() {
+                voicevox_core::ErrorKind::InvalidQuery => {
+                    let err = err.to_string();
+                    assert!(err.contains("組み合わせ"));
+                    CApiError::IncompatibleScoreAndFrameAudioQuery(err)
+                }
+                _ => err.into(),
+            })?
+            .to_c_json();
+
+        unsafe {
+            // SAFETY: The safety contract must be upheld by the caller.
+            output_f0_json.write_unaligned(C_STRING_DROP_CHECKER.whitelist(f0).into_raw());
+        }
+        Ok(())
+    })())
+}
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn voicevox_synthesizer_create_sing_frame_volume(
+    synthesizer: *const VoicevoxSynthesizer,
+    score_json: *const c_char,
+    frame_audio_query_json: *const c_char,
+    style_id: VoicevoxStyleId,
+    output_volume_json: NonNull<*mut c_char>,
+) -> VoicevoxResultCode {
+    init_logger_once();
+    into_result_code_with_error((|| {
+        // SAFETY: The safety contract must be upheld by the caller.
+        let score_json = unsafe { CStr::from_ptr(score_json) };
+        let score = &Score::validate_json(score_json)?;
+
+        // SAFETY: The safety contract must be upheld by the caller.
+        let frame_audio_query_json = unsafe { CStr::from_ptr(frame_audio_query_json) };
+        let frame_audio_query = &FrameAudioQuery::validate_json(frame_audio_query_json)?;
+
+        let volume = synthesizer
+            .body()
+            .create_sing_frame_volume(score, frame_audio_query, StyleId::new(style_id))
+            .map_err(|err| match err.kind() {
+                voicevox_core::ErrorKind::InvalidQuery => {
+                    let err = err.to_string();
+                    assert!(err.contains("組み合わせ"));
+                    CApiError::IncompatibleScoreAndFrameAudioQuery(err)
+                }
+                _ => err.into(),
+            })?
+            .to_c_json();
+
+        unsafe {
+            // SAFETY: The safety contract must be upheld by the caller.
+            output_volume_json.write_unaligned(C_STRING_DROP_CHECKER.whitelist(volume).into_raw());
+        }
+        Ok(())
+    })())
+}
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn voicevox_synthesizer_frame_synthesis(
+    synthesizer: *const VoicevoxSynthesizer,
+    frame_audio_query_json: *const c_char,
+    style_id: VoicevoxStyleId,
+    output_wav_length: NonNull<usize>,
+    output_wav: NonNull<NonNull<u8>>,
+) -> VoicevoxResultCode {
+    init_logger_once();
+    into_result_code_with_error((|| {
+        // SAFETY: The safety contract must be upheld by the caller.
+        let frame_audio_query_json = unsafe { CStr::from_ptr(frame_audio_query_json) };
+        let frame_audio_query = &FrameAudioQuery::validate_json(frame_audio_query_json)?;
+
+        let output = synthesizer
+            .body()
+            .frame_synthesis(frame_audio_query, StyleId::new(style_id))
+            .perform()?;
+
         // SAFETY: The safety contract must be upheld by the caller.
         unsafe { U8_SLICE_OWNER.own_and_lend(output, output_wav, output_wav_length) };
         Ok(())
