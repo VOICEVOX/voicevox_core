@@ -62,6 +62,8 @@ pub enum VoicevoxResultCode {
     VOICEVOX_RESULT_INVALID_UUID_ERROR = 25,
     /// 無効なMora
     VOICEVOX_RESULT_INVALID_MORA_ERROR = 30,
+    /// 楽譜とFrameAudioQueryの組み合わせが不正
+    VOICEVOX_RESULT_INCOMPATIBLE_QUERIES_ERROR = 35,
 }
 
 pub(crate) const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'static CStr {
@@ -109,5 +111,9 @@ pub(crate) const fn error_result_to_message(result_code: VoicevoxResultCode) -> 
         }
         VOICEVOX_RESULT_INVALID_UUID_ERROR => c"UUIDの変換に失敗しました",
         VOICEVOX_RESULT_INVALID_MORA_ERROR => c"無効なモーラです",
+        VOICEVOX_RESULT_INCOMPATIBLE_QUERIES_ERROR => {
+            c"不正な楽譜とFrameAudioQueryの組み合わせです。\
+              これらは同じ音素列から成り立っている必要があります"
+        }
     }
 }
