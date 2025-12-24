@@ -2,7 +2,7 @@ use duplicate::duplicate_item;
 use serde::de::DeserializeOwned;
 
 use super::{
-    song::queries::{Note, Score},
+    song::queries::{FrameAudioQuery, FramePhoneme, Note, Score},
     talk::{AccentPhrase, AudioQuery, Mora},
 };
 
@@ -23,6 +23,8 @@ pub trait Validate: DeserializeOwned {
     [ Vec<AccentPhrase> ] [ "アクセント句の列" ] [ |this: &Self| this.iter().try_for_each(AccentPhrase::validate) ];
     [ Note ] [ "ノート" ] [ Self::validate ];
     [ Score ] [ "楽譜" ] [ Self::validate ];
+    [ FramePhoneme ] [ "FramePhoneme" ] [ |_| Ok(()) ];
+    [ FrameAudioQuery ] [ "FrameAudioQuery" ] [ |this: &Self| { this.validate(); Ok(()) } ];
 )]
 impl Validate for T {
     const NAME: &str = S;
