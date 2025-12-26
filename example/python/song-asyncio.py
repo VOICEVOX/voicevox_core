@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""asyncio版の、歌唱音声合成を行うサンプルコードです。"""
+"""asyncio版の歌唱音声合成を行うサンプルコードです。"""
 
 import asyncio
 import dataclasses
