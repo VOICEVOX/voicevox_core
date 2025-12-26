@@ -15,7 +15,7 @@ use super::{
         sampling_rate::SamplingRate,
         validate::Validate as _,
     },
-    queries::{FrameAudioQuery, FramePhoneme, Note, NoteId, OptionalLyric, Score},
+    queries::{FrameAudioQuery, FramePhoneme, Key, Note, NoteId, OptionalLyric, Score},
 };
 
 use self::note_seq::ValidatedNoteSeq;
@@ -275,11 +275,11 @@ impl TryFrom<&'_ Note> for ValidatedNote {
 #[derive(PartialEq)]
 pub(crate) enum PauOrKeyAndLyric {
     Pau,
-    KeyAndLyric { key: U53, lyric: Lyric },
+    KeyAndLyric { key: Key, lyric: Lyric },
 }
 
 impl PauOrKeyAndLyric {
-    fn new(key: Option<U53>, lyric: &OptionalLyric) -> Result<Self, InvalidQueryError> {
+    fn new(key: Option<Key>, lyric: &OptionalLyric) -> Result<Self, InvalidQueryError> {
         match (key, &**lyric.phonemes()) {
             (None, []) => Ok(Self::Pau),
             (Some(key), &[mora]) => Ok(Self::KeyAndLyric {
@@ -414,10 +414,10 @@ mod tests {
             }
         }
 
-        fn note(key: Option<u32>, lyric: &str) -> Note {
+        fn note(key: Option<u8>, lyric: &str) -> Note {
             Note {
                 id: None,
-                key: key.map(Into::into),
+                key: key.map(|key| key.try_into().unwrap()),
                 lyric: lyric.parse().unwrap(),
                 frame_length: 1u8.into(),
             }
