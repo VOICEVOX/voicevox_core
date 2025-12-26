@@ -4158,10 +4158,10 @@ mod tests {
         );
         assert_eq!(*b"WAVEfmt ", wav[8..16]);
 
-        fn note(id: &str, key: Option<u32>, frame_length: u32, lyric: &str) -> Note {
+        fn note(id: &str, key: Option<u8>, frame_length: u32, lyric: &str) -> Note {
             Note {
                 id: Some(NoteId(id.into())),
-                key: key.map(Into::into),
+                key: key.map(|key| key.try_into().unwrap()),
                 frame_length: frame_length.into(),
                 lyric: lyric.parse().unwrap(),
             }

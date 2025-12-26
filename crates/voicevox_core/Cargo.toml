@@ -46,6 +46,7 @@ indexmap = { workspace = true, features = ["serde"] }
 itertools.workspace = true
 jlabel.workspace = true
 ndarray.workspace = true
+num-traits.workspace = true
 open_jtalk.workspace = true
 ouroboros.workspace = true
 pastey.workspace = true
