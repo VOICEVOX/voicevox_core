@@ -146,7 +146,7 @@ impl<'de> Deserialize<'de> for Key {
             type Value = Key;
 
             fn expecting(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-                write!(fmt, "",)
+                write!(fmt, "an integer inside `0..=127`")
             }
 
             #[duplicate_item(
