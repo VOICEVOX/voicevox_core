@@ -542,7 +542,7 @@ class Synthesizer:
         style_id: StyleId | int,
     ) -> list[float]:
         """
-        |blocking-synthesizer-create-sing-frame-f0-score|_ と |blocking-synthesizer-create-sing-frame-f0-frame-audio-query| から、フレームごとの基本周波数を再生成する。
+        |blocking-synthesizer-create-sing-frame-f0-score|_ と |blocking-synthesizer-create-sing-frame-f0-frame-audio-query| から、フレームごとの基本周波数を生成する。
 
         .. code-block::
 
@@ -572,7 +572,7 @@ class Synthesizer:
         style_id: StyleId | int,
     ) -> list[float]:
         """
-        |blocking-synthesizer-create-sing-frame-volume-score|_ と |blocking-synthesizer-create-sing-frame-volume-frame-audio-query| から、フレームごとの音量を再生成する。
+        |blocking-synthesizer-create-sing-frame-volume-score|_ と |blocking-synthesizer-create-sing-frame-volume-frame-audio-query| から、フレームごとの音量を生成する。
 
         .. code-block::
 

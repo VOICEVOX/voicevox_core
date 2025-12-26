@@ -565,7 +565,7 @@ class Synthesizer:
         style_id: StyleId | int,
     ) -> list[float]:
         """
-        |blocking-synthesizer-create-sing-frame-volume-score|_ と |blocking-synthesizer-create-sing-frame-volume-frame-audio-query| から、フレームごとの音量を再生成する。
+        |blocking-synthesizer-create-sing-frame-volume-score|_ と |blocking-synthesizer-create-sing-frame-volume-frame-audio-query| から、フレームごとの音量を生成する。
 
         .. code-block::
 

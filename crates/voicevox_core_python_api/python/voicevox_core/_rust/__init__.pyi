@@ -158,7 +158,7 @@ def wav_from_s16le(pcm: bytes, sampling_rate: int, is_stereo: bool) -> bytes:
 
 def ensure_compatible(score: Score, frame_audio_query: FrameAudioQuery) -> None:
     """
-    与えられた |ensure-compatible-score|_ と |ensure-compatible-frame-audio-query|_ の組み合わせが、基本周波数と音量の再生成に利用できるかどうかを確認する。
+    与えられた |ensure-compatible-score|_ と |ensure-compatible-frame-audio-query|_ の組み合わせが、基本周波数と音量の生成に利用できるかどうかを確認する。
 
     次のうちどれかを満たすなら
     |ensure-compatible-invalid-query-error|_ を送出する。
