@@ -329,7 +329,7 @@ jobs:
         run: poetry run pytest ./python/test/
       - name: Exampleを実行
         run: |
-          for file in ../../example/python/run{,-asyncio}.py; do
+          for file in ../../example/python/{talk,song}{,-asyncio}.py; do
             poetry run python "$file" ../test_util/data/model/sample.vvm --dict-dir ../test_util/data/open_jtalk_dic_utf_8-1.11 --onnxruntime ../test_util/data/lib/*onnxruntime*
           done
   build-and-test-java-api:

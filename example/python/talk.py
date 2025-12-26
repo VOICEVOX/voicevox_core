@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+"""テキスト音声合成を行うサンプルコードです。"""
+
 import dataclasses
 import logging
 import multiprocessing
