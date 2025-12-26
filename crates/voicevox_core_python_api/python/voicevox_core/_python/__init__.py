@@ -612,7 +612,7 @@ class Note:
         次のうちどれかを満たすなら |note-validate-invalid-query-error|_ を送出する。
 
         - |note-rust-ty|_ としてデシリアライズ不可。
-            - :attr:`key` が負であるか、もしくは :math:`2^{53}-1` を超過する。
+            - :attr:`key` が負であるか、もしくは ``127`` を超過する。
             - :attr:`lyric` が ``""`` 以外の、音素として不正な文字列。
             - :attr:`frame_length` が負であるか、もしくは :math:`2^{53}-1` を超過する。
         - :attr:`key` が ``None`` かつ :attr:`lyric` が ``""`` 以外。
