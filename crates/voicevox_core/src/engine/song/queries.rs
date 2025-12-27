@@ -35,7 +35,7 @@ pub use self::{key::Key, optional_lyric::OptionalLyric};
 ///
 /// ```
 /// # use voicevox_core::Score;
-/// # let json = r#"{ "notes": [] }"#;
+/// # let json = r#"{ "notes": [{ "lyric": "", "frame_length": 0 }] }"#;
 /// let score = serde_json::from_str::<Score>(json)?;
 /// score.validate()?;
 /// # anyhow::Ok(())
@@ -66,7 +66,7 @@ impl From<&'_ Score> for serde_json::Value {
 ///
 /// ```
 /// # use voicevox_core::Note;
-/// # let json = r#"{ "lyric": "", frame_length: 0 }"#;
+/// # let json = r#"{ "lyric": "", "frame_length": 0 }"#;
 /// let note = serde_json::from_str::<Note>(json)?;
 /// note.validate()?;
 /// # anyhow::Ok(())
