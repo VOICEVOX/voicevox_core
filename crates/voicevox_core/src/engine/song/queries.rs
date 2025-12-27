@@ -29,7 +29,17 @@ pub use self::{key::Key, optional_lyric::OptionalLyric};
 ///
 /// # Validation
 ///
-/// この構造体の状態によっては、`Synthesizer`の各メソッドは[`ErrorKind::InvalidQuery`]を表わすエラーを返す。詳細は[`validate`メソッド]にて。
+/// この構造体は不正な状態を表現しうる。どのような状態が不正なのかについては[`validate`メソッド]を参照。この構造体を使う関数は、不正な状態に対して[`ErrorKind::InvalidQuery`]を表わすエラーを返す。
+///
+/// [`Deserialize`]時には、不正な状態であるかの検証は行われない。外部からのデータが不正でないことを確かめるには、デシリアライズ後に`validate`メソッドを用いる必要がある。
+///
+/// ```
+/// # use voicevox_core::Score;
+/// # let json = r#"{ "notes": [] }"#;
+/// let score = serde_json::from_str::<Score>(json)?;
+/// score.validate()?;
+/// # anyhow::Ok(())
+/// ```
 ///
 /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
 /// [`validate`メソッド]: Self::validate
@@ -50,7 +60,17 @@ impl From<&'_ Score> for serde_json::Value {
 ///
 /// # Validation
 ///
-/// この構造体の状態によっては、`Synthesizer`の各メソッドは[`ErrorKind::InvalidQuery`]を表わすエラーを返す。詳細は[`validate`メソッド]にて。
+/// この構造体は不正な状態を表現しうる。どのような状態が不正なのかについては[`validate`メソッド]を参照。この構造体を使う関数は、不正な状態に対して[`ErrorKind::InvalidQuery`]を表わすエラーを返す。
+///
+/// [`Deserialize`]時には、不正な状態であるかの検証は行われない。外部からのデータが不正でないことを確かめるには、デシリアライズ後に`validate`メソッドを用いる必要がある。
+///
+/// ```
+/// # use voicevox_core::Note;
+/// # let json = r#"{ "lyric": "", frame_length: 0 }"#;
+/// let note = serde_json::from_str::<Note>(json)?;
+/// note.validate()?;
+/// # anyhow::Ok(())
+/// ```
 ///
 /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
 /// [`validate`メソッド]: Self::validate

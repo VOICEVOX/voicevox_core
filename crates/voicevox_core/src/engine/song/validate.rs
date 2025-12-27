@@ -86,11 +86,11 @@ pub(crate) fn frame_phoneme_note_pairs<'a>(
 }
 
 impl Score {
-    /// この構造体をバリデートする。
+    /// この構造体が不正であるときエラーを返す。
     ///
     /// # Errors
     ///
-    /// 次を満たすなら[`ErrorKind::InvalidQuery`]を表わすエラーを返す。
+    /// この構造体が不正であるとき[`ErrorKind::InvalidQuery`]を表わすエラーを返す。不正であるとは、以下の条件を満たすことである。
     ///
     /// - [`notes`]の要素のうちいずれかが[不正]。
     ///
@@ -105,11 +105,11 @@ impl Score {
 }
 
 impl Note {
-    /// この構造体をバリデートする。
+    /// この構造体が不正であるときエラーを返す。
     ///
     /// # Errors
     ///
-    /// 次のうちどれかを満たすなら[`ErrorKind::InvalidQuery`]を表わすエラーを返す。
+    /// この構造体が不正であるとき[`ErrorKind::InvalidQuery`]を表わすエラーを返す。不正であるとは、以下のいずれかの条件を満たすことである。
     ///
     /// - [`key`]が`None`かつ[`lyric`]が[`PAU`]以外。
     /// - [`key`]が`Some(_)`かつ[`lyric`]が[`PAU`]。

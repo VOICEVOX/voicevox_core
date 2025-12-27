@@ -11,8 +11,15 @@ import jp.hiroshiba.voicevoxcore.exceptions.InvalidQueryException;
 /**
  * AccentPhrase (アクセント句ごとの情報)。
  *
- * <p>この構造体の状態によっては、{@code Synthesizer}の各メソッドは{@link InvalidQueryException}をスローする。詳細は{@link
- * #validate}にて。
+ * <p>このクラスは不正な状態を表現しうる。どのような状態が不正なのかについては{@link #validate}を参照。このクラスを使う関数は、不正な状態に対して{@link
+ * InvalidQueryException}をスローする。
+ *
+ * <p>コンストラクト時には、不正な状態であるかの検証は行われない。外部からのデータが不正でないことを確かめるには、コンストラクト後に{@code validate()}を用いる必要がある。
+ *
+ * <pre>{@code
+ * AccentPhrase accentPhrase = (new Gson()).fromJson(json, AccentPhrase.class);
+ * accentPhrase.validate();
+ * }</pre>
  *
  * <p>Gsonにおいてはフィールド名はsnake_caseとなる。<a
  * href="https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/serialization.md"
@@ -54,7 +61,9 @@ public class AccentPhrase {
   /**
    * このインスタンスをバリデートする。
    *
-   * <p>次の状態に対してはログで警告を出す。将来的にはエラーになる予定。
+   * <p>不正であるとは、{@code @throws}で示す条件を満たすことである。
+   *
+   * <p>また次の状態に対してはログで警告を出す。将来的にはエラーになる予定。
    *
    * <ul>
    *   <li>{@link #moras}もしくは{@link #pauseMora}の要素のいずれかが、警告が出る状態。
