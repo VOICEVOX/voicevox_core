@@ -72,7 +72,7 @@ public class Mora implements Cloneable {
   }
 
   /**
-   * このインスタンスをバリデートする。
+   * このインスタンスが不正であるときエラーを返す。
    *
    * <p>不正であるとは、{@code @throws}で示す条件を満たすことである。
    *
