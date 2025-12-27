@@ -12,7 +12,17 @@ pub(crate) use self::validated::{
 ///
 /// # Validation
 ///
-/// この構造体の状態によっては、`Synthesizer`の各メソッドは[`ErrorKind::InvalidQuery`]を表わすエラーを返す。詳細は[`validate`メソッド]にて。
+/// この構造体は不正な状態を表現しうる。どのような状態が不正なのかについては[`validate`メソッド]を参照。この構造体を使う関数は、不正な状態に対して[`ErrorKind::InvalidQuery`]を表わすエラーを返す。
+///
+/// [`Deserialize`]時には、不正な状態であるかの検証は行われない。外部からのデータが不正でないことを確かめるには、デシリアライズ後に`validate`メソッドを用いる必要がある。
+///
+/// ```
+/// # use voicevox_core::Mora;
+/// # let json = r#"{ "text": "ア", "vowel": "a", "vowel_length": 0, "pitch": 0.0 }"#;
+/// let mora = serde_json::from_str::<Mora>(json)?;
+/// mora.validate()?;
+/// # anyhow::Ok(())
+/// ```
 ///
 /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
 /// [`validate`メソッド]: Self::validate
@@ -37,7 +47,17 @@ pub struct Mora {
 ///
 /// # Validation
 ///
-/// この構造体の状態によっては、`Synthesizer`の各メソッドは[`ErrorKind::InvalidQuery`]を表わすエラーを返す。詳細は[`validate`メソッド]にて。
+/// この構造体は不正な状態を表現しうる。どのような状態が不正なのかについては[`validate`メソッド]を参照。この構造体を使う関数は、不正な状態に対して[`ErrorKind::InvalidQuery`]を表わすエラーを返す。
+///
+/// [`Deserialize`]時には、不正な状態であるかの検証は行われない。外部からのデータが不正でないことを確かめるには、デシリアライズ後に`validate`メソッドを用いる必要がある。
+///
+/// ```
+/// # use voicevox_core::AccentPhrase;
+/// # let json = r#"{ "moras": [{ "text": "ア", "vowel": "a", "vowel_length": 0, "pitch": 0.0 }], "accent": 1 }"#;
+/// let accent_phrase = serde_json::from_str::<AccentPhrase>(json)?;
+/// accent_phrase.validate()?;
+/// # anyhow::Ok(())
+/// ```
 ///
 /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
 /// [`validate`メソッド]: Self::validate
@@ -78,7 +98,17 @@ impl AccentPhrase {
 ///
 /// # Validation
 ///
-/// この構造体の状態によっては、`Synthesizer`の各メソッドは[`ErrorKind::InvalidQuery`]を表わすエラーを返す。詳細は[`validate`メソッド]にて。
+/// この構造体は不正な状態を表現しうる。どのような状態が不正なのかについては[`validate`メソッド]を参照。この構造体を使う関数は、不正な状態に対して[`ErrorKind::InvalidQuery`]を表わすエラーを返す。
+///
+/// [`Deserialize`]時には、不正な状態であるかの検証は行われない。外部からのデータが不正でないことを確かめるには、デシリアライズ後に`validate`メソッドを用いる必要がある。
+///
+/// ```
+/// # use voicevox_core::AudioQuery;
+/// # let json = r#"{ "accent_phrases": [], "speedScale": 1.0, "pitchScale": 0.0, "intonationScale": 1.0, "volumeScale": 1.0, "prePhonemeLength": 0.1, "postPhonemeLength": 0.1, "outputSamplingRate": 24000, "outputStereo": false }"#;
+/// let audio_query = serde_json::from_str::<AudioQuery>(json)?;
+/// audio_query.validate()?;
+/// # anyhow::Ok(())
+/// ```
 ///
 /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
 /// [`validate`メソッド]: Self::validate
