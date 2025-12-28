@@ -55,7 +55,7 @@ use crate::{
         },
         to_s16le_pcm, wav_from_s16le, IteratorExt as _, PhonemeCode, DEFAULT_SAMPLING_RATE,
     },
-    error::{ErrorRepr, InvalidQueryError},
+    error::ErrorRepr,
     future::FutureExt as _,
     numerics::positive_finite_f32,
     AccentPhrase, AudioQuery, Result, StyleId, VoiceModelId, VoiceModelMeta,
@@ -868,12 +868,7 @@ trait AsInner {
         frame_audio_query.validate();
 
         let (phonemes_by_frame, keys_by_frame) =
-            song::validate::frame_phoneme_note_pairs(&frame_audio_query.phonemes, notes.as_ref())
-                .map_err(|source| InvalidQueryError {
-                    what: "`score`と`frame_audio_query`の組み合わせ",
-                    value: None,
-                    source: Some(source),
-                })?
+            song::validate::frame_phoneme_note_pairs(&frame_audio_query.phonemes, notes.as_ref())?
                 .flat_map(|(p, n)| song::interpret::repeat_phoneme_code_and_key(p, n))
                 .unzip_into_array1s();
 
@@ -935,12 +930,7 @@ trait AsInner {
         frame_audio_query.warn_for_f0_len();
 
         let (phonemes_by_frame, keys_by_frame) =
-            song::validate::frame_phoneme_note_pairs(&frame_audio_query.phonemes, notes.as_ref())
-                .map_err(|source| InvalidQueryError {
-                    what: "`score`と`frame_audio_query`の組み合わせ",
-                    value: None,
-                    source: Some(source),
-                })?
+            song::validate::frame_phoneme_note_pairs(&frame_audio_query.phonemes, notes.as_ref())?
                 .flat_map(|(p, n)| song::interpret::repeat_phoneme_code_and_key(p, n))
                 .unzip_into_array1s();
 

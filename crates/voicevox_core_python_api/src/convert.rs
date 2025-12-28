@@ -23,11 +23,11 @@ use voicevox_core::{
 
 use crate::{
     _ReservedFields, AnalyzeTextError, GetSupportedDevicesError, GpuSupportError,
-    InitInferenceRuntimeError, InvalidModelDataError, InvalidModelFormatError, InvalidQueryError,
-    InvalidWordError, LoadUserDictError, ModelAlreadyLoadedError, ModelNotFoundError,
-    NotLoadedOpenjtalkDictError, OpenZipFileError, ParseKanaError, ReadZipEntryError,
-    RunModelError, SaveUserDictError, StyleAlreadyLoadedError, StyleNotFoundError,
-    UseUserDictError, WordNotFoundError,
+    IncompatibleQueriesError, InitInferenceRuntimeError, InvalidModelDataError,
+    InvalidModelFormatError, InvalidQueryError, InvalidWordError, LoadUserDictError,
+    ModelAlreadyLoadedError, ModelNotFoundError, NotLoadedOpenjtalkDictError, OpenZipFileError,
+    ParseKanaError, ReadZipEntryError, RunModelError, SaveUserDictError, StyleAlreadyLoadedError,
+    StyleNotFoundError, UseUserDictError, WordNotFoundError,
 };
 
 pub(crate) fn from_acceleration_mode(ob: &Bound<'_, PyAny>) -> PyResult<AccelerationMode> {
@@ -394,6 +394,7 @@ pub(crate) impl<T> voicevox_core::Result<T> {
                 ErrorKind::UseUserDict => UseUserDictError::new_err(msg),
                 ErrorKind::InvalidWord => InvalidWordError::new_err(msg),
                 ErrorKind::InvalidQuery => InvalidQueryError::new_err(msg),
+                ErrorKind::IncompatibleQueries => IncompatibleQueriesError::new_err(msg),
                 ErrorKind::__NonExhaustive => unreachable!(),
             };
 
