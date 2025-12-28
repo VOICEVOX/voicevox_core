@@ -280,8 +280,8 @@ pub(crate) enum InvalidQueryErrorSource {
     #[error(r#"notesはpau (lyric="")から始まる必要があります"#)]
     InitialNoteMustBePau,
 
-    #[error("同じ音素列から成り立っている必要があります")]
-    DifferentPhonemeSeqs,
+    #[error("同じ音素ID列から成り立っている必要があります")]
+    DifferentPhonemeIdSeqs,
 
     #[error(transparent)]
     InvalidAsSuperset(Box<InvalidQueryError>),

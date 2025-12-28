@@ -659,7 +659,7 @@ mod optional_lyric {
         mora_mappings::MORA_KANA_TO_MORA_PHONEMES,
     };
 
-    /// 音符の歌詞。`""`は[無音]。
+    /// 音符の歌詞。空文字列は[無音]。
     ///
     /// # Examples
     ///

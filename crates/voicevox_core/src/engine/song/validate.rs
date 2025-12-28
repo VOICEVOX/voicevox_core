@@ -27,7 +27,7 @@ use self::note_seq::ValidatedNoteSeq;
 /// 次のうちどれかを満たすなら[`ErrorKind::InvalidQuery`]を表わすエラーを返す。
 ///
 /// - `score`が[不正]。
-/// - `score`と`frame_audio_query`が異なる音素列から成り立っている。ただし一部の音素は同一視される。
+/// - `score`が表す音素ID列と、`frame_audio_query.phonemes`が表す音素ID列が等しくない。ただし異なる音素の表現が同一のIDを表すことがある。
 ///
 /// # Warnings
 ///
@@ -76,7 +76,7 @@ pub(crate) fn frame_phoneme_note_pairs<'a>(
         phonemes_from_query.clone().map(|(p, _)| p),
         phonemes_from_score.clone().map(|(p, _)| p),
     ) {
-        return Err(InvalidQueryErrorSource::DifferentPhonemeSeqs);
+        return Err(InvalidQueryErrorSource::DifferentPhonemeIdSeqs);
     }
 
     Ok(itertools::zip_eq(
@@ -390,7 +390,7 @@ mod tests {
             crate::Error(ErrorRepr::InvalidQuery(InvalidQueryError {
                 what: "`Score`と`FrameAudioQuery`の組み合わせ",
                 value: None,
-                source: Some(InvalidQueryErrorSource::DifferentPhonemeSeqs),
+                source: Some(InvalidQueryErrorSource::DifferentPhonemeIdSeqs),
             }))
         ));
 
