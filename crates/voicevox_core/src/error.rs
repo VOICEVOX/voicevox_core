@@ -1,6 +1,7 @@
 use crate::{
     core::devices::DeviceAvailabilities,
     engine::{
+        song::queries::Key,
         talk::{user_dict::InvalidWordError, KanaParseError},
         DEFAULT_SAMPLING_RATE,
     },
@@ -278,6 +279,12 @@ pub(crate) enum InvalidQueryErrorSource {
 
     #[error("keyがnullの場合、lyricは空文字列である必要があります。")]
     MissingKeyForNonPau,
+
+    #[error("{}以上{}以下である必要があります", Key::MIN, Key::MAX)]
+    OutOfRangeKeyValue,
+
+    #[error("{_0}")]
+    NotInteger(serde_json::Error),
 
     #[error(r#"notesはpau (lyric="")から始まる必要があります"#)]
     InitialNoteMustBePau,

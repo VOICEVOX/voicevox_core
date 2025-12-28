@@ -15,7 +15,7 @@ use super::{
         sampling_rate::SamplingRate,
         validate::Validate as _,
     },
-    queries::{FrameAudioQuery, FramePhoneme, Note, NoteId, OptionalLyric, Score},
+    queries::{FrameAudioQuery, FramePhoneme, Key, Note, NoteId, OptionalLyric, Score},
 };
 
 use self::note_seq::ValidatedNoteSeq;
@@ -79,11 +79,11 @@ pub(crate) fn frame_phoneme_note_pairs<'a>(
 }
 
 impl Score {
-    /// この構造体をバリデートする。
+    /// この構造体が不正であるときエラーを返す。
     ///
     /// # Errors
     ///
-    /// 次を満たすなら[`ErrorKind::InvalidQuery`]を表わすエラーを返す。
+    /// この構造体が不正であるとき[`ErrorKind::InvalidQuery`]を表わすエラーを返す。不正であるとは、以下の条件を満たすことである。
     ///
     /// - [`notes`]の要素のうちいずれかが[不正]。
     ///
@@ -98,11 +98,11 @@ impl Score {
 }
 
 impl Note {
-    /// この構造体をバリデートする。
+    /// この構造体が不正であるときエラーを返す。
     ///
     /// # Errors
     ///
-    /// 次のうちどれかを満たすなら[`ErrorKind::InvalidQuery`]を表わすエラーを返す。
+    /// この構造体が不正であるとき[`ErrorKind::InvalidQuery`]を表わすエラーを返す。不正であるとは、以下のいずれかの条件を満たすことである。
     ///
     /// - [`key`]が`None`かつ[`lyric`]が[`PAU`]以外。
     /// - [`key`]が`Some(_)`かつ[`lyric`]が[`PAU`]。
@@ -268,11 +268,11 @@ impl TryFrom<&'_ Note> for ValidatedNote {
 #[derive(PartialEq)]
 pub(crate) enum PauOrKeyAndLyric {
     Pau,
-    KeyAndLyric { key: U53, lyric: Lyric },
+    KeyAndLyric { key: Key, lyric: Lyric },
 }
 
 impl PauOrKeyAndLyric {
-    fn new(key: Option<U53>, lyric: &OptionalLyric) -> Result<Self, InvalidQueryError> {
+    fn new(key: Option<Key>, lyric: &OptionalLyric) -> Result<Self, InvalidQueryError> {
         match (key, &**lyric.phonemes()) {
             (None, []) => Ok(Self::Pau),
             (Some(key), &[mora]) => Ok(Self::KeyAndLyric {
@@ -403,10 +403,10 @@ mod tests {
             }
         }
 
-        fn note(key: Option<u32>, lyric: &str) -> Note {
+        fn note(key: Option<u8>, lyric: &str) -> Note {
             Note {
                 id: None,
-                key: key.map(Into::into),
+                key: key.map(|key| key.try_into().unwrap()),
                 lyric: lyric.parse().unwrap(),
                 frame_length: 1u8.into(),
             }

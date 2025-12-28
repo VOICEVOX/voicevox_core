@@ -105,7 +105,7 @@ impl PauOrKeyAndLyric {
     fn key(&self) -> i64 {
         match *self {
             Self::Pau => -1,
-            Self::KeyAndLyric { key, .. } => key.to_i64(),
+            Self::KeyAndLyric { key, .. } => key.into(),
         }
     }
 }
