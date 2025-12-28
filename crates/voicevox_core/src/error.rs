@@ -198,7 +198,7 @@ pub enum ErrorKind {
     InvalidQuery,
     /// [`FrameAudioQuery`]と[`Score`]の組み合わせが不正。
     ///
-    /// [`AudioQuery`]: crate::AudioQuery
+    /// [`FrameAudioQuery`]: crate::FrameAudioQuery
     /// [`Score`]: crate::Score
     IncompatibleQueries,
     #[doc(hidden)]

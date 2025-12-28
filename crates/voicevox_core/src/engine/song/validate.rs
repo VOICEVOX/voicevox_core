@@ -24,7 +24,7 @@ use self::note_seq::ValidatedNoteSeq;
 ///
 /// # Errors
 ///
-/// 次のうちどれかを満たすなら[`ErrorKind::InvalidQuery`]を表わすエラーを返す。
+/// 次のうちどれかを満たすなら[`ErrorKind::IncompatibleQueries`]を表わすエラーを返す。
 ///
 /// - `score`が[不正]。
 /// - `score`と`frame_audio_query`が異なる音素列から成り立っている。ただし一部の音素は同一視される。
@@ -37,7 +37,7 @@ use self::note_seq::ValidatedNoteSeq;
 ///
 /// [楽譜]: Score
 /// [歌唱合成用のクエリ]: FrameAudioQuery
-/// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
+/// [`ErrorKind::IncompatibleQueries`]: crate::ErrorKind::IncompatibleQueries
 /// [不正]: Score::validate
 /// [`WARN`]: tracing::Level::WARN
 /// [警告を出す]: FrameAudioQuery::validate
