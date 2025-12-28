@@ -231,6 +231,10 @@ enum VoicevoxResultCode
    * 無効なMora
    */
   VOICEVOX_RESULT_INVALID_MORA_ERROR = 30,
+  /**
+   * 楽譜とFrameAudioQueryの組み合わせが不正
+   */
+  VOICEVOX_RESULT_INCOMPATIBLE_QUERIES_ERROR = 35,
 };
 #ifndef __cplusplus
 typedef int32_t VoicevoxResultCode;

@@ -57,6 +57,7 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
                          beforehand with one of the `validate_` functions",
                     );
                 }
+                IncompatibleQueries => VOICEVOX_RESULT_INCOMPATIBLE_QUERIES_ERROR,
                 __NonExhaustive => unreachable!(),
             },
             Err(InvalidUtf8Input) => VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR,

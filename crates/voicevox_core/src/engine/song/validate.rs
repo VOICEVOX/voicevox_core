@@ -6,7 +6,7 @@ use typeshare::U53;
 
 use crate::{
     collections::{NonEmptyIterator, NonEmptyVec},
-    error::{InvalidQueryError, InvalidQueryErrorSource},
+    error::{ErrorRepr, IncompatibleQueriesError, InvalidQueryError, InvalidQueryErrorSource},
 };
 
 use super::{
@@ -24,7 +24,7 @@ use self::note_seq::ValidatedNoteSeq;
 ///
 /// # Errors
 ///
-/// 次のうちどれかを満たすなら[`ErrorKind::InvalidQuery`]を表わすエラーを返す。
+/// 次のうちどれかを満たすなら[`ErrorKind::IncompatibleQueries`]を表わすエラーを返す。
 ///
 /// - `score`が[不正]。
 /// - `score`が表す音素ID列と、`frame_audio_query.phonemes`が表す音素ID列が等しくない。ただし異なる音素の表現が同一のIDを表すことがある。
@@ -37,7 +37,7 @@ use self::note_seq::ValidatedNoteSeq;
 ///
 /// [楽譜]: Score
 /// [歌唱合成用のクエリ]: FrameAudioQuery
-/// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
+/// [`ErrorKind::IncompatibleQueries`]: crate::ErrorKind::IncompatibleQueries
 /// [不正]: Score::validate
 /// [`WARN`]: tracing::Level::WARN
 /// [警告を出す]: FrameAudioQuery::validate
@@ -47,14 +47,7 @@ pub fn ensure_compatible(score: &Score, frame_audio_query: &FrameAudioQuery) -> 
 
     frame_phoneme_note_pairs(&frame_audio_query.phonemes, notes.as_ref())
         .map(|_| ())
-        .map_err(|source| {
-            InvalidQueryError {
-                what: "`Score`と`FrameAudioQuery`の組み合わせ",
-                value: None,
-                source: Some(source),
-            }
-            .into()
-        })
+        .map_err(|e @ IncompatibleQueriesError| ErrorRepr::IncompatibleQueries(e).into())
 }
 
 pub(crate) fn frame_phoneme_note_pairs<'a>(
@@ -62,7 +55,7 @@ pub(crate) fn frame_phoneme_note_pairs<'a>(
     notes: &'a [ValidatedNote],
 ) -> Result<
     impl Iterator<Item = (&'a FramePhoneme, &'a ValidatedNote)> + Clone,
-    InvalidQueryErrorSource,
+    IncompatibleQueriesError,
 > {
     let phonemes_from_query = frame_phonemes
         .iter()
@@ -76,7 +69,7 @@ pub(crate) fn frame_phoneme_note_pairs<'a>(
         phonemes_from_query.clone().map(|(p, _)| p),
         phonemes_from_score.clone().map(|(p, _)| p),
     ) {
-        return Err(InvalidQueryErrorSource::DifferentPhonemeIdSeqs);
+        return Err(IncompatibleQueriesError);
     }
 
     Ok(itertools::zip_eq(
@@ -387,11 +380,7 @@ mod tests {
         .unwrap_err();
         assert!(matches!(
             err,
-            crate::Error(ErrorRepr::InvalidQuery(InvalidQueryError {
-                what: "`Score`と`FrameAudioQuery`の組み合わせ",
-                value: None,
-                source: Some(InvalidQueryErrorSource::DifferentPhonemeIdSeqs),
-            }))
+            crate::Error(ErrorRepr::IncompatibleQueries(_)),
         ));
 
         let err = super::ensure_compatible(

@@ -94,6 +94,7 @@ where
                             UseUserDict,
                             InvalidWord,
                             InvalidQuery,
+                            IncompatibleQueries,
                         );
 
                         let mut sources =
