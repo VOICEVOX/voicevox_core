@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 
-"""asyncio版のサンプルコードです。"""
+"""テキスト音声合成を行うサンプルコードです。"""
 
-import asyncio
 import dataclasses
 import logging
 import multiprocessing
@@ -10,7 +9,9 @@ from argparse import ArgumentParser
 from pathlib import Path
 
 from voicevox_core import AccelerationMode
-from voicevox_core.asyncio import Onnxruntime, OpenJtalk, Synthesizer, VoiceModelFile
+from voicevox_core.blocking import Onnxruntime, OpenJtalk, Synthesizer, VoiceModelFile
+
+# TODO: https://github.com/VOICEVOX/voicevox_core/pull/972 をリバートする
 
 
 @dataclasses.dataclass
@@ -77,7 +78,7 @@ class Args:
         )
 
 
-async def main() -> None:
+def main() -> None:
     logging.basicConfig(format="[%(levelname)s] %(name)s: %(message)s")
     logger = logging.getLogger(__name__)
     logger.setLevel("DEBUG")
@@ -87,14 +88,13 @@ async def main() -> None:
     args = Args.parse_args()
 
     logger.info("%s", f"Loading ONNX Runtime ({args.onnxruntime=})")
-    onnxruntime = await Onnxruntime.load_once(filename=args.onnxruntime)
-
+    onnxruntime = Onnxruntime.load_once(filename=args.onnxruntime)
     logger.debug("%s", f"{onnxruntime.supported_devices()=}")
 
     logger.info("%s", f"Initializing ({args.mode=}, {args.dict_dir=})")
     synthesizer = Synthesizer(
         onnxruntime,
-        await OpenJtalk.new(args.dict_dir),
+        OpenJtalk(args.dict_dir),
         acceleration_mode=args.mode,
         cpu_num_threads=max(
             multiprocessing.cpu_count(), 2
@@ -103,19 +103,19 @@ async def main() -> None:
     logger.debug("%s", f"{synthesizer.is_gpu_mode=}")
 
     logger.info("%s", f"Loading `{args.vvm}`")
-    async with await VoiceModelFile.open(args.vvm) as model:
-        await synthesizer.load_voice_model(model)
+    with VoiceModelFile.open(args.vvm) as model:
+        synthesizer.load_voice_model(model)
     logger.debug("%s", f"{synthesizer.metas()=}")
 
     logger.info("%s", f"Creating an AudioQuery from {args.text!r}")
-    audio_query = await synthesizer.create_audio_query(args.text, args.style_id)
+    audio_query = synthesizer.create_audio_query(args.text, args.style_id)
 
     logger.info("%s", f"Synthesizing with {audio_query}")
-    wav = await synthesizer.synthesis(audio_query, args.style_id)
+    wav = synthesizer.synthesis(audio_query, args.style_id)
 
     args.out.write_bytes(wav)
     logger.info("%s", f"Wrote `{args.out}`")
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

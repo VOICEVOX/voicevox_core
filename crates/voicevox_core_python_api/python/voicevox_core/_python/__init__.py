@@ -12,7 +12,11 @@ from .._rust import (
     _to_zenkaku,
     _validate_accent_phrase,
     _validate_audio_query,
+    _validate_frame_audio_query,
+    _validate_frame_phoneme,
     _validate_mora,
+    _validate_note,
+    _validate_score,
     _validate_user_dict_word,
 )
 from ._please_do_not_use import _Reserved
@@ -580,3 +584,210 @@ class UserDictWord:
         object.__setattr__(self, "surface", _to_zenkaku(self.surface))
 
         _validate_user_dict_word(self)
+
+
+NoteId = NewType("NoteId", str)
+"""
+音符のID。
+
+Parameters
+----------
+x : str
+"""
+
+
+@dataclasses.dataclass
+class Note:
+    """
+    音符ごとの情報。
+
+    このクラスは不正な状態を表現しうる。どのような状態が不正なのかについては
+    :func:`validate` を参照。このクラスを使う関数は、不正な状態に対して
+    |note-invalid-query-error|_ を送出する。
+
+    コンストラクト時には、不正な状態であるかの検証は行われない。
+
+    .. |note-invalid-query-error| replace:: ``InvalidQueryError``
+    .. _note-invalid-query-error: #voicevox_core.InvalidQueryError
+    """
+
+    frame_length: int
+    """音素のフレーム長。"""
+
+    lyric: str
+    """歌詞。空文字列は無音。"""
+
+    key: int | None = None
+    """音階。"""
+
+    id: NoteId | None = None
+    """ID。"""
+
+    def validate(self) -> None:
+        """
+        このインスタンスが不正であるときエラーを返す。
+
+        不正であるとは、以下のいずれかの条件を満たすことである。
+
+        - |note-rust-ty|_ としてデシリアライズ不可。
+            - :attr:`key` が負であるか、もしくは ``127`` を超過する。
+            - :attr:`lyric` が ``""`` 以外の、音素として不正な文字列。
+            - :attr:`frame_length` が負であるか、もしくは :math:`2^{53}-1` を超過する。
+        - :attr:`key` が ``None`` かつ :attr:`lyric` が ``""`` 以外。
+        - :attr:`key` が ``int`` かつ :attr:`lyric` が ``""`` 。
+
+        送出するエラーは |note-validate-invalid-query-error|_ 。
+
+        .. |note-rust-ty| replace:: Rust APIの ``Note`` 型
+        .. _note-rust-ty: ../../../rust_api/voicevox_core/struct.Note.html
+        .. |note-validate-invalid-query-error| replace:: ``InvalidQueryError``
+        .. _note-validate-invalid-query-error: #voicevox_core.InvalidQueryError
+        """
+        _validate_note(self)
+
+
+@dataclasses.dataclass
+class Score:
+    """
+    楽譜情報。
+
+    このクラスは不正な状態を表現しうる。どのような状態が不正なのかについては
+    :func:`validate` を参照。このクラスを使う関数は、不正な状態に対して
+    |score-invalid-query-error|_ を送出する。
+
+    コンストラクト時には、不正な状態であるかの検証は行われない。
+
+    .. |score-invalid-query-error| replace:: ``InvalidQueryError``
+    .. _score-invalid-query-error: #voicevox_core.InvalidQueryError
+    """
+
+    notes: list[Note]
+    """音符のリスト。"""
+
+    def validate(self) -> None:
+        """
+        このインスタンスが不正であるときエラーを返す。
+
+        不正であるとは、以下の条件を満たすことである。
+
+        - :attr:`notes` の要素のうちいずれかが |score-validate-note-validate|_ 。
+
+        送出するエラーは |score-validate-invalid-query-error|_ 。
+
+        .. |score-validate-note-validate| replace:: 不正
+        .. _score-validate-note-validate: #voicevox_core.Note.validate
+        .. |score-validate-invalid-query-error| replace:: ``InvalidQueryError``
+        .. _score-validate-invalid-query-error: #voicevox_core.InvalidQueryError
+        """
+        _validate_score(self)
+
+
+@dataclasses.dataclass
+class FramePhoneme:
+    """
+    音素の情報。
+
+    このクラスは不正な状態を表現しうる。どのような状態が不正なのかについては
+    :func:`validate` を参照。このクラスを使う関数は、不正な状態に対して
+    |frame-phoneme-invalid-query-error|_ を送出する。
+
+    コンストラクト時には、不正な状態であるかの検証は行われない。
+
+    .. |frame-phoneme-invalid-query-error| replace:: ``InvalidQueryError``
+    .. _frame-phoneme-invalid-query-error: #voicevox_core.InvalidQueryError
+    """
+
+    phoneme: str
+    """音素。"""
+
+    frame_length: int
+    """音素のフレーム長。"""
+
+    note_id: NoteId | None = None
+    """音符のID。"""
+
+    def validate(self) -> None:
+        """
+        このインスタンスが不正であるときエラーを返す。
+
+        不正であるとは、以下の条件を満たすことである。
+
+        - |frame-phoneme-rust-ty|_ としてデシリアライズ不可。
+            - :attr:`frame_length` が負であるか、もしくは :math:`2^{53}-1` を超過する。
+
+        送出するエラーは |frame-phoneme-validate-invalid-query-error|_ 。
+
+        .. |frame-phoneme-rust-ty| replace:: Rust APIの ``FramePhoneme`` 型
+        .. _frame-phoneme-rust-ty: ../../../rust_api/voicevox_core/struct.FramePhoneme.html
+        .. |frame-phoneme-validate-invalid-query-error| replace:: ``InvalidQueryError``
+        .. _frame-phoneme-validate-invalid-query-error: #voicevox_core.InvalidQueryError
+        """
+        _validate_frame_phoneme(self)
+
+
+@dataclasses.dataclass
+class FrameAudioQuery:
+    """
+    フレームごとの音声合成用のクエリ。
+
+    このクラスは不正な状態を表現しうる。どのような状態が不正なのかについては
+    :func:`validate` を参照。このクラスを使う関数は、不正な状態に対して
+    |frame-audio-query-invalid-query-error|_ を送出する。
+
+    コンストラクト時には、不正な状態であるかの検証は行われない。
+
+    .. |frame-audio-query-invalid-query-error| replace:: ``InvalidQueryError``
+    .. _frame-audio-query-invalid-query-error: #voicevox_core.InvalidQueryError
+
+    シリアライゼーションのサポートはされていない。詳細は
+    `データのシリアライゼーション
+    <https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/serialization.md>`_
+    を参照。
+    """
+
+    f0: list[float]
+    """フレームごとの基本周波数。"""
+
+    volume: list[float]
+    """フレームごとの音量。"""
+
+    phonemes: list[FramePhoneme]
+    """音素のリスト。"""
+
+    volume_scale: float
+    """全体の音量。"""
+
+    output_sampling_rate: int
+    """音声データの出力サンプリングレート。"""
+
+    output_stereo: bool
+    """音声データをステレオ出力するか否か。"""
+
+    def validate(self) -> None:
+        """
+        このインスタンスが不正であるときエラーを返す。
+
+        不正であるとは、以下のいずれかの条件を満たすことである。
+
+        - |frame-audio-query-rust-ty|_ としてデシリアライズ不可。
+            - :attr:`f0` の要素がNaN、infinity、もしくは負。
+            - :attr:`volume` の要素がNaNもしくは±infinity。
+            - :attr:`volume_scale` がNaN、infinity、もしくは負。
+            - :attr:`output_sampling_rate` 以下の値をとる。
+                - ``0`` 以下の値。
+                - :math:`2^{32}-1` を超過する値。
+                - ``24000`` の倍数以外 (将来的に解消予定。cf. |frame-audio-query-validate-issue762|_)。
+        - :attr:`phonemes` の要素のうちいずれかが |frame-audio-query-validate-frame-phoneme-validate|_ 。
+
+        送出するエラーは |frame-audio-query-validate-invalid-query-error|_ 。
+
+        .. |frame-audio-query-rust-ty| replace:: Rust APIの ``FrameAudioQuery`` 型
+        .. _frame-audio-query-rust-ty: ../../../rust_api/voicevox_core/struct.FrameAudioQuery.html
+        .. |frame-audio-query-validate-issue762| replace:: #762
+        .. _frame-audio-query-validate-issue762: https://github.com/VOICEVOX/voicevox_core/issues/762
+        .. |frame-audio-query-validate-frame-phoneme-validate| replace:: 不正
+        .. _frame-audio-query-validate-frame-phoneme-validate: #voicevox_core.FramePhoneme.validate
+        .. |frame-audio-query-validate-invalid-query-error| replace:: ``InvalidQueryError``
+        .. _frame-audio-query-validate-invalid-query-error: #voicevox_core.InvalidQueryError
+        """
+        _validate_frame_audio_query(self)

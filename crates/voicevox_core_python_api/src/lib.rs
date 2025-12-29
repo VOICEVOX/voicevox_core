@@ -19,7 +19,8 @@ use pyo3::{
     wrap_pyfunction,
 };
 use voicevox_core::{
-    __internal::interop::raii::MaybeClosed, AccentPhrase, AudioQuery, Mora, UserDictWord,
+    __internal::interop::raii::MaybeClosed, AccentPhrase, AudioQuery, FrameAudioQuery,
+    FramePhoneme, Mora, Note, Score, UserDictWord,
 };
 
 #[pymodule]
@@ -36,8 +37,13 @@ fn rust(py: Python<'_>, module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_wrapped(wrap_pyfunction!(_validate_accent_phrase))?;
     module.add_wrapped(wrap_pyfunction!(_validate_mora))?;
     module.add_wrapped(wrap_pyfunction!(_validate_user_dict_word))?;
+    module.add_wrapped(wrap_pyfunction!(_validate_score))?;
+    module.add_wrapped(wrap_pyfunction!(_validate_note))?;
+    module.add_wrapped(wrap_pyfunction!(_validate_frame_audio_query))?;
+    module.add_wrapped(wrap_pyfunction!(_validate_frame_phoneme))?;
     module.add_wrapped(wrap_pyfunction!(_to_zenkaku))?;
     module.add_wrapped(wrap_pyfunction!(wav_from_s16le))?;
+    module.add_wrapped(wrap_pyfunction!(ensure_compatible))?;
 
     add_exceptions(module)?;
 
@@ -316,6 +322,37 @@ fn _validate_user_dict_word(
 }
 
 #[pyfunction]
+fn _validate_note(
+    #[pyo3(from_py_with = "convert::from_query_like_via_serde")] note: Note,
+    py: Python<'_>,
+) -> PyResult<()> {
+    note.validate().into_py_result(py)
+}
+
+#[pyfunction]
+fn _validate_score(
+    #[pyo3(from_py_with = "convert::from_query_like_via_serde")] score: Score,
+    py: Python<'_>,
+) -> PyResult<()> {
+    score.validate().into_py_result(py)
+}
+
+#[pyfunction]
+fn _validate_frame_phoneme(
+    #[expect(unused_variables)]
+    #[pyo3(from_py_with = "convert::from_query_like_via_serde")]
+    frame_phoneme: FramePhoneme,
+) {
+}
+
+#[pyfunction]
+fn _validate_frame_audio_query(
+    #[pyo3(from_py_with = "convert::from_audio_query")] frame_audio_query: FrameAudioQuery,
+) {
+    frame_audio_query.validate();
+}
+
+#[pyfunction]
 fn _to_zenkaku(text: &str) -> PyResult<String> {
     Ok(voicevox_core::__internal::to_zenkaku(text))
 }
@@ -323,6 +360,15 @@ fn _to_zenkaku(text: &str) -> PyResult<String> {
 #[pyfunction]
 fn wav_from_s16le(pcm: &[u8], sampling_rate: u32, is_stereo: bool) -> Vec<u8> {
     voicevox_core::__wav_from_s16le(pcm, sampling_rate, is_stereo)
+}
+
+#[pyfunction]
+fn ensure_compatible(
+    #[pyo3(from_py_with = "convert::from_query_like_via_serde")] score: Score,
+    #[pyo3(from_py_with = "convert::from_audio_query")] frame_audio_query: FrameAudioQuery,
+    py: Python<'_>,
+) -> PyResult<()> {
+    voicevox_core::ensure_compatible(&score, &frame_audio_query).into_py_result(py)
 }
 
 mod blocking {
@@ -339,7 +385,8 @@ mod blocking {
     use uuid::Uuid;
     use voicevox_core::{
         __internal::interop::BlockingTextAnalyzerExt as _, AccelerationMode, AccentPhrase,
-        AudioQuery, StyleId, SupportedDevices, UserDictWord, VoiceModelMeta,
+        AudioQuery, FrameAudioQuery, Score, StyleId, SupportedDevices, UserDictWord,
+        VoiceModelMeta,
     };
 
     use crate::{
@@ -956,6 +1003,71 @@ mod blocking {
                 .into_py_result(py)
         }
 
+        fn create_sing_frame_audio_query(
+            &self,
+            #[pyo3(from_py_with = "crate::convert::from_query_like_via_serde")] score: Score,
+            style_id: u32,
+            py: Python<'_>,
+        ) -> PyResult<ToDataclass<FrameAudioQuery>> {
+            let style_id = StyleId::new(style_id);
+            self.synthesizer
+                .read()?
+                .create_sing_frame_audio_query(&score, style_id)
+                .map(Into::into)
+                .into_py_result(py)
+        }
+
+        fn create_sing_frame_f0(
+            &self,
+            #[pyo3(from_py_with = "crate::convert::from_query_like_via_serde")] score: Score,
+            #[pyo3(from_py_with = "crate::convert::from_audio_query")]
+            frame_audio_query: FrameAudioQuery,
+            style_id: u32,
+            py: Python<'_>,
+        ) -> PyResult<Vec<f32>> {
+            let style_id = StyleId::new(style_id);
+
+            // TODO: typed_floatsにissueかPRを出しに行き、スライス変換かbytemuck対応を入れてもらう
+            self.synthesizer
+                .read()?
+                .create_sing_frame_f0(&score, &frame_audio_query, style_id)
+                .map(|f0s| f0s.into_iter().map(Into::into).collect())
+                .into_py_result(py)
+        }
+
+        fn create_sing_frame_volume(
+            &self,
+            #[pyo3(from_py_with = "crate::convert::from_query_like_via_serde")] score: Score,
+            #[pyo3(from_py_with = "crate::convert::from_audio_query")]
+            frame_audio_query: FrameAudioQuery,
+            style_id: u32,
+            py: Python<'_>,
+        ) -> PyResult<Vec<f32>> {
+            let style_id = StyleId::new(style_id);
+
+            // TODO: typed_floatsにissueかPRを出しに行き、スライス変換かbytemuck対応を入れてもらう
+            self.synthesizer
+                .read()?
+                .create_sing_frame_volume(&score, &frame_audio_query, style_id)
+                .map(|volumes| volumes.into_iter().map(Into::into).collect())
+                .into_py_result(py)
+        }
+
+        fn frame_synthesis(
+            &self,
+            #[pyo3(from_py_with = "crate::convert::from_audio_query")]
+            frame_audio_query: FrameAudioQuery,
+            style_id: u32,
+            py: Python<'_>,
+        ) -> PyResult<Vec<u8>> {
+            let style_id = StyleId::new(style_id);
+            self.synthesizer
+                .read()?
+                .frame_synthesis(&frame_audio_query, style_id)
+                .perform()
+                .into_py_result(py)
+        }
+
         fn close(&self) {
             drop(self.synthesizer.close());
         }
@@ -1048,7 +1160,8 @@ mod asyncio {
     use uuid::Uuid;
     use voicevox_core::{
         __internal::interop::NonblockingTextAnalyzerExt as _, AccelerationMode, AccentPhrase,
-        AudioQuery, StyleId, SupportedDevices, UserDictWord, VoiceModelMeta,
+        AudioQuery, FrameAudioQuery, Score, StyleId, SupportedDevices, UserDictWord,
+        VoiceModelMeta,
     };
 
     use crate::{
@@ -1592,6 +1705,83 @@ mod asyncio {
                 .read()?
                 .tts(&text, style_id)
                 .enable_interrogative_upspeak(enable_interrogative_upspeak)
+                .cancellable(cancellable)
+                .perform()
+                .await;
+            Python::with_gil(|py| wav.into_py_result(py))
+        }
+
+        async fn create_sing_frame_audio_query(
+            &self,
+            #[pyo3(from_py_with = "crate::convert::from_query_like_via_serde")] score: Score,
+            style_id: u32,
+        ) -> PyResult<ToDataclass<FrameAudioQuery>> {
+            let style_id = StyleId::new(style_id);
+            let frame_audio_query = self
+                .synthesizer
+                .read()?
+                .create_sing_frame_audio_query(&score, style_id)
+                .await
+                .map(Into::into);
+            Python::with_gil(|py| frame_audio_query.into_py_result(py))
+        }
+
+        async fn create_sing_frame_f0(
+            &self,
+            #[pyo3(from_py_with = "crate::convert::from_query_like_via_serde")] score: Score,
+            #[pyo3(from_py_with = "crate::convert::from_audio_query")]
+            frame_audio_query: FrameAudioQuery,
+            style_id: u32,
+        ) -> PyResult<Vec<f32>> {
+            let style_id = StyleId::new(style_id);
+
+            // TODO: typed_floatsにissueかPRを出しに行き、スライス変換かbytemuck対応を入れてもらう
+            let f0s = self
+                .synthesizer
+                .read()?
+                .create_sing_frame_f0(&score, &frame_audio_query, style_id)
+                .await
+                .map(|f0s| f0s.into_iter().map(Into::into).collect());
+            Python::with_gil(|py| f0s.into_py_result(py))
+        }
+
+        async fn create_sing_frame_volume(
+            &self,
+            #[pyo3(from_py_with = "crate::convert::from_query_like_via_serde")] score: Score,
+            #[pyo3(from_py_with = "crate::convert::from_audio_query")]
+            frame_audio_query: FrameAudioQuery,
+            style_id: u32,
+        ) -> PyResult<Vec<f32>> {
+            let style_id = StyleId::new(style_id);
+
+            // TODO: typed_floatsにissueかPRを出しに行き、スライス変換かbytemuck対応を入れてもらう
+            let volumes = self
+                .synthesizer
+                .read()?
+                .create_sing_frame_volume(&score, &frame_audio_query, style_id)
+                .await
+                .map(|volumes| volumes.into_iter().map(Into::into).collect());
+            Python::with_gil(|py| volumes.into_py_result(py))
+        }
+
+        #[pyo3(signature=(
+            frame_audio_query,
+            style_id,
+            *,
+            cancellable = voicevox_core::__internal::interop::DEFAULT_HEAVY_INFERENCE_CANCELLABLE,
+        ))]
+        async fn frame_synthesis(
+            &self,
+            #[pyo3(from_py_with = "crate::convert::from_audio_query")]
+            frame_audio_query: FrameAudioQuery,
+            style_id: u32,
+            cancellable: bool,
+        ) -> PyResult<Vec<u8>> {
+            let style_id = StyleId::new(style_id);
+            let wav = self
+                .synthesizer
+                .read()?
+                .frame_synthesis(&frame_audio_query, style_id)
                 .cancellable(cancellable)
                 .perform()
                 .await;

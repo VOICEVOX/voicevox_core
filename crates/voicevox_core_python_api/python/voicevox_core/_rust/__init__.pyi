@@ -1,7 +1,16 @@
 from typing import TYPE_CHECKING, NoReturn
 
 if TYPE_CHECKING:
-    from voicevox_core import AccentPhrase, AudioQuery, Mora, UserDictWord
+    from voicevox_core import (
+        AccentPhrase,
+        AudioQuery,
+        FrameAudioQuery,
+        FramePhoneme,
+        Mora,
+        Note,
+        Score,
+        UserDictWord,
+    )
 
 __version__: str
 
@@ -127,6 +136,10 @@ def _validate_mora(mora: Mora) -> None: ...
 def _validate_accent_phrase(accent_phrase: AccentPhrase) -> None: ...
 def _validate_audio_query(audio_query: AudioQuery) -> None: ...
 def _validate_user_dict_word(word: UserDictWord) -> None: ...
+def _validate_note(note: Note) -> None: ...
+def _validate_score(score: Score) -> None: ...
+def _validate_frame_phoneme(frame_phoneme: FramePhoneme) -> None: ...
+def _validate_frame_audio_query(frame_audio_query: FrameAudioQuery) -> None: ...
 def _to_zenkaku(text: str) -> str: ...
 def wav_from_s16le(pcm: bytes, sampling_rate: int, is_stereo: bool) -> bytes:
     """
@@ -145,5 +158,30 @@ def wav_from_s16le(pcm: bytes, sampling_rate: int, is_stereo: bool) -> bytes:
     -------
     bytes
         WAVフォーマットで表現された音声データ
+    """
+    ...
+
+def ensure_compatible(score: Score, frame_audio_query: FrameAudioQuery) -> None:
+    """
+    与えられた |ensure-compatible-score|_ と |ensure-compatible-frame-audio-query|_ の組み合わせが、基本周波数と音量の生成に利用できるかどうかを確認する。
+
+    次のうちどれかを満たすなら
+    |ensure-compatible-incompatible-queries-error|_ を送出する。
+
+    - ``score`` が |ensure-compatible-score-validate|_ 。
+    - ``frame_audio_query`` が |ensure-compatible-score-validate|_ 。
+    - ``score`` が表す音素ID列と、 ``frame_audio_query.phonemes``
+      が表す音素ID列が等しくない。ただし異なる音素の表現が同一のIDを表すことがある。
+
+    .. |ensure-compatible-score| replace:: 楽譜
+    .. _ensure-compatible-score: #voicevox_core.Score
+    .. |ensure-compatible-frame-audio-query| replace:: 歌唱合成用のクエリ
+    .. _ensure-compatible-frame-audio-query: #voicevox_core.FrameAudioQuery
+    .. |ensure-compatible-incompatible-queries-error| replace:: ``IncompatibleQueriesError``
+    .. _ensure-compatible-incompatible-queries-error: #voicevox_core.IncompatibleQueriesError
+    .. |ensure-compatible-score-validate| replace:: 不正
+    .. _ensure-compatible-score-validate: #voicevox_core.Score.validate
+    .. |ensure-compatible-frame-audio-query-validate| replace:: 不正
+    .. _ensure-compatible-frame-audio-query-validate: #voicevox_core.FrameAudioQuery.validate
     """
     ...
