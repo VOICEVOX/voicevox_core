@@ -263,8 +263,11 @@ class Mora:
     """
     モーラ（子音＋母音）ごとの情報。
 
-    この構造体の状態によっては、 ``Synthesizer`` の各メソッドは
-    |mora-invalid-query-error|_ を送出する。詳細は :func:`validate` にて。
+    このクラスは不正な状態を表現しうる。どのような状態が不正なのかについては
+    :func:`validate` を参照。このクラスを使う関数は、不正な状態に対して
+    |mora-invalid-query-error|_ を送出する。
+
+    コンストラクト時には、不正な状態であるかの検証は行われない。
 
     .. |mora-invalid-query-error| replace:: ``InvalidQueryError``
     .. _mora-invalid-query-error: #voicevox_core.InvalidQueryError
@@ -290,13 +293,15 @@ class Mora:
 
     def validate(self) -> None:
         """
-        このインスタンスをバリデートする。
+        このインスタンスが不正であるときエラーを返す。
 
-        次のうちどれかを満たすなら |mora-validate-invalid-query-error|_ を送出する。
+        不正であるとは、以下のいずれかの条件を満たすことである。
 
         - :attr:`consonant` と :attr:`consonant_length` の有無が不一致。
         - :attr:`consonant` が子音以外の音素であるか、もしくは音素として不正。
         - :attr:`vowel` が子音であるか、もしくは音素として不正。
+
+        送出するエラーは |mora-validate-invalid-query-error|_  。
 
         また次の状態に対しては |mora-validate-logging-warning|_
         レベルのログを出す。将来的にはエラーになる予定。
@@ -318,8 +323,11 @@ class AccentPhrase:
     """
     AccentPhrase (アクセント句ごとの情報)。
 
-    この構造体の状態によっては、 ``Synthesizer`` の各メソッドは
-    |accent-phrase-invalid-query-error|_ を送出する。詳細は :func:`validate` にて。
+    このクラスは不正な状態を表現しうる。どのような状態が不正なのかについては
+    :func:`validate` を参照。このクラスを使う関数は、不正な状態に対して
+    |accent-phrase-invalid-query-error|_ を送出する。
+
+    コンストラクト時には、不正な状態であるかの検証は行われない。
 
     .. |accent-phrase-invalid-query-error| replace:: ``InvalidQueryError``
     .. _accent-phrase-invalid-query-error: #voicevox_core.InvalidQueryError
@@ -339,14 +347,16 @@ class AccentPhrase:
 
     def validate(self) -> None:
         """
-        このインスタンスをバリデートする。
+        このインスタンスが不正であるときエラーを返す。
 
-        次のうちどれかを満たすなら |accent-phrase-validate-invalid-query-error|_ を送出する。
+        不正であるとは、以下のいずれかの条件を満たすことである。
 
         - |accent-phrase-rust-ty|_ としてデシリアライズ不可。
             - :attr:`accent` が負であるか、もしくは :math:`2^{64}-1` (32ビットプラットフォームの場合 :math:`2^{32}-1`)を超過する。
         - :attr:`moras` もしくは :attr:`pause_mora` の要素のうちいずれかが |accent-phrase-validate-mora-validate|_ 。
         - :attr:`accent` が ``0`` 。
+
+        送出するエラーは |accent-phrase-validate-invalid-query-error|_ 。
 
         また次の状態に対しては |accent-phrase-validate-logging-warning|_
         レベルのログを出す。将来的にはエラーになる予定。
@@ -371,8 +381,11 @@ class AudioQuery:
     """
     AudioQuery (音声合成用のクエリ)。
 
-    この構造体の状態によっては、 ``Synthesizer`` の各メソッドは
-    |audio-query-invalid-query-error|_ を送出する。詳細は :func:`validate` にて。
+    このクラスは不正な状態を表現しうる。どのような状態が不正なのかについては
+    :func:`validate` を参照。このクラスを使う関数は、不正な状態に対して
+    |audio-query-invalid-query-error|_ を送出する。
+
+    コンストラクト時には、不正な状態であるかの検証は行われない。
 
     .. |audio-query-invalid-query-error| replace:: ``InvalidQueryError``
     .. _audio-query-invalid-query-error: #voicevox_core.InvalidQueryError
@@ -424,14 +437,16 @@ class AudioQuery:
 
     def validate(self) -> None:
         """
-        このインスタンスをバリデートする。
+        このインスタンスが不正であるときエラーを返す。
 
-        次のうちどれかを満たすなら |audio-query-validate-invalid-query-error|_ を送出する。
+        不正であるとは、以下のいずれかの条件を満たすことである。
 
         - |audio-query-rust-ty|_ としてデシリアライズ不可。
             - :attr:`output_sampling_rate` が負であるか、もしくは :math:`2^{32}-1` を超過する。
         - :attr:`accent_phrases` の要素のうちいずれかが |audio-query-validate-accent-phrase-validate|_ 。
         - :attr:`output_sampling_rate` が ``24000`` の倍数ではない、もしくは ``0`` (将来的に解消予定。cf. |audio-query-validate-issue762|_)。
+
+        送出するエラーは |audio-query-validate-invalid-query-error|_ 。
 
         また次の状態に対しては |audio-query-validate-logging-warning|_
         レベルのログを出す。将来的にはエラーになる予定。

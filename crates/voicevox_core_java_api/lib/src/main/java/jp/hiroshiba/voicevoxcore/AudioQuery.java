@@ -14,8 +14,15 @@ import jp.hiroshiba.voicevoxcore.internal.Dll;
 /**
  * AudioQuery（音声合成用のクエリ）。
  *
- * <p>この構造体の状態によっては、{@code Synthesizer}の各メソッドは{@link InvalidQueryException}をスローする。詳細は{@link
- * #validate}にて。
+ * <p>このクラスは不正な状態を表現しうる。どのような状態が不正なのかについては{@link #validate}を参照。このクラスを使う関数は、不正な状態に対して{@link
+ * InvalidQueryException}をスローする。
+ *
+ * <p>コンストラクト時には、不正な状態であるかの検証は行われない。外部からのデータが不正でないことを確かめるには、コンストラクト後に{@code validate()}を用いる必要がある。
+ *
+ * <pre>{@code
+ * AudioQuery audioQuery = (new Gson()).fromJson(json, AudioQuery.class);
+ * audioQuery.validate();
+ * }</pre>
  *
  * <p>GsonにおいてはVOICEVOX ENGINEに合わせる形で、フィールド名は{@link
  * #accentPhrases}のみsnake_caseとなり残りはcamelCaseとなる。ただし今後の破壊的変更にて変わる可能性がある。<a
@@ -81,9 +88,11 @@ public class AudioQuery {
   }
 
   /**
-   * このインスタンスをバリデートする。
+   * このインスタンスが不正であるときエラーを返す。
    *
-   * <p>次の状態に対してはログで警告を出す。将来的にはエラーになる予定。
+   * <p>不正であるとは、{@code @throws}で示す条件を満たすことである。
+   *
+   * <p>また次の状態に対してはログで警告を出す。将来的にはエラーになる予定。
    *
    * <ul>
    *   <li>{@link #accentPhrases}の要素のうちいずれかが警告が出る状態。

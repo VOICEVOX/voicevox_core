@@ -114,6 +114,7 @@ exceptions! {
     UseUserDictError: PyException;
     InvalidWordError: PyValueError;
     InvalidQueryError: PyValueError;
+    IncompatibleQueriesError: PyValueError;
 }
 
 #[derive(derive_more::Debug)]

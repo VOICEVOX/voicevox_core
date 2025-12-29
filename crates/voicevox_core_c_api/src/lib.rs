@@ -511,9 +511,9 @@ pub unsafe extern "C" fn voicevox_audio_query_create_from_accent_phrases(
 }
 
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
-/// JSONを`AudioQuery`型としてバリデートする。
+/// 与えられたJSONが`AudioQuery`型として不正であるときエラーを返す。
 ///
-/// 次のうちどれかを満たすならエラーを返す。
+/// 不正であるとは、以下のいずれかの条件を満たすことである。
 ///
 /// - [Rust APIの`AudioQuery`型]としてデシリアライズ不可、もしくはJSONとして不正。
 /// - `accent_phrases`の要素のうちいずれかが、 ::voicevox_accent_phrase_validate でエラーになる。
@@ -551,9 +551,9 @@ pub unsafe extern "C" fn voicevox_audio_query_validate(
 }
 
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
-/// JSONを`AccentPhrase`型としてバリデートする。
+/// 与えられたJSONが`AccentPhrase`型として不正であるときエラーを返す。
 ///
-/// 次のうちどれかを満たすならエラーを返す。
+/// 不正であるとは、以下のいずれかの条件を満たすことである。
 ///
 /// - [Rust APIの`AccentPhrase`型]としてデシリアライズ不可、もしくはJSONとして不正。
 /// - `moras`もしくは`pause_mora`の要素のうちいずれかが、 ::voicevox_mora_validate でエラーになる。
@@ -586,9 +586,9 @@ pub unsafe extern "C" fn voicevox_accent_phrase_validate(
 }
 
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
-/// JSONを`Mora`型としてバリデートする。
+/// 与えられたJSONが`Mora`型として不正であるときエラーを返す。
 ///
-/// 次のうちどれかを満たすならエラーを返す。
+/// 不正であるとは、以下のいずれかの条件を満たすことである。
 ///
 /// - [Rust APIの`Mora`型]としてデシリアライズ不可、もしくはJSONとして不正。
 /// - `consonant`と`consonant_length`の有無が不一致。

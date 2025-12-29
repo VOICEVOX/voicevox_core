@@ -231,6 +231,10 @@ enum VoicevoxResultCode
    * 無効なMora
    */
   VOICEVOX_RESULT_INVALID_MORA_ERROR = 30,
+  /**
+   * 楽譜とFrameAudioQueryの組み合わせが不正
+   */
+  VOICEVOX_RESULT_INCOMPATIBLE_QUERIES_ERROR = 35,
 };
 #ifndef __cplusplus
 typedef int32_t VoicevoxResultCode;
@@ -707,9 +711,9 @@ VoicevoxResultCode voicevox_audio_query_create_from_accent_phrases(const char *a
                                                                    char **output_audio_query_json);
 
 /**
- * JSONを`AudioQuery`型としてバリデートする。
+ * 与えられたJSONが`AudioQuery`型として不正であるときエラーを返す。
  *
- * 次のうちどれかを満たすならエラーを返す。
+ * 不正であるとは、以下のいずれかの条件を満たすことである。
  *
  * - [Rust APIの`AudioQuery`型]としてデシリアライズ不可、もしくはJSONとして不正。
  * - `accent_phrases`の要素のうちいずれかが、 ::voicevox_accent_phrase_validate でエラーになる。
@@ -743,9 +747,9 @@ __declspec(dllimport)
 VoicevoxResultCode voicevox_audio_query_validate(const char *audio_query_json);
 
 /**
- * JSONを`AccentPhrase`型としてバリデートする。
+ * 与えられたJSONが`AccentPhrase`型として不正であるときエラーを返す。
  *
- * 次のうちどれかを満たすならエラーを返す。
+ * 不正であるとは、以下のいずれかの条件を満たすことである。
  *
  * - [Rust APIの`AccentPhrase`型]としてデシリアライズ不可、もしくはJSONとして不正。
  * - `moras`もしくは`pause_mora`の要素のうちいずれかが、 ::voicevox_mora_validate でエラーになる。
@@ -774,9 +778,9 @@ __declspec(dllimport)
 VoicevoxResultCode voicevox_accent_phrase_validate(const char *accent_phrase_json);
 
 /**
- * JSONを`Mora`型としてバリデートする。
+ * 与えられたJSONが`Mora`型として不正であるときエラーを返す。
  *
- * 次のうちどれかを満たすならエラーを返す。
+ * 不正であるとは、以下のいずれかの条件を満たすことである。
  *
  * - [Rust APIの`Mora`型]としてデシリアライズ不可、もしくはJSONとして不正。
  * - `consonant`と`consonant_length`の有無が不一致。

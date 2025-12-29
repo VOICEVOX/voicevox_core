@@ -119,6 +119,11 @@ class InvalidQueryError(ValueError):
 
     ...
 
+class IncompatibleQueriesError(ValueError):
+    """FrameAudioQueryとScoreの組み合わせが不正。"""
+
+    ...
+
 class _ReservedFields:
     def __new__(cls, *args: object, **kwargs: object) -> NoReturn: ...
 

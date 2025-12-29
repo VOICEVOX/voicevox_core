@@ -58,6 +58,7 @@ impl Error {
             ErrorRepr::UseUserDict(_) => ErrorKind::UseUserDict,
             ErrorRepr::InvalidWord(_) => ErrorKind::InvalidWord,
             ErrorRepr::InvalidQuery { .. } => ErrorKind::InvalidQuery,
+            ErrorRepr::IncompatibleQueries(_) => ErrorKind::IncompatibleQueries,
         }
     }
 }
@@ -136,6 +137,9 @@ pub(crate) enum ErrorRepr {
 
     #[error(transparent)]
     InvalidQuery(#[from] InvalidQueryError),
+
+    #[error(transparent)]
+    IncompatibleQueries(IncompatibleQueriesError),
 }
 
 /// エラーの種類。
@@ -192,6 +196,11 @@ pub enum ErrorKind {
     /// [`FrameAudioQuery`]: crate::FrameAudioQuery
     /// [`Score`]: crate::Score
     InvalidQuery,
+    /// [`FrameAudioQuery`]と[`Score`]の組み合わせが不正。
+    ///
+    /// [`FrameAudioQuery`]: crate::FrameAudioQuery
+    /// [`Score`]: crate::Score
+    IncompatibleQueries,
     #[doc(hidden)]
     __NonExhaustive,
 }
@@ -280,9 +289,6 @@ pub(crate) enum InvalidQueryErrorSource {
     #[error(r#"notesはpau (lyric="")から始まる必要があります"#)]
     InitialNoteMustBePau,
 
-    #[error("同じ音素列から成り立っている必要があります")]
-    DifferentPhonemeSeqs,
-
     #[error(transparent)]
     InvalidAsSuperset(Box<InvalidQueryError>),
 
@@ -292,4 +298,14 @@ pub(crate) enum InvalidQueryErrorSource {
         #[source]
         source: Box<InvalidQueryError>,
     },
+}
+
+#[derive(Clone, Copy, Error, Debug)]
+#[error("不正な楽譜とFrameAudioQueryの組み合わせです。異なる音素ID列です")]
+pub(crate) struct IncompatibleQueriesError;
+
+impl From<IncompatibleQueriesError> for Error {
+    fn from(err: IncompatibleQueriesError) -> Self {
+        ErrorRepr::IncompatibleQueries(err).into()
+    }
 }
