@@ -124,8 +124,7 @@ pub(crate) const fn error_result_to_message(result_code: VoicevoxResultCode) -> 
         VOICEVOX_RESULT_INVALID_FRAME_AUDIO_QUERY_ERROR => c"無効なFrameAudioQueryです",
         VOICEVOX_RESULT_INVALID_FRAME_PHONEME_ERROR => c"無効なFramePhonemeです",
         VOICEVOX_RESULT_INCOMPATIBLE_QUERIES_ERROR => {
-            c"不正な楽譜とFrameAudioQueryの組み合わせです。\
-              これらは同じ音素列から成り立っている必要があります"
+            c"不正な楽譜とFrameAudioQueryの組み合わせです。異なる音素ID列です"
         }
     }
 }
