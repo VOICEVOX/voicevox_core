@@ -703,7 +703,7 @@ class FramePhoneme:
     frame_length: int
     """音素のフレーム長。"""
 
-    note_id: NoteId | None
+    note_id: NoteId | None = None
     """音符のID。"""
 
     def validate(self) -> None:
