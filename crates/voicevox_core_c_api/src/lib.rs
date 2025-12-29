@@ -21,7 +21,7 @@ use self::helpers::{
 };
 use self::object::{CApiObject as _, CApiObjectPtrExt as _};
 use self::result_code::VoicevoxResultCode;
-use self::slice_owner::{F32_SLICE_OWNER, U8_SLICE_OWNER};
+use self::slice_owner::U8_SLICE_OWNER;
 use anstream::{AutoStream, stream::RawStream};
 use c_impls::{VoicevoxSynthesizerPtrExt as _, VoicevoxVoiceModelFilePtrExt as _};
 use chrono::SecondsFormat;
@@ -514,9 +514,9 @@ pub unsafe extern "C" fn voicevox_audio_query_create_from_accent_phrases(
 }
 
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
-/// JSONを`AudioQuery`型としてバリデートする。
+/// 与えられたJSONが`AudioQuery`型として不正であるときエラーを返す。
 ///
-/// 次のうちどれかを満たすならエラーを返す。
+/// 不正であるとは、以下のいずれかの条件を満たすことである。
 ///
 /// - [Rust APIの`AudioQuery`型]としてデシリアライズ不可、もしくはJSONとして不正。
 /// - `accent_phrases`の要素のうちいずれかが、 ::voicevox_accent_phrase_validate でエラーになる。
@@ -554,9 +554,9 @@ pub unsafe extern "C" fn voicevox_audio_query_validate(
 }
 
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
-/// JSONを`AccentPhrase`型としてバリデートする。
+/// 与えられたJSONが`AccentPhrase`型として不正であるときエラーを返す。
 ///
-/// 次のうちどれかを満たすならエラーを返す。
+/// 不正であるとは、以下のいずれかの条件を満たすことである。
 ///
 /// - [Rust APIの`AccentPhrase`型]としてデシリアライズ不可、もしくはJSONとして不正。
 /// - `moras`もしくは`pause_mora`の要素のうちいずれかが、 ::voicevox_mora_validate でエラーになる。
@@ -589,9 +589,9 @@ pub unsafe extern "C" fn voicevox_accent_phrase_validate(
 }
 
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
-/// JSONを`Mora`型としてバリデートする。
+/// 与えられたJSONが`Mora`型として不正であるときエラーを返す。
 ///
-/// 次のうちどれかを満たすならエラーを返す。
+/// 不正であるとは、以下のいずれかの条件を満たすことである。
 ///
 /// - [Rust APIの`Mora`型]としてデシリアライズ不可、もしくはJSONとして不正。
 /// - `consonant`と`consonant_length`の有無が不一致。
@@ -677,8 +677,7 @@ pub unsafe extern "C" fn voicevox_ensure_compatible(
     into_result_code_with_error((|| {
         let score = &Score::validate_json(score_json)?;
         let frame_audio_query = &FrameAudioQuery::validate_json(frame_audio_query_json)?;
-        voicevox_core::ensure_compatible(score, frame_audio_query)
-            .map_err(|e| CApiError::IncompatibleScoreAndFrameAudioQuery(e.to_string()))
+        voicevox_core::ensure_compatible(score, frame_audio_query).map_err(Into::into)
     })())
 }
 
@@ -1623,15 +1622,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_sing_frame_f0(
 
         let f0 = synthesizer
             .body()
-            .create_sing_frame_f0(score, frame_audio_query, StyleId::new(style_id))
-            .map_err(|err| match err.kind() {
-                voicevox_core::ErrorKind::InvalidQuery => {
-                    let err = err.to_string();
-                    assert!(err.contains("組み合わせ"));
-                    CApiError::IncompatibleScoreAndFrameAudioQuery(err)
-                }
-                _ => err.into(),
-            })?
+            .create_sing_frame_f0(score, frame_audio_query, StyleId::new(style_id))?
             .to_c_json();
 
         unsafe {
@@ -1663,15 +1654,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_sing_frame_volume(
 
         let volume = synthesizer
             .body()
-            .create_sing_frame_volume(score, frame_audio_query, StyleId::new(style_id))
-            .map_err(|err| match err.kind() {
-                voicevox_core::ErrorKind::InvalidQuery => {
-                    let err = err.to_string();
-                    assert!(err.contains("組み合わせ"));
-                    CApiError::IncompatibleScoreAndFrameAudioQuery(err)
-                }
-                _ => err.into(),
-            })?
+            .create_sing_frame_volume(score, frame_audio_query, StyleId::new(style_id))?
             .to_c_json();
 
         unsafe {

@@ -6,7 +6,7 @@ use typeshare::U53;
 
 use crate::{
     collections::{NonEmptyIterator, NonEmptyVec},
-    error::{InvalidQueryError, InvalidQueryErrorSource},
+    error::{ErrorRepr, IncompatibleQueriesError, InvalidQueryError, InvalidQueryErrorSource},
 };
 
 use super::{
@@ -15,7 +15,7 @@ use super::{
         sampling_rate::SamplingRate,
         validate::Validate as _,
     },
-    queries::{FrameAudioQuery, FramePhoneme, Note, NoteId, OptionalLyric, Score},
+    queries::{FrameAudioQuery, FramePhoneme, Key, Note, NoteId, OptionalLyric, Score},
 };
 
 use self::note_seq::ValidatedNoteSeq;
@@ -24,10 +24,10 @@ use self::note_seq::ValidatedNoteSeq;
 ///
 /// # Errors
 ///
-/// 次のうちどれかを満たすなら[`ErrorKind::InvalidQuery`]を表わすエラーを返す。
+/// 次のうちどれかを満たすなら[`ErrorKind::IncompatibleQueries`]を表わすエラーを返す。
 ///
 /// - `score`が[不正]。
-/// - `score`と`frame_audio_query`が異なる音素列から成り立っている。ただし一部の音素は同一視される。
+/// - `score`が表す音素ID列と、`frame_audio_query.phonemes`が表す音素ID列が等しくない。ただし異なる音素の表現が同一のIDを表すことがある。
 ///
 /// # Warnings
 ///
@@ -37,7 +37,7 @@ use self::note_seq::ValidatedNoteSeq;
 ///
 /// [楽譜]: Score
 /// [歌唱合成用のクエリ]: FrameAudioQuery
-/// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
+/// [`ErrorKind::IncompatibleQueries`]: crate::ErrorKind::IncompatibleQueries
 /// [不正]: Score::validate
 /// [`WARN`]: tracing::Level::WARN
 /// [警告を出す]: FrameAudioQuery::validate
@@ -47,14 +47,7 @@ pub fn ensure_compatible(score: &Score, frame_audio_query: &FrameAudioQuery) -> 
 
     frame_phoneme_note_pairs(&frame_audio_query.phonemes, notes.as_ref())
         .map(|_| ())
-        .map_err(|source| {
-            InvalidQueryError {
-                what: "`Score`と`FrameAudioQuery`の組み合わせ",
-                value: None,
-                source: Some(source),
-            }
-            .into()
-        })
+        .map_err(|e @ IncompatibleQueriesError| ErrorRepr::IncompatibleQueries(e).into())
 }
 
 pub(crate) fn frame_phoneme_note_pairs<'a>(
@@ -62,7 +55,7 @@ pub(crate) fn frame_phoneme_note_pairs<'a>(
     notes: &'a [ValidatedNote],
 ) -> Result<
     impl Iterator<Item = (&'a FramePhoneme, &'a ValidatedNote)> + Clone,
-    InvalidQueryErrorSource,
+    IncompatibleQueriesError,
 > {
     let phonemes_from_query = frame_phonemes
         .iter()
@@ -76,7 +69,7 @@ pub(crate) fn frame_phoneme_note_pairs<'a>(
         phonemes_from_query.clone().map(|(p, _)| p),
         phonemes_from_score.clone().map(|(p, _)| p),
     ) {
-        return Err(InvalidQueryErrorSource::DifferentPhonemeSeqs);
+        return Err(IncompatibleQueriesError);
     }
 
     Ok(itertools::zip_eq(
@@ -86,11 +79,11 @@ pub(crate) fn frame_phoneme_note_pairs<'a>(
 }
 
 impl Score {
-    /// この構造体をバリデートする。
+    /// この構造体が不正であるときエラーを返す。
     ///
     /// # Errors
     ///
-    /// 次を満たすなら[`ErrorKind::InvalidQuery`]を表わすエラーを返す。
+    /// この構造体が不正であるとき[`ErrorKind::InvalidQuery`]を表わすエラーを返す。不正であるとは、以下の条件を満たすことである。
     ///
     /// - [`notes`]の要素のうちいずれかが[不正]。
     ///
@@ -105,11 +98,11 @@ impl Score {
 }
 
 impl Note {
-    /// この構造体をバリデートする。
+    /// この構造体が不正であるときエラーを返す。
     ///
     /// # Errors
     ///
-    /// 次のうちどれかを満たすなら[`ErrorKind::InvalidQuery`]を表わすエラーを返す。
+    /// この構造体が不正であるとき[`ErrorKind::InvalidQuery`]を表わすエラーを返す。不正であるとは、以下のいずれかの条件を満たすことである。
     ///
     /// - [`key`]が`None`かつ[`lyric`]が[`PAU`]以外。
     /// - [`key`]が`Some(_)`かつ[`lyric`]が[`PAU`]。
@@ -275,11 +268,11 @@ impl TryFrom<&'_ Note> for ValidatedNote {
 #[derive(PartialEq)]
 pub(crate) enum PauOrKeyAndLyric {
     Pau,
-    KeyAndLyric { key: U53, lyric: Lyric },
+    KeyAndLyric { key: Key, lyric: Lyric },
 }
 
 impl PauOrKeyAndLyric {
-    fn new(key: Option<U53>, lyric: &OptionalLyric) -> Result<Self, InvalidQueryError> {
+    fn new(key: Option<Key>, lyric: &OptionalLyric) -> Result<Self, InvalidQueryError> {
         match (key, &**lyric.phonemes()) {
             (None, []) => Ok(Self::Pau),
             (Some(key), &[mora]) => Ok(Self::KeyAndLyric {
@@ -387,11 +380,7 @@ mod tests {
         .unwrap_err();
         assert!(matches!(
             err,
-            crate::Error(ErrorRepr::InvalidQuery(InvalidQueryError {
-                what: "`Score`と`FrameAudioQuery`の組み合わせ",
-                value: None,
-                source: Some(InvalidQueryErrorSource::DifferentPhonemeSeqs),
-            }))
+            crate::Error(ErrorRepr::IncompatibleQueries(_)),
         ));
 
         let err = super::ensure_compatible(
@@ -414,10 +403,10 @@ mod tests {
             }
         }
 
-        fn note(key: Option<u32>, lyric: &str) -> Note {
+        fn note(key: Option<u8>, lyric: &str) -> Note {
             Note {
                 id: None,
-                key: key.map(Into::into),
+                key: key.map(|key| key.try_into().unwrap()),
                 lyric: lyric.parse().unwrap(),
                 frame_length: 1u8.into(),
             }

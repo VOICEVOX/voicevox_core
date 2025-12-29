@@ -70,8 +70,8 @@ pub enum VoicevoxResultCode {
     VOICEVOX_RESULT_INVALID_FRAME_AUDIO_QUERY_ERROR = 33,
     /// 無効なFramePhoneme
     VOICEVOX_RESULT_INVALID_FRAME_PHONEME_ERROR = 34,
-    /// 無効な楽譜とFrameAudioQueryの組み合わせ
-    VOICEVOX_RESULT_INCOMPATIBLE_SCORE_AND_FRAME_AUDIO_QUERY_ERROR = 35,
+    /// 楽譜とFrameAudioQueryの組み合わせが不正
+    VOICEVOX_RESULT_INCOMPATIBLE_QUERIES_ERROR = 35,
 }
 
 pub(crate) const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'static CStr {
@@ -123,8 +123,9 @@ pub(crate) const fn error_result_to_message(result_code: VoicevoxResultCode) -> 
         VOICEVOX_RESULT_INVALID_NOTE_ERROR => c"無効なノートです",
         VOICEVOX_RESULT_INVALID_FRAME_AUDIO_QUERY_ERROR => c"無効なFrameAudioQueryです",
         VOICEVOX_RESULT_INVALID_FRAME_PHONEME_ERROR => c"無効なFramePhonemeです",
-        VOICEVOX_RESULT_INCOMPATIBLE_SCORE_AND_FRAME_AUDIO_QUERY_ERROR => {
-            c"無効な楽譜とFramePhonemeの組み合わせです"
+        VOICEVOX_RESULT_INCOMPATIBLE_QUERIES_ERROR => {
+            c"不正な楽譜とFrameAudioQueryの組み合わせです。\
+              これらは同じ音素列から成り立っている必要があります"
         }
     }
 }

@@ -455,7 +455,7 @@ pub use self::{
     },
     engine::{
         song::{
-            queries::{FrameAudioQuery, FramePhoneme, Note, NoteId, OptionalLyric, Score},
+            queries::{FrameAudioQuery, FramePhoneme, Key, Note, NoteId, OptionalLyric, Score},
             validate::ensure_compatible,
         },
         talk::{

@@ -5077,6 +5077,7 @@ dependencies = [
  "itertools 0.10.5",
  "jlabel",
  "ndarray",
+ "num-traits",
  "open",
  "open_jtalk",
  "ouroboros",

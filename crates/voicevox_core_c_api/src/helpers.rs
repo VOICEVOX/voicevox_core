@@ -63,6 +63,7 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
                          beforehand with one of the `validate_` functions",
                     );
                 }
+                IncompatibleQueries => VOICEVOX_RESULT_INCOMPATIBLE_QUERIES_ERROR,
                 __NonExhaustive => unreachable!(),
             },
             Err(InvalidUtf8Input) => VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR,
@@ -74,9 +75,6 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
             Err(InvalidFrameAudioQuery(_)) => VOICEVOX_RESULT_INVALID_FRAME_AUDIO_QUERY_ERROR,
             Err(InvalidFramePhoneme(_)) => VOICEVOX_RESULT_INVALID_FRAME_PHONEME_ERROR,
             Err(InvalidUuid(_)) => VOICEVOX_RESULT_INVALID_UUID_ERROR,
-            Err(IncompatibleScoreAndFrameAudioQuery(_)) => {
-                VOICEVOX_RESULT_INCOMPATIBLE_SCORE_AND_FRAME_AUDIO_QUERY_ERROR
-            }
         }
     }
 }
@@ -113,8 +111,6 @@ pub(crate) enum CApiError {
     InvalidFramePhoneme(Either<serde_json::Error, String>),
     #[error("無効なUUIDです: {0}")]
     InvalidUuid(uuid::Error),
-    #[error("無効なScoreとFrameAudioQueryの組み合わせです: {0}")]
-    IncompatibleScoreAndFrameAudioQuery(String),
 }
 
 pub(crate) trait ValidateJson: Validate {
