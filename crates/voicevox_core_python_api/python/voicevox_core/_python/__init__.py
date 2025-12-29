@@ -773,17 +773,18 @@ class FrameAudioQuery:
             - :attr:`f0` の要素がNaN、infinity、もしくは負。
             - :attr:`volume` の要素がNaNもしくは±infinity。
             - :attr:`volume_scale` がNaN、infinity、もしくは負。
-            - :attr:`output_stereo` が負であるか、もしくは :math:`2^{32}-1` を超過する。
             - :attr:`output_sampling_rate` 以下の値をとる。
                 - ``0`` 以下の値。
                 - :math:`2^{32}-1` を超過する値。
-                - ``24000`` の倍数以外 (将来的に解消予定。cf. |audio-query-validate-issue762|_)。
+                - ``24000`` の倍数以外 (将来的に解消予定。cf. |frame-audio-query-validate-issue762|_)。
         - :attr:`phonemes` の要素のうちいずれかが |frame-audio-query-validate-frame-phoneme-validate|_ 。
 
         送出するエラーは |frame-audio-query-validate-invalid-query-error|_ 。
 
         .. |frame-audio-query-rust-ty| replace:: Rust APIの ``FrameAudioQuery`` 型
         .. _frame-audio-query-rust-ty: ../../../rust_api/voicevox_core/struct.FrameAudioQuery.html
+        .. |frame-audio-query-validate-issue762| replace:: #762
+        .. _frame-audio-query-validate-issue762: https://github.com/VOICEVOX/voicevox_core/issues/762
         .. |frame-audio-query-validate-frame-phoneme-validate| replace:: 不正
         .. _frame-audio-query-validate-frame-phoneme-validate: #voicevox_core.FramePhoneme.validate
         .. |frame-audio-query-validate-invalid-query-error| replace:: ``InvalidQueryError``
