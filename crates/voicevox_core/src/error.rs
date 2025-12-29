@@ -301,10 +301,7 @@ pub(crate) enum InvalidQueryErrorSource {
 }
 
 #[derive(Clone, Copy, Error, Debug)]
-#[error(
-    "不正な楽譜とFrameAudioQueryの組み合わせです。\
-     これらは同じ音素ID列から成り立っている必要があります"
-)]
+#[error("不正な楽譜とFrameAudioQueryの組み合わせです。異なる音素ID列です")]
 pub(crate) struct IncompatibleQueriesError;
 
 impl From<IncompatibleQueriesError> for Error {
