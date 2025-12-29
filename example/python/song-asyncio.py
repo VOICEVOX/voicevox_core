@@ -58,13 +58,13 @@ class Args:
             "--singing-teacher",
             default=6000,
             type=int,
-            help="",
+            help="`type`が`singing_teacher`または`sing`であるスタイルID",
         )
         argparser.add_argument(
             "--singer",
             default=3000,
             type=int,
-            help="",
+            help="`type`が`frame_decode`であるスタイルID",
         )
         args = argparser.parse_args()
         return Args(
