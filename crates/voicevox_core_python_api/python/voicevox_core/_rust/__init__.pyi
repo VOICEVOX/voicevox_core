@@ -166,7 +166,7 @@ def ensure_compatible(score: Score, frame_audio_query: FrameAudioQuery) -> None:
     与えられた |ensure-compatible-score|_ と |ensure-compatible-frame-audio-query|_ の組み合わせが、基本周波数と音量の生成に利用できるかどうかを確認する。
 
     次のうちどれかを満たすなら
-    |ensure-compatible-invalid-query-error|_ を送出する。
+    |ensure-compatible-incompatible-queries-error|_ を送出する。
 
     - ``score`` が |ensure-compatible-score-validate|_ 。
     - ``frame_audio_query`` が |ensure-compatible-score-validate|_ 。
@@ -177,8 +177,8 @@ def ensure_compatible(score: Score, frame_audio_query: FrameAudioQuery) -> None:
     .. _ensure-compatible-score: #voicevox_core.Score
     .. |ensure-compatible-frame-audio-query| replace:: 歌唱合成用のクエリ
     .. _ensure-compatible-frame-audio-query: #voicevox_core.FrameAudioQuery
-    .. |ensure-compatible-invalid-query-error| replace:: ``InvalidQueryError``
-    .. _ensure-compatible-invalid-query-error: #voicevox_core.InvalidQueryError
+    .. |ensure-compatible-incompatible-queries-error| replace:: ``IncompatibleQueriesError``
+    .. _ensure-compatible-incompatible-queries-error: #voicevox_core.IncompatibleQueriesError
     .. |ensure-compatible-score-validate| replace:: 不正
     .. _ensure-compatible-score-validate: #voicevox_core.Score.validate
     .. |ensure-compatible-frame-audio-query-validate| replace:: 不正
