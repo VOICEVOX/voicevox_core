@@ -545,7 +545,10 @@ class Synthesizer:
                 score, SINGING_TEACHER
             )
 
-            # ⋮ （`frame_audio_query.phonemes`の`key`や`frame_length`を変更）
+            # `Note.key`や`FramePhoneme.frame_length`を変更
+            for note in score.notes:
+                if note.key is not None:
+                    note.key += 1
 
             new_f0 = synthesizer.create_sing_frame_f0(
                 SCORE, frame_audio_query, SINGING_TEACHER
@@ -575,14 +578,16 @@ class Synthesizer:
                 score, SINGING_TEACHER
             )
 
-            # ⋮ （`frame_audio_query.phonemes`の`key`や`frame_length`を変更）
+            # `Note.key`や`FramePhoneme.frame_length`を変更
+            for note in score.notes:
+                if note.key is not None:
+                    note.key += 1
 
             new_f0 = synthesizer.create_sing_frame_f0(
                 SCORE, frame_audio_query, SINGING_TEACHER
             )
             frame_audio_query.f0 = new_f0
 
-            # 音量の生成には基本周波数が必要であることに注意。
             new_volume = synthesizer.create_sing_frame_volume(
                 SCORE, frame_audio_query, SINGING_TEACHER
             )
