@@ -1962,6 +1962,8 @@ pub(crate) mod blocking {
                 .block_on()
         }
 
+        // TODO: docs/guide/user/song-process.mdを作り、そこにリンクする。
+        // https://github.com/VOICEVOX/voicevox_core/issues/1249#issuecomment-3691580447
         /// [楽譜]と[歌唱合成用のクエリ]から、フレームごとの基本周波数を生成する。
         ///
         /// # Example
@@ -1980,11 +1982,11 @@ pub(crate) mod blocking {
         /// #     .block_on()?
         /// #     .into_blocking();
         /// #
-        /// use voicevox_core::StyleId;
+        /// use voicevox_core::{Note, StyleId};
         ///
         /// const SINGING_TEACHER: StyleId = StyleId(6000);
         ///
-        /// # let score = &serde_json::from_str::<voicevox_core::Score>(
+        /// # let mut score = serde_json::from_str::<voicevox_core::Score>(
         /// #     r#"
         /// # {
         /// #   "notes": [
@@ -2000,11 +2002,16 @@ pub(crate) mod blocking {
         /// # .unwrap();
         /// #
         /// let mut frame_audio_query = synthesizer
-        ///     .create_sing_frame_audio_query(score, SINGING_TEACHER)?;
+        ///     .create_sing_frame_audio_query(&score, SINGING_TEACHER)?;
         ///
-        /// // ⋮ （`frame_audio_query.phonemes`の`key`や`frame_length`を変更）
+        /// // `Note.key`や`FramePhoneme.frame_length`を変更
+        /// for Note { key, .. } in &mut score.notes {
+        ///     if let Some(key) = key {
+        ///         *key = key.saturating_add(1);
+        ///     }
+        /// }
         ///
-        /// let new_f0 = synthesizer.create_sing_frame_f0(score, &frame_audio_query, SINGING_TEACHER)?;
+        /// let new_f0 = synthesizer.create_sing_frame_f0(&score, &frame_audio_query, SINGING_TEACHER)?;
         /// frame_audio_query.f0 = new_f0;
         /// #
         /// # Ok(())
@@ -2024,6 +2031,8 @@ pub(crate) mod blocking {
                 .block_on()
         }
 
+        // TODO: docs/guide/user/song-process.mdを作り、そこにリンクする。
+        // https://github.com/VOICEVOX/voicevox_core/issues/1249#issuecomment-3691580447
         /// [楽譜]と[歌唱合成用のクエリ]から、フレームごとの音量を生成する。
         ///
         /// # Example
@@ -2042,11 +2051,11 @@ pub(crate) mod blocking {
         /// #     .block_on()?
         /// #     .into_blocking();
         /// #
-        /// use voicevox_core::StyleId;
+        /// use voicevox_core::{Note, StyleId};
         ///
         /// const SINGING_TEACHER: StyleId = StyleId(6000);
         ///
-        /// # let score = &serde_json::from_str::<voicevox_core::Score>(
+        /// # let mut score = serde_json::from_str::<voicevox_core::Score>(
         /// #     r#"
         /// # {
         /// #   "notes": [
@@ -2062,16 +2071,20 @@ pub(crate) mod blocking {
         /// # .unwrap();
         /// #
         /// let mut frame_audio_query = synthesizer
-        ///     .create_sing_frame_audio_query(score, SINGING_TEACHER)?;
+        ///     .create_sing_frame_audio_query(&score, SINGING_TEACHER)?;
         ///
-        /// // ⋮ （`frame_audio_query.phonemes`の`key`や`frame_length`を変更）
+        /// // `Note.key`や`FramePhoneme.frame_length`を変更
+        /// for Note { key, .. } in &mut score.notes {
+        ///     if let Some(key) = key {
+        ///         *key = key.saturating_add(1);
+        ///     }
+        /// }
         ///
-        /// let new_f0 = synthesizer.create_sing_frame_f0(score, &frame_audio_query, SINGING_TEACHER)?;
+        /// let new_f0 = synthesizer.create_sing_frame_f0(&score, &frame_audio_query, SINGING_TEACHER)?;
         /// frame_audio_query.f0 = new_f0;
         ///
-        /// // 音量の生成には基本周波数が必要であることに注意。
         /// let new_volume = synthesizer
-        ///     .create_sing_frame_volume(score, &frame_audio_query, SINGING_TEACHER)?;
+        ///     .create_sing_frame_volume(&score, &frame_audio_query, SINGING_TEACHER)?;
         /// frame_audio_query.volume = new_volume;
         /// #
         /// # Ok(())
@@ -2832,6 +2845,8 @@ pub(crate) mod nonblocking {
             self.0.create_sing_frame_audio_query(score, style_id).await
         }
 
+        // TODO: docs/guide/user/song-process.mdを作り、そこにリンクする。
+        // https://github.com/VOICEVOX/voicevox_core/issues/1249#issuecomment-3691580447
         /// [楽譜]と[歌唱合成用のクエリ]から、フレームごとの基本周波数を生成する。
         ///
         /// # Example
@@ -2847,11 +2862,11 @@ pub(crate) mod nonblocking {
         /// #     )
         /// #     .await?;
         /// #
-        /// use voicevox_core::StyleId;
+        /// use voicevox_core::{Note, StyleId};
         ///
         /// const SINGING_TEACHER: StyleId = StyleId(6000);
         ///
-        /// # let score = &serde_json::from_str::<voicevox_core::Score>(
+        /// # let mut score = serde_json::from_str::<voicevox_core::Score>(
         /// #     r#"
         /// # {
         /// #   "notes": [
@@ -2867,13 +2882,18 @@ pub(crate) mod nonblocking {
         /// # .unwrap();
         /// #
         /// let mut frame_audio_query = synthesizer
-        ///     .create_sing_frame_audio_query(score, SINGING_TEACHER)
+        ///     .create_sing_frame_audio_query(&score, SINGING_TEACHER)
         ///     .await?;
         ///
-        /// // ⋮ （`frame_audio_query.phonemes`の`key`や`frame_length`を変更）
+        /// // `Note.key`や`FramePhoneme.frame_length`を変更
+        /// for Note { key, .. } in &mut score.notes {
+        ///     if let Some(key) = key {
+        ///         *key = key.saturating_add(1);
+        ///     }
+        /// }
         ///
         /// let new_f0 = synthesizer
-        ///     .create_sing_frame_f0(score, &frame_audio_query, SINGING_TEACHER)
+        ///     .create_sing_frame_f0(&score, &frame_audio_query, SINGING_TEACHER)
         ///     .await?;
         /// frame_audio_query.f0 = new_f0;
         /// #
@@ -2894,6 +2914,8 @@ pub(crate) mod nonblocking {
                 .await
         }
 
+        // TODO: docs/guide/user/song-process.mdを作り、そこにリンクする。
+        // https://github.com/VOICEVOX/voicevox_core/issues/1249#issuecomment-3691580447
         /// [楽譜]と[歌唱合成用のクエリ]から、フレームごとの音量を生成する。
         ///
         /// # Example
@@ -2909,11 +2931,11 @@ pub(crate) mod nonblocking {
         /// #     )
         /// #     .await?;
         /// #
-        /// use voicevox_core::StyleId;
+        /// use voicevox_core::{Note, StyleId};
         ///
         /// const SINGING_TEACHER: StyleId = StyleId(6000);
         ///
-        /// # let score = &serde_json::from_str::<voicevox_core::Score>(
+        /// # let mut score = serde_json::from_str::<voicevox_core::Score>(
         /// #     r#"
         /// # {
         /// #   "notes": [
@@ -2929,19 +2951,23 @@ pub(crate) mod nonblocking {
         /// # .unwrap();
         /// #
         /// let mut frame_audio_query = synthesizer
-        ///     .create_sing_frame_audio_query(score, SINGING_TEACHER)
+        ///     .create_sing_frame_audio_query(&score, SINGING_TEACHER)
         ///     .await?;
         ///
-        /// // ⋮ （`frame_audio_query.phonemes`の`key`や`frame_length`を変更）
+        /// // `Note.key`や`FramePhoneme.frame_length`を変更
+        /// for Note { key, .. } in &mut score.notes {
+        ///     if let Some(key) = key {
+        ///         *key = key.saturating_add(1);
+        ///     }
+        /// }
         ///
         /// let new_f0 = synthesizer
-        ///     .create_sing_frame_f0(score, &frame_audio_query, SINGING_TEACHER)
+        ///     .create_sing_frame_f0(&score, &frame_audio_query, SINGING_TEACHER)
         ///     .await?;
         /// frame_audio_query.f0 = new_f0;
         ///
-        /// // 音量の生成には基本周波数が必要であることに注意。
         /// let new_volume = synthesizer
-        ///     .create_sing_frame_volume(score, &frame_audio_query, SINGING_TEACHER)
+        ///     .create_sing_frame_volume(&score, &frame_audio_query, SINGING_TEACHER)
         ///     .await?;
         /// frame_audio_query.volume = new_volume;
         /// #

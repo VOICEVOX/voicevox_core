@@ -27,7 +27,7 @@ use self::note_seq::ValidatedNoteSeq;
 /// 次のうちどれかを満たすなら[`ErrorKind::IncompatibleQueries`]を表わすエラーを返す。
 ///
 /// - `score`が[不正]。
-/// - `score`と`frame_audio_query`が異なる音素列から成り立っている。ただし一部の音素は同一視される。
+/// - `score`が表す音素ID列と、`frame_audio_query.phonemes`が表す音素ID列が等しくない。ただし異なる音素の表現が同一のIDを表すことがある。
 ///
 /// # Warnings
 ///
