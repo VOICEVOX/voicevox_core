@@ -623,6 +623,24 @@ pub unsafe extern "C" fn voicevox_mora_validate(mora_json: *const c_char) -> Voi
 }
 
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// 与えられたJSONが`Score`型として不正であるときエラーを返す。
+///
+/// 不正であるとは、以下のいずれかの条件を満たすことである。
+///
+/// - [Rust APIの`Score`型]としてデシリアライズ不可、もしくはJSONとして不正。
+/// - `notes`の要素のうちいずれかが、 ::voicevox_note_validate でエラーになる。
+///
+/// [Rust APIの`Score`型]: ../rust_api/voicevox_core/struct.Score.html
+///
+/// @param [in] score_json `Score`型のJSON
+///
+/// @returns 成功時には ::VOICEVOX_RESULT_OK 、失敗時には ::VOICEVOX_RESULT_INVALID_SCORE_ERROR
+///
+/// \safety{
+/// - `score_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+/// }
+///
+/// \orig-impl{voicevox_score_validate}
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn voicevox_score_validate(score_json: *const c_char) -> VoicevoxResultCode {
     init_logger_once();
@@ -632,6 +650,25 @@ pub unsafe extern "C" fn voicevox_score_validate(score_json: *const c_char) -> V
 }
 
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// 与えられたJSONが`Note`型として不正であるときエラーを返す。
+///
+/// 不正であるとは、以下のいずれかの条件を満たすことである。
+///
+/// - [Rust APIの`Note`型]としてデシリアライズ不可、もしくはJSONとして不正。
+/// - `key`が`null`かつ`lyric`が`""`以外。
+/// - `key`が非`null`かつ`lyric`が`""`。
+///
+/// [Rust APIの`Note`型]: ../rust_api/voicevox_core/struct.Note.html
+///
+/// @param [in] note_json `Note`型のJSON
+///
+/// @returns 成功時には ::VOICEVOX_RESULT_OK 、失敗時には ::VOICEVOX_RESULT_INVALID_NOTE_ERROR
+///
+/// \safety{
+/// - `note_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+/// }
+///
+/// \orig-impl{voicevox_note_validate}
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn voicevox_note_validate(note_json: *const c_char) -> VoicevoxResultCode {
     init_logger_once();
@@ -641,6 +678,27 @@ pub unsafe extern "C" fn voicevox_note_validate(note_json: *const c_char) -> Voi
 }
 
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// 与えられたJSONが`FrameAudioQuery`型として不正であるときエラーを返す。
+///
+/// 不正であるとは、以下の条件を満たすことである。
+///
+/// - [Rust APIの`FrameAudioQuery`型]としてデシリアライズ不可、もしくはJSONとして不正。
+///
+/// [Rust APIの`FrameAudioQuery`型]: ../rust_api/voicevox_core/struct.FrameAudioQuery.html
+///
+/// 次の状態に対しては警告のログを出す。将来的にはエラーになる予定。
+///
+/// - `outputSamplingRate`が`24000`以外の値（将来的に解消予定）。
+///
+/// @param [in] frame_audio_query_json `FrameAudioQuery`型のJSON
+///
+/// @returns 成功時には ::VOICEVOX_RESULT_OK 、失敗時には ::VOICEVOX_RESULT_INVALID_FRAME_AUDIO_QUERY_ERROR
+///
+/// \safety{
+/// - `frame_audio_query_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+/// }
+///
+/// \orig-impl{voicevox_frame_audio_query_validate}
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn voicevox_frame_audio_query_validate(
     frame_audio_query_json: *const c_char,
@@ -652,6 +710,23 @@ pub unsafe extern "C" fn voicevox_frame_audio_query_validate(
 }
 
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// 与えられたJSONが`FramePhoneme`型として不正であるときエラーを返す。
+///
+/// 不正であるとは、以下の条件を満たすことである。
+///
+/// - [Rust APIの`FramePhoneme`型]としてデシリアライズ不可、もしくはJSONとして不正。
+///
+/// [Rust APIの`FramePhoneme`型]: ../rust_api/voicevox_core/struct.FramePhoneme.html
+///
+/// @param [in] frame_phoneme_json `FramePhoneme`型のJSON
+///
+/// @returns 成功時には ::VOICEVOX_RESULT_OK 、失敗時には ::VOICEVOX_RESULT_INVALID_FRAME_PHONEME_ERROR
+///
+/// \safety{
+/// - `frame_phoneme_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+/// }
+///
+/// \no-orig-impl{voicevox_frame_phoneme_validate}
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn voicevox_frame_phoneme_validate(
     frame_phoneme_json: *const c_char,
@@ -663,16 +738,33 @@ pub unsafe extern "C" fn voicevox_frame_phoneme_validate(
 }
 
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// 与えられた楽譜と歌唱合成用のクエリの組み合わせが、基本周波数と音量の生成に利用できるかどうかを確認する。
+///
+/// 次のうちどれかを満たすならエラーを返す。
+///
+/// - `score_json`が ::voicevox_score_validate でエラーになる。
+/// - `frame_audio_query_json`が ::voicevox_frame_audio_query_validate でエラーになる。
+/// - `notes`が表す音素ID列と、`phonemes`が表す音素ID列が等しくない。ただし異なる音素の表現が同一のIDを表すことがある。
+///
+/// @param [in] score_json `Score`型のJSON
+/// @param [in] frame_audio_query_json `FrameAudioQuery`型のJSON
+///
+/// @returns 成功時には ::VOICEVOX_RESULT_OK 、失敗時には ::VOICEVOX_RESULT_INVALID_SCORE_ERROR, ::VOICEVOX_RESULT_INVALID_FRAME_AUDIO_QUERY_ERROR, ::VOICEVOX_RESULT_INCOMPATIBLE_QUERIES_ERROR
+///
+/// \safety{
+/// - `score_json`と`frame_audio_query_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+/// }
+/// \orig-impl{voicevox_ensure_compatible}
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn voicevox_ensure_compatible(
     score_json: *const c_char,
-    frame_phoneme_json: *const c_char,
+    frame_audio_query_json: *const c_char,
 ) -> VoicevoxResultCode {
     init_logger_once();
 
     // SAFETY: The safety contract must be upheld by the caller.
     let score_json = unsafe { CStr::from_ptr(score_json) };
-    let frame_audio_query_json = unsafe { CStr::from_ptr(frame_phoneme_json) };
+    let frame_audio_query_json = unsafe { CStr::from_ptr(frame_audio_query_json) };
 
     into_result_code_with_error((|| {
         let score = &Score::validate_json(score_json)?;
@@ -1571,6 +1663,46 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
 }
 
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// 楽譜から歌唱音声合成用のクエリを作成する。
+///
+/// 生成したJSONを解放するには ::voicevox_json_free を使う。
+///
+/// @param [in] synthesizer 音声シンセサイザ
+/// @param [in] score_json [`Score`型]を表すJSON
+/// @param [in] style_id スタイルID
+/// @param [out] output_frame_audio_query_json 生成先
+///
+/// [`Score`型]: ../rust_api/voicevox_core/struct.Score.html
+///
+/// @returns 結果コード
+///
+/// \example{
+/// ```c
+/// const char *kScore =
+///     "{"
+///     "  \"notes\": [ "
+///     "    { \"key\": null, \"frame_length\": 15, \"lyric\": \"\" },"
+///     "    { \"key\": 60, \"frame_length\": 45, \"lyric\": \"ド\" },"
+///     "    { \"key\": 62, \"frame_length\": 45, \"lyric\": \"レ\" },"
+///     "    { \"key\": 64, \"frame_length\": 45, \"lyric\": \"ミ\" },"
+///     "    { \"key\": null, \"frame_length\": 15, \"lyric\": \"\" }"
+///     "  ]"
+///     "}";
+/// const VoicevoxStyleId kSingingTeacher = 6000;
+///
+/// char *frame_audio_query;
+/// const VoicevoxResultCode result =
+///     voicevox_synthesizer_create_sing_frame_audio_query(
+///         synthesizer, kScore, kSingingTeacher, &frame_audio_query);
+/// ```
+/// }
+///
+/// \safety{
+/// - `score_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+/// - `output_audio_query_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+/// }
+///
+/// \orig-impl{voicevox_synthesizer_create_sing_frame_audio_query}
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn voicevox_synthesizer_create_sing_frame_audio_query(
     synthesizer: *const VoicevoxSynthesizer,
@@ -1602,7 +1734,29 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_sing_frame_audio_query(
     })())
 }
 
+// TODO: json-cを活用したexaampleを書く
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// 楽譜と歌唱音声合成用のクエリから、フレームごとの基本周波数を生成する。
+///
+/// 生成したJSONを解放するには ::voicevox_json_free を使う。
+///
+/// @param [in] synthesizer 音声シンセサイザ
+/// @param [in] score_json [`Score`型]を表すJSON
+/// @param [in] frame_audio_query_json [`FrameAudioQuery`型]を表すJSON
+/// @param [in] style_id スタイルID
+/// @param [out] output_f0_json 生成先
+///
+/// [`Score`型]: ../rust_api/voicevox_core/struct.Score.html
+/// [`FrameAudioQuery`型]: ../rust_api/voicevox_core/struct.FrameAudioQuery.html
+///
+/// @returns 結果コード
+///
+/// \safety{
+/// - `score_json`と`frame_audio_query_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+/// - `output_f0_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+/// }
+///
+/// \orig-impl{voicevox_synthesizer_create_sing_frame_f0}
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn voicevox_synthesizer_create_sing_frame_f0(
     synthesizer: *const VoicevoxSynthesizer,
@@ -1633,7 +1787,29 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_sing_frame_f0(
     })())
 }
 
+// TODO: json-cを活用したexaampleを書く
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// 楽譜と歌唱音声合成用のクエリから、フレームごとの音量を生成する。
+///
+/// 生成したJSONを解放するには ::voicevox_json_free を使う。
+///
+/// @param [in] synthesizer 音声シンセサイザ
+/// @param [in] score_json [`Score`型]を表すJSON
+/// @param [in] frame_audio_query_json [`FrameAudioQuery`型]を表すJSON
+/// @param [in] style_id スタイルID
+/// @param [out] output_volume_json 生成先
+///
+/// [`Score`型]: ../rust_api/voicevox_core/struct.Score.html
+/// [`FrameAudioQuery`型]: ../rust_api/voicevox_core/struct.FrameAudioQuery.html
+///
+/// @returns 結果コード
+///
+/// \safety{
+/// - `score_json`と`frame_audio_query_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+/// - `output_volume_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+/// }
+///
+/// \orig-impl{voicevox_synthesizer_create_sing_frame_volume}
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn voicevox_synthesizer_create_sing_frame_volume(
     synthesizer: *const VoicevoxSynthesizer,
@@ -1666,6 +1842,38 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_sing_frame_volume(
 }
 
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// 歌唱音声合成を行う。
+///
+/// 生成したWAVデータを解放するには ::voicevox_wav_free を使う。
+///
+/// @param [in] synthesizer 音声シンセサイザ
+/// @param [in] frame_audio_query_json [`FrameAudioQuery`型]を表すJSON
+/// @param [in] style_id スタイルID
+/// @param [out] output_wav_length 出力のバイト長
+/// @param [out] output_wav 出力先
+///
+/// [`FrameAudioQuery`型]: ../rust_api/voicevox_core/struct.FrameAudioQuery.html
+///
+/// @returns 結果コード
+///
+/// \example{
+/// ```c
+/// const VoicevoxStyleId kSinger = 3000;
+///
+/// uint8_t *wav;
+/// size_t wav_length;
+/// const VoicevoxResultCode result = voicevox_synthesizer_frame_synthesis(
+///     synthesizer, frame_audio_query, kSinger, &wav_length, &wav);
+/// ```
+/// }
+///
+/// \safety{
+/// - `frame_audio_query_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+/// - `output_wav_length`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+/// - `output_wav`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+/// }
+///
+/// \orig-impl{voicevox_synthesizer_frame_synthesis}
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn voicevox_synthesizer_frame_synthesis(
     synthesizer: *const VoicevoxSynthesizer,
@@ -1704,10 +1912,15 @@ pub unsafe extern "C" fn voicevox_synthesizer_frame_synthesis(
 ///     - ::voicevox_open_jtalk_rc_analyze
 ///     - ::voicevox_synthesizer_create_metas_json
 ///     - ::voicevox_synthesizer_create_audio_query
+///     - ::voicevox_synthesizer_create_audio_query_from_kana
 ///     - ::voicevox_synthesizer_create_accent_phrases
+///     - ::voicevox_synthesizer_create_accent_phrases_from_kana
 ///     - ::voicevox_synthesizer_replace_mora_data
 ///     - ::voicevox_synthesizer_replace_phoneme_length
 ///     - ::voicevox_synthesizer_replace_mora_pitch
+///     - ::voicevox_synthesizer_create_sing_frame_audio_query
+///     - ::voicevox_synthesizer_create_sing_frame_f0
+///     - ::voicevox_synthesizer_create_sing_frame_volume
 ///     - ::voicevox_user_dict_to_json
 /// - 文字列の長さは生成時より変更されていてはならない。
 /// - `json`がヌルポインタでないならば、<a href="#voicevox-core-safety">読み込みと書き込みについて有効</a>でなければならない。
@@ -1733,6 +1946,8 @@ pub unsafe extern "C" fn voicevox_json_free(json: *mut c_char) {
 /// - `wav`がヌルポインタでないならば、以下のAPIで得られたポインタでなくてはいけない。
 ///     - ::voicevox_synthesizer_synthesis
 ///     - ::voicevox_synthesizer_tts
+///     - ::voicevox_synthesizer_tts_from_kana
+///     - ::voicevox_synthesizer_frame_synthesis
 /// - `wav`がヌルポインタでないならば、<a href="#voicevox-core-safety">読み込みと書き込みについて有効</a>でなければならない。
 /// - `wav`がヌルポインタでないならば、以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。
 /// }

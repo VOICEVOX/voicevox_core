@@ -16,7 +16,7 @@ const char* kOjtDicDir = "./voicevox_core/dict/open_jtalk_dic_utf_8-1.11";
 const char* kVvm = "./voicevox_core/models/vvms/s0.vvm";
 const char* kScore =
     "{"
-    " \"notes\": [ "
+    "  \"notes\": [ "
     "    { \"key\": null, \"frame_length\": 15, \"lyric\": \"\" },"
     "    { \"key\": 60, \"frame_length\": 45, \"lyric\": \"ド\" },"
     "    { \"key\": 62, \"frame_length\": 45, \"lyric\": \"レ\" },"
@@ -25,8 +25,8 @@ const char* kScore =
     "  ]"
     "}";
 const char* kOutput = "./audio.wav";
-const uint32_t kSingingTeacher = 6000;
-const uint32_t kSinger = 3000;
+const VoicevoxStyleId kSingingTeacher = 6000;
+const VoicevoxStyleId kSinger = 3000;
 
 #define TRY(function_result)                     \
   do {                                           \

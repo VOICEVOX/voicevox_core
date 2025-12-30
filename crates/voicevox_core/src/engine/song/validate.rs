@@ -41,6 +41,7 @@ use self::note_seq::ValidatedNoteSeq;
 /// [不正]: Score::validate
 /// [`WARN`]: tracing::Level::WARN
 /// [警告を出す]: FrameAudioQuery::validate
+#[cfg_attr(doc, doc(alias = "voicevox_ensure_compatible"))]
 pub fn ensure_compatible(score: &Score, frame_audio_query: &FrameAudioQuery) -> crate::Result<()> {
     let ValidatedScore { notes } = score.try_into()?;
     frame_audio_query.validate();
@@ -90,6 +91,7 @@ impl Score {
     /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
     /// [`notes`]: Self::notes
     /// [不正]: Note::validate
+    #[cfg_attr(doc, doc(alias = "voicevox_score_validate"))]
     pub fn validate(&self) -> crate::Result<()> {
         ValidatedScore::try_from(self)
             .map(|_| ())
@@ -111,6 +113,7 @@ impl Note {
     /// [`key`]: Self::key
     /// [`lyric`]: Self::lyric
     /// [`PAU`]: OptionalLyric::PAU
+    #[cfg_attr(doc, doc(alias = "voicevox_note_validate"))]
     pub fn validate(&self) -> crate::Result<()> {
         ValidatedNote::try_from(self)
             .map(|_| ())
@@ -135,6 +138,7 @@ impl FrameAudioQuery {
     /// [`WARN`]: tracing::Level::WARN
     /// [`output_sampling_rate`]: Self::output_sampling_rate
     /// [#762]: https://github.com/VOICEVOX/voicevox_core/issues/762
+    #[cfg_attr(doc, doc(alias = "voicevox_frame_audio_query_validate"))]
     pub fn validate(&self) {
         if self.output_sampling_rate != SamplingRate::default() {
             warn!("`output_sampling_rate` should be `DEFAULT_SAMPLING_RATE`");

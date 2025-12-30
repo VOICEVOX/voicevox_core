@@ -337,6 +337,7 @@ pub mod __doc {
     /// | `voicevox_voice_model_file_delete` | 〃 |
     /// | `voicevox_user_dict_delete` | 〃 |
     /// | `voicevox_error_result_to_message` | [`std::error::Error`]としてのエラー表示があるため |
+    /// | `voicevox_frame_phoneme_validate` | 型システムで不正な状態を完全に防げるため |
     ///
     /// [C API]: https://voicevox.github.io/voicevox_core/apis/c_api/voicevox__core_8h.html
     /// [Rustのデストラクタ機構]: https://doc.rust-lang.org/reference/destructors.html
@@ -355,7 +356,8 @@ pub mod __doc {
         "voicevox_synthesizer_delete",
         "voicevox_voice_model_file_delete",
         "voicevox_user_dict_delete",
-        "voicevox_error_result_to_message"
+        "voicevox_error_result_to_message",
+        "voicevox_frame_phoneme_validate"
     ))]
     pub mod C_APIには存在するがRust_APIには存在しないアイテム {}
 
