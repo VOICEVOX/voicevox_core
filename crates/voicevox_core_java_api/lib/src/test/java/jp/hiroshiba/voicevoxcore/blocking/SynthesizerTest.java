@@ -5,6 +5,7 @@
 package jp.hiroshiba.voicevoxcore.blocking;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -13,7 +14,10 @@ import java.util.List;
 import jp.hiroshiba.voicevoxcore.AccelerationMode;
 import jp.hiroshiba.voicevoxcore.AccentPhrase;
 import jp.hiroshiba.voicevoxcore.AudioQuery;
+import jp.hiroshiba.voicevoxcore.FrameAudioQuery;
 import jp.hiroshiba.voicevoxcore.Mora;
+import jp.hiroshiba.voicevoxcore.Note;
+import jp.hiroshiba.voicevoxcore.Score;
 import jp.hiroshiba.voicevoxcore.TestUtils;
 import jp.hiroshiba.voicevoxcore.exceptions.InvalidModelDataException;
 import jp.hiroshiba.voicevoxcore.exceptions.RunModelException;
@@ -181,5 +185,56 @@ class SynthesizerTest extends TestUtils {
     assertArrayEquals(wav6, wav8);
     assertArrayEquals(wav6, wav9);
     assertArrayEquals(wav6, wav10);
+  }
+
+  @Test
+  void song() throws RunModelException, InvalidModelDataException {
+    Onnxruntime onnxruntime = loadOnnxruntime();
+    OpenJtalk openJtalk = loadOpenJtalk();
+    Synthesizer synthesizer = Synthesizer.builder(onnxruntime, openJtalk).build();
+    try (VoiceModelFile model = openModel()) {
+      synthesizer.loadVoiceModel(model);
+    }
+
+    final Score SCORE =
+        new Score(
+            Arrays.asList(
+                new Note("①", null, "", 15),
+                new Note("②", (byte) 60, "ド", 45),
+                new Note("③", (byte) 62, "レ", 45),
+                new Note("④", (byte) 64, "ミ", 45),
+                new Note("⑤", null, "", 15)));
+    final long NUM_TOTAL_FRAMES = SCORE.notes.stream().mapToLong(note -> note.frameLength).sum();
+
+    final int SINGING_TEACHER = 6000;
+    final int SINGER = 3000;
+
+    FrameAudioQuery frameAudioQuery = synthesizer.createSingFrameAudioQuery(SCORE, SINGING_TEACHER);
+
+    assertArrayEquals(
+        new String[] {"pau", "d", "o", "r", "e", "m", "i", "pau"},
+        frameAudioQuery.phonemes.stream().map(p -> p.phoneme).toArray());
+
+    assertArrayEquals(
+        new String[] {"①", "②", "②", "③", "③", "④", "④", "⑤"},
+        frameAudioQuery.phonemes.stream().map(p -> p.noteId).toArray());
+
+    assertEquals(NUM_TOTAL_FRAMES, frameAudioQuery.f0.length);
+    assertEquals(NUM_TOTAL_FRAMES, frameAudioQuery.volume.length);
+    assertEquals(
+        NUM_TOTAL_FRAMES, frameAudioQuery.phonemes.stream().mapToLong(p -> p.frameLength).sum());
+
+    float[] f0s = synthesizer.createSingFrameF0(SCORE, frameAudioQuery, SINGING_TEACHER);
+    assertEquals(NUM_TOTAL_FRAMES, f0s.length);
+
+    float[] volumes = synthesizer.createSingFrameVolume(SCORE, frameAudioQuery, SINGING_TEACHER);
+    assertEquals(NUM_TOTAL_FRAMES, volumes.length);
+
+    byte[] wav = synthesizer.frameSynthesis(frameAudioQuery, SINGER);
+
+    assertEquals((byte) 'R', wav[0]);
+    assertEquals((byte) 'I', wav[1]);
+    assertEquals((byte) 'F', wav[2]);
+    assertEquals((byte) 'F', wav[3]);
   }
 }
