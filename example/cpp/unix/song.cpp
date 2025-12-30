@@ -48,7 +48,7 @@ int write_file(const uint8_t* data, size_t data_len) {
 
 int main(int argc, char* argv[]) {
   if (argc > 1) {
-    fprintf(stderr, "使い方: %s\n", argv[0]);
+    fprintf(stderr, "%sは引数を取りません\n", argv[0]);
     return 1;
   }
 
