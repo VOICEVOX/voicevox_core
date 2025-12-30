@@ -1,4 +1,8 @@
-// TODO: 書き方をsong.cppに寄せる
+/**
+ * テキスト音声合成を行う。
+ */
+
+// TODO: 実装スタイルをunix/song.cppに揃える
 
 #include <filesystem>
 #include <fstream>
