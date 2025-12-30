@@ -1952,6 +1952,7 @@ pub(crate) mod blocking {
         ///
         /// [楽譜]: Score
         /// [歌唱合成用のクエリ]: FrameAudioQuery
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_create_sing_frame_audio_query"))]
         pub fn create_sing_frame_audio_query(
             &self,
             score: &Score,
@@ -2020,6 +2021,7 @@ pub(crate) mod blocking {
         ///
         /// [楽譜]: Score
         /// [歌唱合成用のクエリ]: FrameAudioQuery
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_create_sing_frame_f0"))]
         pub fn create_sing_frame_f0(
             &self,
             score: &Score,
@@ -2093,6 +2095,7 @@ pub(crate) mod blocking {
         ///
         /// [楽譜]: Score
         /// [歌唱合成用のクエリ]: FrameAudioQuery
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_create_sing_frame_volume"))]
         pub fn create_sing_frame_volume(
             &self,
             score: &Score,
@@ -2151,6 +2154,7 @@ pub(crate) mod blocking {
         /// # Ok(())
         /// # }
         /// ```
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_frame_synthesis"))]
         pub fn frame_synthesis<'a>(
             &'a self,
             frame_audio_query: &'a FrameAudioQuery,

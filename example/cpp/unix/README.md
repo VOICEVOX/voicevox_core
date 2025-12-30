@@ -15,7 +15,7 @@ cmake -S . -B build
 cmake --build build
 ```
 
-## 実行
+## `simple_tts`（テキスト合成音声）の実行
 
 `build` ディレクトリ以下にできた実行ファイル (`simple_tts`) をこのディレクトリにコピーしてから実行します：
 
@@ -33,4 +33,15 @@ aplay audio.wav
 
 # macOS の場合
 afplay audio.wav
+```
+
+## `song`（歌唱合成音声）の実行
+
+`simple_tts`と同様の形で実行します。ただし`song`は引数を取りません。
+
+```bash
+cp build/song ./
+# simple_ttsと違い、songは引数を取らない
+./song
+# audio.wavが生成されます。
 ```

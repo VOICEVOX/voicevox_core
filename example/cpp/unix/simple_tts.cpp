@@ -1,3 +1,10 @@
+/**
+ * テキスト音声合成を行う。
+ */
+
+// TODO: 実装スタイルをunix/song.cppに揃える
+// TODO: ファイル名をunix/song.cppに寄せる
+
 #include <filesystem>
 #include <fstream>
 #include <iostream>

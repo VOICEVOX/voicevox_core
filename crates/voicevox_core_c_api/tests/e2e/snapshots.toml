@@ -110,6 +110,20 @@ stderr_matches_all = [
     "\nthread caused non-unwinding panic. aborting.\n",
 ]
 
+[ensure_compatible.stderr]
+windows = '''
+{windows-video-cards}
+{timestamp}  INFO voicevox_core::synthesizer: CPUを利用します
+{timestamp} ERROR voicevox_core::helpers: 不正な楽譜とFrameAudioQueryの組み合わせです。異なる音素ID列です
+{timestamp} ERROR voicevox_core::helpers: Caused by: 不正な楽譜とFrameAudioQueryの組み合わせです。異なる音素ID列です
+'''
+unix = '''
+{timestamp}  INFO voicevox_core::synthesizer: CPUを利用します
+{timestamp} ERROR voicevox_core::helpers: 不正な楽譜とFrameAudioQueryの組み合わせです。異なる音素ID列です
+{timestamp} ERROR voicevox_core::helpers: Caused by: 不正な楽譜とFrameAudioQueryの組み合わせです。異なる音素ID列です
+'''
+
+# TODO: 30 (INVALID_MORA_ERROR), 35 (INCOMPATIBLE_QUERIES_ERROR)
 [global_info]
 result_messages.0 = "エラーが発生しませんでした"
 result_messages.1 = "OpenJTalkの辞書が読み込まれていません"
@@ -136,10 +150,24 @@ result_messages.24 = "ユーザー辞書の単語のバリデーションに失�
 result_messages.25 = "UUIDの変換に失敗しました"
 result_messages.28 = "モデルの形式が不正です"
 result_messages.29 = "推論ライブラリのロードまたは初期化ができませんでした"
+result_messages.31 = "無効な楽譜です"
+result_messages.32 = "無効なノートです"
+result_messages.33 = "無効なFrameAudioQueryです"
+result_messages.34 = "無効なFramePhonemeです"
 stderr = ''
 
 [simple_tts]
 output."こんにちは、音声合成の世界へようこそ".wav_length = 176172
+stderr.windows = '''
+{windows-video-cards}
+{timestamp}  INFO voicevox_core::synthesizer: CPUを利用します
+'''
+stderr.unix = '''
+{timestamp}  INFO voicevox_core::synthesizer: CPUを利用します
+'''
+
+[song]
+output.phoneme_lengths = [13, 2, 39, 6, 40, 5, 45, 15]
 stderr.windows = '''
 {windows-video-cards}
 {timestamp}  INFO voicevox_core::synthesizer: CPUを利用します
