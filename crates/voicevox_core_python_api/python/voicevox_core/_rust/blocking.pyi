@@ -526,6 +526,17 @@ class Synthesizer:
         .. _blocking-synthesizer-create-sing-frame-audio-query-score: #voicevox_core.Score
         .. |blocking-synthesizer-create-sing-frame-audio-query-frame-audio-query| replace:: 歌唱合成用のクエリ
         .. _blocking-synthesizer-create-sing-frame-audio-query-frame-audio-query: #voicevox_core.FrameAudioQuery
+
+        Parameters
+        ----------
+        score
+            楽譜。
+        style_id
+            スタイルID。
+
+        Returns
+        -------
+        歌唱合成用のクエリ。
         """
         ...
     def create_sing_frame_f0(
@@ -559,6 +570,19 @@ class Synthesizer:
         .. _blocking-synthesizer-create-sing-frame-f0-score: #voicevox_core.Score
         .. |blocking-synthesizer-create-sing-frame-f0-frame-audio-query| replace:: 歌唱合成用のクエリ
         .. _blocking-synthesizer-create-sing-frame-f0-frame-audio-query: #voicevox_core.FrameAudioQuery
+
+        Parameters
+        ----------
+        score
+            楽譜。
+        frame_audio_query
+            歌唱合成用のクエリ。
+        style_id
+            スタイルID。
+
+        Returns
+        -------
+        フレームごとの基本周波数。
         """
         ...
     def create_sing_frame_volume(
@@ -597,6 +621,19 @@ class Synthesizer:
         .. _blocking-synthesizer-create-sing-frame-volume-score: #voicevox_core.Score
         .. |blocking-synthesizer-create-sing-frame-volume-frame-audio-query| replace:: 歌唱合成用のクエリ
         .. _blocking-synthesizer-create-sing-frame-volume-frame-audio-query: #voicevox_core.FrameAudioQuery
+
+        Parameters
+        ----------
+        score
+            楽譜。
+        frame_audio_query
+            歌唱合成用のクエリ。
+        style_id
+            スタイルID。
+
+        Returns
+        -------
+        フレームごとの音量。
         """
         ...
     def frame_synthesis(
@@ -612,6 +649,17 @@ class Synthesizer:
             SINGER = 3000
 
             wav = synthesizer.frame_synthesis(frame_audio_query, SINGER)
+
+        Parameters
+        ----------
+        frame_audio_query
+            歌唱合成用のクエリ。
+        style_id
+            スタイルID。
+
+        Returns
+        -------
+        WAVデータ。
         """
         ...
     def close(self) -> None: ...
