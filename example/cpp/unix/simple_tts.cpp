@@ -1,3 +1,5 @@
+// TODO: 書き方をsong.cppに寄せる
+
 #include <filesystem>
 #include <fstream>
 #include <iostream>

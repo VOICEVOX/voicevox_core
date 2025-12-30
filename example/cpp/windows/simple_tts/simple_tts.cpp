@@ -1,6 +1,8 @@
 ﻿// simple_tts.cpp : このファイルには 'main' 関数が含まれています。プログラム実行の開始と終了がそこで行われます。
 //
 
+// TODO: 書き方をunix/song.cppに寄せる
+
 #include "simple_tts.h"
 
 #include <Windows.h>
