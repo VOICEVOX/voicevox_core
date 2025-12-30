@@ -53,7 +53,7 @@
 
 ### Added
 
-- \[Rust,C\] ソング機能が追加されます ([#531], [#732], [#738], [#761], [#895], [#896], [#894], [#1217], [#1236], [#1073], [#1242], [#1250], [#1252], [#1247], [#1253], [#1245])。
+- \[Rust,C,Python\] ソング機能が追加されます ([#531], [#732], [#738], [#761], [#895], [#896], [#894], [#1217], [#1236], [#1073], [#1242], [#1250], [#1252], [#1247], [#1253], [#1244], [#1245])。
 - ドキュメントが改善されます。
     - [バージョン0.16.3](#0163---2025-12-08-0900)で導入された、`AudioQuery`/`AccentPhrase`/`Mora`のバリデーション機能に関するドキュメンテーションがよりわかりやすくなります ([#1251])。
     - \[Python,Java\] 一部のドキュメントの文体が改善されます ([#1238])。
@@ -1405,6 +1405,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1237]: https://github.com/VOICEVOX/voicevox_core/pull/1237
 [#1238]: https://github.com/VOICEVOX/voicevox_core/pull/1238
 [#1242]: https://github.com/VOICEVOX/voicevox_core/pull/1242
+[#1244]: https://github.com/VOICEVOX/voicevox_core/pull/1244
 [#1245]: https://github.com/VOICEVOX/voicevox_core/pull/1245
 [#1247]: https://github.com/VOICEVOX/voicevox_core/pull/1247
 [#1250]: https://github.com/VOICEVOX/voicevox_core/pull/1250
