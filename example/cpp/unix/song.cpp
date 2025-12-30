@@ -24,17 +24,9 @@ const char* kScore =
     "    { \"key\": null, \"frame_length\": 15, \"lyric\": \"\" }"
     "  ]"
     "}";
-const char* kOutput = "./audio.wav";
 const VoicevoxStyleId kSingingTeacher = 6000;
 const VoicevoxStyleId kSinger = 3000;
-
-#define TRY(function_result)                     \
-  do {                                           \
-    voicevox_result = function_result;           \
-    if (voicevox_result != VOICEVOX_RESULT_OK) { \
-      goto cleanup;                              \
-    }                                            \
-  } while (0)
+const char* kOutput = "./audio.wav";
 
 int write_file(const uint8_t* data, size_t data_len) {
   FILE* output = fopen(kOutput, "wb");
@@ -74,6 +66,15 @@ int main(int argc, char* argv[]) {
   uint8_t* wav = NULL;
 
   const VoicevoxOnnxruntime* onnxruntime;
+  size_t wav_length;
+
+#define TRY(result)                              \
+  do {                                           \
+    voicevox_result = result;                    \
+    if (voicevox_result != VOICEVOX_RESULT_OK) { \
+      goto cleanup;                              \
+    }                                            \
+  } while (0)
 
   TRY(voicevox_onnxruntime_load_once(load_onnxruntime_options, &onnxruntime));
 
@@ -89,10 +90,10 @@ int main(int argc, char* argv[]) {
   TRY(voicevox_synthesizer_create_sing_frame_audio_query(
       synthesizer, kScore, kSingingTeacher, &frame_audio_query));
 
-  size_t wav_length;
-
   TRY(voicevox_synthesizer_frame_synthesis(synthesizer, frame_audio_query,
                                            kSinger, &wav_length, &wav));
+
+#undef TRY
 
   errno = 0;
   stdio_result = write_file(wav, wav_length);
