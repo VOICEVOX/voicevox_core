@@ -16,6 +16,8 @@ on:
       - published
   pull_request:
   push:
+    branches:
+      - main
 
 env:
   # releaseタグ名か、workflow_dispatchでのバージョン名か、'0.0.0'が入る
