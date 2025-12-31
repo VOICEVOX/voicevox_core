@@ -82,13 +82,12 @@ public final class FramePhoneme implements Cloneable {
 
   @Override
   public boolean equals(Object obj) {
-    if (!(obj instanceof FramePhoneme)) {
-      return false;
-    }
+    if (!(obj instanceof FramePhoneme)) return false;
     FramePhoneme other = (FramePhoneme) obj;
+
     return phoneme.equals(other.phoneme)
         && frameLength == other.frameLength
-        && noteId.equals(other.noteId);
+        && (noteId == null ? other.noteId == null : noteId.equals(other.noteId));
   }
 
   @Override

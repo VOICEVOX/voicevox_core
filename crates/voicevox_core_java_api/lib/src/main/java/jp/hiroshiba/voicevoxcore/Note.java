@@ -83,12 +83,11 @@ public final class Note implements Cloneable {
 
   @Override
   public boolean equals(Object obj) {
-    if (!(obj instanceof Note)) {
-      return false;
-    }
+    if (!(obj instanceof Note)) return false;
     Note other = (Note) obj;
-    return id.equals(other.id)
-        && key.equals(other.key)
+
+    return (id == null ? other.id == null : id.equals(other.id))
+        && (key == null ? other.key == null : key.equals(other.key))
         && lyric.equals(other.lyric)
         && frameLength == other.frameLength;
   }

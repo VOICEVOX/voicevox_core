@@ -110,19 +110,7 @@ public final class FrameAudioQuery {
     rsValidate();
   }
 
-  @Override
-  public boolean equals(Object obj) {
-    if (!(obj instanceof FrameAudioQuery)) {
-      return false;
-    }
-    FrameAudioQuery other = (FrameAudioQuery) obj;
-    return f0.equals(other.f0)
-        && volume.equals(other.volume)
-        && phonemes.equals(other.phonemes)
-        && volumeScale == other.volumeScale
-        && outputSamplingRate == other.outputSamplingRate
-        && outputStereo == other.outputStereo;
-  }
+  // `phonemes`の型が`List`のため、`clone`は実装できない
 
   private native void rsValidate();
 }
