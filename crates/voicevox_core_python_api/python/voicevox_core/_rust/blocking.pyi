@@ -536,7 +536,7 @@ class Synthesizer:
 
         Returns
         -------
-        歌唱合成用のクエリ。
+        歌唱音声合成用のクエリ。
         """
         ...
     def create_sing_frame_f0(
@@ -576,7 +576,7 @@ class Synthesizer:
         score
             楽譜。
         frame_audio_query
-            歌唱合成用のクエリ。
+            歌唱音声合成用のクエリ。
         style_id
             スタイルID。
 
@@ -627,7 +627,7 @@ class Synthesizer:
         score
             楽譜。
         frame_audio_query
-            歌唱合成用のクエリ。
+            歌唱音声合成用のクエリ。
         style_id
             スタイルID。
 
@@ -653,7 +653,7 @@ class Synthesizer:
         Parameters
         ----------
         frame_audio_query
-            歌唱合成用のクエリ。
+            歌唱音声合成用のクエリ。
         style_id
             スタイルID。
 
