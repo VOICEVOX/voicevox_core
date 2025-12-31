@@ -20,7 +20,7 @@ use super::{
 
 use self::note_seq::ValidatedNoteSeq;
 
-/// 与えられた[楽譜]と[歌唱合成用のクエリ]の組み合わせが、基本周波数と音量の生成に利用できるかどうかを確認する。
+/// 与えられた[楽譜]と[歌唱音声合成用のクエリ]の組み合わせが、基本周波数と音量の生成に利用できるかどうかを確認する。
 ///
 /// # Errors
 ///
@@ -36,7 +36,7 @@ use self::note_seq::ValidatedNoteSeq;
 /// - `frame_audio_query`が[警告を出す]状態。
 ///
 /// [楽譜]: Score
-/// [歌唱合成用のクエリ]: FrameAudioQuery
+/// [歌唱音声合成用のクエリ]: FrameAudioQuery
 /// [`ErrorKind::IncompatibleQueries`]: crate::ErrorKind::IncompatibleQueries
 /// [不正]: Score::validate
 /// [`WARN`]: tracing::Level::WARN
