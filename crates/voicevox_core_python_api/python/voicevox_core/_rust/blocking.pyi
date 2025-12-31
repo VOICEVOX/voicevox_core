@@ -524,7 +524,7 @@ class Synthesizer:
 
         .. |blocking-synthesizer-create-sing-frame-audio-query-score| replace:: 楽譜
         .. _blocking-synthesizer-create-sing-frame-audio-query-score: #voicevox_core.Score
-        .. |blocking-synthesizer-create-sing-frame-audio-query-frame-audio-query| replace:: 歌唱合成用のクエリ
+        .. |blocking-synthesizer-create-sing-frame-audio-query-frame-audio-query| replace:: 歌唱音声合成用のクエリ
         .. _blocking-synthesizer-create-sing-frame-audio-query-frame-audio-query: #voicevox_core.FrameAudioQuery
         """
         ...
@@ -557,7 +557,7 @@ class Synthesizer:
 
         .. |blocking-synthesizer-create-sing-frame-f0-score| replace:: 楽譜
         .. _blocking-synthesizer-create-sing-frame-f0-score: #voicevox_core.Score
-        .. |blocking-synthesizer-create-sing-frame-f0-frame-audio-query| replace:: 歌唱合成用のクエリ
+        .. |blocking-synthesizer-create-sing-frame-f0-frame-audio-query| replace:: 歌唱音声合成用のクエリ
         .. _blocking-synthesizer-create-sing-frame-f0-frame-audio-query: #voicevox_core.FrameAudioQuery
         """
         ...
@@ -595,7 +595,7 @@ class Synthesizer:
 
         .. |blocking-synthesizer-create-sing-frame-volume-score| replace:: 楽譜
         .. _blocking-synthesizer-create-sing-frame-volume-score: #voicevox_core.Score
-        .. |blocking-synthesizer-create-sing-frame-volume-frame-audio-query| replace:: 歌唱合成用のクエリ
+        .. |blocking-synthesizer-create-sing-frame-volume-frame-audio-query| replace:: 歌唱音声合成用のクエリ
         .. _blocking-synthesizer-create-sing-frame-volume-frame-audio-query: #voicevox_core.FrameAudioQuery
         """
         ...

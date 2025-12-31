@@ -1907,7 +1907,7 @@ pub(crate) mod blocking {
             }
         }
 
-        /// [楽譜]から[歌唱合成用のクエリ]を作成する。
+        /// [楽譜]から[歌唱音声合成用のクエリ]を作成する。
         ///
         /// # Example
         ///
@@ -1951,7 +1951,7 @@ pub(crate) mod blocking {
         /// ```
         ///
         /// [楽譜]: Score
-        /// [歌唱合成用のクエリ]: FrameAudioQuery
+        /// [歌唱音声合成用のクエリ]: FrameAudioQuery
         pub fn create_sing_frame_audio_query(
             &self,
             score: &Score,
@@ -1964,7 +1964,7 @@ pub(crate) mod blocking {
 
         // TODO: docs/guide/user/song-process.mdを作り、そこにリンクする。
         // https://github.com/VOICEVOX/voicevox_core/issues/1249#issuecomment-3691580447
-        /// [楽譜]と[歌唱合成用のクエリ]から、フレームごとの基本周波数を生成する。
+        /// [楽譜]と[歌唱音声合成用のクエリ]から、フレームごとの基本周波数を生成する。
         ///
         /// # Example
         ///
@@ -2019,7 +2019,7 @@ pub(crate) mod blocking {
         /// ```
         ///
         /// [楽譜]: Score
-        /// [歌唱合成用のクエリ]: FrameAudioQuery
+        /// [歌唱音声合成用のクエリ]: FrameAudioQuery
         pub fn create_sing_frame_f0(
             &self,
             score: &Score,
@@ -2033,7 +2033,7 @@ pub(crate) mod blocking {
 
         // TODO: docs/guide/user/song-process.mdを作り、そこにリンクする。
         // https://github.com/VOICEVOX/voicevox_core/issues/1249#issuecomment-3691580447
-        /// [楽譜]と[歌唱合成用のクエリ]から、フレームごとの音量を生成する。
+        /// [楽譜]と[歌唱音声合成用のクエリ]から、フレームごとの音量を生成する。
         ///
         /// # Example
         ///
@@ -2092,7 +2092,7 @@ pub(crate) mod blocking {
         /// ```
         ///
         /// [楽譜]: Score
-        /// [歌唱合成用のクエリ]: FrameAudioQuery
+        /// [歌唱音声合成用のクエリ]: FrameAudioQuery
         pub fn create_sing_frame_volume(
             &self,
             score: &Score,
@@ -2793,7 +2793,7 @@ pub(crate) mod nonblocking {
             }
         }
 
-        /// [楽譜]から[歌唱合成用のクエリ]を作成する。
+        /// [楽譜]から[歌唱音声合成用のクエリ]を作成する。
         ///
         /// # Example
         ///
@@ -2836,7 +2836,7 @@ pub(crate) mod nonblocking {
         /// ```
         ///
         /// [楽譜]: Score
-        /// [歌唱合成用のクエリ]: FrameAudioQuery
+        /// [歌唱音声合成用のクエリ]: FrameAudioQuery
         pub async fn create_sing_frame_audio_query(
             &self,
             score: &Score,
@@ -2847,7 +2847,7 @@ pub(crate) mod nonblocking {
 
         // TODO: docs/guide/user/song-process.mdを作り、そこにリンクする。
         // https://github.com/VOICEVOX/voicevox_core/issues/1249#issuecomment-3691580447
-        /// [楽譜]と[歌唱合成用のクエリ]から、フレームごとの基本周波数を生成する。
+        /// [楽譜]と[歌唱音声合成用のクエリ]から、フレームごとの基本周波数を生成する。
         ///
         /// # Example
         ///
@@ -2902,7 +2902,7 @@ pub(crate) mod nonblocking {
         /// ```
         ///
         /// [楽譜]: Score
-        /// [歌唱合成用のクエリ]: FrameAudioQuery
+        /// [歌唱音声合成用のクエリ]: FrameAudioQuery
         pub async fn create_sing_frame_f0(
             &self,
             score: &Score,
@@ -2916,7 +2916,7 @@ pub(crate) mod nonblocking {
 
         // TODO: docs/guide/user/song-process.mdを作り、そこにリンクする。
         // https://github.com/VOICEVOX/voicevox_core/issues/1249#issuecomment-3691580447
-        /// [楽譜]と[歌唱合成用のクエリ]から、フレームごとの音量を生成する。
+        /// [楽譜]と[歌唱音声合成用のクエリ]から、フレームごとの音量を生成する。
         ///
         /// # Example
         ///
@@ -2976,7 +2976,7 @@ pub(crate) mod nonblocking {
         /// ```
         ///
         /// [楽譜]: Score
-        /// [歌唱合成用のクエリ]: FrameAudioQuery
+        /// [歌唱音声合成用のクエリ]: FrameAudioQuery
         pub async fn create_sing_frame_volume(
             &self,
             score: &Score,
