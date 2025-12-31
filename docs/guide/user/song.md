@@ -56,6 +56,8 @@ frame_audio_query = synthesizer.create_sing_frame_audio_query(
 wav = synthesizer.frame_synthesis(frame_audio_query, SINGER)
 ```
 
+`create_sing_frame_audio_query`で指定できる`style_id`は、[種類]が`"singing_teacher"`か`"sing"`であるスタイルの`id`です。`frame_synthesis`で指定できる`style_id`は、種類が`"frame_decode"`か`"sing"`であるスタイルの`id`です。
+
 ## `frame_length`の分割
 
 情報がモーラ単位である`Score.notes`から、情報が音素単位である`FrameAudioQuery.phonemes`を生成する際、`Note.frame_length`も子音と母音で適切に分割されることになります。このとき単にノート一つ一つが二つずつに分割されるのではなく、子音が一つ前のノートの末尾に位置するようになります。
@@ -94,6 +96,38 @@ wav = synthesizer.frame_synthesis(frame_audio_query, SINGER)
 |  pau   |d|            o            | r  |            e             | m |              i               |   pau    |
 +--------+-+-------------------------+----+--------------------------+---+------------------------------+----------+
     13    2             39             6               40              5                45                   15
+```
+
+## ノートID
+
+[`Note.id`]に文字列を設定すると、`FrameAudioQuery`の生成時に[`FramePhoneme.note_id`]として反映されます。歌唱合成音声の処理に使われることはありません。
+
+```json
+{
+  "notes": [
+    { "lyric": "", "id": "①", … },
+    { "lyric": "ド", "id": "②", … },
+    { "lyric": "レ", "id": "③", … },
+    { "lyric": "ミ", "id": "④", … },
+    { "lyric": "", "id": "⑤", … }
+  ]
+}
+```
+
+```json
+{
+  "phonemes": [
+    { "phoneme": "pau", "note_id": "①", … },
+    { "phoneme": "d", "note_id": "②", … },
+    { "phoneme": "o", "note_id": "②", … },
+    { "phoneme": "r", "note_id": "③", … },
+    { "phoneme": "e", "note_id": "③", … },
+    { "phoneme": "m", "note_id": "④", … },
+    { "phoneme": "i", "note_id": "④", … },
+    { "phoneme": "pau", "note_id": "⑤", … },
+  ],
+  …
+}
 ```
 
 ## 歌唱音声合成の流れ
@@ -152,6 +186,9 @@ flowchart TD;
 [`Note.frame_length`]: https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/index.html#voicevox_core.Note.frame_length
 [`Note.lyric`]: https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/index.html#voicevox_core.Note.lyric
 [`Note.key`]: https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/index.html#voicevox_core.Note.key
+[`Note.id`]: https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/index.html#voicevox_core.Note.id
 [`FrameAudioQuery`]: https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/index.html#voicevox_core.FrameAudioQuery
+[`FramePhoneme.note_id`]: https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/index.html#voicevox_core.FramePhoneme.note_id
+[種類]: https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/index.html#voicevox_core.StyleType
 [`Synthesizer.create_sing_frame_audio_query`]: https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/blocking/index.html#voicevox_core.blocking.Synthesizer.create_sing_frame_audio_query
 [`Synthesizer.frame_synthesis`]: https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/blocking/index.html#voicevox_core.blocking.Synthesizer.frame_synthesis
