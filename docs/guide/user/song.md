@@ -52,7 +52,7 @@ SINGING_TEACHER = 6000  # 波音リツ（ノーマル）
 SINGER = 3000  # 四国めたん（あまあま）
 
 frame_audio_query = synthesizer.create_sing_frame_audio_query(
-    SCORE, SINGING_TEACHER
+    score, SINGING_TEACHER
 )
 wav = synthesizer.frame_synthesis(frame_audio_query, SINGER)
 ```
@@ -67,7 +67,7 @@ wav = synthesizer.frame_synthesis(frame_audio_query, SINGER)
 
 ```json
 {
-  "phonemes", [
+  "phonemes": [
     { "phoneme": "pau", "frame_length": 13 },
     { "phoneme": "d", "frame_length": 2 },
     { "phoneme": "o", "frame_length": 39 },
@@ -133,7 +133,7 @@ flowchart TD;
     -->|<a href="https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/blocking/index.html#voicevox_core.blocking.Synthesizer.create_sing_frame_f0">Synthesizer.create_sing_frame_f0</a>| phase3[
       #40;Score, FrameAudioQuery#41;
       ただし以下が未設定
-      ● FrameAudioQuery.f0
+      ● FrameAudioQuery.volume
     ]
     -->|<a href="https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/blocking/index.html#voicevox_core.blocking.Synthesizer.create_sing_frame_volume">Synthesizer.create_sing_frame_volume</a>| phase4[
       #40;Score, FrameAudioQuery#41;
