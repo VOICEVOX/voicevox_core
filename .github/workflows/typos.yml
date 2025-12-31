@@ -2,6 +2,8 @@ name: Check typos
 
 on:
   push:
+    branches:
+      - main
   pull_request:
     branches:
       - "**"
