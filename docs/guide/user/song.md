@@ -2,7 +2,7 @@
 
 [VOICEVOX コア ユーザーガイド]と同じ手順にて環境構築はできているものとします。
 
-歌唱音声合成を行うためにはまず[`Score`]（楽譜）を用意する必要があります。
+歌唱音声合成を行うためにはまず[`Score`]（楽譜）を用意します。
 
 ```py
 from voicevox_core import Note, Score
@@ -32,9 +32,10 @@ Rust API, C API, Java APIでは`Score`は以下のようなJSONで表現でき�
 }
 ```
 
-`Score`中の[`Note`]は無音のノートと無音でないノートに分けられており、[`Score.notes`]の最初のノートは無音である必要があります。
+`Score`中の[`Note`]には無音のノートと無音でないノートがあります。
+[`Score.notes`]の最初のノートは無音にします。
 
-`Note`には次の値を設定する必要があります。
+`Note`には次の値を設定します。
 
 - [`Note.frame_length`]: 秒数に93.75をかけ、端数を調整したものを設定（例: 125BPMにおける一拍として、(125 / 60)⁻¹ × 93.75 = `45`）。
 - 無音のノートの場合:
@@ -44,7 +45,7 @@ Rust API, C API, Java APIでは`Score`は以下のようなJSONで表現でき�
     - `Note.lyric`: 一つのモーラを表すひらがな/カタカナで歌詞を設定（例: `"ド"`, `"ファ"`）。
     - `Note.key`: MIDIのnote numberで音階を指定（例: C4として`60`）。
 
-[`Synthesizer.create_sing_frame_audio_query`]で`Score`から[`FrameAudioQuery`]を生成し、[`Synthesizer.frame_synthesis`]で音声合成を行うことでWAVデータが生成されます。
+[`Synthesizer.create_sing_frame_audio_query`]で`Score`から[`FrameAudioQuery`]を生成し、[`Synthesizer.frame_synthesis`]で音声合成してWAVデータを生成します。
 
 ```py
 SINGING_TEACHER = 6000  # 波音リツ（ノーマル）
