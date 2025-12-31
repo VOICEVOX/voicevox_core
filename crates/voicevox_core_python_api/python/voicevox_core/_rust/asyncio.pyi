@@ -558,7 +558,7 @@ class Synthesizer:
                     note.key += 1
 
             new_f0 = await synthesizer.create_sing_frame_f0(
-                SCORE, frame_audio_query, SINGING_TEACHER
+                score, frame_audio_query, SINGING_TEACHER
             )
             frame_audio_query.f0 = new_f0
 
@@ -591,12 +591,12 @@ class Synthesizer:
                     note.key += 1
 
             new_f0 = await synthesizer.create_sing_frame_f0(
-                SCORE, frame_audio_query, SINGING_TEACHER
+                score, frame_audio_query, SINGING_TEACHER
             )
             frame_audio_query.f0 = new_f0
 
             new_volume = await synthesizer.create_sing_frame_volume(
-                SCORE, frame_audio_query, SINGING_TEACHER
+                score, frame_audio_query, SINGING_TEACHER
             )
             frame_audio_query.volume = new_volume
 
