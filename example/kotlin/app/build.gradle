@@ -40,6 +40,7 @@ java {
     }
 }
 
+// TODO: ソング用のexampleも作る。
 application {
     // Define the main class for the application.
     mainClass = 'app.AppKt'
