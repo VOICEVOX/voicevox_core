@@ -11,19 +11,16 @@ on:
         type: boolean
         required: false
         default: false
-  release:
-    types:
-      - published
   pull_request:
   push:
     branches:
       - main
 
 env:
-  # releaseタグ名か、workflow_dispatchでのバージョン名か、'0.0.0'が入る
-  VERSION: ${{ github.event.release.tag_name || inputs.version || '0.0.0' }}
+  # workflow_dispatchでのバージョン名か、'0.0.0'が入る
+  VERSION: ${{ inputs.version || '0.0.0' }}
   # 簡易テストとするかどうか。mainブランチ、release、workflow_dispatch以外は簡易テストとする
-  IS_SIMPLE_TEST: ${{ github.ref != 'refs/heads/main' && github.event_name != 'release' && github.event_name != 'workflow_dispatch' }}
+  IS_SIMPLE_TEST: ${{ github.ref != 'refs/heads/main' && github.event_name != 'workflow_dispatch' }}
 
 defaults:
   run:
@@ -156,8 +153,52 @@ jobs:
           includes=$(echo "$includes" | jq -c '[.[] | del(.can_skip_in_simple_test)]')
           echo "includes=${includes}" >> "$GITHUB_OUTPUT"
 
-  build_and_deploy:
+  create-draft-release:
     needs: config
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirm that the tag does not exist at the moment
+        run: |
+          exists=$(
+            gh api \
+              "/repos/$GITHUB_REPOSITORY/git/matching-refs/tags/$VERSION" \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              -q '[.] | flatten | any(.ref == "refs/tags/'"$VERSION"'")'
+          )
+          [ "$exists" = false ]
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Confirm that there are no recent drafts that have the same `tagName`
+        run: |
+          found_recent=$(
+            gh release list \
+              -R "$GITHUB_REPOSITORY" \
+              --json tagName \
+              -q 'any(.tagName == "'"$VERSION"'")'
+          )
+          [ "$found_recent" = false ]
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create a draft release without real tag
+        if: fromJson(needs.config.outputs.deploy)
+        run: |
+          gh api \
+            "/repos/$GITHUB_REPOSITORY/releases" \
+            --method POST \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            -f "tag_name=$VERSION" \
+            -f "target_commitish=$GITHUB_SHA" \
+            -f "name=$VERSION" \
+            -F draft=true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build_and_deploy:
+    needs: [config, create-draft-release]
     environment: ${{ inputs.code_signing && 'code_signing' || '' }} # コード署名用のenvironment
     strategy:
       matrix:
@@ -273,22 +314,14 @@ jobs:
           7z a "../${{ env.ASSET_NAME }}.zip" "${{ env.ASSET_NAME }}"
       - name: Upload to Release
         if: fromJson(needs.config.outputs.deploy) && matrix.c_release_format == 'plain-cdylib'
-        uses: softprops/action-gh-release@v2
-        with:
-          prerelease: true
-          tag_name: ${{ env.VERSION }}
-          files: |-
-            ${{ env.ASSET_NAME }}.zip
-          target_commitish: ${{ github.sha }}
+        run: gh release upload "$VERSION" ${{ env.ASSET_NAME }}.zip
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Upload Python whl to Release
         if: fromJson(needs.config.outputs.deploy) && matrix.python_whl
-        uses: softprops/action-gh-release@v2
-        with:
-          prerelease: true
-          tag_name: ${{ env.VERSION }}
-          files: |-
-            ${{ steps.build-voicevox-core-python-api.outputs.whl }}
-          target_commitish: ${{ github.sha }}
+        run: gh release upload "$VERSION" ${{ steps.build-voicevox-core-python-api.outputs.whl }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Upload voicevox_core_java_api artifact
         if: matrix.java
         uses: actions/upload-artifact@v4
@@ -297,8 +330,8 @@ jobs:
           path: java_artifact
 
   build_xcframework:
-    if: ${{ !(github.ref != 'refs/heads/main' && github.event_name != 'release' && github.event_name != 'workflow_dispatch') }} # !env.IS_SIMPLE_TEST と同じ
-    needs: [config, build_and_deploy]
+    if: ${{ !(github.ref != 'refs/heads/main' && github.event_name != 'workflow_dispatch') }} # !env.IS_SIMPLE_TEST と同じ
+    needs: [config, create-draft-release, build_and_deploy]
     runs-on: macos-14
     env:
       IOS_X86_64_PATH: artifact/voicevox_core-x86_64-apple-ios
@@ -332,18 +365,14 @@ jobs:
           7z a "../../${{ env.ASSET_NAME }}.zip" "voicevox_core.xcframework"
       - name: Upload to Release
         if: fromJson(needs.config.outputs.deploy)
-        uses: softprops/action-gh-release@v2
-        with:
-          prerelease: true
-          tag_name: ${{ env.VERSION }}
-          files: |-
-            ${{ env.ASSET_NAME }}.zip
-          target_commitish: ${{ github.sha }}
+        run: gh release upload "$VERSION" "$ASSET_NAME.zip"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build_java_package:
     runs-on: ubuntu-latest
-    if: ${{ !(github.ref != 'refs/heads/main' && github.event_name != 'release' && github.event_name != 'workflow_dispatch') }} # !env.IS_SIMPLE_TEST と同じ
-    needs: [config, build_and_deploy]
+    if: ${{ !(github.ref != 'refs/heads/main' && github.event_name != 'workflow_dispatch') }} # !env.IS_SIMPLE_TEST と同じ
+    needs: [config, create-draft-release, build_and_deploy]
     steps:
       - uses: actions/checkout@v5
       - name: Set up Rust
@@ -422,16 +451,47 @@ jobs:
 
       - name: Upload to Release
         if: fromJson(needs.config.outputs.deploy)
-        uses: softprops/action-gh-release@v2
-        with:
-          prerelease: true
-          tag_name: ${{ env.VERSION }}
-          files: |-
-            /tmp/java_packages.zip
-          target_commitish: ${{ github.sha }}
+        run: gh release upload "$VERSION" /tmp/java_packages.zip
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build_and_deploy_downloader:
+    needs: [config, create-draft-release]
+    if: fromJson(needs.config.outputs.deploy)
+    uses: ./.github/workflows/build_and_deploy_downloader.yml
+    with:
+      version: ${{ needs.config.outputs.version }}
+      code_signing: ${{ inputs.code_signing }}
+
+  prerelease:
+    needs: [config, build_xcframework, build_java_package, build_and_deploy_downloader]
+    if: fromJson(needs.config.outputs.deploy)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create the tag
+        run: |
+          gh api \
+            "/repos/$GITHUB_REPOSITORY/git/refs" \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            -f "ref=refs/tags/$VERSION" \
+            -f "sha=$GITHUB_SHA"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prerelease
+        run: |
+          gh release edit \
+            "$VERSION" \
+            -R "$GITHUB_REPOSITORY" \
+            --draft=false \
+            --prerelease=true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   download_test:
-    needs: [config, build_and_deploy]
+    needs: [config, prerelease]
     if: fromJson(needs.config.outputs.deploy)
     uses: ./.github/workflows/download_test.yml
     with:

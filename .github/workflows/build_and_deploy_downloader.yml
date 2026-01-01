@@ -2,18 +2,16 @@ name: build and deploy downloader workflow
 
 on:
   workflow_dispatch:
+  workflow_call:
     inputs:
       version:
         description: "バージョン情報（A.BB.C / A.BB.C-preview.D）"
+        type: string
         required: true
       code_signing:
         description: "コード署名する"
         type: boolean
-        required: false
-        default: false
-  release:
-    types:
-      - published
+        required: true
   pull_request:
     paths:
       - Cargo.*
@@ -28,8 +26,8 @@ on:
       - .github/workflows/build_and_deploy_downloader.yml
 
 env:
-  # releaseタグ名か、workflow_dispatchでのバージョン名か、'0.0.0'が入る
-  VERSION: ${{ github.event.release.tag_name || inputs.version || '0.0.0' }}
+  # workflow_callでのバージョン名か、'0.0.0'が入る
+  VERSION: ${{ inputs.version || '0.0.0' }}
 
 defaults:
   run:
@@ -111,9 +109,6 @@ jobs:
 
       - name: Upload to Release
         if: env.VERSION != '0.0.0'
-        uses: softprops/action-gh-release@v2
-        with:
-          prerelease: true
-          tag_name: ${{ env.VERSION }}
-          files: ${{ matrix.name }}
-          target_commitish: ${{ github.sha }}
+        run: gh release upload "$VERSION" ${{ matrix.name }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
