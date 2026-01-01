@@ -61,12 +61,21 @@
 ### Changed
 
 - \[Python,Java\] `AudioQuery`（もしくはその一部）がRustのオブジェクトとして表現できなかったときのエラーが、`InvalidQuery`エラーに包まれるようになります。これまでは`OverflowError`や`RuntimeError`がそのままraiseされていました ([#1237])。
+- \[Rust\] 依存ライブラリが変化します ([#1073], [#1250])。
+    - \[追加\] `arrayvec@0.7`: `^0.7.6`
+    - \[追加\] `derive_more@1`: `into_iterator`フィーチャを追加
+    - \[追加\] `num-traits@0.2`: `^0.2.15`
+    - \[追加\] `smol_str@0.3`: `^0.3.2`
+    - \[追加\] `typed_floats@1`: `^1.0.7`
+    - \[追加\] `typeshare@1`: `^1.0.4` (`default-features = false`)
 
 ### Fixed
 
 - \[Java\] 各`validate`メソッドのJavadocにおいて、浮動小数点数がNaNあるいは±infinityだったときの扱いの記述が実態に則したものへと訂正されます ([#1237])。
 
 ## [0.16.3] - 2025-12-08 (+09:00)
+
+主な変更点とその解説については、[GitHub Releaseの本文](https://github.com/VOICEVOX/voicevox_core/releases/tag/0.16.3)をご覧ください。
 
 ### Added
 
@@ -81,8 +90,8 @@
     - メソッドとして`{AudioQuery,AccentPhrase,Mora}::validate`が追加されます。
 - \[Rust\] 依存ライブラリが変化します ([#1190], [#1214], [#1221])。
     - \[追加\] `bytemuck@1`: `^1.24.0`
-    - \[追加\] `pastey`: `^0.2.0`
-    - \[追加\] `phf`: `^0.13.1`
+    - \[追加\] `pastey@0.2`: `^0.2.0`
+    - \[追加\] `phf@0.13`: `^0.13.1`
 
 ### Removed
 
@@ -98,6 +107,8 @@
 - \[Java\] Javadocにおいて`UserDictWord`がGSONに対応しているという誤った情報が訂正されます ([#1223])。
 
 ## [0.16.2] - 2025-10-28 (+09:00)
+
+主な変更点とその解説については、[GitHub Releaseの本文](https://github.com/VOICEVOX/voicevox_core/releases/tag/0.16.2)をご覧ください。
 
 ### Added
 
