@@ -19,11 +19,8 @@ on:
       - crates/downloader/**
       - .github/workflows/build_and_deploy_downloader.yml
   push:
-    paths:
-      - Cargo.*
-      - rust-toolchain
-      - crates/downloader/**
-      - .github/workflows/build_and_deploy_downloader.yml
+    branches:
+      - main
 
 env:
   # workflow_callでのバージョン名か、'0.0.0'が入る
