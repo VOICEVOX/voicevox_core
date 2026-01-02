@@ -5,6 +5,6 @@
 3. prereleaseを解除し、latestに。
 4. [CHANGELOG.md]にバージョンを刻む。
 
-[`build_and_deploy`ワークフロー]: https://github.com/qryxip/voicevox_core/actions/workflows/build_and_deploy.yml
+[`build_and_deploy`ワークフロー]: https://github.com/VOICEVOX/voicevox_core/actions/workflows/build_and_deploy.yml
 [key-changes]: ../user/key-changes
 [CHANGELOG.md]: ../../../CHANGELOG.md
