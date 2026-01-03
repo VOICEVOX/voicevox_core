@@ -28,7 +28,7 @@ indicatif.workspace = true
 indoc.workspace = true
 itertools.workspace = true
 minus = { workspace = true, features = ["static_output"] }
-octocrab = { workspace = true, features = ["rustls-tls", "stream"] }
+octocrab = { workspace = true, features = ["stream"] }
 parse-display.workspace = true
 rayon.workspace = true
 rprompt.workspace = true
