@@ -31,7 +31,6 @@ minus = { workspace = true, features = ["static_output"] }
 octocrab = { workspace = true, features = ["rustls-tls", "stream"] }
 parse-display.workspace = true
 rayon.workspace = true
-reqwest = { workspace = true, features = ["rustls-tls", "stream"] }
 rprompt.workspace = true
 scraper.workspace = true
 semver.workspace = true
