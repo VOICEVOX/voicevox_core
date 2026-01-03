@@ -1019,8 +1019,8 @@ async fn find_models(
     impl RepoHandler<'_> {
         async fn fetch_asset_utf8_content(&self, asset: &Asset) -> anyhow::Result<String> {
             let content = self
-                .releases()
-                .stream_asset(asset.id)
+                .release_assets()
+                .stream(asset.id.0)
                 .await?
                 .try_fold(
                     Vec::with_capacity(asset.size as _),
@@ -1157,8 +1157,8 @@ fn download_and_extract_from_gh(
     Ok(retry(tries, async move || {
         let bytes_stream = octocrab
             .repos(&repo.owner, &repo.repo)
-            .releases()
-            .stream_asset(id)
+            .release_assets()
+            .stream(id.0)
             .await?
             .map_err(Into::into);
 
@@ -1220,8 +1220,8 @@ async fn fetch_model(
 ) -> anyhow::Result<()> {
     let bytes_stream = octocrab
         .repos(&repo.owner, &repo.repo)
-        .releases()
-        .stream_asset(*id)
+        .release_assets()
+        .stream(id.0)
         .await?
         .map_err(Into::into);
     let pb = with_style(pb.clone(), &PROGRESS_STYLE1).await?;
