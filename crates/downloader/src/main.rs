@@ -1428,7 +1428,7 @@ async fn download(
 // ただしどちらもoctocrab側の対応が必要。
 // cf. https://github.com/VOICEVOX/voicevox_core/issues/1120
 // その際、`download_and_extract_from_sourceforge`の名前も`…_from_url`に戻す。
-/// [`octocrab::repo::ReleasesHandler::stream_asset`]でダウンロードしたものを検証する。
+/// [`octocrab::repo::ReleaseAssetsHandler::stream`]でダウンロードしたものを検証する。
 fn validate_archive_file(
     content: Vec<u8>,
     content_kind: FileKind,
