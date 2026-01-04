@@ -70,16 +70,19 @@
     - \[追加\] `typed_floats@1`: `^1.0.7`
     - \[追加\] `typeshare@1`: `^1.0.4` (`default-features = false`)
     - \[変更\] `serde@1`: `^1.0.27` → `^1.0.228`
+- \[Python\] 型ヒントが[`uuid.UUID`](https://docs.python.org/3/library/uuid.html#uuid.UUID)である引数に、`uuid.UUID`ではないオブジェクトを与えたときのエラーが`TypeError`になります ([#1266])。
 
 ### Fixed
 
+- \[Python\] `Onnxruntime.load_once`は[デッドロックする可能性](https://pyo3.rs/v0.13.0/faq#im-experiencing-deadlocks-using-pyo3-with-lazy_static-or-once_cell)がありましたが、解消されます ([#1266])。
 - \[Java\] 各`validate`メソッドのJavadocにおいて、浮動小数点数がNaNあるいは±infinityだったときの扱いの記述が実態に則したものへと訂正されます ([#1237])。
 
 ### Security
 
-- \[ダウンローダー\] おそらく影響を受けてはいませんでしたが、以下の脆弱性登録がされた対象を利用しないようになります ([#1265])。
+- \[Python,ダウンローダー\] おそらく影響を受けてはいませんでしたが、以下の脆弱性登録がされた対象を利用しないようになります ([#1265], [#1266])。
     - [RUSTSEC-2025-0009](https://rustsec.org/advisories/RUSTSEC-2025-0009)
     - [RUSTSEC-2025-0010](https://rustsec.org/advisories/RUSTSEC-2025-0010)
+    - [RUSTSEC-2025-0020](https://rustsec.org/advisories/RUSTSEC-2025-0020)
     - [RUSTSEC-2025-0023](https://rustsec.org/advisories/RUSTSEC-2025-0023)
     - [RUSTSEC-2025-0024](https://rustsec.org/advisories/RUSTSEC-2025-0024)
     - [RUSTSEC-2025-0057](https://rustsec.org/advisories/RUSTSEC-2025-0057)
@@ -1438,6 +1441,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1255]: https://github.com/VOICEVOX/voicevox_core/pull/1255
 [#1257]: https://github.com/VOICEVOX/voicevox_core/pull/1257
 [#1265]: https://github.com/VOICEVOX/voicevox_core/pull/1265
+[#1266]: https://github.com/VOICEVOX/voicevox_core/pull/1266
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 

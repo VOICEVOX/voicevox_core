@@ -18,8 +18,7 @@ easy-ext.workspace = true
 futures-lite.workspace = true
 heck.workspace = true
 log.workspace = true
-once_cell.workspace = true
-pyo3 = { workspace = true, features = ["experimental-async", "abi3-py310", "extension-module"] }
+pyo3 = { workspace = true, features = ["experimental-async", "abi3-py310", "extension-module", "uuid"] }
 pyo3-log.workspace = true
 ref-cast.workspace = true
 serde = { workspace = true, features = ["derive"] }
