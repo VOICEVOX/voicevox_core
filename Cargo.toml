@@ -23,7 +23,7 @@ cargo_metadata = "0.18.1"
 cbindgen = "0.28.0"
 chrono = { version = "0.4.38", default-features = false }
 clap = { version = "4.5.19", features = ["cargo"] }
-color-eyre = "0.6.3"
+color-eyre = "0.6.5"
 color-print = "0.3.7"
 colorchoice = "1.0.2"
 comrak = { version = "0.26.0", default-features = false }
