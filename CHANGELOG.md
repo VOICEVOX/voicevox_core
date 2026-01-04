@@ -79,17 +79,10 @@
 
 ### Security
 
-- \[C,Java,ダウンローダー\] 以下の脆弱性の影響を受けないようになります ([#1269])。
-    - [RUSTSEC-2025-0055](https://rustsec.org/advisories/RUSTSEC-2025-0055)
-- \[Python,ダウンローダー\] おそらく影響を受けてはいませんでしたが、以下の脆弱性登録がされた対象を利用しないようになります ([#1265], [#1266])。
-    - [RUSTSEC-2025-0009](https://rustsec.org/advisories/RUSTSEC-2025-0009)
-    - [RUSTSEC-2025-0010](https://rustsec.org/advisories/RUSTSEC-2025-0010)
-    - [RUSTSEC-2025-0020](https://rustsec.org/advisories/RUSTSEC-2025-0020)
+- \[C,Java,ダウンローダー\] 現実的な攻撃シナリオは無かったと考えられますが、以下の脆弱性の影響を受けないようになります ([#1265], [#1269])。
     - [RUSTSEC-2025-0023](https://rustsec.org/advisories/RUSTSEC-2025-0023)
     - [RUSTSEC-2025-0024](https://rustsec.org/advisories/RUSTSEC-2025-0024)
-    - [RUSTSEC-2025-0057](https://rustsec.org/advisories/RUSTSEC-2025-0057)
-    - [RUSTSEC-2025-0119](https://rustsec.org/advisories/RUSTSEC-2025-0119)
-    - [RUSTSEC-2025-0134](https://rustsec.org/advisories/RUSTSEC-2025-0134)
+    - [RUSTSEC-2025-0055](https://rustsec.org/advisories/RUSTSEC-2025-0055)
 
 ## [0.16.3] - 2025-12-08 (+09:00)
 
