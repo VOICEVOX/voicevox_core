@@ -67,9 +67,9 @@ bypass = [
     { name = "portable-atomic", version = "1", build-script = "0d5e11d1d1376259bbd99269b52728a5a7e3f93403d82fa4ee1cfbd11ed892dd" }, # https://docs.rs/crate/portable-atomic/1.9.0/source/build.rs
     { name = "proc-macro2", version = "1", build-script = "29344b7dbd94595f9fbcbc3f2be9b4bb52b5e8a26d21d4363714bab2a18f32ad" }, # https://docs.rs/crate/proc-macro2/1.0.95/source/build.rs
     { name = "proc-macro2-diagnostics", version = "0.10", build-script = "66fcc487972086f42011c84a1949861799dc7cfde1e56201d22cf8e71b59b8b1" }, # https://docs.rs/crate/proc-macro2-diagnostics/0.10.1/source/build.rs
-    { name = "pyo3", version = "0.23", build-script = "f8243bd965459d7a53c946047fc57daadda9c2efd9e01846399b71eb686de583" }, # https://docs.rs/crate/pyo3/0.23.4/source/build.rs
-    { name = "pyo3-build-config", version = "0.23", build-script = "ffcc7dcd075be5c5f157e98c6aeec86a1e22fcb40089c49a0d2ebc852da80387" }, # https://docs.rs/crate/pyo3-build-config/0.23.4/source/build.rs
-    { name = "pyo3-macros-backend", version = "0.23", build-script = "297616b244181f0f18db54be8cd5762d7fba19298b6221f4cff668a34abd24f2" }, # https://docs.rs/crate/pyo3-macros-backend/0.23.4/source/build.rs
+    { name = "pyo3", version = "0.27", build-script = "bc1e24239c1bc3ae77706ddfe418544131a0cd00cb8f3dac13d7a6389399511e" }, # https://docs.rs/crate/pyo3/0.27.2/source/build.rs
+    { name = "pyo3-build-config", version = "0.27", build-script = "ffcc7dcd075be5c5f157e98c6aeec86a1e22fcb40089c49a0d2ebc852da80387" }, # https://docs.rs/crate/pyo3-build-config/0.27.2/source/build.rs
+    { name = "pyo3-macros-backend", version = "0.27", build-script = "297616b244181f0f18db54be8cd5762d7fba19298b6221f4cff668a34abd24f2" }, # https://docs.rs/crate/pyo3-macros-backend/0.27.2/source/build.rs
     { name = "rayon-core", version = "1", build-script = "fa31cb198b772600d100a7c403ddedccef637d2e6b2da431fa7f02ca41307fc6" }, # https://docs.rs/crate/rayon-core/1.12.1/source/build.rs
     { name = "ref-cast", version = "1", build-script = "606c77f4c4497ccb44841cbf7c13bf7f0d46a887163f7476b77722accc04acae" }, # https://docs.rs/crate/ref-cast/1.0.23/source/build.rs
     { name = "rstest_macros", version = "0.14", build-script = "d2973e71d6322a29cf96a47e957e60ed0ce83822878c436f22bda0d33253c5a6" }, # https://docs.rs/crate/rstest_macros/0.14.0/source/build.rs
@@ -85,7 +85,7 @@ bypass = [
     { name = "signal-hook", version = "0.3", build-script = "3a95a69d2921f1c28922a141a671e23a061f358b6d831350043003e13ef96463" }, # https://docs.rs/crate/signal-hook/0.3.17/source/build.rs
     { name = "slab", version = "0.4", build-script = "2c008232a3ae7c83c166f61c2942314717976776a4dba38e9063cd8e57a1b9bd" }, # https://docs.rs/crate/slab/0.4.7/source/build.rs
     { name = "syn", version = "1", build-script = "b815649fd2929d3debd93a58f5da2fb8eba506047a6a5ba538347305828a87b0" }, # https://docs.rs/crate/syn/1.0.102/source/build.rs
-    { name = "target-lexicon", version = "0.12", build-script = "678ba872ef2254e8901d6a00536f64d74d375d919f845113bd3ded709b6edb4a" }, # https://docs.rs/crate/target-lexicon/0.12.16/source/build.rs
+    { name = "target-lexicon", version = "0.13", build-script = "678ba872ef2254e8901d6a00536f64d74d375d919f845113bd3ded709b6edb4a" }, # https://docs.rs/crate/target-lexicon/0.13.4/source/build.rs
     { name = "thiserror", version = "1", build-script = "14f51456047fbf92c32020daea746f15482a0832a752edbbe3e809075d97674b" }, # https://docs.rs/crate/thiserror/1.0.64/source/build.rs
     { name = "typeid", version = "1", build-script = "688afbcaa398ea159c3481b26d74fde6ce3a675d48364d772557c8e91100de46" }, # https://docs.rs/crate/typeid/1.0.2/source/build.rs
     { name = "web_atoms", version = "0.2.0", build-script = "8b50922bbb295e90a26edc3e2ab34f068fee930cefd73ae03cca210cf08f9d89" }, # https://docs.rs/crate/web_atoms/0.2.0/source/build.rs
@@ -125,10 +125,10 @@ bypass = [
     # Open JTalk is licensed under: https://github.com/VOICEVOX/open_jtalk/blob/1.11/src/COPYING
     { name = "open_jtalk-sys", version = "=0.16.111", build-script = "d9c3766132686fb7f7bf8f138d94bb59aa09ce4af14e4bca2dad347999d30225" },
 
-    # https://docs.rs/crate/pyo3-ffi/0.23.4/source/build.rs
+    # https://docs.rs/crate/pyo3-ffi/0.27.2/source/build.rs
     #
     # pyo3-ffi **dynamically** links Python, which is licensed under: https://docs.python.org/3/license.html
-    { name = "pyo3-ffi", version = "0.23", build-script = "3268f21fd5c4b7a575537a0a77eefc96f968eb11663b09b01f5dadf6cc946f6b" },
+    { name = "pyo3-ffi", version = "0.27", build-script = "6414189ca4849d83e42d5678888d16bce26cabca7151b4d8cee5201f3434b096" },
 
     # https://docs.rs/crate/ring/0.17.14/source/build.rs
     #
