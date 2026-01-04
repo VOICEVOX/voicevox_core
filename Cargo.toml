@@ -102,8 +102,8 @@ test_util = { path = "crates/test_util" }
 thiserror = "1.0.64"
 tokio = "1.48.0"
 toml = "0.7.2"
-tracing = "0.1.40"
-tracing-subscriber = "0.3.18"
+tracing = "0.1.44"
+tracing-subscriber = "0.3.22"
 typed_floats = "1.0.7"
 typeshare = { version = "1.0.4", default-features = false }
 typetag = "0.2.18"
