@@ -8,8 +8,8 @@ on:
       - .cargo/config.toml
       - .github/**
       - .gitmodules
-      - 'Cargo.*'
-      - crates/voicevox_core**
+      - Cargo.*
+      - crates/voicevox_core*/**
       - crates/xtask/**
       - docs/ghpages/**
       - rust-toolchain
