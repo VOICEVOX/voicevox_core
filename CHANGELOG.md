@@ -79,6 +79,8 @@
 
 ### Security
 
+- \[C,Java,ダウンローダー\] 以下の脆弱性の影響を受けないようになります ([#1269])。
+    - [RUSTSEC-2025-0055](https://rustsec.org/advisories/RUSTSEC-2025-0055)
 - \[Python,ダウンローダー\] おそらく影響を受けてはいませんでしたが、以下の脆弱性登録がされた対象を利用しないようになります ([#1265], [#1266])。
     - [RUSTSEC-2025-0009](https://rustsec.org/advisories/RUSTSEC-2025-0009)
     - [RUSTSEC-2025-0010](https://rustsec.org/advisories/RUSTSEC-2025-0010)
@@ -1442,6 +1444,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1257]: https://github.com/VOICEVOX/voicevox_core/pull/1257
 [#1265]: https://github.com/VOICEVOX/voicevox_core/pull/1265
 [#1266]: https://github.com/VOICEVOX/voicevox_core/pull/1266
+[#1269]: https://github.com/VOICEVOX/voicevox_core/pull/1269
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
