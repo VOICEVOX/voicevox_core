@@ -7,7 +7,6 @@ on:
   pull_request:
     paths:
       - .cargo/config.toml
-      - .cargo/**
       - .github/**
       - Cargo.*
       - crates/**
