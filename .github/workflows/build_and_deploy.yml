@@ -20,7 +20,7 @@ on:
       - .github/**
       - build_util/**
       - Cargo.*
-      - crates/voicevox_core**
+      - crates/voicevox_core*/**
       - model/**
       - rust-toolchain
   push:
