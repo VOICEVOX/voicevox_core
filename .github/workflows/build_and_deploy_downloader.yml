@@ -33,7 +33,7 @@ defaults:
     shell: bash
 
 jobs:
-  deploy_and_deploy_downloader:
+  build_and_deploy_downloader:
     environment: ${{ inputs.code_signing && 'code_signing' || '' }} # コード署名用のenvironment
     strategy:
       matrix:
