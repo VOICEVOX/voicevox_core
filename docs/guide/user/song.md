@@ -44,19 +44,14 @@ Rust API, C API, Java APIでは`Score`は以下のようなJSONで表現でき�
     - `Note.lyric`: 一つのモーラを表すひらがな/カタカナで歌詞を設定（例: `"ド"`, `"ファ"`）。
     - `Note.key`: MIDIのnote numberで音階を指定（例: C4として`60`）。
 
-[`Synthesizer.create_sing_frame_audio_query`]で`Score`から[`FrameAudioQuery`]を生成し、[`Synthesizer.frame_synthesis`]で音声合成してWAVデータを生成します。
+[`Synthesizer.create_sing_frame_audio_query`]で`Score`から[`FrameAudioQuery`]を生成します。
+`create_sing_frame_audio_query`で指定できる`style_id`は、[種類]が`"singing_teacher"`か`"sing"`であるスタイルの`id`です。
 
 ```py
 SINGING_TEACHER = 6000  # 波音リツ（ノーマル）
-SINGER = 3000  # 四国めたん（あまあま）
-
 frame_audio_query = synthesizer.create_sing_frame_audio_query(
     score, SINGING_TEACHER
 )
-wav = synthesizer.frame_synthesis(frame_audio_query, SINGER)
-```
-
-`create_sing_frame_audio_query`で指定できる`style_id`は、[種類]が`"singing_teacher"`か`"sing"`であるスタイルの`id`です。`frame_synthesis`で指定できる`style_id`は、種類が`"frame_decode"`か`"sing"`であるスタイルの`id`です。
 
 ## `frame_length`の分割
 
@@ -82,25 +77,12 @@ wav = synthesizer.frame_synthesis(frame_audio_query, SINGER)
 }
 ```
 
-図示するとこうなります。GitHubのフォントの関係上、「ド」,「レ」,「ミ」を"do", "re", "mi"と書き、無音ノートと無音音素を"pau"と書きます。
+図示するとこうなります。
 
-```
-    15                    45                             45                             45                   15
-+----------+------------------------------+------------------------------+------------------------------+----------+
-|   pau    |              do              |              re              |              mi              |   pau    |
-+----------+------------------------------+------------------------------+------------------------------+----------+
-.          .                              .                              .                              .          .
-.          .                              .                              .                              .          .
-.          .                              .                              .                              .          .
-+--------+-+-------------------------+----+--------------------------+---+------------------------------+----------+
-|  pau   |d|            o            | r  |            e             | m |              i               |   pau    |
-+--------+-+-------------------------+----+--------------------------+---+------------------------------+----------+
-    13    2             39             6               40              5                45                   15
-```
 
 ## ノートID
 
-[`Note.id`]に文字列を設定すると、`FrameAudioQuery`の生成時に[`FramePhoneme.note_id`]として反映されます。歌唱合成音声の処理に使われることはありません。
+`FrameAudioQuery`を生成するとき、[`Note.id`]の文字列が[`FramePhoneme.note_id`]にコピーされます。歌唱合成音声の処理に使われることはありません。
 
 ```json
 {
