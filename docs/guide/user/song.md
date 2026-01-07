@@ -95,7 +95,7 @@ frame_audio_query = synthesizer.create_sing_frame_audio_query(
 
 ## ノートID
 
-`FrameAudioQuery`を生成するとき、[`Note.id`]の文字列が[`FramePhoneme.note_id`]にコピーされます。歌唱合成音声の処理に使われることはありません。
+`FrameAudioQuery`を生成するとき、[`Note.id`]の文字列が[`FramePhoneme.note_id`]にコピーされます。歌唱音声合成の処理に使われることはありません。
 
 ```json
 {
