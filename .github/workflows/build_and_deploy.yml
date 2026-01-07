@@ -19,7 +19,7 @@ on:
 env:
   # workflow_dispatchでのバージョン名か、'0.0.0'が入る
   VERSION: ${{ inputs.version || '0.0.0' }}
-  # 簡易テストとするかどうか。mainブランチ、release、workflow_dispatch以外は簡易テストとする
+  # 簡易テストとするかどうか。mainブランチ、workflow_dispatch以外は簡易テストとする
   IS_SIMPLE_TEST: ${{ github.ref != 'refs/heads/main' && github.event_name != 'workflow_dispatch' }}
 
 defaults:
@@ -470,7 +470,7 @@ jobs:
       code_signing: ${{ inputs.code_signing }}
 
   prerelease:
-    needs: [config, build_xcframework, build_java_package, build_and_deploy_downloader]
+    needs: [config, build_and_deploy, build_xcframework, build_java_package, build_and_deploy_downloader]
     if: fromJson(needs.config.outputs.deploy)
     runs-on: ubuntu-latest
     steps:
