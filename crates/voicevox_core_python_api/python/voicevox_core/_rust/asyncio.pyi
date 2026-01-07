@@ -509,7 +509,7 @@ class Synthesizer:
         """
         |blocking-synthesizer-create-sing-frame-audio-query-score|_ から |blocking-synthesizer-create-sing-frame-audio-query-frame-audio-query| を作成する。
 
-        詳細は `歌唱音声合成
+        詳細はユーザーガイド `歌唱音声合成
         <https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/song.md>`_
         を参照。
 
@@ -548,7 +548,7 @@ class Synthesizer:
         """
         |blocking-synthesizer-create-sing-frame-f0-score|_ と |blocking-synthesizer-create-sing-frame-f0-frame-audio-query| から、フレームごとの基本周波数を生成する。
 
-        詳細は `歌唱音声合成
+        詳細はユーザーガイド `歌唱音声合成
         <https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/song.md>`_
         を参照。
 
@@ -585,7 +585,7 @@ class Synthesizer:
         """
         |blocking-synthesizer-create-sing-frame-volume-score|_ と |blocking-synthesizer-create-sing-frame-volume-frame-audio-query| から、フレームごとの音量を生成する。
 
-        詳細は `歌唱音声合成
+        詳細はユーザーガイド `歌唱音声合成
         <https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/song.md>`_
         を参照。
 
@@ -628,7 +628,7 @@ class Synthesizer:
         """
         歌唱音声合成を行う。
 
-        詳細は `歌唱音声合成
+        詳細はユーザーガイド `歌唱音声合成
         <https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/song.md>`_
         を参照。
 

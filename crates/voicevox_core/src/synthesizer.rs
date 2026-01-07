@@ -1969,7 +1969,7 @@ pub(crate) mod blocking {
         // https://github.com/VOICEVOX/voicevox_core/issues/1249#issuecomment-3691580447
         /// [楽譜]と[歌唱音声合成用のクエリ]から、フレームごとの基本周波数を生成する。
         ///
-        /// 詳細は[歌唱音声合成]を参照。
+        /// 詳細はユーザーガイド[歌唱音声合成]を参照。
         ///
         /// # Example
         ///
@@ -2041,7 +2041,7 @@ pub(crate) mod blocking {
         // https://github.com/VOICEVOX/voicevox_core/issues/1249#issuecomment-3691580447
         /// [楽譜]と[歌唱音声合成用のクエリ]から、フレームごとの音量を生成する。
         ///
-        /// 詳細は[歌唱音声合成]を参照。
+        /// 詳細はユーザーガイド[歌唱音声合成]を参照。
         ///
         /// # Example
         ///
@@ -2115,7 +2115,7 @@ pub(crate) mod blocking {
 
         /// 歌唱音声合成を行う。
         ///
-        /// 詳細は[歌唱音声合成]を参照。
+        /// 詳細はユーザーガイド[歌唱音声合成]を参照。
         ///
         /// # Example
         ///
@@ -2808,7 +2808,7 @@ pub(crate) mod nonblocking {
 
         /// [楽譜]から[歌唱音声合成用のクエリ]を作成する。
         ///
-        /// 詳細は[歌唱音声合成]を参照。
+        /// 詳細はユーザーガイド[歌唱音声合成]を参照。
         ///
         /// # Example
         ///
@@ -2865,7 +2865,7 @@ pub(crate) mod nonblocking {
         // https://github.com/VOICEVOX/voicevox_core/issues/1249#issuecomment-3691580447
         /// [楽譜]と[歌唱音声合成用のクエリ]から、フレームごとの基本周波数を生成する。
         ///
-        /// 詳細は[歌唱音声合成]を参照。
+        /// 詳細はユーザーガイド[歌唱音声合成]を参照。
         ///
         /// # Example
         ///
@@ -2937,7 +2937,7 @@ pub(crate) mod nonblocking {
         // https://github.com/VOICEVOX/voicevox_core/issues/1249#issuecomment-3691580447
         /// [楽譜]と[歌唱音声合成用のクエリ]から、フレームごとの音量を生成する。
         ///
-        /// 詳細は[歌唱音声合成]を参照。
+        /// 詳細はユーザーガイド[歌唱音声合成]を参照。
         ///
         /// # Example
         ///
@@ -3012,7 +3012,7 @@ pub(crate) mod nonblocking {
 
         /// 歌唱音声合成を行う。
         ///
-        /// 詳細は[歌唱音声合成]を参照。
+        /// 詳細はユーザーガイド[歌唱音声合成]を参照。
         ///
         /// # Caveats
         ///
