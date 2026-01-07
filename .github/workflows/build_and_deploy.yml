@@ -1,3 +1,8 @@
+# 処理の流れ
+# 1. create_draft_release: タグなしでdraft releaseを先に作成
+# 2. build_and_deploy等: 各成果物をdraft releaseにアップロード
+# 3. prerelease: 全ビルド成功後に初めてタグを作成し、draftをprereleaseに変更
+
 name: build and deploy workflow
 
 on:
