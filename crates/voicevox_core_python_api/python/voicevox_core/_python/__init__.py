@@ -631,7 +631,7 @@ class Note:
 
         - |note-rust-ty|_ としてデシリアライズ不可。
             - :attr:`key` が負であるか、もしくは ``127`` を超過する。
-            - :attr:`lyric` が ``""`` 以外の、音素として不正な文字列。
+            - :attr:`lyric` が空文字列以外の、モーラとして不正な文字列。
             - :attr:`frame_length` が負であるか、もしくは :math:`2^{53}-1` を超過する。
         - :attr:`key` が ``None`` かつ :attr:`lyric` が ``""`` 以外。
         - :attr:`key` が ``int`` かつ :attr:`lyric` が ``""`` 。
@@ -713,6 +713,7 @@ class FramePhoneme:
         不正であるとは、以下の条件を満たすことである。
 
         - |frame-phoneme-rust-ty|_ としてデシリアライズ不可。
+            - :attr:`phoneme` が音素として不正。
             - :attr:`frame_length` が負であるか、もしくは :math:`2^{53}-1` を超過する。
 
         送出するエラーは |frame-phoneme-validate-invalid-query-error|_ 。

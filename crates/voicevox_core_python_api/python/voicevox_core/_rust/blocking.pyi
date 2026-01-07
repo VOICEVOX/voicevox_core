@@ -530,6 +530,17 @@ class Synthesizer:
         .. _blocking-synthesizer-create-sing-frame-audio-query-score: #voicevox_core.Score
         .. |blocking-synthesizer-create-sing-frame-audio-query-frame-audio-query| replace:: 歌唱音声合成用のクエリ
         .. _blocking-synthesizer-create-sing-frame-audio-query-frame-audio-query: #voicevox_core.FrameAudioQuery
+
+        Parameters
+        ----------
+        score
+            楽譜。
+        style_id
+            スタイルID。
+
+        Returns
+        -------
+        歌唱音声合成用のクエリ。
         """
         ...
     def create_sing_frame_f0(
@@ -559,7 +570,7 @@ class Synthesizer:
                     note.key += 1
 
             new_f0 = synthesizer.create_sing_frame_f0(
-                SCORE, frame_audio_query, SINGING_TEACHER
+                score, frame_audio_query, SINGING_TEACHER
             )
             frame_audio_query.f0 = new_f0
 
@@ -567,6 +578,19 @@ class Synthesizer:
         .. _blocking-synthesizer-create-sing-frame-f0-score: #voicevox_core.Score
         .. |blocking-synthesizer-create-sing-frame-f0-frame-audio-query| replace:: 歌唱音声合成用のクエリ
         .. _blocking-synthesizer-create-sing-frame-f0-frame-audio-query: #voicevox_core.FrameAudioQuery
+
+        Parameters
+        ----------
+        score
+            楽譜。
+        frame_audio_query
+            歌唱音声合成用のクエリ。
+        style_id
+            スタイルID。
+
+        Returns
+        -------
+        フレームごとの基本周波数。
         """
         ...
     def create_sing_frame_volume(
@@ -596,12 +620,12 @@ class Synthesizer:
                     note.key += 1
 
             new_f0 = synthesizer.create_sing_frame_f0(
-                SCORE, frame_audio_query, SINGING_TEACHER
+                score, frame_audio_query, SINGING_TEACHER
             )
             frame_audio_query.f0 = new_f0
 
             new_volume = synthesizer.create_sing_frame_volume(
-                SCORE, frame_audio_query, SINGING_TEACHER
+                score, frame_audio_query, SINGING_TEACHER
             )
             frame_audio_query.volume = new_volume
 
@@ -609,6 +633,19 @@ class Synthesizer:
         .. _blocking-synthesizer-create-sing-frame-volume-score: #voicevox_core.Score
         .. |blocking-synthesizer-create-sing-frame-volume-frame-audio-query| replace:: 歌唱音声合成用のクエリ
         .. _blocking-synthesizer-create-sing-frame-volume-frame-audio-query: #voicevox_core.FrameAudioQuery
+
+        Parameters
+        ----------
+        score
+            楽譜。
+        frame_audio_query
+            歌唱音声合成用のクエリ。
+        style_id
+            スタイルID。
+
+        Returns
+        -------
+        フレームごとの音量。
         """
         ...
     def frame_synthesis(
@@ -628,6 +665,17 @@ class Synthesizer:
             SINGER = 3000
 
             wav = synthesizer.frame_synthesis(frame_audio_query, SINGER)
+
+        Parameters
+        ----------
+        frame_audio_query
+            歌唱音声合成用のクエリ。
+        style_id
+            スタイルID。
+
+        Returns
+        -------
+        WAVデータ。
         """
         ...
     def close(self) -> None: ...

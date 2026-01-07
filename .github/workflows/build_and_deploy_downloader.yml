@@ -21,11 +21,8 @@ on:
       - crates/downloader/**
       - .github/workflows/build_and_deploy_downloader.yml
   push:
-    paths:
-      - Cargo.*
-      - rust-toolchain
-      - crates/downloader/**
-      - .github/workflows/build_and_deploy_downloader.yml
+    branches:
+      - main
 
 env:
   # releaseタグ名か、workflow_dispatchでのバージョン名か、'0.0.0'が入る
@@ -36,7 +33,7 @@ defaults:
     shell: bash
 
 jobs:
-  deploy_and_deploy_downloader:
+  build_and_deploy_downloader:
     environment: ${{ inputs.code_signing && 'code_signing' || '' }} # コード署名用のenvironment
     strategy:
       matrix:
