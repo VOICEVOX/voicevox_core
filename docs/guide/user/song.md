@@ -42,7 +42,7 @@ Rust API, C API, Java APIでは`Score`は以下のようなJSONで表現でき�
     - [`Note.key`]\: `null`/`None`を設定。
 - 無音ではないノートの場合:
     - `Note.lyric`: 一つのモーラを表すひらがな/カタカナで歌詞を設定（例: `"ド"`, `"ファ"`）。
-    - `Note.key`: MIDIのnote numberで音階を指定（例: C4として`60`）。
+    - `Note.key`: MIDIのnote numberで音階を指定（例: C4なら`60`）。
 
 [`Synthesizer.create_sing_frame_audio_query`]で`Score`から[`FrameAudioQuery`]を生成します。
 `create_sing_frame_audio_query`で指定できる`style_id`は、[種類]が`"singing_teacher"`か`"sing"`であるスタイルの`id`です。
