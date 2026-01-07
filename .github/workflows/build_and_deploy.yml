@@ -161,7 +161,7 @@ jobs:
           includes=$(echo "$includes" | jq -c '[.[] | del(.can_skip_in_simple_test)]')
           echo "includes=${includes}" >> "$GITHUB_OUTPUT"
 
-  create-draft-release:
+  create_draft_release:
     needs: config
     runs-on: ubuntu-latest
     steps:
@@ -212,7 +212,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build_and_deploy:
-    needs: [config, create-draft-release]
+    needs: [config, create_draft_release]
     environment: ${{ inputs.code_signing && 'code_signing' || '' }} # コード署名用のenvironment
     strategy:
       matrix:
@@ -345,7 +345,7 @@ jobs:
 
   build_xcframework:
     if: ${{ !(github.ref != 'refs/heads/main' && github.event_name != 'workflow_dispatch') }} # !env.IS_SIMPLE_TEST と同じ
-    needs: [config, create-draft-release, build_and_deploy]
+    needs: [config, create_draft_release, build_and_deploy]
     runs-on: macos-14
     env:
       IOS_X86_64_PATH: artifact/voicevox_core-x86_64-apple-ios
@@ -386,7 +386,7 @@ jobs:
   build_java_package:
     runs-on: ubuntu-latest
     if: ${{ !(github.ref != 'refs/heads/main' && github.event_name != 'workflow_dispatch') }} # !env.IS_SIMPLE_TEST と同じ
-    needs: [config, create-draft-release, build_and_deploy]
+    needs: [config, create_draft_release, build_and_deploy]
     steps:
       - uses: actions/checkout@v5
       - name: Set up Rust
@@ -470,7 +470,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build_and_deploy_downloader:
-    needs: [config, create-draft-release]
+    needs: [config, create_draft_release]
     if: fromJson(needs.config.outputs.deploy)
     uses: ./.github/workflows/build_and_deploy_downloader.yml
     with:
