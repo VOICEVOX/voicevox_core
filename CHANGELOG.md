@@ -57,21 +57,32 @@
 - ドキュメントが改善されます。
     - [バージョン0.16.3](#0163---2025-12-08-0900)で導入された、`AudioQuery`/`AccentPhrase`/`Mora`のバリデーション機能に関するドキュメンテーションがよりわかりやすくなります ([#1251])。
     - \[Python,Java\] 一部のドキュメントの文体が改善されます ([#1238])。
+- \[ダウンローダー\] HTTPクライアントのものを含めた、いくつかの依存ライブラリがアップデートされます ([#1265])。
 
 ### Changed
 
 - \[Python,Java\] `AudioQuery`（もしくはその一部）がRustのオブジェクトとして表現できなかったときのエラーが、`InvalidQuery`エラーに包まれるようになります。これまでは`OverflowError`や`RuntimeError`がそのままraiseされていました ([#1237])。
-- \[Rust\] 依存ライブラリが変化します ([#1073], [#1250])。
+- \[Rust\] 依存ライブラリが変化します ([#1073], [#1250], [#1265])。
     - \[追加\] `arrayvec@0.7`: `^0.7.6`
     - \[追加\] `derive_more@1`: `into_iterator`フィーチャを追加
     - \[追加\] `num-traits@0.2`: `^0.2.15`
     - \[追加\] `smol_str@0.3`: `^0.3.2`
     - \[追加\] `typed_floats@1`: `^1.0.7`
     - \[追加\] `typeshare@1`: `^1.0.4` (`default-features = false`)
+    - \[変更\] `serde@1`: `^1.0.27` → `^1.0.228`
+- \[Python\] 型ヒントが[`uuid.UUID`](https://docs.python.org/3/library/uuid.html#uuid.UUID)である引数に、`uuid.UUID`ではないオブジェクトを与えたときのエラーが`TypeError`になります ([#1266])。
 
 ### Fixed
 
+- \[Python\] `Onnxruntime.load_once`は[デッドロックする可能性](https://pyo3.rs/v0.13.0/faq#im-experiencing-deadlocks-using-pyo3-with-lazy_static-or-once_cell)がありましたが、解消されます ([#1266])。
 - \[Java\] 各`validate`メソッドのJavadocにおいて、浮動小数点数がNaNあるいは±infinityだったときの扱いの記述が実態に則したものへと訂正されます ([#1237])。
+
+### Security
+
+- \[C,Java,ダウンローダー\] 現実的な攻撃シナリオは無かったと考えられますが、以下の脆弱性の影響を受けないようになります ([#1265], [#1269])。
+    - [RUSTSEC-2025-0023](https://rustsec.org/advisories/RUSTSEC-2025-0023)
+    - [RUSTSEC-2025-0024](https://rustsec.org/advisories/RUSTSEC-2025-0024)
+    - [RUSTSEC-2025-0055](https://rustsec.org/advisories/RUSTSEC-2025-0055)
 
 ## [0.16.3] - 2025-12-08 (+09:00)
 
@@ -1424,6 +1435,9 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1253]: https://github.com/VOICEVOX/voicevox_core/pull/1253
 [#1255]: https://github.com/VOICEVOX/voicevox_core/pull/1255
 [#1257]: https://github.com/VOICEVOX/voicevox_core/pull/1257
+[#1265]: https://github.com/VOICEVOX/voicevox_core/pull/1265
+[#1266]: https://github.com/VOICEVOX/voicevox_core/pull/1266
+[#1269]: https://github.com/VOICEVOX/voicevox_core/pull/1269
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 

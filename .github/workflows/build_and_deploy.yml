@@ -12,6 +12,14 @@ on:
         required: false
         default: false
   pull_request:
+    paths:
+      - .cargo/config.toml
+      - .github/**
+      - build_util/**
+      - Cargo.*
+      - crates/voicevox_core*/**
+      - model/**
+      - rust-toolchain
   push:
     branches:
       - main
