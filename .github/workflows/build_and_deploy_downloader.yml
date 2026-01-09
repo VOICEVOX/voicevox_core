@@ -21,7 +21,9 @@ on:
       - Cargo.*
       - rust-toolchain
       - crates/downloader/**
-      - .github/actions/**
+      - .cargo/config.toml # 今のところは未使用ではあるが、Rustを利用するワークフローとして統一しておく。
+      - .github/actions/rust-toolchain-from-file/**
+      - .github/actions/upload-gh-release-asset/**
       - .github/workflows/build_and_deploy_downloader.yml
   push:
     branches:
