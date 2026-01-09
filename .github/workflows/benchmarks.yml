@@ -6,17 +6,22 @@ on:
       - main
   pull_request:
     paths:
+      - .cargo/config.toml
       - .github/workflows/benchmarks.yml
       - Cargo.*
       - crates/voicevox_core/Cargo.toml
       - crates/voicevox_core/benches/*.rs
       - crates/voicevox_core/src/**
+      - crates/voicevox_core_macros/Cargo.toml
+      - crates/voicevox_core_macros/src/**
       - crates/voicevox_core_python_api/Cargo.toml
       - crates/voicevox_core_python_api/poetry.lock
       - crates/voicevox_core_python_api/pyproject.toml
       - crates/voicevox_core_python_api/python/benches/*.py
       - crates/voicevox_core_python_api/python/voicevox_core/**
       - crates/voicevox_core_python_api/src/**
+      - model/**
+      - rust-toolchain
   workflow_dispatch:
 
 jobs:
