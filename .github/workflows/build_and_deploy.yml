@@ -169,6 +169,8 @@ jobs:
   create_draft_release:
     needs: config
     runs-on: ubuntu-latest
+    outputs:
+      id: ${{ steps.create-draft-release.outputs.id }}
     steps:
       - name: Confirm that the tag does not exist at the moment
         run: |
@@ -186,33 +188,23 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Confirm that there are no recent drafts that have the same `tagName`
-        run: |
-          found_recent=$(
-            gh release list \
-              -R "$GITHUB_REPOSITORY" \
-              --json tagName \
-              -q 'any(.tagName == "'"$VERSION"'")'
-          )
-          if [ "$found_recent" = true ]; then
-            echo "::error title=Duplicated release::Found a draft that has the same 'tagName'"
-            exit 1
-          fi
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Create a draft release without real tag
         if: fromJson(needs.config.outputs.deploy)
+        id: create-draft-release
         run: |
-          gh api \
-            "/repos/$GITHUB_REPOSITORY/releases" \
-            --method POST \
-            -H 'Accept: application/vnd.github+json' \
-            -H 'X-GitHub-Api-Version: 2022-11-28' \
-            -f "tag_name=$VERSION" \
-            -f "target_commitish=$GITHUB_SHA" \
-            -f "name=$VERSION" \
-            -F draft=true
+          id=$(
+            gh api \
+              "/repos/$GITHUB_REPOSITORY/releases" \
+              --method POST \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              -f "tag_name=$VERSION" \
+              -f "target_commitish=$GITHUB_SHA" \
+              -f "name=$VERSION" \
+              -F draft=true \
+              -q .id
+          )
+          echo "id=$id" >> "$GITHUB_OUTPUT"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -332,15 +324,17 @@ jobs:
           cd artifact
           7z a "../${{ env.ASSET_NAME }}.zip" "${{ env.ASSET_NAME }}"
       - name: Upload to Release
-        if: fromJson(needs.config.outputs.deploy) && matrix.c_release_format == 'plain-cdylib'
-        run: gh release upload "$VERSION" ${{ env.ASSET_NAME }}.zip
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        if: needs.create_draft_release.outputs.id && matrix.c_release_format == 'plain-cdylib'
+        uses: ./.github/actions/upload-gh-release-asset
+        with:
+          id: ${{ needs.create_draft_release.outputs.id }}
+          file: ${{ env.ASSET_NAME }}.zip
       - name: Upload Python whl to Release
-        if: fromJson(needs.config.outputs.deploy) && matrix.python_whl
-        run: gh release upload "$VERSION" ${{ steps.build-voicevox-core-python-api.outputs.whl }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        if: needs.create_draft_release.outputs.id && matrix.python_whl
+        uses: ./.github/actions/upload-gh-release-asset
+        with:
+          id: ${{ needs.create_draft_release.outputs.id }}
+          file: ${{ steps.build-voicevox-core-python-api.outputs.whl }}
       - name: Upload voicevox_core_java_api artifact
         if: matrix.java
         uses: actions/upload-artifact@v4
@@ -383,15 +377,16 @@ jobs:
           cd ${{ steps.create-xcframework.outputs.output_asset_path }}
           7z a "../../${{ env.ASSET_NAME }}.zip" "voicevox_core.xcframework"
       - name: Upload to Release
-        if: fromJson(needs.config.outputs.deploy)
-        run: gh release upload "$VERSION" "$ASSET_NAME.zip"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        if: needs.create_draft_release.outputs.id
+        uses: ./.github/actions/upload-gh-release-asset
+        with:
+          id: ${{ needs.create_draft_release.outputs.id }}
+          file: ${{ env.ASSET_NAME }}.zip
 
   build_java_package:
     runs-on: ubuntu-latest
     if: ${{ !(github.ref != 'refs/heads/main' && github.event_name != 'workflow_dispatch') }} # !env.IS_SIMPLE_TEST と同じ
-    needs: [config, create_draft_release, build_and_deploy]
+    needs: [create_draft_release, build_and_deploy]
     steps:
       - uses: actions/checkout@v5
       - name: Set up Rust
@@ -469,22 +464,24 @@ jobs:
           zip -r /tmp/java_packages.zip .
 
       - name: Upload to Release
-        if: fromJson(needs.config.outputs.deploy)
-        run: gh release upload "$VERSION" /tmp/java_packages.zip
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        if: needs.create_draft_release.outputs.id
+        uses: ./.github/actions/upload-gh-release-asset
+        with:
+          id: ${{ needs.create_draft_release.outputs.id }}
+          file: /tmp/java_packages.zip
 
   build_and_deploy_downloader:
     needs: [config, create_draft_release]
-    if: fromJson(needs.config.outputs.deploy)
+    if: needs.create_draft_release.outputs.id
     uses: ./.github/workflows/build_and_deploy_downloader.yml
     with:
+      release_id: ${{ fromJson(needs.create_draft_release.outputs.id) }}
       version: ${{ needs.config.outputs.version }}
       code_signing: ${{ inputs.code_signing }}
 
   prerelease:
-    needs: [config, build_and_deploy, build_xcframework, build_java_package, build_and_deploy_downloader]
-    if: fromJson(needs.config.outputs.deploy)
+    needs: [create_draft_release, build_and_deploy, build_xcframework, build_java_package, build_and_deploy_downloader]
+    if: needs.create_draft_release.outputs.id
     runs-on: ubuntu-latest
     steps:
       - name: Create the tag
@@ -501,17 +498,19 @@ jobs:
 
       - name: Prerelease
         run: |
-          gh release edit \
-            "$VERSION" \
-            -R "$GITHUB_REPOSITORY" \
-            --draft=false \
-            --prerelease=true
+          gh api \
+            "/repos/$GITHUB_REPOSITORY/releases/${{ needs.create_draft_release.outputs.id }}" \
+            --method PATCH \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            -F draft=false \
+            -F prerelease=true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   download_test:
-    needs: [config, prerelease]
-    if: fromJson(needs.config.outputs.deploy)
+    needs: [create_draft_release, prerelease]
+    if: needs.create_draft_release.outputs.id
     uses: ./.github/workflows/download_test.yml
     with:
       version: ${{ inputs.version }}

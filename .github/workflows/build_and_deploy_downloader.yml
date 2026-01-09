@@ -4,6 +4,10 @@ on:
   workflow_dispatch:
   workflow_call:
     inputs:
+      release_id:
+        description: "draft releaseのID"
+        type: number
+        required: true
       version:
         description: "バージョン情報（A.BB.C / A.BB.C-preview.D）"
         type: string
@@ -105,7 +109,8 @@ jobs:
           ESIGNERCKA_TOTP_SECRET: ${{ secrets.ESIGNERCKA_TOTP_SECRET }}
 
       - name: Upload to Release
-        if: env.VERSION != '0.0.0'
-        run: gh release upload "$VERSION" ${{ matrix.name }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        if: inputs.release_id
+        uses: ./.github/actions/upload-gh-release-asset
+        with:
+          id: ${{ inputs.release_id }}
+          file: ${{ matrix.name }}
