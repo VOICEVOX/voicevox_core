@@ -21,6 +21,7 @@ on:
       - Cargo.*
       - rust-toolchain
       - crates/downloader/**
+      - .github/actions/**
       - .github/workflows/build_and_deploy_downloader.yml
   push:
     branches:
