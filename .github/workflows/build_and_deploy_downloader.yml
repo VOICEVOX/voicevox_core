@@ -1,7 +1,7 @@
 name: build and deploy downloader workflow
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: # ビルドのみ行い、デプロイしない。デプロイは`build_and_deploy`からの`workflow_call`から行われる。
   workflow_call:
     inputs:
       release_id:
