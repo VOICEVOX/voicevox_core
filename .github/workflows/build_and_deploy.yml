@@ -325,16 +325,16 @@ jobs:
           7z a "../${{ env.ASSET_NAME }}.zip" "${{ env.ASSET_NAME }}"
       - name: Upload to Release
         if: needs.create_draft_release.outputs.id && matrix.c_release_format == 'plain-cdylib'
-        uses: ./.github/actions/upload-gh-release-asset
+        uses: ./.github/actions/upload-gh-release-assets
         with:
           release-id: ${{ needs.create_draft_release.outputs.id }}
-          file: ${{ env.ASSET_NAME }}.zip
+          files: ${{ env.ASSET_NAME }}.zip
       - name: Upload Python whl to Release
         if: needs.create_draft_release.outputs.id && matrix.python_whl
-        uses: ./.github/actions/upload-gh-release-asset
+        uses: ./.github/actions/upload-gh-release-assets
         with:
           release-id: ${{ needs.create_draft_release.outputs.id }}
-          file: ${{ steps.build-voicevox-core-python-api.outputs.whl }}
+          files: ${{ steps.build-voicevox-core-python-api.outputs.whl }}
       - name: Upload voicevox_core_java_api artifact
         if: matrix.java
         uses: actions/upload-artifact@v4
@@ -378,10 +378,10 @@ jobs:
           7z a "../../${{ env.ASSET_NAME }}.zip" "voicevox_core.xcframework"
       - name: Upload to Release
         if: needs.create_draft_release.outputs.id
-        uses: ./.github/actions/upload-gh-release-asset
+        uses: ./.github/actions/upload-gh-release-assets
         with:
           release-id: ${{ needs.create_draft_release.outputs.id }}
-          file: ${{ env.ASSET_NAME }}.zip
+          files: ${{ env.ASSET_NAME }}.zip
 
   build_java_package:
     runs-on: ubuntu-latest
@@ -465,10 +465,10 @@ jobs:
 
       - name: Upload to Release
         if: needs.create_draft_release.outputs.id
-        uses: ./.github/actions/upload-gh-release-asset
+        uses: ./.github/actions/upload-gh-release-assets
         with:
           release-id: ${{ needs.create_draft_release.outputs.id }}
-          file: /tmp/java_packages.zip
+          files: /tmp/java_packages.zip
 
   build_and_deploy_downloader:
     needs: [config, create_draft_release]

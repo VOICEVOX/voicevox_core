@@ -23,7 +23,7 @@ on:
       - crates/downloader/**
       - .cargo/config.toml # 今のところは未使用ではあるが、Rustを利用するワークフローとして統一しておく。
       - .github/actions/rust-toolchain-from-file/**
-      - .github/actions/upload-gh-release-asset/**
+      - .github/actions/upload-gh-release-assets/**
       - .github/workflows/build_and_deploy_downloader.yml
   push:
     branches:
@@ -113,7 +113,7 @@ jobs:
 
       - name: Upload to Release
         if: inputs.release_id
-        uses: ./.github/actions/upload-gh-release-asset
+        uses: ./.github/actions/upload-gh-release-assets
         with:
           release-id: ${{ inputs.release_id }}
-          file: ${{ matrix.name }}
+          files: ${{ matrix.name }}
