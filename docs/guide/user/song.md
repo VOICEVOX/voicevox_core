@@ -37,11 +37,11 @@ Rust API, C API, Java APIでは`Score`は以下のようなJSONで表現でき�
 `Note`の`lyric`と`key`に次の値を設定します。
 
 - 休符の場合:
-    - [`Note.lyric`]\: 空文字列を指定。
+    - [`Note.lyric`]\: 空文字列を設定。
     - [`Note.key`]\: `null`/`None`を設定。
 - 音符の場合:
     - `Note.lyric`: 一つのモーラを表すひらがな/カタカナで歌詞を設定（例: `"ド"`, `"ファ"`）。
-    - `Note.key`: MIDIのnote numberで音階を指定（例: C4なら`60`）。
+    - `Note.key`: MIDIのnote numberで音階を設定（例: C4なら`60`）。
 
 [`Note.frame_length`]には、秒数に93.75をかけて端数を調整したものを設定します。
 （例: 125BPM (_**B**eats **P**er **M**inute_)における一拍は、93.75\[フレーム/秒\] / (125\[拍/分\] / 60\[秒/分\]) = `45`\[フレーム/拍\]）。
