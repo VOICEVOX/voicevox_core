@@ -2,7 +2,7 @@ name: Upload a GitHub release asset
 description: GitHubのリリースにアセットをアップロードする。
 
 inputs:
-  id:
+  release-id:
     required: true
   file:
     required: true
@@ -12,7 +12,7 @@ runs:
   steps:
     - shell: bash
       run: |
-        release_id=${{ inputs.id }}
+        release_id=${{ inputs.release-id }}
         file=${{ inputs.file }}
         name=$(basename "$file")
 

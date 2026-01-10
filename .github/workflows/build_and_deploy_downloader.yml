@@ -115,5 +115,5 @@ jobs:
         if: inputs.release_id
         uses: ./.github/actions/upload-gh-release-asset
         with:
-          id: ${{ inputs.release_id }}
+          release-id: ${{ inputs.release_id }}
           file: ${{ matrix.name }}
