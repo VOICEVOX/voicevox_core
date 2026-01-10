@@ -34,7 +34,7 @@ Rust API, C API, Java APIでは`Score`は以下のようなJSONで表現でき�
 
 `Score`中の[`Note`]には音符と休符があります。[`Score.notes`]の最初のノートは休符にします。
 
-`Note`には次の値を設定します。
+`Note`の`lyric`と`key`に次の値を設定します。
 
 - 休符の場合:
     - [`Note.lyric`]\: 空文字列を指定。
@@ -42,7 +42,9 @@ Rust API, C API, Java APIでは`Score`は以下のようなJSONで表現でき�
 - 音符の場合:
     - `Note.lyric`: 一つのモーラを表すひらがな/カタカナで歌詞を設定（例: `"ド"`, `"ファ"`）。
     - `Note.key`: MIDIのnote numberで音階を指定（例: C4なら`60`）。
-- [`Note.frame_length`]: 秒数に93.75をかけ、端数を調整したものを設定（例: 125BPM (_**B**eats **P**er **M**inute_)における一拍は、93.75\[フレーム/秒\] / (125\[拍/分\] / 60\[秒/分\]) = `45`\[フレーム/拍\]）。
+
+`Note.frame_length`には、秒数に93.75をかけて端数を調整したものを設定します。
+（例: 125BPM (_**B**eats **P**er **M**inute_)における一拍は、93.75\[フレーム/秒\] / (125\[拍/分\] / 60\[秒/分\]) = `45`\[フレーム/拍\]）。
 
 [`Synthesizer.create_sing_frame_audio_query`]で`Score`から[`FrameAudioQuery`]を生成します。
 指定できる`style_id`は、[種類]が`"singing_teacher"`か`"sing"`であるスタイルの`id`です。
