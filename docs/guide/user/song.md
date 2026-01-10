@@ -52,6 +52,7 @@ SINGING_TEACHER = 6000  # 波音リツ（ノーマル）
 frame_audio_query = synthesizer.create_sing_frame_audio_query(
     score, SINGING_TEACHER
 )
+```
 
 ## 子音の侵食
 
