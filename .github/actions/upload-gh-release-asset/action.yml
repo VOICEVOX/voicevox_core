@@ -18,6 +18,7 @@ runs:
         file=${{ inputs.file }}
         name=$(basename "$file")
 
+        # GitHub Docsにある、OctokitとGitHub CLIのRequest exampleは間違っているので注意。説明の本文を読むこと。
         gh api \
           "https://uploads.github.com/repos/$GITHUB_REPOSITORY/releases/$release_id/assets?name=$name" \
           --method POST \
