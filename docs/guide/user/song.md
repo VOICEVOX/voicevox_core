@@ -36,16 +36,16 @@ Rust API, C API, Java APIでは`Score`は以下のようなJSONで表現でき�
 
 `Note`には次の値を設定します。
 
-- [`Note.frame_length`]: 秒数に93.75をかけ、端数を調整したものを設定（例: 125BPM (_**B**eats **P**er **M**inute_)における一拍は、93.75\[フレーム/秒\] / (125\[拍/分\] / 60\[秒/分\]) = `45`\[フレーム/拍\]）。
 - 休符の場合:
     - [`Note.lyric`]\: 空文字列を指定。
     - [`Note.key`]\: `null`/`None`を設定。
 - 音符の場合:
     - `Note.lyric`: 一つのモーラを表すひらがな/カタカナで歌詞を設定（例: `"ド"`, `"ファ"`）。
     - `Note.key`: MIDIのnote numberで音階を指定（例: C4なら`60`）。
+- [`Note.frame_length`]: 秒数に93.75をかけ、端数を調整したものを設定（例: 125BPM (_**B**eats **P**er **M**inute_)における一拍は、93.75\[フレーム/秒\] / (125\[拍/分\] / 60\[秒/分\]) = `45`\[フレーム/拍\]）。
 
 [`Synthesizer.create_sing_frame_audio_query`]で`Score`から[`FrameAudioQuery`]を生成します。
-`create_sing_frame_audio_query`で指定できる`style_id`は、[種類]が`"singing_teacher"`か`"sing"`であるスタイルの`id`です。
+指定できる`style_id`は、[種類]が`"singing_teacher"`か`"sing"`であるスタイルの`id`です。
 
 ```py
 SINGING_TEACHER = 6000  # 波音リツ（ノーマル）
@@ -53,11 +53,9 @@ frame_audio_query = synthesizer.create_sing_frame_audio_query(
     score, SINGING_TEACHER
 )
 
-## `frame_length`の分割
+## 子音の侵食
 
-情報がモーラ単位である`Score.notes`から、情報が音素単位である`FrameAudioQuery.phonemes`を生成する際、`Note.frame_length`も子音と母音で適切に分割されることになります。このとき単にノート一つ一つが二つずつに分割されるのではなく、子音が一つ前のノートの末尾に位置するようになります。
-
-`Score`の先頭が休符であることを要求されるのはこのためです。
+`Score.notes`から`FrameAudioQuery.phonemes`を生成する際、`Note.lyric`は子音と母音に分割されます。このときの母音の開始位置は、ノートの開始位置と同じになるように調整されます。子音は母音より前に位置するため、子音は一つ前のノートを侵食します。
 
 例えば冒頭の`Score`の例からは次のようにフレームが分割されます。
 
@@ -95,7 +93,7 @@ frame_audio_query = synthesizer.create_sing_frame_audio_query(
 
 ## ノートID
 
-`FrameAudioQuery`を生成するとき、[`Note.id`]の文字列が[`FramePhoneme.note_id`]にコピーされます。歌唱音声合成の処理に使われることはありません。
+`FrameAudioQuery`を生成するとき、[`Note.id`]の文字列が[`FramePhoneme.note_id`]にコピーされます。歌唱音声には影響しません。
 
 ```json
 {
