@@ -4,8 +4,10 @@ description: GitHubのリリースにアセットをアップロードする。
 inputs:
   release-id:
     required: true
+    description: リリースの`id`。
   file:
     required: true
+    description: アップロードするファイルの、シェルエスケープされたパス。
 
 runs:
   using: composite
