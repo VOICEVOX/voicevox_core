@@ -61,6 +61,7 @@
 
 ### Changed
 
+- ONNX Runtimeが出す`FATAL`レベルのログの表示形式が少しだけ変わります。また`VERBOSE`レベルのログは[`tracing::Level::TRACE`](https://docs.rs/tracing/0.1/tracing/struct.Level.html#associatedconstant.TRACE)に格下げされます ([#1276])。
 - \[Python,Java\] `AudioQuery`（もしくはその一部）がRustのオブジェクトとして表現できなかったときのエラーが、`InvalidQuery`エラーに包まれるようになります。これまでは`OverflowError`や`RuntimeError`がそのままraiseされていました ([#1237])。
 - \[Rust\] 依存ライブラリが変化します ([#1073], [#1250], [#1265])。
     - \[追加\] `arrayvec@0.7`: `^0.7.6`
@@ -1438,6 +1439,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1265]: https://github.com/VOICEVOX/voicevox_core/pull/1265
 [#1266]: https://github.com/VOICEVOX/voicevox_core/pull/1266
 [#1269]: https://github.com/VOICEVOX/voicevox_core/pull/1269
+[#1276]: https://github.com/VOICEVOX/voicevox_core/pull/1276
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
