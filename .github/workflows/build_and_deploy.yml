@@ -170,7 +170,7 @@ jobs:
     needs: config
     runs-on: ubuntu-latest
     outputs:
-      id: ${{ steps.create-draft-release.outputs.id }}
+      release: ${{ steps.create-draft-release.outputs.release || 'null' }} # GitHub REST APIの`Release`の一部。nullable
     steps:
       - name: Confirm that the tag does not exist at the moment
         run: |
@@ -192,7 +192,7 @@ jobs:
         if: fromJson(needs.config.outputs.deploy)
         id: create-draft-release
         run: |
-          id=$(
+          release=$(
             gh api \
               "/repos/$GITHUB_REPOSITORY/releases" \
               --method POST \
@@ -202,9 +202,9 @@ jobs:
               -f "target_commitish=$GITHUB_SHA" \
               -f "name=$VERSION" \
               -F draft=true \
-              -q .id
+              -q '{ upload_url, id, tag_name }'
           )
-          echo "id=$id" >> "$GITHUB_OUTPUT"
+          echo "release=$release" >> "$GITHUB_OUTPUT"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -324,16 +324,16 @@ jobs:
           cd artifact
           7z a "../${{ env.ASSET_NAME }}.zip" "${{ env.ASSET_NAME }}"
       - name: Upload to Release
-        if: needs.create_draft_release.outputs.id && matrix.c_release_format == 'plain-cdylib'
+        if: fromJson(needs.create_draft_release.outputs.release) && matrix.c_release_format == 'plain-cdylib'
         uses: ./.github/actions/upload-gh-release-assets
         with:
-          release-id: ${{ needs.create_draft_release.outputs.id }}
+          upload-url: ${{ fromJson(needs.create_draft_release.outputs.release).upload_url }}
           files: ${{ env.ASSET_NAME }}.zip
       - name: Upload Python whl to Release
-        if: needs.create_draft_release.outputs.id && matrix.python_whl
+        if: fromJson(needs.create_draft_release.outputs.release) && matrix.python_whl
         uses: ./.github/actions/upload-gh-release-assets
         with:
-          release-id: ${{ needs.create_draft_release.outputs.id }}
+          upload-url: ${{ fromJson(needs.create_draft_release.outputs.release).upload_url }}
           files: ${{ steps.build-voicevox-core-python-api.outputs.whl }}
       - name: Upload voicevox_core_java_api artifact
         if: matrix.java
@@ -377,10 +377,10 @@ jobs:
           cd ${{ steps.create-xcframework.outputs.output_asset_path }}
           7z a "../../${{ env.ASSET_NAME }}.zip" "voicevox_core.xcframework"
       - name: Upload to Release
-        if: needs.create_draft_release.outputs.id
+        if: fromJson(needs.create_draft_release.outputs.release)
         uses: ./.github/actions/upload-gh-release-assets
         with:
-          release-id: ${{ needs.create_draft_release.outputs.id }}
+          upload-url: ${{ fromJson(needs.create_draft_release.outputs.release).upload_url }}
           files: ${{ env.ASSET_NAME }}.zip
 
   build_java_package:
@@ -464,24 +464,24 @@ jobs:
           zip -r /tmp/java_packages.zip .
 
       - name: Upload to Release
-        if: needs.create_draft_release.outputs.id
+        if: fromJson(needs.create_draft_release.outputs.release)
         uses: ./.github/actions/upload-gh-release-assets
         with:
-          release-id: ${{ needs.create_draft_release.outputs.id }}
+          upload-url: ${{ fromJson(needs.create_draft_release.outputs.release).upload_url }}
           files: /tmp/java_packages.zip
 
   build_and_deploy_downloader:
     needs: [config, create_draft_release]
-    if: needs.create_draft_release.outputs.id
+    if: fromJson(needs.create_draft_release.outputs.release)
     uses: ./.github/workflows/build_and_deploy_downloader.yml
     with:
-      release_id: ${{ fromJson(needs.create_draft_release.outputs.id) }}
+      upload_url: ${{ fromJson(needs.create_draft_release.outputs.release).upload_url }}
       version: ${{ needs.config.outputs.version }}
       code_signing: ${{ inputs.code_signing }}
 
   prerelease:
     needs: [create_draft_release, build_and_deploy, build_xcframework, build_java_package, build_and_deploy_downloader]
-    if: needs.create_draft_release.outputs.id
+    if: fromJson(needs.create_draft_release.outputs.release)
     runs-on: ubuntu-latest
     steps:
       - name: Create the tag
@@ -499,7 +499,7 @@ jobs:
       - name: Prerelease
         run: |
           gh api \
-            "/repos/$GITHUB_REPOSITORY/releases/${{ needs.create_draft_release.outputs.id }}" \
+            "/repos/$GITHUB_REPOSITORY/releases/${{ fromJson(needs.create_draft_release.outputs.release).id }}" \
             --method PATCH \
             -H 'Accept: application/vnd.github+json' \
             -H 'X-GitHub-Api-Version: 2022-11-28' \
@@ -510,7 +510,7 @@ jobs:
 
   download_test:
     needs: [create_draft_release, prerelease]
-    if: needs.create_draft_release.outputs.id
+    if: fromJson(needs.create_draft_release.outputs.release)
     uses: ./.github/workflows/download_test.yml
     with:
       version: ${{ inputs.version }}

@@ -4,9 +4,9 @@ on:
   workflow_dispatch: # ビルドのみ行い、デプロイしない。デプロイは`build_and_deploy`からの`workflow_call`から行われる。
   workflow_call:
     inputs:
-      release_id:
-        description: "draft releaseのID"
-        type: number
+      upload_url:
+        description: "リリースの`Release.upload_url`"
+        type: string
         required: true
       version:
         description: "バージョン情報（A.BB.C / A.BB.C-preview.D）"
@@ -112,8 +112,8 @@ jobs:
           ESIGNERCKA_TOTP_SECRET: ${{ secrets.ESIGNERCKA_TOTP_SECRET }}
 
       - name: Upload to Release
-        if: inputs.release_id
+        if: inputs.upload_url
         uses: ./.github/actions/upload-gh-release-assets
         with:
-          release-id: ${{ inputs.release_id }}
+          upload-url: ${{ inputs.upload_url }}
           files: ${{ matrix.name }}

@@ -2,9 +2,9 @@ name: Upload a GitHub release assets
 description: GitHubのリリースにアセットをアップロードする。
 
 inputs:
-  release-id:
+  upload-url:
     required: true
-    description: リリースの`id`。
+    description: リリースの`Release.upload_url`。
   files:
     required: true
     description: |
@@ -19,13 +19,21 @@ runs:
   steps:
     - shell: bash
       run: |
-        release_id=${{ inputs.release-id }}
+        upload_url=${{ inputs.upload-url }}
         files=(${{ inputs.files }})
 
-        for file in "$files[@]"; do
+        for file in "${files[@]}"; do
           # GitHub Docsにある、OctokitとGitHub CLIのRequest exampleは間違っているので注意。説明の本文を読むこと。
+
+          name=$(basename "$file")
+          url=${upload_url%%\{\?name,label\}}'?'name=$(
+            python3 -c \
+              'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1]))' \
+              "$name"
+          )
+
           gh api \
-            "https://uploads.github.com/repos/$GITHUB_REPOSITORY/releases/$release_id/assets?name=$(basename "$file")" \
+            "$url" \
             --method POST \
             -H 'Accept: application/vnd.github+json' \
             -H 'X-GitHub-Api-Version: 2022-11-28' \
