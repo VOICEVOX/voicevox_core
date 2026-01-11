@@ -110,6 +110,8 @@ frame_audio_query = synthesizer.create_sing_frame_audio_query(
 }
 ```
 
+↓
+
 ```json
 {
   "phonemes": [
