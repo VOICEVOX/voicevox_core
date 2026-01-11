@@ -34,14 +34,14 @@ Rust API, C API, Java APIでは`Score`は以下のようなJSONで表現でき�
 
 `Score`中の[`Note`]には音符と休符があります。[`Score.notes`]の最初のノートは休符にします。
 
-`Note`の`lyric`と`key`に次の値を設定します。
+[`Note.lyric`]と[`Note.key`]に次の値を設定します。
 
 - 音符の場合:
     - `Note.lyric`: 一つのモーラを表すひらがな/カタカナで歌詞を設定（例: `"ド"`, `"ファ"`）。
     - `Note.key`: MIDIのnote numberで音階を設定（例: C4なら`60`）。
 - 休符の場合:
-    - [`Note.lyric`]\: 空文字列を設定。
-    - [`Note.key`]\: `null`/`None`を設定。
+    - `Note.lyric`: 空文字列を設定。
+    - `Note.key`: `null`/`None`を設定。
 
 [`Note.frame_length`]には、秒数に93.75をかけて端数を調整したものを設定します。
 （例: 125BPM (_**B**eats **P**er **M**inute_)における一拍は、93.75\[フレーム/秒\] / (125\[拍/分\] / 60\[秒/分\]) = `45`\[フレーム/拍\]）。
@@ -181,9 +181,9 @@ flowchart TD;
 [`Score`]: https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/index.html#voicevox_core.Score
 [`Score.notes`]: https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/index.html#voicevox_core.Score.notes
 [`Note`]: https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/index.html#voicevox_core.Note
-[`Note.frame_length`]: https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/index.html#voicevox_core.Note.frame_length
 [`Note.lyric`]: https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/index.html#voicevox_core.Note.lyric
 [`Note.key`]: https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/index.html#voicevox_core.Note.key
+[`Note.frame_length`]: https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/index.html#voicevox_core.Note.frame_length
 [`Note.id`]: https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/index.html#voicevox_core.Note.id
 [`FrameAudioQuery`]: https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/index.html#voicevox_core.FrameAudioQuery
 [`FramePhoneme.note_id`]: https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/index.html#voicevox_core.FramePhoneme.note_id
