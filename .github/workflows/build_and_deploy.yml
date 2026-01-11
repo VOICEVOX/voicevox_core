@@ -486,12 +486,13 @@ jobs:
     steps:
       - name: Create the tag
         run: |
+          tag=${{ fromJson(needs.create_draft_release.outputs.release).tag_name }}
           gh api \
             "/repos/$GITHUB_REPOSITORY/git/refs" \
             --method POST \
             -H 'Accept: application/vnd.github+json' \
             -H 'X-GitHub-Api-Version: 2022-11-28' \
-            -f "ref=refs/tags/$VERSION" \
+            -f "ref=refs/tags/$tag" \
             -f "sha=$GITHUB_SHA"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
