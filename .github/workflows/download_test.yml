@@ -16,6 +16,9 @@ on:
   #  paths:
   #    - "Cargo.*"
   #    - "crates/downloader/**"
+  #    - rust-toolchain
+  #    - ".cargo/config.toml" # 今のところは未使用ではあるが、Rustを利用するワークフローとして統一しておく。
+  #    - ".github/actions/rust-toolchain-from-file/**"
   #    - ".github/workflows/download_test.yml"
 
 env:

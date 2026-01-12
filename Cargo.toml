@@ -32,7 +32,7 @@ derive-getters = "0.2.0"
 derive-new = "0.5.9"
 derive-syn-parse = "0.2.0"
 derive_more = "1.0.0"
-divan = { version = "3.0.5", package = "codspeed-divan-compat" }
+divan = { version = "4.2.1", package = "codspeed-divan-compat" }
 duct = "0.13.7"
 duplicate = "2.0.0"
 easy-ext = "1.0.2"
@@ -81,7 +81,7 @@ pyo3-log = "0.13.2"
 quote = "1.0.37"
 rayon = "1.10.0"
 ref-cast = "1.0.23"
-regex = "1.11.0"
+regex = "1.12.0"
 reqwest = "0.13.1"
 rprompt = "2.1.1"
 rstest = "0.15.0"
@@ -116,7 +116,7 @@ zip = "0.6.3"
 
 [workspace.dependencies.voicevox-ort]
 git = "https://github.com/VOICEVOX/ort.git"
-rev = "22172d0fcf0715c1316f95ea08db50cf55cf0ad4"
+rev = "6d69dbd1ddfae713081d844c456be5b8d097e17e"
 
 [workspace.dependencies.open_jtalk]
 git = "https://github.com/VOICEVOX/open_jtalk-rs.git"
