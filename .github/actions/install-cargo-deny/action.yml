@@ -8,4 +8,4 @@ runs:
       uses: taiki-e/install-action@cargo-binstall
     - name: Install cargo-deny
       shell: bash
-      run: cargo binstall cargo-deny@^0.16 --no-confirm --log-level debug
+      run: cargo binstall cargo-deny@^0.18 --no-confirm --log-level debug

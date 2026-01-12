@@ -2,7 +2,17 @@ name: test workflow
 
 on:
   push:
+    branches:
+      - main
   pull_request:
+    paths:
+      - .cargo/config.toml
+      - .github/**
+      - Cargo.*
+      - crates/**
+      - example/**
+      - model/**
+      - rust-toolchain
   workflow_dispatch:
 
 env:

@@ -11,7 +11,11 @@
 // }
 // ```
 
-use std::{fmt::Debug, sync::Arc, vec};
+use std::{
+    fmt::Debug,
+    sync::{Arc, LazyLock},
+    vec,
+};
 
 use anyhow::{anyhow, bail, ensure};
 use duplicate::duplicate_item;
@@ -87,6 +91,9 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
         Vec<ParamInfo<InputScalarKind>>,
         Vec<ParamInfo<OutputScalarKind>>,
     )> {
+        static IS_VOICEVOX_ONNXRUNTIME: LazyLock<bool> =
+            LazyLock::new(|| ort::info().starts_with("VOICEVOX ORT Build Info: "));
+
         let mut builder = ort::session::Session::builder()?
             .with_optimization_level(GraphOptimizationLevel::Level1)?
             .with_intra_threads(options.cpu_num_threads.into())?;
@@ -108,7 +115,16 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
 
         let sess = match model {
             ModelBytes::Onnx(onnx) => builder.commit_from_memory(onnx),
-            ModelBytes::VvBin(bin) => builder.commit_from_vv_bin(bin),
+            ModelBytes::VvBin(bin) => {
+                ensure!(
+                    *IS_VOICEVOX_ONNXRUNTIME,
+                    "This ONNX Runtime does not support \"vv-bin\" format \
+                     (note: load/link `voicevox_onnxruntime` instead of ` onnxruntime`)",
+                );
+                builder
+                    .with_config_entry("session.use_vv_bin", "1")?
+                    .commit_from_memory(bin)
+            }
         }?;
 
         let input_param_infos = sess
