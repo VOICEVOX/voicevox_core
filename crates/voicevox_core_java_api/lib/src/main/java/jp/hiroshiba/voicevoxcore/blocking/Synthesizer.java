@@ -322,6 +322,9 @@ public class Synthesizer {
   /**
    * 楽譜から歌唱音声合成用のクエリを作成する。
    *
+   * <p>詳細はユーザーガイド<a
+   * href="https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/song.md">歌唱音声合成</a>を参照。
+   *
    * @param score 楽譜
    * @param styleId スタイルID
    * @return 歌唱音声合成用のクエリ
@@ -350,6 +353,9 @@ public class Synthesizer {
   /**
    * 楽譜と歌唱音声合成用のクエリから、フレームごとの基本周波数を生成する。
    *
+   * <p>詳細はユーザーガイド<a
+   * href="https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/song.md">歌唱音声合成</a>を参照。
+   *
    * @param score 楽譜
    * @param frameAudioQuery 歌唱音声合成用のクエリ
    * @param styleId スタイルID
@@ -376,6 +382,9 @@ public class Synthesizer {
   /**
    * 楽譜と歌唱音声合成用のクエリから、フレームごとの音量を生成する。
    *
+   * <p>詳細はユーザーガイド<a
+   * href="https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/song.md">歌唱音声合成</a>を参照。
+   *
    * @param score 楽譜
    * @param frameAudioQuery 歌唱音声合成用のクエリ
    * @param styleId スタイルID
@@ -401,6 +410,9 @@ public class Synthesizer {
 
   /**
    * 歌唱音声合成を行う。
+   *
+   * <p>詳細はユーザーガイド<a
+   * href="https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/song.md">歌唱音声合成</a>を参照。
    *
    * @param frameAudioQuery 歌唱音声合成用のクエリ
    * @param styleId スタイルID
