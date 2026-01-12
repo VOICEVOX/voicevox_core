@@ -11,9 +11,14 @@ import jp.hiroshiba.voicevoxcore.AccelerationMode;
 import jp.hiroshiba.voicevoxcore.AccentPhrase;
 import jp.hiroshiba.voicevoxcore.AudioQuery;
 import jp.hiroshiba.voicevoxcore.CharacterMeta;
+import jp.hiroshiba.voicevoxcore.FrameAudioQuery;
+import jp.hiroshiba.voicevoxcore.Score;
 import jp.hiroshiba.voicevoxcore.StyleType;
+import jp.hiroshiba.voicevoxcore.exceptions.IncompatibleQueriesException;
 import jp.hiroshiba.voicevoxcore.exceptions.InvalidModelDataException;
+import jp.hiroshiba.voicevoxcore.exceptions.InvalidQueryException;
 import jp.hiroshiba.voicevoxcore.exceptions.RunModelException;
+import jp.hiroshiba.voicevoxcore.exceptions.StyleNotFoundException;
 import jp.hiroshiba.voicevoxcore.internal.Convert;
 import jp.hiroshiba.voicevoxcore.internal.Dll;
 
@@ -314,6 +319,121 @@ public class Synthesizer {
     return new TtsConfigurator(this, text, styleId);
   }
 
+  /**
+   * 楽譜から歌唱音声合成用のクエリを作成する。
+   *
+   * <p>詳細はユーザーガイド<a
+   * href="https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/song.md">歌唱音声合成</a>を参照。
+   *
+   * @param score 楽譜
+   * @param styleId スタイルID
+   * @return 歌唱音声合成用のクエリ
+   * @throws InvalidQueryException {@code score}に対する{@link Score#validate}が失敗する場合
+   * @throws StyleNotFoundException {@code styleId}に対応するスタイルが見つからなかった場合
+   * @throws RunModelException 推論に失敗した場合
+   */
+  @Nonnull
+  public FrameAudioQuery createSingFrameAudioQuery(Score score, int styleId)
+      throws RunModelException {
+    if (!Utils.isU32(styleId)) {
+      throw new IllegalArgumentException("styleId");
+    }
+
+    String scoreJson = Convert.jsonFromQueryLike(score, "不正な楽譜です");
+
+    Gson gson = new Gson();
+    String frameAudioQueryJson = rsCreateSingFrameAudioQuery(scoreJson, styleId);
+    FrameAudioQuery frameAudioQuery = gson.fromJson(frameAudioQueryJson, FrameAudioQuery.class);
+    if (frameAudioQuery == null) {
+      throw new NullPointerException("frame_audio_query");
+    }
+    return frameAudioQuery;
+  }
+
+  /**
+   * 楽譜と歌唱音声合成用のクエリから、フレームごとの基本周波数を生成する。
+   *
+   * <p>詳細はユーザーガイド<a
+   * href="https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/song.md">歌唱音声合成</a>を参照。
+   *
+   * @param score 楽譜
+   * @param frameAudioQuery 歌唱音声合成用のクエリ
+   * @param styleId スタイルID
+   * @return フレームごとの基本周波数
+   * @throws InvalidQueryException {@code score}に対する{@link Score#validate}、もしくは{@code
+   *     frameAudioQuery}に対する{@link FrameAudioQuery#validate}が失敗する場合
+   * @throws IncompatibleQueriesException {@code score}と{@code FrameAudioQuery}の組み合わせが不正である場合
+   * @throws StyleNotFoundException {@code styleId}に対応するスタイルが見つからなかった場合
+   * @throws RunModelException 推論に失敗した場合
+   */
+  @Nonnull
+  public float[] createSingFrameF0(Score score, FrameAudioQuery frameAudioQuery, int styleId)
+      throws RunModelException {
+    if (!Utils.isU32(styleId)) {
+      throw new IllegalArgumentException("styleId");
+    }
+
+    String scoreJson = Convert.jsonFromQueryLike(score, "不正な楽譜です");
+    String frameAudioQueryJson = Convert.jsonFromQueryLike(frameAudioQuery, "不正なFrameAudioQueryです");
+
+    return rsCreateSingFrameF0(scoreJson, frameAudioQueryJson, styleId);
+  }
+
+  /**
+   * 楽譜と歌唱音声合成用のクエリから、フレームごとの音量を生成する。
+   *
+   * <p>詳細はユーザーガイド<a
+   * href="https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/song.md">歌唱音声合成</a>を参照。
+   *
+   * @param score 楽譜
+   * @param frameAudioQuery 歌唱音声合成用のクエリ
+   * @param styleId スタイルID
+   * @return フレームごとの音量
+   * @throws InvalidQueryException {@code score}に対する{@link Score#validate}、もしくは{@code
+   *     frameAudioQuery}に対する{@link FrameAudioQuery#validate}が失敗する場合
+   * @throws IncompatibleQueriesException {@code score}と{@code FrameAudioQuery}の組み合わせが不正である場合
+   * @throws StyleNotFoundException {@code styleId}に対応するスタイルが見つからなかった場合
+   * @throws RunModelException 推論に失敗した場合
+   */
+  @Nonnull
+  public float[] createSingFrameVolume(Score score, FrameAudioQuery frameAudioQuery, int styleId)
+      throws RunModelException {
+    if (!Utils.isU32(styleId)) {
+      throw new IllegalArgumentException("styleId");
+    }
+
+    String scoreJson = Convert.jsonFromQueryLike(score, "不正な楽譜です");
+    String frameAudioQueryJson = Convert.jsonFromQueryLike(frameAudioQuery, "不正なFrameAudioQueryです");
+
+    return rsCreateSingFrameVolume(scoreJson, frameAudioQueryJson, styleId);
+  }
+
+  /**
+   * 歌唱音声合成を行う。
+   *
+   * <p>詳細はユーザーガイド<a
+   * href="https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/song.md">歌唱音声合成</a>を参照。
+   *
+   * @param frameAudioQuery 歌唱音声合成用のクエリ
+   * @param styleId スタイルID
+   * @return WAVデータ
+   * @throws InvalidQueryException {@code frameAudioQuery}に対する{@link
+   *     FrameAudioQuery#validate}が失敗する場合
+   * @throws StyleNotFoundException {@code styleId}に対応するスタイルが見つからなかった場合
+   * @throws RunModelException 推論に失敗した場合
+   */
+  @Nonnull
+  public byte[] frameSynthesis(FrameAudioQuery frameAudioQuery, int styleId)
+      throws RunModelException {
+    if (!Utils.isU32(styleId)) {
+      throw new IllegalArgumentException("styleId");
+    }
+
+    String frameAudioQueryJson = Convert.jsonFromQueryLike(frameAudioQuery, "不正なFrameAudioQueryです");
+
+    return rsFrameSynthesis(frameAudioQueryJson, styleId);
+  }
+
   private native void rsNew(Onnxruntime onnxruntime, OpenJtalk openJtalk, Builder builder);
 
   private native boolean rsIsGpuMode();
@@ -362,6 +482,22 @@ public class Synthesizer {
 
   @Nonnull
   private native byte[] rsTts(String text, int styleId, boolean enableInterrogativeUpspeak)
+      throws RunModelException;
+
+  @Nonnull
+  private native String rsCreateSingFrameAudioQuery(String score, int styleId)
+      throws RunModelException;
+
+  @Nonnull
+  private native float[] rsCreateSingFrameF0(String score, String frameAudioQuery, int styleId)
+      throws RunModelException;
+
+  @Nonnull
+  private native float[] rsCreateSingFrameVolume(String score, String frameAudioQuery, int styleId)
+      throws RunModelException;
+
+  @Nonnull
+  private native byte[] rsFrameSynthesis(String frameAudioQuery, int styleId)
       throws RunModelException;
 
   private native void rsDrop();
