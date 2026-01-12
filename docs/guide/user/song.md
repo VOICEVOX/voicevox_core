@@ -56,6 +56,14 @@ frame_audio_query = synthesizer.create_sing_frame_audio_query(
 )
 ```
 
+[`Synthesizer.frame_synthesis`]で音声合成してWAVデータを生成します。
+`frame_synthesis`で指定できる`style_id`は、種類が`"frame_decode"`か`"sing"`であるスタイルの`id`です。
+
+```py
+SINGER = 3000  # 四国めたん（あまあま）
+wav = synthesizer.frame_synthesis(frame_audio_query, SINGER)
+```
+
 ## 子音の侵食
 
 `Score.notes`から`FrameAudioQuery.phonemes`を生成する際、`Note.lyric`は子音と母音に分割されます。このときの母音の開始位置は、ノートの開始位置と同じになるように調整されます。子音は母音より前に位置するため、子音は一つ前のノートを侵食します。
