@@ -182,7 +182,7 @@ jobs:
               -q '[.] | flatten | any(.ref == "refs/tags/'"$VERSION"'")'
           )
           if [ "$exists" = true ]; then
-            echo "::error title=Duplicated tag::'refs/tags/$VERSION' already exists"
+            echo "::error title=create_draft_release::'refs/tags/$VERSION' already exists"
             exit 1
           fi
         env:
