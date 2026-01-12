@@ -106,36 +106,6 @@ wav = synthesizer.frame_synthesis(frame_audio_query, SINGER)
 
 `FrameAudioQuery`を生成するとき、[`Note.id`]の文字列が[`FramePhoneme.note_id`]にコピーされます。歌唱音声には影響しません。
 
-```json
-{
-  "notes": [
-    { "lyric": "", "id": "①", … },
-    { "lyric": "ド", "id": "②", … },
-    { "lyric": "レ", "id": "③", … },
-    { "lyric": "ミ", "id": "④", … },
-    { "lyric": "", "id": "⑤", … }
-  ]
-}
-```
-
-↓
-
-```json
-{
-  "phonemes": [
-    { "phoneme": "pau", "note_id": "①", … },
-    { "phoneme": "d", "note_id": "②", … },
-    { "phoneme": "o", "note_id": "②", … },
-    { "phoneme": "r", "note_id": "③", … },
-    { "phoneme": "e", "note_id": "③", … },
-    { "phoneme": "m", "note_id": "④", … },
-    { "phoneme": "i", "note_id": "④", … },
-    { "phoneme": "pau", "note_id": "⑤", … },
-  ],
-  …
-}
-```
-
 ## 歌唱音声合成の流れ
 
 歌唱音声合成の流れを図にするとこのようになります。
