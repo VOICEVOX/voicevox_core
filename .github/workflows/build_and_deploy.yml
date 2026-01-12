@@ -170,7 +170,8 @@ jobs:
     needs: config
     runs-on: ubuntu-latest
     outputs:
-      release: ${{ steps.create-draft-release.outputs.release || 'null' }} # GitHub REST APIの`Release`の一部。nullable
+      # `deploy`がtrueなら、GitHub REST APIの`Release`オブジェクトの一部。falseならnull。
+      release: ${{ steps.create-draft-release.outputs.release || 'null' }}
     steps:
       - name: Confirm that the tag does not exist at the moment
         run: |
@@ -324,13 +325,13 @@ jobs:
           cd artifact
           7z a "../${{ env.ASSET_NAME }}.zip" "${{ env.ASSET_NAME }}"
       - name: Upload to Release
-        if: fromJson(needs.create_draft_release.outputs.release) && matrix.c_release_format == 'plain-cdylib'
+        if: fromJson(needs.config.outputs.deploy) && matrix.c_release_format == 'plain-cdylib'
         uses: ./.github/actions/upload-gh-release-assets
         with:
           upload-url: ${{ fromJson(needs.create_draft_release.outputs.release).upload_url }}
           files: ${{ env.ASSET_NAME }}.zip
       - name: Upload Python whl to Release
-        if: fromJson(needs.create_draft_release.outputs.release) && matrix.python_whl
+        if: fromJson(needs.config.outputs.deploy) && matrix.python_whl
         uses: ./.github/actions/upload-gh-release-assets
         with:
           upload-url: ${{ fromJson(needs.create_draft_release.outputs.release).upload_url }}
@@ -377,7 +378,7 @@ jobs:
           cd ${{ steps.create-xcframework.outputs.output_asset_path }}
           7z a "../../${{ env.ASSET_NAME }}.zip" "voicevox_core.xcframework"
       - name: Upload to Release
-        if: fromJson(needs.create_draft_release.outputs.release)
+        if: fromJson(needs.config.outputs.deploy)
         uses: ./.github/actions/upload-gh-release-assets
         with:
           upload-url: ${{ fromJson(needs.create_draft_release.outputs.release).upload_url }}
@@ -386,7 +387,7 @@ jobs:
   build_java_package:
     runs-on: ubuntu-latest
     if: ${{ !(github.ref != 'refs/heads/main' && github.event_name != 'workflow_dispatch') }} # !env.IS_SIMPLE_TEST と同じ
-    needs: [create_draft_release, build_and_deploy]
+    needs: [config, create_draft_release, build_and_deploy]
     steps:
       - uses: actions/checkout@v5
       - name: Set up Rust
@@ -464,7 +465,7 @@ jobs:
           zip -r /tmp/java_packages.zip .
 
       - name: Upload to Release
-        if: fromJson(needs.create_draft_release.outputs.release)
+        if: fromJson(needs.config.outputs.deploy)
         uses: ./.github/actions/upload-gh-release-assets
         with:
           upload-url: ${{ fromJson(needs.create_draft_release.outputs.release).upload_url }}
@@ -472,7 +473,7 @@ jobs:
 
   build_and_deploy_downloader:
     needs: [config, create_draft_release]
-    if: fromJson(needs.create_draft_release.outputs.release)
+    if: fromJson(needs.config.outputs.deploy)
     uses: ./.github/workflows/build_and_deploy_downloader.yml
     with:
       upload_url: ${{ fromJson(needs.create_draft_release.outputs.release).upload_url }}
@@ -480,8 +481,8 @@ jobs:
       code_signing: ${{ inputs.code_signing }}
 
   prerelease:
-    needs: [create_draft_release, build_and_deploy, build_xcframework, build_java_package, build_and_deploy_downloader]
-    if: fromJson(needs.create_draft_release.outputs.release)
+    needs: [config, create_draft_release, build_and_deploy, build_xcframework, build_java_package, build_and_deploy_downloader]
+    if: fromJson(needs.config.outputs.deploy)
     runs-on: ubuntu-latest
     steps:
       - name: Create the tag
@@ -510,8 +511,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   download_test:
-    needs: [create_draft_release, prerelease]
-    if: fromJson(needs.create_draft_release.outputs.release)
+    needs: [config, create_draft_release, prerelease]
+    if: fromJson(needs.config.outputs.deploy)
     uses: ./.github/workflows/download_test.yml
     with:
       version: ${{ inputs.version }}
