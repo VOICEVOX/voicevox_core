@@ -53,20 +53,43 @@
 
 ### Added
 
-- \[Rust,C,Python\] ソング機能が追加されます ([#531], [#732], [#738], [#761], [#895], [#896], [#894], [#1217], [#1236], [#1073], [#1242], [#1250], [#1252], [#1247], [#1253], [#1244], [#1245])。
+- \[Rust,C,Python\] ソング機能が追加されます ([#531], [#732], [#738], [#761], [#895], [#896], [#894], [#1217], [#1236], [#1073], [#1242], [#1250], [#1252], [#1247], [#1253], [#1244], [#1257], [#1255], [#1260], [#1245])。
 - ドキュメントが改善されます。
     - [バージョン0.16.3](#0163---2025-12-08-0900)で導入された、`AudioQuery`/`AccentPhrase`/`Mora`のバリデーション機能に関するドキュメンテーションがよりわかりやすくなります ([#1251])。
     - \[Python,Java\] 一部のドキュメントの文体が改善されます ([#1238])。
+- \[ダウンローダー\] HTTPクライアントのものを含めた、いくつかの依存ライブラリがアップデートされます ([#1265])。
 
 ### Changed
 
+- ONNX Runtimeが出す`FATAL`レベルのログの表示形式が少しだけ変わります。また`VERBOSE`レベルのログは[`tracing::Level::TRACE`](https://docs.rs/tracing/0.1/tracing/struct.Level.html#associatedconstant.TRACE)に格下げされます ([#1276])。
 - \[Python,Java\] `AudioQuery`（もしくはその一部）がRustのオブジェクトとして表現できなかったときのエラーが、`InvalidQuery`エラーに包まれるようになります。これまでは`OverflowError`や`RuntimeError`がそのままraiseされていました ([#1237])。
+- \[Rust\] 依存ライブラリが変化します ([#1073], [#1250], [#1265], [#1277], [#1276])。
+    - \[追加\] `arrayvec@0.7`: `^0.7.6`
+    - \[追加\] `derive_more@1`: `into_iterator`フィーチャを追加
+    - \[追加\] `num-traits@0.2`: `^0.2.15`
+    - \[追加\] `smol_str@0.3`: `^0.3.2`
+    - \[追加\] `typed_floats@1`: `^1.0.7`
+    - \[追加\] `typeshare@1`: `^1.0.4` (`default-features = false`)
+    - \[変更\] `regex@1`: `^1.11.0` → `^1.12.0`
+    - \[変更\] `serde@1`: `^1.0.27` → `^1.0.228`
+    - \[変更\] `voicevox-ort@2.0.0-rc.10`: `22172d0fcf0715c1316f95ea08db50cf55cf0ad4` → `6d69dbd1ddfae713081d844c456be5b8d097e17e`
+- \[Python\] 型ヒントが[`uuid.UUID`](https://docs.python.org/3/library/uuid.html#uuid.UUID)である引数に、`uuid.UUID`ではないオブジェクトを与えたときのエラーが`TypeError`になります ([#1266])。
 
 ### Fixed
 
+- \[Python\] `Onnxruntime.load_once`は[デッドロックする可能性](https://pyo3.rs/v0.13.0/faq#im-experiencing-deadlocks-using-pyo3-with-lazy_static-or-once_cell)がありましたが、解消されます ([#1266])。
 - \[Java\] 各`validate`メソッドのJavadocにおいて、浮動小数点数がNaNあるいは±infinityだったときの扱いの記述が実態に則したものへと訂正されます ([#1237])。
 
+### Security
+
+- \[C,Java,ダウンローダー\] 現実的な攻撃シナリオは無かったと考えられますが、以下の脆弱性の影響を受けないようになります ([#1265], [#1269])。
+    - [RUSTSEC-2025-0023](https://rustsec.org/advisories/RUSTSEC-2025-0023)
+    - [RUSTSEC-2025-0024](https://rustsec.org/advisories/RUSTSEC-2025-0024)
+    - [RUSTSEC-2025-0055](https://rustsec.org/advisories/RUSTSEC-2025-0055)
+
 ## [0.16.3] - 2025-12-08 (+09:00)
+
+主な変更点とその解説については、[GitHub Releaseの本文](https://github.com/VOICEVOX/voicevox_core/releases/tag/0.16.3)をご覧ください。
 
 ### Added
 
@@ -81,8 +104,8 @@
     - メソッドとして`{AudioQuery,AccentPhrase,Mora}::validate`が追加されます。
 - \[Rust\] 依存ライブラリが変化します ([#1190], [#1214], [#1221])。
     - \[追加\] `bytemuck@1`: `^1.24.0`
-    - \[追加\] `pastey`: `^0.2.0`
-    - \[追加\] `phf`: `^0.13.1`
+    - \[追加\] `pastey@0.2`: `^0.2.0`
+    - \[追加\] `phf@0.13`: `^0.13.1`
 
 ### Removed
 
@@ -98,6 +121,8 @@
 - \[Java\] Javadocにおいて`UserDictWord`がGSONに対応しているという誤った情報が訂正されます ([#1223])。
 
 ## [0.16.2] - 2025-10-28 (+09:00)
+
+主な変更点とその解説については、[GitHub Releaseの本文](https://github.com/VOICEVOX/voicevox_core/releases/tag/0.16.2)をご覧ください。
 
 ### Added
 
@@ -1412,6 +1437,14 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1251]: https://github.com/VOICEVOX/voicevox_core/pull/1251
 [#1252]: https://github.com/VOICEVOX/voicevox_core/pull/1252
 [#1253]: https://github.com/VOICEVOX/voicevox_core/pull/1253
+[#1255]: https://github.com/VOICEVOX/voicevox_core/pull/1255
+[#1257]: https://github.com/VOICEVOX/voicevox_core/pull/1257
+[#1260]: https://github.com/VOICEVOX/voicevox_core/pull/1260
+[#1265]: https://github.com/VOICEVOX/voicevox_core/pull/1265
+[#1266]: https://github.com/VOICEVOX/voicevox_core/pull/1266
+[#1269]: https://github.com/VOICEVOX/voicevox_core/pull/1269
+[#1276]: https://github.com/VOICEVOX/voicevox_core/pull/1276
+[#1277]: https://github.com/VOICEVOX/voicevox_core/pull/1277
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 

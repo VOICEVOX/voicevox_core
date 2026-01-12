@@ -175,7 +175,7 @@ def ensure_compatible(score: Score, frame_audio_query: FrameAudioQuery) -> None:
 
     .. |ensure-compatible-score| replace:: 楽譜
     .. _ensure-compatible-score: #voicevox_core.Score
-    .. |ensure-compatible-frame-audio-query| replace:: 歌唱合成用のクエリ
+    .. |ensure-compatible-frame-audio-query| replace:: 歌唱音声合成用のクエリ
     .. _ensure-compatible-frame-audio-query: #voicevox_core.FrameAudioQuery
     .. |ensure-compatible-incompatible-queries-error| replace:: ``IncompatibleQueriesError``
     .. _ensure-compatible-incompatible-queries-error: #voicevox_core.IncompatibleQueriesError
