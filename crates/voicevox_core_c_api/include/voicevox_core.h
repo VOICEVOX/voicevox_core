@@ -1564,6 +1564,10 @@ VoicevoxResultCode voicevox_synthesizer_tts(const struct VoicevoxSynthesizer *sy
 /**
  * 楽譜から歌唱音声合成用のクエリを作成する。
  *
+ * 詳細はユーザーガイド[歌唱音声合成]を参照。
+ *
+ * [歌唱音声合成]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/song.md
+ *
  * 生成したJSONを解放するには ::voicevox_json_free を使う。
  *
  * @param [in] synthesizer 音声シンセサイザ
@@ -1614,6 +1618,10 @@ VoicevoxResultCode voicevox_synthesizer_create_sing_frame_audio_query(const stru
 /**
  * 楽譜と歌唱音声合成用のクエリから、フレームごとの基本周波数を生成する。
  *
+ * 詳細はユーザーガイド[歌唱音声合成]を参照。
+ *
+ * [歌唱音声合成]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/song.md
+ *
  * 生成したJSONを解放するには ::voicevox_json_free を使う。
  *
  * @param [in] synthesizer 音声シンセサイザ
@@ -1646,6 +1654,10 @@ VoicevoxResultCode voicevox_synthesizer_create_sing_frame_f0(const struct Voicev
 /**
  * 楽譜と歌唱音声合成用のクエリから、フレームごとの音量を生成する。
  *
+ * 詳細はユーザーガイド[歌唱音声合成]を参照。
+ *
+ * [歌唱音声合成]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/song.md
+ *
  * 生成したJSONを解放するには ::voicevox_json_free を使う。
  *
  * @param [in] synthesizer 音声シンセサイザ
@@ -1677,6 +1689,10 @@ VoicevoxResultCode voicevox_synthesizer_create_sing_frame_volume(const struct Vo
 
 /**
  * 歌唱音声合成を行う。
+ *
+ * 詳細はユーザーガイド[歌唱音声合成]を参照。
+ *
+ * [歌唱音声合成]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/song.md
  *
  * 生成したWAVデータを解放するには ::voicevox_wav_free を使う。
  *
