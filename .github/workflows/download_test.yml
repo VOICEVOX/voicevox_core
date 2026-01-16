@@ -150,7 +150,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.name }}-${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Set up Rust
         uses: ./.github/actions/rust-toolchain-from-file
       - name: Get prerelease latest version
