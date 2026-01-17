@@ -35,6 +35,9 @@ env:
   # 簡易テストとするかどうか。mainブランチ、workflow_dispatch以外は簡易テストとする
   IS_SIMPLE_TEST: ${{ github.ref != 'refs/heads/main' && github.event_name != 'workflow_dispatch' }}
 
+  VVCORE_BUILD_FORCE_DOWNLOAD_ORT: '0'
+  VVCORE_BUILD_FORCE_COPY_DOWNLOADED_ORT: '0'
+
 defaults:
   run:
     shell: bash
@@ -215,6 +218,7 @@ jobs:
     strategy:
       matrix:
         include: ${{ fromJson(needs.config.outputs.includes) }}
+      fail-fast: false
     runs-on: ${{ matrix.os }}
     env:
       ASSET_NAME: voicevox_core-${{ matrix.artifact_name }}-${{ needs.config.outputs.version }}
@@ -277,6 +281,12 @@ jobs:
           cargo build -p voicevox_core_c_api -v --features "$linking" --target ${{ matrix.target }} --release
         env:
           RUSTFLAGS: -C panic=abort
+      - name: Build with `link-onnxruntime`
+        if: matrix.c_release_format == 'plain-cdylib'
+        run: cargo build -p voicevox_core_c_api -v --features link-onnxruntime --target ${{ matrix.target }}
+      - name: Test with `link-onnxruntime`
+        if: contains(matrix.target, 'windows') || matrix.target == 'aarch64-apple-darwin' || matrix.target == 'x86_64-unknown-linux-gnu'
+        run: cargo test -p voicevox_core --features link-onnxruntime --lib --target ${{ matrix.target }}
       - name: build voicevox_core_python_api
         if: matrix.python_whl
         id: build-voicevox-core-python-api
