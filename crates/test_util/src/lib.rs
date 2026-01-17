@@ -26,8 +26,41 @@ pub use self::typing::{
     DecodeExampleData, DurationExampleData, ExampleData, IntonationExampleData,
 };
 
-pub const ONNXRUNTIME_DYLIB_PATH: &str =
-    include_str!(concat!(env!("OUT_DIR"), "/onnxruntime-dylib-path.txt"));
+pub const ONNXRUNTIME_DYLIB_PATH: &str = {
+    #[cfg(target_os = "windows")]
+    macro_rules! ort_lib_name {
+        () => {
+            "onnxruntime.dll"
+        };
+    }
+
+    #[cfg(target_os = "linux")]
+    macro_rules! ort_lib_name {
+        () => {
+            concat!(
+                "libonnxruntime.so.",
+                include_str!("../../voicevox_core/onnxruntime-version.txt"),
+            )
+        };
+    }
+
+    #[cfg(target_os = "macos")]
+    macro_rules! ort_lib_name {
+        () => {
+            concat!(
+                "libonnxruntime.",
+                include_str!("../../voicevox_core/onnxruntime-version.txt"),
+                ".dylib",
+            )
+        };
+    }
+
+    concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../target/voicevox_core/downloads/onnxruntime/",
+        ort_lib_name!(),
+    )
+};
 
 pub const OPEN_JTALK_DIC_DIR: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),

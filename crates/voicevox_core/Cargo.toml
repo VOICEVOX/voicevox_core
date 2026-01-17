@@ -18,8 +18,8 @@ required-features = ["load-onnxruntime"]
 # rustdocを参照
 [features]
 default = []
-load-onnxruntime = ["voicevox-ort/load-dynamic"]
-link-onnxruntime = []
+load-onnxruntime = ["voicevox-ort/load-dynamic", "dep:libloading"]
+link-onnxruntime = ["dep:pkg-config"]
 
 [dependencies]
 anyhow.workspace = true
@@ -45,8 +45,10 @@ futures-util = { workspace = true, features = ["io"] }
 indexmap = { workspace = true, features = ["serde"] }
 itertools.workspace = true
 jlabel.workspace = true
+libloading = { workspace = true, optional = true }
 ndarray.workspace = true
 num-traits.workspace = true
+once_cell.workspace = true
 open_jtalk.workspace = true
 ouroboros.workspace = true
 pastey.workspace = true
@@ -65,7 +67,7 @@ tracing.workspace = true
 typed_floats = { workspace = true, features = ["serde"] }
 typeshare = { workspace = true, default-features = false }
 uuid = { workspace = true, features = ["v4", "serde"] }
-voicevox-ort = { workspace = true, features = ["download-binaries", "__init-for-voicevox"] }
+voicevox-ort = { workspace = true, features = ["std", "ndarray", "tracing", "alternative-backend"], default-features = false }
 voicevox_core_macros.workspace = true
 
 [dev-dependencies]
@@ -78,10 +80,30 @@ rstest_reuse.workspace = true
 test_util.workspace = true
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
 
+[build-dependencies]
+anyhow.workspace = true
+binstall-tar.workspace = true
+camino.workspace = true
+flate2.workspace = true
+fs-err.workspace = true
+hex.workspace = true
+itertools.workspace = true
+pkg-config = { workspace = true, optional = true }
+process_path.workspace = true
+reqwest.workspace = true
+serde = { workspace = true, features = ["derive"] }
+serde_with.workspace = true
+sha2.workspace = true
+tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread"] }
+toml.workspace = true
+
 [target."cfg(windows)".dependencies]
 humansize.workspace = true
 windows = { workspace = true, features = ["Win32_Foundation", "Win32_Graphics_Dxgi"] }
 
+[target."cfg(unix)".build-dependencies]
+relative-path.workspace = true
+
 [lints.rust]
-unsafe_code = "allow" # WindowsのGPU情報表示に、Win32を利用
+unsafe_code = "allow" # 色々必要なため
 rust_2018_idioms = "warn"

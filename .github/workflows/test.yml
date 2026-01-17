@@ -172,6 +172,10 @@ jobs:
         include: ${{ fromJson(needs.rust-integration-test-strategy-matrix.outputs.includes) }}
     runs-on: ${{ matrix.os }}
     steps:
+      # TOMLのmulti-line string literalにCRLFが入らないようにする。
+      - name: Disable `core.autocrlf`
+        if: runner.os == 'Windows'
+        run: git config --global core.autocrlf false
       - uses: actions/checkout@v5
       - name: Set up Python 3.10
         uses: actions/setup-python@v6
@@ -339,8 +343,9 @@ jobs:
         run: poetry run pytest ./python/test/
       - name: Exampleを実行
         run: |
+          onnxruntime=$(find ../../target/voicevox_core/downloads/onnxruntime '(' -name onnxruntime.dll -o -name 'libonnxruntime.*' ')' -type f)
           for file in ../../example/python/{talk,song}{,-asyncio}.py; do
-            poetry run python "$file" ../test_util/data/model/sample.vvm --dict-dir ../test_util/data/open_jtalk_dic_utf_8-1.11 --onnxruntime ../test_util/data/lib/*onnxruntime*
+            poetry run python "$file" ../test_util/data/model/sample.vvm --dict-dir ../test_util/data/open_jtalk_dic_utf_8-1.11 --onnxruntime "$onnxruntime"
           done
   build-and-test-java-api:
     strategy:
@@ -401,4 +406,4 @@ jobs:
           ./gradlew run --args="
           --vvm ../../crates/test_util/data/model/sample.vvm
           --dictDir ../../crates/test_util/data/open_jtalk_dic_utf_8-1.11
-          --onnxruntime $(find ../../crates/test_util/data/lib -name '*onnxruntime*')"
+          --onnxruntime $(find ../../target/voicevox_core/downloads/onnxruntime '(' -name onnxruntime.dll -o -name 'libonnxruntime.*' ')' -type f)"

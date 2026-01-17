@@ -16,6 +16,10 @@
 //! [`Onnxruntime`]: blocking::Onnxruntime
 //! [ONNX RuntimeのGPU機能]: https://onnxruntime.ai/docs/execution-providers/
 //!
+//! # Environment variables
+//!
+//! TODO
+//!
 //! # Examples
 //!
 //! ```
@@ -288,28 +292,23 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
-#[cfg(not(any(feature = "load-onnxruntime", feature = "link-onnxruntime")))]
-compile_error!("either `load-onnxruntime` or `link-onnxruntime` must be enabled");
+#[cfg(all(not(doc), feature = "load-onnxruntime", feature = "link-onnxruntime"))]
+compile_error!("`load-onnxruntime` and `link-onnxruntime` cannot be enabled at the same time");
 
-#[cfg(not(doc))]
+#[cfg(all(not(feature = "load-onnxruntime"), feature = "link-onnxruntime"))]
 const _: () = {
-    #[cfg(all(feature = "load-onnxruntime", feature = "link-onnxruntime"))]
-    compile_error!("`load-onnxruntime` and `link-onnxruntime` cannot be enabled at the same time");
+    use dummy::*;
 
-    // Rust APIでvoicevox-ortを他のクレートが利用する可能性を考え、voicevox-ort側とfeatureがズレ
-    // ないようにする
+    #[expect(unused_imports)]
+    use ort::*;
 
-    #[cfg(feature = "load-onnxruntime")]
-    ort::assert_feature!(
-        cfg(feature = "load-dynamic"),
-        "when `load-onnxruntime` is enabled,`voicevox-ort/load-dynamic` must be also enabled",
-    );
+    #[expect(path_statements)]
+    init_from; // PLEASE READ → : when `link-onnxruntime` is enabled,`voicevox-ort/load-dynamic` must be disabled
 
-    #[cfg(feature = "link-onnxruntime")]
-    ort::assert_feature!(
-        cfg(not(feature = "load-dynamic")),
-        "when `link-onnxruntime` is enabled,`voicevox-ort/load-dynamic` must be disabled",
-    );
+    mod dummy {
+        #[expect(non_upper_case_globals)]
+        pub(super) const init_from: () = ();
+    }
 };
 
 /// ```compile_fail
