@@ -832,6 +832,7 @@ VoicevoxResultCode voicevox_mora_validate(const char *mora_json);
  *
  * - [Rust APIの`Score`型]としてデシリアライズ不可、もしくはJSONとして不正。
  * - `notes`の要素のうちいずれかが、 ::voicevox_note_validate でエラーになる。
+ * - `notes`が空であるか、もしくは先頭が音符。
  *
  * [Rust APIの`Score`型]: ../rust_api/voicevox_core/struct.Score.html
  *

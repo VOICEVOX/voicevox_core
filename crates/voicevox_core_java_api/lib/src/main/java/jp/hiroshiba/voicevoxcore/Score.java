@@ -44,9 +44,10 @@ public final class Score {
    *
    * <p>不正であるとは、{@code @throws}で示す条件を満たすことである。
    *
-   * @throws InvalidQueryException 次を満たす場合
+   * @throws InvalidQueryException 次のうちどれかを満たす場合
    *     <ul>
    *       <li>{@link #notes}の要素のうちいずれかが不正。
+   *       <li>{@link #notes}が空であるか、もしくは先頭が音符。
    *     </ul>
    */
   public void validate() {

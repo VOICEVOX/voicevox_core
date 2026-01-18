@@ -668,9 +668,10 @@ class Score:
         """
         このインスタンスが不正であるときエラーを返す。
 
-        不正であるとは、以下の条件を満たすことである。
+        不正であるとは、以下のいずれかの条件を満たすことである。
 
         - :attr:`notes` の要素のうちいずれかが |score-validate-note-validate|_ 。
+        - :attr:`notes` が空であるか、もしくは先頭が音符。
 
         送出するエラーは |score-validate-invalid-query-error|_ 。
 
