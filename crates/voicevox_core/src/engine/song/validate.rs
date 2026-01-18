@@ -84,9 +84,10 @@ impl Score {
     ///
     /// # Errors
     ///
-    /// この構造体が不正であるとき[`ErrorKind::InvalidQuery`]を表わすエラーを返す。不正であるとは、以下の条件を満たすことである。
+    /// この構造体が不正であるとき[`ErrorKind::InvalidQuery`]を表わすエラーを返す。不正であるとは、以下のいずれかの条件を満たすことである。
     ///
     /// - [`notes`]の要素のうちいずれかが[不正]。
+    /// - [`notes`]が空であるか、もしくは先頭が音符。
     ///
     /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
     /// [`notes`]: Self::notes

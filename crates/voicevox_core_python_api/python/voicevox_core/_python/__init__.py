@@ -599,7 +599,7 @@ x : str
 @dataclasses.dataclass
 class Note:
     """
-    音符ごとの情報。
+    音符または休符。
 
     このクラスは不正な状態を表現しうる。どのような状態が不正なのかについては
     :func:`validate` を参照。このクラスを使う関数は、不正な状態に対して
@@ -612,16 +612,43 @@ class Note:
     """
 
     frame_length: int
-    """音素のフレーム長。"""
+    """
+    音素のフレーム長。
+
+    秒数に93.75をかけ、端数を調整して整数にしたもの。例として125BPM (Beats Per
+    Minute)における一拍は:
+
+    93.75[フレーム/秒] / (125[拍/分] / 60[秒/分]) = 45[フレーム/拍]
+
+    ここで設定した値は分割された上で :attr:`FramePhoneme.frame_length`
+    に割り当てられる。どのように分割されるのかについては `子音の侵食
+    <https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/song.md#子音の侵食>`_
+    を参照。
+    """
 
     lyric: str
-    """歌詞。空文字列は無音。"""
+    """
+    歌詞。
+
+    - 音符の場合、一つのモーラを表すひらがな/カタカナ（例: ``"ド"``, ``"ファ"``）。
+    - 休符の場合、空文字列。
+    """
 
     key: int | None = None
-    """音階。"""
+    """
+    音階。
+
+    - 音符の場合、MIDIのnote number（例: C4なら ``60``）。
+    - 休符の場合、``None``。
+    """
 
     id: NoteId | None = None
-    """ID。"""
+    """
+    ID。
+
+    :class:`FrameAudioQuery` を生成するときに :attr:`FramePhoneme.note_id`
+    にコピーされる。歌唱音声には影響しない。
+    """
 
     def validate(self) -> None:
         """
@@ -668,9 +695,10 @@ class Score:
         """
         このインスタンスが不正であるときエラーを返す。
 
-        不正であるとは、以下の条件を満たすことである。
+        不正であるとは、以下のいずれかの条件を満たすことである。
 
         - :attr:`notes` の要素のうちいずれかが |score-validate-note-validate|_ 。
+        - :attr:`notes` が空であるか、もしくは先頭が音符。
 
         送出するエラーは |score-validate-invalid-query-error|_ 。
 
