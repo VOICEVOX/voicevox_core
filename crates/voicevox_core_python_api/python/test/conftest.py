@@ -9,10 +9,11 @@ import voicevox_core
 root_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
 onnxruntime_filename = str(
-    root_dir.parent.parent.parent
-    / "test_util"
-    / "data"
-    / "lib"
+    root_dir.parent.parent.parent.parent
+    / "target"
+    / "voicevox_core"
+    / "downloads"
+    / "onnxruntime"
     / voicevox_core.blocking.Onnxruntime.LIB_VERSIONED_FILENAME.replace(
         "voicevox_onnxruntime", "onnxruntime"
     )

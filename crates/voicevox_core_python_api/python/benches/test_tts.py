@@ -10,10 +10,11 @@ from pytest_codspeed import BenchmarkFixture
 from voicevox_core import StyleId
 
 ONNXRUNTIME_FILENAME = str(
-    Path(__file__).parent.parent.parent.parent
-    / "test_util"
-    / "data"
-    / "lib"
+    Path(__file__).parent.parent.parent.parent.parent
+    / "target"
+    / "voicevox_core"
+    / "downloads"
+    / "onnxruntime"
     / voicevox_core.blocking.Onnxruntime.LIB_VERSIONED_FILENAME.replace(
         "voicevox_onnxruntime", "onnxruntime"
     )

@@ -8,14 +8,12 @@ license.workspace = true
 libloading.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
-voicevox-ort.workspace = true # note: `download-binaries`と`copy-dylibs`だけ利用する
 
 [build-dependencies]
 anyhow.workspace = true
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 bindgen.workspace = true
 camino.workspace = true
-cargo_metadata.workspace = true
 flate2.workspace = true
 fs-err.workspace = true
 indoc.workspace = true

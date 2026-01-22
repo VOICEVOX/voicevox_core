@@ -20,7 +20,7 @@ public class TestUtils {
 
   protected Onnxruntime loadOnnxruntime() {
     final String FILENAME =
-        "../../test_util/data/lib/"
+        "../../../target/voicevox_core/downloads/onnxruntime/"
             + Onnxruntime.LIB_VERSIONED_FILENAME.replace("voicevox_onnxruntime", "onnxruntime");
 
     try {

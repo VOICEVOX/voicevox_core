@@ -62,8 +62,18 @@
 ### Changed
 
 - ONNX Runtimeが出す`FATAL`レベルのログの表示形式が少しだけ変わります。また`VERBOSE`レベルのログは[`tracing::Level::TRACE`](https://docs.rs/tracing/0.1/tracing/struct.Level.html#associatedconstant.TRACE)に格下げされます ([#1276])。
+- [#1278]
+    - `ort/{cuda,directml}`フィーチャでEP付きのものがダウンロードできたのができなくなる
+    - ダウンロード場所の変更
+    - `ORT_`系の環境変数が使えなくなる
+    - デフォルトではダウンロードをしなくなる。挙動は環境変数で変える
+    - `Onnxruntime`型の実体の所在が`voicevox_core`側になる
+    - Windowsでsymlinkの作成を試みなくなる
+    - pkgconfigまわり
+        - 特に、`load-onnxruntime`時にダウンロードとコピーが取り止められることがなくなった
+    - ...
 - \[Python,Java\] `AudioQuery`（もしくはその一部）がRustのオブジェクトとして表現できなかったときのエラーが、`InvalidQuery`エラーに包まれるようになります。これまでは`OverflowError`や`RuntimeError`がそのままraiseされていました ([#1237])。
-- \[Rust\] 依存ライブラリが変化します ([#1073], [#1250], [#1265], [#1277], [#1276])。
+- \[Rust\] 依存ライブラリが変化します ([#1073], [#1250], [#1265], [#1277], [#1276], [#1278])。
     - \[追加\] `arrayvec@0.7`: `^0.7.6`
     - \[追加\] `derive_more@1`: `into_iterator`フィーチャを追加
     - \[追加\] `num-traits@0.2`: `^0.2.15`
@@ -73,6 +83,7 @@
     - \[変更\] `regex@1`: `^1.11.0` → `^1.12.0`
     - \[変更\] `serde@1`: `^1.0.27` → `^1.0.228`
     - \[変更\] `voicevox-ort@2.0.0-rc.10`: `22172d0fcf0715c1316f95ea08db50cf55cf0ad4` → `6d69dbd1ddfae713081d844c456be5b8d097e17e`
+    - TODO
 - \[Python\] 型ヒントが[`uuid.UUID`](https://docs.python.org/3/library/uuid.html#uuid.UUID)である引数に、`uuid.UUID`ではないオブジェクトを与えたときのエラーが`TypeError`になります ([#1266])。
 
 ### Fixed
@@ -1446,6 +1457,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1269]: https://github.com/VOICEVOX/voicevox_core/pull/1269
 [#1276]: https://github.com/VOICEVOX/voicevox_core/pull/1276
 [#1277]: https://github.com/VOICEVOX/voicevox_core/pull/1277
+[#1278]: https://github.com/VOICEVOX/voicevox_core/pull/1278
 [#1280]: https://github.com/VOICEVOX/voicevox_core/pull/1280
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25

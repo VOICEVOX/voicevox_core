@@ -23,8 +23,7 @@ impl Utf8Output {
     }
 
     pub(crate) fn mask_onnxruntime_filename(self) -> Self {
-        const ONNXRUNTIME_VERSION: &str =
-            include_str!("../../../voicevox_core/onnxruntime-version.txt");
+        const ONNXRUNTIME_VERSION: &str = include_str!("../../../../onnxruntime-version.txt");
         self.mask_stderr(
             static_regex!(regex::escape(
                 const {
