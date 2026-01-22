@@ -131,7 +131,7 @@ rev = "de226a26e8e18edbdb1d6f986afe37bbbf35fbf4"
 version = "0.0.0"
 edition = "2024"
 publish = false
-rust-version = "1.92.0"
+rust-version = "1.93.0"
 license = "MIT"
 
 # min-sized-rustを元にrelease buildのサイズが小さくなるようにした
