@@ -57,6 +57,7 @@
 - ドキュメントが改善されます。
     - [バージョン0.16.3](#0163---2025-12-08-0900)で導入された、`AudioQuery`/`AccentPhrase`/`Mora`のバリデーション機能に関するドキュメンテーションがよりわかりやすくなります ([#1251])。
     - \[Python,Java\] 一部のドキュメントの文体が改善されます ([#1238])。
+- \[Android\] リリースされるバイナリが[16KBデバイスへの互換性を持つようになり、Google Playが要求する要件を満たす](https://developer.android.com/guide/practices/page-sizes)ようになります。ただし(VOICEVOX) ONNX Runtimeのバージョン1.17は16KBへの互換性が無いことに注意してください。(VOICEVOX) ONNX Runtime バージョン1.22以降であれば対応しています ([#1283])。
 - \[ダウンローダー\] HTTPクライアントのものを含めた、いくつかの依存ライブラリがアップデートされます ([#1265])。
 
 ### Changed
@@ -1447,6 +1448,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1276]: https://github.com/VOICEVOX/voicevox_core/pull/1276
 [#1277]: https://github.com/VOICEVOX/voicevox_core/pull/1277
 [#1280]: https://github.com/VOICEVOX/voicevox_core/pull/1280
+[#1283]: https://github.com/VOICEVOX/voicevox_core/pull/1283
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
