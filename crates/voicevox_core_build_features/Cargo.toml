@@ -1,0 +1,56 @@
+[package]
+name = "voicevox_core_build_features"
+version.workspace = true
+edition = "2021"
+publish.workspace = true
+rust-version = "1.84.0"
+license.workspace = true
+
+[lib]
+name = "build_features"
+
+[features]
+default = []
+download = [
+  "dep:anyhow",
+  "dep:binstall-tar",
+  "dep:camino",
+  "dep:flate2",
+  "dep:fs-err",
+  "dep:hex",
+  "dep:itertools",
+  "dep:process_path",
+  "dep:reqwest",
+  "dep:serde",
+  "dep:serde_with",
+  "dep:sha2",
+  "dep:toml",
+]
+link = [
+  "dep:anyhow",
+  "dep:camino",
+  "dep:pkg-config",
+]
+
+[dependencies]
+anyhow = { workspace = true, optional = true }
+binstall-tar = { workspace = true, optional = true }
+camino = { workspace = true, optional = true }
+flate2 = { workspace = true, optional = true }
+fs-err = { workspace = true, optional = true }
+hex = { workspace = true, optional = true }
+itertools = { workspace = true, optional = true }
+pkg-config = { workspace = true, optional = true }
+process_path = { workspace = true, optional = true }
+reqwest = { workspace = true, features = ["blocking"], optional = true }
+serde = { workspace = true, features = ["derive"], optional = true }
+serde_with = { workspace = true, features = ["hex"], optional = true }
+sha2 = { workspace = true, optional = true }
+toml = { workspace = true, optional = true }
+
+[target."cfg(unix)".dependencies]
+relative-path.workspace = true
+
+[lints.rust]
+unsafe_code = "forbid"
+rust_2018_idioms = "warn"

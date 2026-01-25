@@ -3,6 +3,8 @@ xtask = "run -p xtask --"
 
 [env]
 CARGO_WORKSPACE_DIR = { value = "", relative = true }
+VVCORE_BUILD_FORCE_COPY_DOWNLOADED_ORT = "1"
+VVCORE_BUILD_FORCE_DOWNLOAD_ORT = "1"
 
 [target.aarch64-unknown-linux-gnu]
 linker = "aarch64-linux-gnu-gcc"
