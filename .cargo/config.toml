@@ -7,8 +7,15 @@ CARGO_WORKSPACE_DIR = { value = "", relative = true }
 [target.aarch64-unknown-linux-gnu]
 linker = "aarch64-linux-gnu-gcc"
 
+# TODO: NDKの安定板が28以降になれば`max-page-size`の指定は不要
+# cf.
+# - https://developer.android.com/guide/practices/page-sizes
+# - https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2204-Readme.md#android
+
 [target.aarch64-linux-android]
 linker = "aarch64-linux-android29-clang"
+rustflags = ["-C", "link-args=-Wl,-z,max-page-size=16384"] # https://developer.android.com/guide/practices/page-sizes
 
 [target.x86_64-linux-android]
 linker = "x86_64-linux-android29-clang"
+rustflags = ["-C", "link-args=-Wl,-z,max-page-size=16384"] # https://developer.android.com/guide/practices/page-sizes
