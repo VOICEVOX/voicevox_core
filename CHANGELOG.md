@@ -53,10 +53,11 @@
 
 ### Added
 
-- ソング機能が追加されます ([#531], [#732], [#738], [#761], [#895], [#896], [#894], [#1217], [#1236], [#1073], [#1242], [#1250], [#1252], [#1247], [#1253], [#1244], [#1257], [#1255], [#1260], [#1245], [#1246], [#1280], [#1279])。
+- ソング機能が追加されます ([#531], [#732], [#738], [#761], [#895], [#896], [#894], [#1217], [#1236], [#1073], [#1242], [#1250], [#1252], [#1247], [#1253], [#1244], [#1257], [#1255], [#1260], [#1245], [#1246], [#1280], [#1285], [#1279])。
 - ドキュメントが改善されます。
     - [バージョン0.16.3](#0163---2025-12-08-0900)で導入された、`AudioQuery`/`AccentPhrase`/`Mora`のバリデーション機能に関するドキュメンテーションがよりわかりやすくなります ([#1251])。
     - \[Python,Java\] 一部のドキュメントの文体が改善されます ([#1238])。
+- \[Android\] リリースされるバイナリが[16KBデバイスへの互換性を持つようになり、Google Playが要求する要件を満たす](https://developer.android.com/guide/practices/page-sizes)ようになります。ただし(VOICEVOX) ONNX Runtimeのバージョン1.17は16KBへの互換性が無いことに注意してください。(VOICEVOX) ONNX Runtime バージョン1.22以降であれば対応しています ([#1283])。
 - \[ダウンローダー\] HTTPクライアントのものを含めた、いくつかの依存ライブラリがアップデートされます ([#1265])。
 
 ### Changed
@@ -1448,6 +1449,8 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1277]: https://github.com/VOICEVOX/voicevox_core/pull/1277
 [#1279]: https://github.com/VOICEVOX/voicevox_core/pull/1279
 [#1280]: https://github.com/VOICEVOX/voicevox_core/pull/1280
+[#1283]: https://github.com/VOICEVOX/voicevox_core/pull/1283
+[#1285]: https://github.com/VOICEVOX/voicevox_core/pull/1285
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 

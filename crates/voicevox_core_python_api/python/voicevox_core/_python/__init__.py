@@ -613,7 +613,7 @@ class Note:
 
     frame_length: int
     """
-    音素のフレーム長。
+    音符のフレーム長。
 
     秒数に93.75をかけ、端数を調整して整数にしたもの。例として125BPM (Beats Per
     Minute)における一拍は:

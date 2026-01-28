@@ -274,9 +274,7 @@ jobs:
             plain-cdylib) linking=load-onnxruntime ;;
             ios-xcframework) linking=link-onnxruntime ;;
           esac
-          cargo build -p voicevox_core_c_api -v --features "$linking" --target ${{ matrix.target }} --release
-        env:
-          RUSTFLAGS: -C panic=abort
+          cargo build -p voicevox_core_c_api -v --features "$linking" --target ${{ matrix.target }} --profile c-api
       - name: build voicevox_core_python_api
         if: matrix.python_whl
         id: build-voicevox-core-python-api
@@ -299,8 +297,8 @@ jobs:
           esac
           sed 's:^//\(#define '"$feature"'\)$:\1:' crates/voicevox_core_c_api/include/voicevox_core.h \
             > "artifact/${{ env.ASSET_NAME }}/include/voicevox_core.h"
-          cp -v target/${{ matrix.target }}/release/*voicevox_core.{dll,so,dylib} "artifact/${{ env.ASSET_NAME }}/lib" || true
-          cp -v target/${{ matrix.target }}/release/voicevox_core.dll.lib "artifact/${{ env.ASSET_NAME }}/lib/voicevox_core.lib" || true
+          cp -v target/${{ matrix.target }}/c-api/*voicevox_core.{dll,so,dylib} "artifact/${{ env.ASSET_NAME }}/lib" || true
+          cp -v target/${{ matrix.target }}/c-api/voicevox_core.dll.lib "artifact/${{ env.ASSET_NAME }}/lib/voicevox_core.lib" || true
           cp -v README.md "artifact/${{ env.ASSET_NAME }}/README.txt"
           cp -v LICENSE "artifact/${{ env.ASSET_NAME }}/"
           echo "${{ env.VERSION }}" > "artifact/${{ env.ASSET_NAME }}/VERSION"
