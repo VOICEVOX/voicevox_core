@@ -621,7 +621,7 @@ class Note:
     93.75[フレーム/秒] / (125[拍/分] / 60[秒/分]) = 45[フレーム/拍]
 
     ここで設定した値は分割された上で :attr:`FramePhoneme.frame_length`
-    に割り当てられる。どのように分割されるのかについては `子音の侵食
+    に割り当てられる。分割処理の詳細は `子音の侵食
     <https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/song.md#子音の侵食>`_
     を参照。
     """
