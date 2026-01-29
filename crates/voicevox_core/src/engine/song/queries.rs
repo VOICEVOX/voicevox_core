@@ -41,6 +41,27 @@ pub use self::{key::Key, optional_lyric::OptionalLyric};
 /// # anyhow::Ok(())
 /// ```
 ///
+/// # Example
+///
+/// ```
+/// # use voicevox_core::Score;
+/// #
+/// let score = serde_json::from_str::<Score>(
+///     r#"
+/// {
+///   "notes": [
+///     { "key": null, "frame_length": 15, "lyric": "" },
+///     { "key": 60, "frame_length": 45, "lyric": "ド" },
+///     { "key": 62, "frame_length": 45, "lyric": "レ" },
+///     { "key": 64, "frame_length": 45, "lyric": "ミ" },
+///     { "key": null, "frame_length": 15, "lyric": "" }
+///   ]
+/// }
+///     "#,
+/// )
+/// .unwrap();
+/// ```
+///
 /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
 /// [`validate`メソッド]: Self::validate
 #[derive(Clone, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
@@ -56,7 +77,7 @@ impl From<&'_ Score> for serde_json::Value {
     }
 }
 
-/// 音符ごとの情報。
+/// 音符または休符。
 ///
 /// # Validation
 ///
@@ -72,21 +93,53 @@ impl From<&'_ Score> for serde_json::Value {
 /// # anyhow::Ok(())
 /// ```
 ///
+/// # Example
+///
+/// ```
+/// # use voicevox_core::Note;
+/// #
+/// let note =
+///     serde_json::from_str::<Note>(r#"{ "key": 65, "frame_length": 45, "lyric": "ファ" }"#)
+///         .unwrap();
+///
+/// let rest = serde_json::from_str::<Note>(r#"{ "key": null, "frame_length": 45, "lyric": "" }"#)
+///     .unwrap();
+/// ```
+///
 /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
 /// [`validate`メソッド]: Self::validate
 #[derive(Clone, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct Note {
     /// ID。
+    ///
+    /// [`FrameAudioQuery`]を生成するときに[`FramePhoneme::note_id`]にコピーされる。歌唱音声には影響しない。
     pub id: Option<NoteId>,
 
     /// 音階。
+    ///
+    /// - 音符の場合、`Some(_)`（例: C4なら`60`）。
+    /// - 休符の場合、`None`。
     pub key: Option<Key>,
 
     /// 歌詞。
+    ///
+    /// - 音符の場合、[`PAU`]以外（例: `"ド"`, `"ファ"`）。
+    /// - 休符の場合、[`PAU`]。
+    ///
+    /// [`PAU`]: OptionalLyric::PAU
     pub lyric: OptionalLyric,
 
     /// 音符のフレーム長。
+    ///
+    /// 秒数に93.75をかけ、端数を調整して整数にしたもの。例として125BPM (_**B**eats **P**er
+    /// **M**inute_)における一拍は:
+    ///
+    /// 93.75\[フレーム/秒\] / (125\[拍/分\] / 60\[秒/分\]) = `45`\[フレーム/拍\]
+    ///
+    /// ここで設定した値は分割された上で[`FramePhoneme::frame_length`]に割り当てられる。どのように分割されるのかについては[子音の侵食]を参照。
+    ///
+    /// [子音の侵食]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/song.md#子音の侵食
     pub frame_length: U53,
 }
 
@@ -427,7 +480,7 @@ mod key {
 
     /// 音階。
     ///
-    /// 取り得る値は`0`以上`127`以下。
+    /// MIDIのnote number。取り得る値は`0`以上`127`以下。
     ///
     /// [`TryFrom`]、[`FromStr`]、[`Deserialize`]、[`key!`]からコンストラクトできる。
     ///
@@ -659,7 +712,10 @@ mod optional_lyric {
         mora_mappings::MORA_KANA_TO_MORA_PHONEMES,
     };
 
-    /// 音符の歌詞。空文字列は[無音]。
+    /// 音符の歌詞、または休符を表わす[無音]。
+    ///
+    /// - 音符の歌詞の場合、一つのモーラを表すひらがな/カタカナ。
+    /// - 休符を表わす無音の場合、空文字列。
     ///
     /// # Examples
     ///
