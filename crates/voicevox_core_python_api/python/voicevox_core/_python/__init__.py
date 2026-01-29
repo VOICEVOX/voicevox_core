@@ -607,6 +607,11 @@ class Note:
 
     コンストラクト時には、不正な状態であるかの検証は行われない。
 
+    .. code-block::
+
+        note = Note(45, "ファ", key=66)
+        rest = Note(45, "")
+
     .. |note-invalid-query-error| replace:: ``InvalidQueryError``
     .. _note-invalid-query-error: #voicevox_core.InvalidQueryError
     """
@@ -683,6 +688,18 @@ class Score:
     |score-invalid-query-error|_ を送出する。
 
     コンストラクト時には、不正な状態であるかの検証は行われない。
+
+    .. code-block::
+
+        Score(
+            [
+                Note(15, ""),
+                Note(45, "ド", key=60),
+                Note(45, "レ", key=62),
+                Note(45, "ミ", key=64),
+                Note(15, ""),
+            ],
+        )
 
     .. |score-invalid-query-error| replace:: ``InvalidQueryError``
     .. _score-invalid-query-error: #voicevox_core.InvalidQueryError

@@ -8,7 +8,17 @@ import jp.hiroshiba.voicevoxcore.exceptions.InvalidQueryException;
 import jp.hiroshiba.voicevoxcore.internal.Dll;
 
 /**
- * 音符ごとの情報。
+ * 音符または休符。
+ *
+ * <pre>{@code
+ * Note note =
+ *     (new Gson())
+ *         .fromJson("{ \"key\": 66, \"frame_length\": 45, \"lyric\": \"ファ\" }", Note.class);
+ *
+ * Note rest =
+ *     (new Gson())
+ *         .fromJson("{ \"key\": null, \"frame_length\": 45, \"lyric\": \"\" }", Note.class);
+ * }</pre>
  *
  * <p>このクラスは不正な状態を表現しうる。どのような状態が不正なのかについては{@link #validate}を参照。このクラスを使う関数は、不正な状態に対して{@link
  * InvalidQueryException}をスローする。
