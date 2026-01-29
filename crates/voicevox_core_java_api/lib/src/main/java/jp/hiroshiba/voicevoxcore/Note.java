@@ -13,7 +13,7 @@ import jp.hiroshiba.voicevoxcore.internal.Dll;
  * <pre>{@code
  * Note note =
  *     (new Gson())
- *         .fromJson("{ \"key\": 66, \"frame_length\": 45, \"lyric\": \"ファ\" }", Note.class);
+ *         .fromJson("{ \"key\": 65, \"frame_length\": 45, \"lyric\": \"ファ\" }", Note.class);
  *
  * Note rest =
  *     (new Gson())

@@ -609,7 +609,7 @@ class Note:
 
     .. code-block::
 
-        note = Note(45, "ファ", key=66)
+        note = Note(45, "ファ", key=65)
         rest = Note(45, "")
 
     .. |note-invalid-query-error| replace:: ``InvalidQueryError``

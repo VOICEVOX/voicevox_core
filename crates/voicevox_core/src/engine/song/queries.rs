@@ -99,7 +99,7 @@ impl From<&'_ Score> for serde_json::Value {
 /// # use voicevox_core::Note;
 /// #
 /// let note =
-///     serde_json::from_str::<Note>(r#"{ "key": 66, "frame_length": 45, "lyric": "ファ" }"#)
+///     serde_json::from_str::<Note>(r#"{ "key": 65, "frame_length": 45, "lyric": "ファ" }"#)
 ///         .unwrap();
 ///
 /// let rest = serde_json::from_str::<Note>(r#"{ "key": null, "frame_length": 45, "lyric": "" }"#)
