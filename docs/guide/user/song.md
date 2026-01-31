@@ -108,7 +108,7 @@ wav = synthesizer.frame_synthesis(frame_audio_query, SINGER)
 
 ## 音域調整
 
-`frame_decode`側のスタイルと`singing_teacher`側のスタイルでは得意な音域が異なることがあります。そのため場合によってはうまく歌わせるために、[VOICEVOXエディタの音域調整機能]と同じことを行う必要があります。
+`singing_teacher`のスタイルと`frame_decode`のスタイルでは得意な音域が異なることがあります。その場合はうまく歌うために音域を調整します。この調整は[VOICEVOXエディタの音域調整機能]と同じ。
 
 ```py
 KEY_RANGE_ADJUSTMENT = -4  # "四国めたん（あまあま）"の場合
