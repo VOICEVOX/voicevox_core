@@ -106,6 +106,24 @@ wav = synthesizer.frame_synthesis(frame_audio_query, SINGER)
 
 `FrameAudioQuery`を生成するとき、[`Note.id`]の文字列が[`FramePhoneme.note_id`]にコピーされます。歌唱音声には影響しません。
 
+## 音域調整
+
+`singing_teacher`のスタイルと`frame_decode`のスタイルでは得意な音域が異なることがあります。その場合はうまく歌うために音域を調整します。この調整は[VOICEVOXエディタの音域調整機能]と同じ。
+
+```py
+KEY_RANGE_ADJUSTMENT = -4  # "四国めたん（あまあま）"の場合
+
+for note in score.notes:
+    if note.key is not None:
+        note.key -= KEY_RANGE_ADJUSTMENT
+
+frame_audio_query = synthesizer.create_sing_frame_audio_query(score, SINGING_TEACHER)
+
+frame_audio_query.f0 = [
+    f0 * 2 ** (KEY_RANGE_ADJUSTMENT / 12) for f0 in frame_audio_query.f0
+]
+```
+
 ## 歌唱音声合成の流れ
 
 歌唱音声合成の流れを図にするとこのようになります。
@@ -166,5 +184,6 @@ flowchart TD;
 [`FrameAudioQuery`]: https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/index.html#voicevox_core.FrameAudioQuery
 [`FramePhoneme.note_id`]: https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/index.html#voicevox_core.FramePhoneme.note_id
 [種類]: https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/index.html#voicevox_core.StyleType
+[VOICEVOXエディタの音域調整機能]: https://voicevox.hiroshiba.jp/how_to_use/#音域調整
 [`Synthesizer.create_sing_frame_audio_query`]: https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/blocking/index.html#voicevox_core.blocking.Synthesizer.create_sing_frame_audio_query
 [`Synthesizer.frame_synthesis`]: https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/blocking/index.html#voicevox_core.blocking.Synthesizer.frame_synthesis
