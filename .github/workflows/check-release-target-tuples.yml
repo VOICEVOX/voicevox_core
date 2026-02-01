@@ -15,28 +15,33 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - name: Install go-yq v4
-        run: |
-          mkdir -p ~/.local/bin
-          echo ~/.local/bin >> "$GITHUB_PATH"
-          tag=$(
-            gh release ls -R mikefarah/yq --json tagName,isPrerelease \
-              -q 'map(select(.isPrerelease | not).tagName | select(test("^v4\\.")))[0]'
-          )
-          gh release download -R mikefarah/yq "$tag" -p yq_linux_amd64 -O ~/.local/bin/yq
-          chmod u+x ~/.local/bin/yq
-          ~/.local/bin/yq -V
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Checkout
         uses: actions/checkout@v5
 
       - name: Check release target tuples
         run: |
-          targets=$(yq -ro json '.jobs.config.steps[] | select(.id == "strategy_matrix").run' ./.github/workflows/build_and_deploy.yml)
+          jq_r_from_yaml() {
+            set -e
+            json=$(ruby -r json -r yaml -e 'print YAML.load_file($*[0]).to_json' "$2")
+            jq -r "$1" <(cat <<< "$json")
+          }
+
+          jq_r_from_toml() {
+            set -e
+            json=$(
+              python3 \
+                -c 'import json, sys, tomllib
+          from pathlib import Path
+
+          print(json.dumps(tomllib.loads(Path(sys.argv[1]).read_text())))' \
+                "$2"
+            )
+            jq -r "$1" <(cat <<< "$json")
+          }
+
+          targets=$(jq_r_from_yaml '.jobs.config.steps[] | select(.id == "strategy_matrix").run' ./.github/workflows/build_and_deploy.yml)
           targets=$(sed -n 's/^ \+"target": \(".*"\),$/\1/p' <<< "$targets")
           targets=$(jq -sr sort[] <<< "$targets")
           [ -n "$targets" ]
 
-          diff -u <(cat <<< "$targets") <(yq -ro json '.graph.targets | map(.triple) | sort[]' ./deny.toml)
+          diff -u <(cat <<< "$targets") <(jq_r_from_toml '.graph.targets | map(.triple) | sort[]' ./deny.toml)
