@@ -22,7 +22,7 @@ jobs:
         run: |
           jq_r_from_yaml() {
             set -e
-            json=$(ruby -r json -r yaml -e 'print YAML.load(File.read($*[0])).to_json' "$2")
+            json=$(ruby -r json -r yaml -e 'print YAML.load_file($*[0]).to_json' "$2")
             jq -r "$1" <(cat <<< "$json")
           }
 
