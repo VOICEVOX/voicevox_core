@@ -64,13 +64,14 @@
 
 - ONNX Runtimeが出す`FATAL`レベルのログの表示形式が少しだけ変わります。また`VERBOSE`レベルのログは[`tracing::Level::TRACE`](https://docs.rs/tracing/0.1/tracing/struct.Level.html#associatedconstant.TRACE)に格下げされます ([#1276])。
 - \[Python,Java\] `AudioQuery`（もしくはその一部）がRustのオブジェクトとして表現できなかったときのエラーが、`InvalidQuery`エラーに包まれるようになります。これまでは`OverflowError`や`RuntimeError`がそのままraiseされていました ([#1237])。
-- \[Rust\] 依存ライブラリが変化します ([#1073], [#1250], [#1265], [#1277], [#1276])。
+- \[Rust\] 依存ライブラリが変化します ([#1073], [#1250], [#1265], [#1277], [#1276], [#1291])。
     - \[追加\] `arrayvec@0.7`: `^0.7.6`
     - \[追加\] `derive_more@1`: `into_iterator`フィーチャを追加
     - \[追加\] `num-traits@0.2`: `^0.2.15`
     - \[追加\] `smol_str@0.3`: `^0.3.2`
     - \[追加\] `typed_floats@1`: `^1.0.7`
     - \[追加\] `typeshare@1`: `^1.0.4` (`default-features = false`)
+    - \[変更\] `bytes@1`: `^1.7.2` → `^1.11.1`
     - \[変更\] `regex@1`: `^1.11.0` → `^1.12.0`
     - \[変更\] `serde@1`: `^1.0.27` → `^1.0.228`
     - \[変更\] `voicevox-ort@2.0.0-rc.10`: `22172d0fcf0715c1316f95ea08db50cf55cf0ad4` → `6d69dbd1ddfae713081d844c456be5b8d097e17e`
@@ -83,10 +84,11 @@
 
 ### Security
 
-- \[C,Java,ダウンローダー\] 現実的な攻撃シナリオは無かったと考えられますが、以下の脆弱性の影響を受けないようになります ([#1265], [#1269])。
+- \[C,Java,ダウンローダー\] 現実的な攻撃シナリオは無かったと考えられますが、以下の脆弱性の影響を受けないようになります ([#1265], [#1269], [#1291])。
     - [RUSTSEC-2025-0023](https://rustsec.org/advisories/RUSTSEC-2025-0023)
     - [RUSTSEC-2025-0024](https://rustsec.org/advisories/RUSTSEC-2025-0024)
     - [RUSTSEC-2025-0055](https://rustsec.org/advisories/RUSTSEC-2025-0055)
+    - [RUSTSEC-2026-0007](https://rustsec.org/advisories/RUSTSEC-2026-0007)
 
 ## [0.16.3] - 2025-12-08 (+09:00)
 
@@ -1451,6 +1453,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1280]: https://github.com/VOICEVOX/voicevox_core/pull/1280
 [#1283]: https://github.com/VOICEVOX/voicevox_core/pull/1283
 [#1285]: https://github.com/VOICEVOX/voicevox_core/pull/1285
+[#1291]: https://github.com/VOICEVOX/voicevox_core/pull/1291
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
