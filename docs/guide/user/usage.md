@@ -78,6 +78,10 @@ pip install https://github.com/VOICEVOX/voicevox_core/releases/download/[バー�
 
 VOICEVOX コアでは`Synthesizer`に音声モデルを読み込むことでテキスト音声合成できます。まずサンプルコードを紹介し、その後で処理１つ１つを説明します。
 
+> [!NOTE]
+>
+> 歌唱音声については[歌唱音声合成](./song.md)で紹介しています。
+
 ### サンプルコード
 
 これは Python で書かれたサンプルコードですが、大枠の流れはどの言語でも同じです。
