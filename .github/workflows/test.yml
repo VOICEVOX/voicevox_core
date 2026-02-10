@@ -115,6 +115,7 @@ jobs:
           cargo add async-lock@=3.4.1 # TODO: 〃
           cargo add smol_str@=0.3.2 # TODO: 〃
           cargo add time@=0.3.45 # TODO: 〃
+          cargo add getrandom@0.3 # tempfile v3.25.0が`>=0.3.0,<0.5`という指定をしているため、`getrandom@0.4`が入るのを防ぐために0.3を入れておく。TODO: 〃
           cargo add --path "$rust_api" --features load-onnxruntime
           cargo check
           cargo rm voicevox_core
