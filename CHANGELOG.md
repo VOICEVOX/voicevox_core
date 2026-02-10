@@ -84,11 +84,12 @@
 
 ### Security
 
-- \[C,Java,ダウンローダー\] 現実的な攻撃シナリオは無かったと考えられますが、以下の脆弱性の影響を受けないようになります ([#1265], [#1269], [#1291])。
+- \[C,Java,ダウンローダー\] 現実的な攻撃シナリオは無かったと考えられますが、以下の脆弱性の影響を受けないようになります ([#1265], [#1269], [#1291], [#1295])。
     - [RUSTSEC-2025-0023](https://rustsec.org/advisories/RUSTSEC-2025-0023)
     - [RUSTSEC-2025-0024](https://rustsec.org/advisories/RUSTSEC-2025-0024)
     - [RUSTSEC-2025-0055](https://rustsec.org/advisories/RUSTSEC-2025-0055)
     - [RUSTSEC-2026-0007](https://rustsec.org/advisories/RUSTSEC-2026-0007)
+    - [RUSTSEC-2026-0009](https://rustsec.org/advisories/RUSTSEC-2026-0009)
 
 ## [0.16.3] - 2025-12-08 (+09:00)
 
@@ -1454,6 +1455,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1283]: https://github.com/VOICEVOX/voicevox_core/pull/1283
 [#1285]: https://github.com/VOICEVOX/voicevox_core/pull/1285
 [#1291]: https://github.com/VOICEVOX/voicevox_core/pull/1291
+[#1295]: https://github.com/VOICEVOX/voicevox_core/pull/1295
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
