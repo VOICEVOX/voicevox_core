@@ -262,3 +262,7 @@ with open("output.wav", "wb") as f:
 - [Python(pip)](../../../example/python)
 - [C++(UNIX CMake)](../../../example/cpp/unix)
 - [C++(Windows Visual Studio)](../../../example/cpp/windows)
+
+### 歌唱音声合成
+
+歌唱音声については[歌唱音声合成](./song.md)をご覧ください。
