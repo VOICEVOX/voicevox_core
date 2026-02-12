@@ -2,6 +2,7 @@
 # 1. create_draft_release: タグなしでdraft releaseを先に作成
 # 2. build_and_deploy等: 各成果物をdraft releaseにアップロード
 # 3. prerelease: 全ビルド成功後に初めてタグを作成し、draftをprereleaseに変更
+#    この段階で失敗した場合、手動でリリース作業を続行する。
 
 name: build and deploy workflow
 
@@ -199,11 +200,11 @@ jobs:
               --method POST \
               -H 'Accept: application/vnd.github+json' \
               -H 'X-GitHub-Api-Version: 2022-11-28' \
-              -f "tag_name=$VERSION" \
+              -f tag_name= \
               -f "target_commitish=$GITHUB_SHA" \
               -f "name=$VERSION" \
               -F draft=true \
-              -q '{ upload_url, id, tag_name }'
+              -q '{ upload_url, id }'
           )
           echo "release=$release" >> "$GITHUB_OUTPUT"
         env:
@@ -483,9 +484,44 @@ jobs:
     if: fromJson(needs.config.outputs.deploy)
     runs-on: ubuntu-latest
     steps:
+      - name: Set the tag name
+        run: |
+          tag=$VERSION
+          release_id=${{ fromJson(needs.create_draft_release.outputs.release).id }}
+
+          # 挙動が安定しないようなので、５回まで連続で試行する。それでも駄目なら手動でリリース作業を続行。
+          for _ in {1..5}; do
+            gh api \
+              "/repos/$GITHUB_REPOSITORY/releases/$release_id" \
+              --method PATCH \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              -f "tag_name=$tag" \
+              -f "target_commitish=$GITHUB_SHA"
+
+            release=$(
+              gh api \
+                "/repos/$GITHUB_REPOSITORY/releases/$release_id" \
+                -H 'Accept: application/vnd.github+json' \
+                -H 'X-GitHub-Api-Version: 2022-11-28' \
+                -q '{ tag_name, target_commitish }'
+            )
+            if [ "$(jq -r .tag_name <<< "$release")" = "$tag" ] &&
+                [ "$(jq -r .target_commitish <<< "$release")" = "$GITHUB_SHA" ]; then
+              exit
+            fi
+            echo 'tag_name was not set. retrying' >&2
+            sleep 1
+          done
+
+          echo "::error title=prerelease::Could not set 'tag_name'. Please proceed the release process manually"
+          exit 1
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Create the tag
         run: |
-          tag=${{ fromJson(needs.create_draft_release.outputs.release).tag_name }}
+          tag=$VERSION
           gh api \
             "/repos/$GITHUB_REPOSITORY/git/refs" \
             --method POST \
