@@ -105,22 +105,21 @@ jobs:
       - run: cargo clippy -v -p voicevox_core -p voicevox_core_c_api --features link-onnxruntime -- -D clippy::all -D warnings --no-deps
       - name: Do `cargo check` the Rust API with its MSRV
         run: |
-          rust_api=$(realpath ./crates/voicevox_core)
+          # TODO: MSRVが1.85以上になれば、このようなことをせずともワークスペース上で直接`cargo check`できる
+          lockfile=$(realpath ./Cargo.lock)
+          rust_api=$(cygpath -wa ./crates/voicevox_core)
           mkdir /tmp/use-rust-api
           cd "$_"
           rustup override set ${{ steps.msrv-for-rust-api.outputs.rust-version }}
           cargo init
-          cargo add base64ct@=1.6.0 # TODO: MSRVが1.85以上になったら不要
-          cargo add jlabel@=0.1.4 # TODO: 〃
-          cargo add async-lock@=3.4.1 # TODO: 〃
-          cargo add smol_str@=0.3.2 # TODO: 〃
-          cargo add time@=0.3.45 # TODO: 〃
-          cargo add getrandom@0.3 # tempfile v3.25.0が`>=0.3.0,<0.5`という指定をしているため、`getrandom@0.4`が入るのを防ぐために0.3を入れておく。TODO: 〃
-          cargo add deranged@=0.5.5 # TODO: 〃
-          cargo add --path "$rust_api" --features load-onnxruntime
+          cp "$lockfile" ./Cargo.lock
+          {
+            printf "voicevox_core = { path = '%s', features = ['load-onnxruntime'] }\n" "$rust_api"
+            echo 'base64ct = "=1.6.0"'
+            echo 'time = "=0.3.45"'
+          } >> ./Cargo.toml
           cargo check
-          cargo rm voicevox_core
-          cargo add --path "$rust_api" --features link-onnxruntime
+          sed -i 's/load-onnxruntime/link-onnxruntime/' ./Cargo.toml
           cargo check
       - run: cargo fmt -- --check
 
