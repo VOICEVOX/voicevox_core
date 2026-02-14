@@ -173,8 +173,6 @@ jobs:
     outputs:
       # `deploy`がtrueなら、GitHub REST APIの`Release`オブジェクトの一部。falseならnull。
       release: ${{ steps.create-draft-release.outputs.release || 'null' }}
-      # `deploy`がtrueなら、GitHub REST APIの`Release`オブジェクトの仮タグ名。falseならnull。
-      untagged-tag: ${{ steps.create-draft-release.outputs.untagged-tag || 'null' }}
     steps:
       - name: Confirm that the tag does not exist at the moment
         run: |
@@ -206,13 +204,9 @@ jobs:
               -f "target_commitish=$GITHUB_SHA" \
               -f "name=$VERSION" \
               -F draft=true \
-              -q '{ html_url, upload_url, id }'
+              -q '{ upload_url, id }'
           )
-
-          html_url=$(jq -r .html_url <<< "$release")
-
-          echo "release=$(jq -c '{ upload_url, id }' <<< "$release")" >> "$GITHUB_OUTPUT"
-          echo "untagged-tag=${html_url##*/}" >> "$GITHUB_OUTPUT"
+          echo "release=$release" >> "$GITHUB_OUTPUT"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -485,12 +479,15 @@ jobs:
       version: ${{ needs.config.outputs.version }}
       code_signing: ${{ inputs.code_signing }}
 
-  prerelease:
-    needs: [config, create_draft_release, build_and_deploy, build_xcframework, build_java_package, build_and_deploy_downloader, download_test]
+  set_tag_name:
+    needs: [config, create_draft_release, build_and_deploy, build_xcframework, build_java_package, build_and_deploy_downloader]
     if: fromJson(needs.config.outputs.deploy)
     runs-on: ubuntu-latest
+    outputs:
+      untagged-tag: ${{ steps.set-tag-name.outputs.untagged-tag }}
     steps:
       - name: Set the tag name
+        id: set-tag-name
         run: |
           tag=$VERSION
           release_id=${{ fromJson(needs.create_draft_release.outputs.release).id }}
@@ -505,10 +502,12 @@ jobs:
                 -H 'X-GitHub-Api-Version: 2022-11-28' \
                 -f "tag_name=$tag" \
                 -f "target_commitish=$GITHUB_SHA" \
-                -q '{ tag_name, target_commitish }'
+                -q '{ html_url, tag_name, target_commitish }'
             )
             if [ "$(jq -r .tag_name <<< "$updated")" = "$tag" ] &&
                 [ "$(jq -r .target_commitish <<< "$updated")" = "$GITHUB_SHA" ]; then
+              html_url=$(jq -r .html_url <<< "$updated")
+              echo "untagged-tag=${html_url##*/}" >> "$GITHUB_OUTPUT"
               exit 0
             fi
             echo 'tag_name was not set. retrying' >&2
@@ -520,6 +519,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  prerelease:
+    needs: [config, create_draft_release, set_tag_name, download_test]
+    if: fromJson(needs.config.outputs.deploy)
+    runs-on: ubuntu-latest
+    steps:
       - name: Create the tag
         run: |
           tag=$VERSION
@@ -546,8 +550,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   download_test:
-    needs: [config, create_draft_release, build_and_deploy]
+    needs: [config, set_tag_name]
     if: fromJson(needs.config.outputs.deploy)
     uses: ./.github/workflows/download_test.yml
     with:
-      version: ${{ needs.create_draft_release.outputs.untagged-tag }}
+      version: ${{ needs.set_tag_name.outputs.untagged-tag }}
