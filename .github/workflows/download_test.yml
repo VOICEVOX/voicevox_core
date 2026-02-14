@@ -7,19 +7,17 @@ on:
         description: "テスト対象のコアのバージョン。無指定時はprerelease込みの最新release。"
         type: string
         required: false
-  # 新しいビルドができるまで、このworkflowが壊れて動かないことを許容する
-  # https://github.com/VOICEVOX/voicevox_core/issues/741#issuecomment-1935303742
-  #push:
-  #  branches:
-  #    - main
-  #pull_request:
-  #  paths:
-  #    - "Cargo.*"
-  #    - "crates/downloader/**"
-  #    - rust-toolchain
-  #    - ".cargo/config.toml" # 今のところは未使用ではあるが、Rustを利用するワークフローとして統一しておく。
-  #    - ".github/actions/rust-toolchain-from-file/**"
-  #    - ".github/workflows/download_test.yml"
+  push:
+    branches:
+      - main
+  pull_request:
+    paths:
+      - "Cargo.*"
+      - "crates/downloader/**"
+      - rust-toolchain
+      - ".cargo/config.toml" # 今のところは未使用ではあるが、Rustを利用するワークフローとして統一しておく。
+      - ".github/actions/rust-toolchain-from-file/**"
+      - ".github/workflows/download_test.yml"
 
 env:
   VERSION: ${{ inputs.version || 'prerelease-latest' }}
@@ -160,7 +158,7 @@ jobs:
             curl -sSf --retry 3 --retry-delay 5 https://api.github.com/repos/VOICEVOX/voicevox_core/releases \
               -H 'authorization: Bearer ${{ github.token }}' \
               -H 'content-type: application/json' |
-            jq -er '.[0].tag_name'
+            jq -er 'map(select(.draft | not)) | .[0].tag_name'
           )
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
       - name: Execute download command
