@@ -211,7 +211,7 @@ jobs:
 
           html_url=$(jq -r .html_url <<< "$release")
 
-          echo "release=$(jq '{ .upload_url, .id }' <<< "$release")" >> "$GITHUB_OUTPUT"
+          echo "release=$(jq '{ upload_url, id }' <<< "$release")" >> "$GITHUB_OUTPUT"
           echo "untagged-tag=${html_url##*/}" >> "$GITHUB_OUTPUT"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
