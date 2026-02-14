@@ -503,7 +503,7 @@ jobs:
             )
             if [ "$(jq -r .tag_name <<< "$updated")" = "$tag" ] &&
                 [ "$(jq -r .target_commitish <<< "$updated")" = "$GITHUB_SHA" ]; then
-              exit
+              exit 0
             fi
             echo 'tag_name was not set. retrying' >&2
             sleep 1
