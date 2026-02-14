@@ -173,6 +173,8 @@ jobs:
     outputs:
       # `deploy`がtrueなら、GitHub REST APIの`Release`オブジェクトの一部。falseならnull。
       release: ${{ steps.create-draft-release.outputs.release || 'null' }}
+      # `deploy`がtrueなら、GitHub REST APIの`Release`オブジェクトの仮タグ名。falseならnull。
+      untagged-tag: ${{ steps.create-draft-release.outputs.untagged-tag || 'null' }}
     steps:
       - name: Confirm that the tag does not exist at the moment
         run: |
@@ -204,9 +206,13 @@ jobs:
               -f "target_commitish=$GITHUB_SHA" \
               -f "name=$VERSION" \
               -F draft=true \
-              -q '{ upload_url, id }'
+              -q '{ html_url, upload_url, id }'
           )
-          echo "release=$release" >> "$GITHUB_OUTPUT"
+
+          html_url=$(jq -r .html_url <<< "$release")
+
+          echo "release=$(jq '{ .upload_url, .id }' <<< "$release")" >> "$GITHUB_OUTPUT"
+          echo "untagged-tag=${html_url##*/}" >> "$GITHUB_OUTPUT"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -480,7 +486,7 @@ jobs:
       code_signing: ${{ inputs.code_signing }}
 
   prerelease:
-    needs: [config, create_draft_release, build_and_deploy, build_xcframework, build_java_package, build_and_deploy_downloader]
+    needs: [config, create_draft_release, build_and_deploy, build_xcframework, build_java_package, build_and_deploy_downloader, download_test]
     if: fromJson(needs.config.outputs.deploy)
     runs-on: ubuntu-latest
     steps:
@@ -540,8 +546,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   download_test:
-    needs: [config, create_draft_release, prerelease]
+    needs: [config, create_draft_release, build_and_deploy]
     if: fromJson(needs.config.outputs.deploy)
     uses: ./.github/workflows/download_test.yml
     with:
-      version: ${{ inputs.version }}
+      version: ${{ needs.create_draft_release.outputs.untagged-tag }}
