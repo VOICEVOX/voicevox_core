@@ -21,7 +21,7 @@ on:
 
 env:
   VERSION: ${{ inputs.version || 'prerelease-latest' }}
-  USE_RELEASED_DOWNLOADER: ${{ github.event_name == 'workflow_call' }}
+  USE_RELEASED_DOWNLOADER: ${{ !!inputs.version }}
 
 defaults:
   run:
