@@ -37,7 +37,7 @@ jobs:
         include:
           - name: 通常ダウンロード
             os: windows-latest
-            additional_args: # バージョン指定のために -- が必要
+            additional_args: ''
             download_dir: voicevox_core
             check_items: |
               c_api/lib/voicevox_core.dll
