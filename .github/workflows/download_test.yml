@@ -150,7 +150,9 @@ jobs:
     name: ${{ matrix.name }}-${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
+        if: '!fromJson(env.USE_RELEASED_DOWNLOADER)'
       - name: Set up Rust
+        if: '!fromJson(env.USE_RELEASED_DOWNLOADER)'
         uses: ./.github/actions/rust-toolchain-from-file
       - name: Get prerelease latest version
         if: ${{ env.VERSION == 'prerelease-latest' }}
@@ -187,7 +189,7 @@ jobs:
                 echo "::error title=Execute download command::Unexpected runner: ($RUNNER_OS, $RUNNER_ARCH)"
                 exit 1
             esac
-            gh release download "$VERSION" -p $downloader_name
+            gh release -R "$GITHUB_REPOSITORY" download "$VERSION" -p $downloader_name
             ./$downloader_name "${opts[@]}"
           else
             cargo run -v -p downloader -- "${opts[@]}"
