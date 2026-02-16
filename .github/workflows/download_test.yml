@@ -173,8 +173,8 @@ jobs:
             --c-api-repo "$GITHUB_REPOSITORY"
             --onnxruntime-version voicevox_onnxruntime-1.17.3
             --models-version 0.16.0
-            ${{ matrix.additional_opts }}
           )
+          opts+=(${{ matrix.additional_opts }})
 
           echo y | if [ "$USE_RELEASED_DOWNLOADER" = true ]; then
             case "$RUNNER_OS,$RUNNER_ARCH" in
