@@ -37,7 +37,7 @@ jobs:
         include:
           - name: 通常ダウンロード
             os: windows-latest
-            additional_args: ''
+            additional_opts: ''
             download_dir: voicevox_core
             check_items: |
               c_api/lib/voicevox_core.dll
@@ -50,7 +50,7 @@ jobs:
               additional_libraries/
           - name: CpuArch指定
             os: windows-latest
-            additional_args: --cpu-arch x86
+            additional_opts: --cpu-arch x86
             download_dir: voicevox_core
             check_items: |
               c_api/lib/voicevox_core.dll
@@ -61,7 +61,7 @@ jobs:
               additional_libraries/
           - name: output先指定ダウンロード
             os: windows-latest
-            additional_args: -o other_output
+            additional_opts: -o other_output
             download_dir: other_output
             check_items: |
               c_api/lib/voicevox_core.dll
@@ -72,7 +72,7 @@ jobs:
               additional_libraries/
           - name: Min option確認
             os: windows-latest
-            additional_args: --min
+            additional_opts: --min
             download_dir: voicevox_core
             check_items: |
               c_api/lib/voicevox_core.dll
@@ -84,7 +84,7 @@ jobs:
               dict/
           - name: DirectML option確認
             os: windows-latest
-            additional_args: --devices directml
+            additional_opts: --devices directml
             download_dir: voicevox_core
             check_items: |
               c_api/lib/voicevox_core.dll
@@ -102,7 +102,7 @@ jobs:
               additional_libraries/*curand*
           - name: DirectMLかつMin option確認
             os: windows-latest
-            additional_args: --devices directml --min
+            additional_opts: --devices directml --min
             download_dir: voicevox_core
             check_items: |
               c_api/README.txt
@@ -114,7 +114,7 @@ jobs:
               dict/
           - name: cuda option確認
             os: windows-latest
-            additional_args: --devices cuda
+            additional_opts: --devices cuda
             download_dir: voicevox_core
             check_items: |
               c_api/lib/voicevox_core.dll
@@ -136,7 +136,7 @@ jobs:
               additional_libraries/*directml*
           - name: cudaかつmin option確認
             os: windows-latest
-            additional_args: --devices cuda --min
+            additional_opts: --devices cuda --min
             download_dir: voicevox_core
             check_items: |
               c_api/lib/voicevox_core.dll
@@ -173,7 +173,7 @@ jobs:
             --c-api-repo "$GITHUB_REPOSITORY"
             --onnxruntime-version voicevox_onnxruntime-1.17.3
             --models-version 0.16.0
-            ${{ matrix.additional_args }}
+            ${{ matrix.additional_opts }}
           )
 
           echo y | if [ "$USE_RELEASED_DOWNLOADER" = true ]; then
