@@ -190,6 +190,7 @@ jobs:
                 exit 1
             esac
             gh release -R "$GITHUB_REPOSITORY" download "$VERSION" -p $downloader_name
+            chmod u+x ./$downloader_name
             ./$downloader_name "${opts[@]}"
           else
             cargo run -v -p downloader -- "${opts[@]}"
