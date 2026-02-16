@@ -168,9 +168,14 @@ jobs:
         # `"y"`を流し込むことで「利用規約への同意」を行う
         # (この際`echo y`ではなく`yes`を使うと謎の要因により無言で異常終了する)
         run: |
-          common_opts='--c-api-version ${{ env.VERSION }} --c-api-repo ${{ github.repository }} --onnxruntime-version voicevox_onnxruntime-1.17.3 --models-version 0.16.0'
+          opts=(
+            --c-api-version "$VERSION"
+            --c-api-repo "$GITHUB_REPOSITORY"
+            --onnxruntime-version voicevox_onnxruntime-1.17.3
+            --models-version 0.16.0
+            ${{ matrix.additional_args }}
+          )
 
-          # shellcheck disable=SC2086
           echo y | if [ "$USE_RELEASED_DOWNLOADER" = true ]; then
             case "$RUNNER_OS,$RUNNER_ARCH" in
               Windows,X64) downloader_name=download-windows-x64.exe ;;
@@ -183,9 +188,9 @@ jobs:
                 exit 1
             esac
             gh release download "$VERSION" -p $downloader_name
-            ./$downloader_name $common_opts ${{ matrix.additional_args }}
+            ./$downloader_name "${opts[@]}"
           else
-            cargo run -v -p downloader -- $common_opts ${{ matrix.additional_args }}
+            cargo run -v -p downloader -- "${opts[@]}"
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
