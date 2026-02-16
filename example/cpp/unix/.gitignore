@@ -9,5 +9,6 @@ voicevox_core.h
 open_jtalk_dic_utf_8-*
 
 # executable
+song
 talk
 voicevox_core/
