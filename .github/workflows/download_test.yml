@@ -184,7 +184,7 @@ jobs:
               macOS,X64) downloader_name=x86_64-apple-darwin ;;
               macOS,ARM64) downloader_name=aarch64-apple-darwin ;;
               *)
-                echo "::error title=Execute download command::No downloader for ($RUNNER_OS, $RUNNER_ARCH)"
+                echo "::error title=Execute download command::Unexpected runner: ($RUNNER_OS, $RUNNER_ARCH)"
                 exit 1
             esac
             gh release download "$VERSION" -p $downloader_name
