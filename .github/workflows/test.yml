@@ -23,6 +23,14 @@ defaults:
     shell: bash
 
 jobs:
+  config:
+    runs-on: ubuntu-slim
+    outputs:
+      is-simple-test: ${{ github.ref != 'refs/heads/main' && github.event_name != 'workflow_dispatch' }}
+    steps:
+      - name: NOP
+        run: ':'
+
   shellcheck:
     runs-on: ubuntu-22.04
     steps:
@@ -140,6 +148,7 @@ jobs:
         run: RUST_BACKTRACE=full cargo test --doc -v
 
   rust-integration-test-strategy-matrix: # 実行対象の条件をフィルタリングする
+    needs: config
     runs-on: ubuntu-latest
     outputs:
       includes: ${{ steps.strategy-matrix.outputs.includes }}
@@ -158,7 +167,7 @@ jobs:
           ]'
 
           # FIXME: composite action に切り出す
-          is_simple_test=${{ github.ref != 'refs/heads/main' && github.event_name != 'workflow_dispatch' }}
+          is_simple_test=${{ needs.config.outputs.is-simple-test }}
           if [ $is_simple_test = true ]; then
             includes=$(echo "$includes" | jq -c '[.[] | select(.can_skip_in_simple_test == false)]')
           fi
