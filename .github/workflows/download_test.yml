@@ -19,9 +19,6 @@ on:
       - ".github/actions/rust-toolchain-from-file/**"
       - ".github/workflows/download_test.yml"
 
-env:
-  VERSION: ${{ inputs.version || 'prerelease-latest' }}
-
 defaults:
   run:
     shell: bash
@@ -29,7 +26,16 @@ defaults:
 # TODO: テスト内容がv0.14当時の考え方を引きずっているので、今のダウンローダーに合うように再考する。
 
 jobs:
+  config:
+    runs-on: ubuntu-slim
+    outputs:
+      version: ${{ inputs.version || 'prerelease-latest' }}
+    steps:
+      - name: NOP
+        run: ':'
+
   download-releases:
+    needs: config
     strategy:
       fail-fast: false
       matrix:
@@ -151,16 +157,18 @@ jobs:
       - uses: actions/checkout@v5
       - name: Set up Rust
         uses: ./.github/actions/rust-toolchain-from-file
-      - name: Get prerelease latest version
-        if: ${{ env.VERSION == 'prerelease-latest' }}
+      - name: Determine version
         run: |
-          VERSION=$(
-            curl -sSf --retry 3 --retry-delay 5 https://api.github.com/repos/VOICEVOX/voicevox_core/releases \
-              -H 'authorization: Bearer ${{ github.token }}' \
-              -H 'content-type: application/json' |
-            jq -er 'map(select(.draft | not)) | .[0].tag_name'
-          )
-          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          version=${{ needs.config.outputs.version }}
+          if [ "$version" = prerelease-latest ]; then
+            version=$(
+              curl -sSf --retry 3 --retry-delay 5 https://api.github.com/repos/VOICEVOX/voicevox_core/releases \
+                -H 'authorization: Bearer ${{ github.token }}' \
+                -H 'content-type: application/json' |
+              jq -er 'map(select(.draft | not)) | .[0].tag_name'
+            )
+          fi
+          echo "VERSION=$version" >> "$GITHUB_ENV"
       - name: Execute download command
         # TODO: `voicevox_onnxruntime-1.17.3`のprerelease指定を外したら`--onnxruntime-version`はlatest指定にする
         # TODO: voicevox_vvm 0.16.0のprerelease指定を外したら`--models-version`の指定をやめる

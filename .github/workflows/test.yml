@@ -17,8 +17,6 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  # 簡易テストとするかどうか。mainブランチとworkflow_dispatch以外は簡易テストとする
-  IS_SIMPLE_TEST: ${{ github.ref != 'refs/heads/main' && github.event_name != 'workflow_dispatch' }}
 
 defaults:
   run:
@@ -160,7 +158,8 @@ jobs:
           ]'
 
           # FIXME: composite action に切り出す
-          if ${{ env.IS_SIMPLE_TEST }}; then
+          is_simple_test=${{ github.ref != 'refs/heads/main' && github.event_name != 'workflow_dispatch' }}
+          if [ $is_simple_test = true ]; then
             includes=$(echo "$includes" | jq -c '[.[] | select(.can_skip_in_simple_test == false)]')
           fi
           includes=$(echo "$includes" | jq -c '[.[] | del(.can_skip_in_simple_test)]')
