@@ -191,10 +191,10 @@ jobs:
           echo y | if [ $use_released_downloader = true ]; then
             case "$RUNNER_OS,$RUNNER_ARCH" in
               Windows,X64) downloader_name=download-windows-x64.exe ;;
-              Linux,X64) downloader_name=x86_64-unknown-linux-gnu ;;
-              Linux,ARM64) downloader_name=aarch64-unknown-linux-gnu ;;
-              macOS,X64) downloader_name=x86_64-apple-darwin ;;
-              macOS,ARM64) downloader_name=aarch64-apple-darwin ;;
+              Linux,X64) downloader_name=download-linux-x64 ;;
+              Linux,ARM64) downloader_name=download-linux-arm64 ;;
+              macOS,X64) downloader_name=download-osx-x64 ;;
+              macOS,ARM64) downloader_name=download-osx-arm64 ;;
               *)
                 echo "::error title=Execute download command::Unexpected runner: ($RUNNER_OS, $RUNNER_ARCH)"
                 exit 1
