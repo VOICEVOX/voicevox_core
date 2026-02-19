@@ -156,9 +156,9 @@ jobs:
     name: ${{ matrix.name }}-${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
-        if: '!needs.config.outputs.use-released-downloader'
+        if: '!fromJson(needs.config.outputs.use-released-downloader)'
       - name: Set up Rust
-        if: '!needs.config.outputs.use-released-downloader'
+        if: '!fromJson(needs.config.outputs.use-released-downloader)'
         uses: ./.github/actions/rust-toolchain-from-file
       - name: Determine version
         run: |
