@@ -495,6 +495,7 @@ jobs:
       upload_url: ${{ fromJson(needs.create_draft_release.outputs.release).upload_url }}
       version: ${{ needs.config.outputs.version }}
       code_signing: ${{ inputs.code_signing }}
+    secrets: inherit
 
   prerelease:
     needs: [config, create_draft_release, build_and_deploy, build_xcframework, build_java_package, build_and_deploy_downloader]
