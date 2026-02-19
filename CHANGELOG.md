@@ -51,7 +51,9 @@
 [@phenylshima]: https://github.com/phenylshima
 -->
 
-## [0.16.4] - 2026-02-20 (+09:00)
+## [0.16.4] - 2026-02-19 (+09:00)
+
+主な変更点とその解説については、[GitHub Releaseの本文](https://github.com/VOICEVOX/voicevox_core/releases/tag/0.16.4)をご覧ください。
 
 ### Added
 
