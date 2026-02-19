@@ -19,10 +19,6 @@ on:
       - ".github/actions/rust-toolchain-from-file/**"
       - ".github/workflows/download_test.yml"
 
-env:
-  VERSION: ${{ inputs.version || 'prerelease-latest' }}
-  USE_RELEASED_DOWNLOADER: ${{ !!inputs.version }}
-
 defaults:
   run:
     shell: bash
@@ -30,7 +26,17 @@ defaults:
 # TODO: テスト内容がv0.14当時の考え方を引きずっているので、今のダウンローダーに合うように再考する。
 
 jobs:
+  config:
+    runs-on: ubuntu-slim
+    outputs:
+      version: ${{ inputs.version || 'prerelease-latest' }}
+      use-released-downloader: ${{ !!inputs.version }}
+    steps:
+      - name: NOP
+        run: ':'
+
   download-releases:
+    needs: config
     strategy:
       fail-fast: false
       matrix:
@@ -150,26 +156,30 @@ jobs:
     name: ${{ matrix.name }}-${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
-        if: '!fromJson(env.USE_RELEASED_DOWNLOADER)'
+        if: '!needs.config.outputs.use-released-downloader'
       - name: Set up Rust
-        if: '!fromJson(env.USE_RELEASED_DOWNLOADER)'
+        if: '!needs.config.outputs.use-released-downloader'
         uses: ./.github/actions/rust-toolchain-from-file
-      - name: Get prerelease latest version
-        if: ${{ env.VERSION == 'prerelease-latest' }}
+      - name: Determine version
         run: |
-          VERSION=$(
-            curl -sSf --retry 3 --retry-delay 5 https://api.github.com/repos/VOICEVOX/voicevox_core/releases \
-              -H 'authorization: Bearer ${{ github.token }}' \
-              -H 'content-type: application/json' |
-            jq -er 'map(select(.draft | not)) | .[0].tag_name'
-          )
-          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          version=${{ needs.config.outputs.version }}
+          if [ "$version" = prerelease-latest ]; then
+            version=$(
+              curl -sSf --retry 3 --retry-delay 5 https://api.github.com/repos/VOICEVOX/voicevox_core/releases \
+                -H 'authorization: Bearer ${{ github.token }}' \
+                -H 'content-type: application/json' |
+              jq -er 'map(select(.draft | not)) | .[0].tag_name'
+            )
+          fi
+          echo "VERSION=$version" >> "$GITHUB_ENV"
       - name: Execute download command
         # TODO: `voicevox_onnxruntime-1.17.3`のprerelease指定を外したら`--onnxruntime-version`はlatest指定にする
         # TODO: voicevox_vvm 0.16.0のprerelease指定を外したら`--models-version`の指定をやめる
         # `"y"`を流し込むことで「利用規約への同意」を行う
         # (この際`echo y`ではなく`yes`を使うと謎の要因により無言で異常終了する)
         run: |
+          use_released_downloader=${{ needs.config.outputs.use-released-downloader }}
+
           opts=(
             --c-api-version "$VERSION"
             --c-api-repo "$GITHUB_REPOSITORY"
@@ -178,7 +188,7 @@ jobs:
           )
           opts+=(${{ matrix.additional_opts }})
 
-          echo y | if [ "$USE_RELEASED_DOWNLOADER" = true ]; then
+          echo y | if [ $use_released_downloader = true ]; then
             case "$RUNNER_OS,$RUNNER_ARCH" in
               Windows,X64) downloader_name=download-windows-x64.exe ;;
               Linux,X64) downloader_name=x86_64-unknown-linux-gnu ;;
