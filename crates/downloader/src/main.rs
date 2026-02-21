@@ -562,6 +562,10 @@ async fn main() -> anyhow::Result<()> {
             if os == Os::Ios {
                 unreachable!("should have been denied beforehand");
             }
+            let cpu_arch = match (os, cpu_arch) {
+                (Os::Android, CpuArch::X64) => "x86_64",
+                _ => &cpu_arch.to_string(),
+            };
             Ok(format!("{C_API_LIB_NAME}-{os}-{cpu_arch}-{tag}.zip"))
         })
     }))
