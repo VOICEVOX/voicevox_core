@@ -400,6 +400,8 @@ enum Os {
     Windows,
     Linux,
     Osx,
+    Android,
+    Ios,
 }
 
 impl Os {
@@ -408,6 +410,8 @@ impl Os {
             "windows" => Some(Self::Windows),
             "linux" => Some(Self::Linux),
             "macos" => Some(Self::Osx),
+            "android" => Some(Self::Android),
+            "ios" => Some(Self::Ios),
             _ => None,
         }
     }
@@ -482,6 +486,13 @@ async fn main() -> anyhow::Result<()> {
         DownloadTarget::value_variants().iter().copied().collect()
     };
 
+    if os == Os::Ios && targets.contains(&DownloadTarget::CApi) {
+        bail!(
+            "`--os ios`の場合、`c-api`をダウンロード対象に含めることはできません。\
+            `--only <TARGET>...`または`--exclude <TARGET>...`で`c-api`をダウンロード対象から\
+            除外してください",
+        );
+    }
     if !targets.contains(&DownloadTarget::CApi) {
         if c_api_version != "latest" {
             warn!(
@@ -548,6 +559,9 @@ async fn main() -> anyhow::Result<()> {
 
     let c_api = OptionFuture::from(targets.contains(&DownloadTarget::CApi).then(|| {
         find_gh_asset(octocrab, &c_api_repo, &c_api_version, |tag, _| {
+            if os == Os::Ios {
+                unreachable!("should have been denied beforehand");
+            }
             Ok(format!("{C_API_LIB_NAME}-{os}-{cpu_arch}-{tag}.zip"))
         })
     }))
@@ -857,6 +871,8 @@ fn find_onnxruntime(
                     Os::Windows => "Windows",
                     Os::Linux => "Linux",
                     Os::Osx => "macOS",
+                    Os::Android => "Android",
+                    Os::Ios => "iOS",
                 }
                 && spec_cpu_arch
                     == match cpu_arch {
