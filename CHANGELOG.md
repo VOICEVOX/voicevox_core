@@ -51,6 +51,10 @@
 [@phenylshima]: https://github.com/phenylshima
 -->
 
+### Added
+
+- \[ダウンローダー\] `--os`オプションで`android`と`ios`を指定できるようになります。ただしiOSの`c-api`をダウンロードすることはできません ([#1313])。
+
 ## [0.16.4] - 2026-02-19 (+09:00)
 
 主な変更点とその解説については、[GitHub Releaseの本文](https://github.com/VOICEVOX/voicevox_core/releases/tag/0.16.4)をご覧ください。
@@ -1462,6 +1466,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1291]: https://github.com/VOICEVOX/voicevox_core/pull/1291
 [#1295]: https://github.com/VOICEVOX/voicevox_core/pull/1295
 [#1304]: https://github.com/VOICEVOX/voicevox_core/pull/1304
+[#1313]: https://github.com/VOICEVOX/voicevox_core/pull/1313
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
