@@ -29,7 +29,7 @@ use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use indoc::{formatdoc, indoc};
 use itertools::Itertools as _;
 use octocrab::{
-    Octocrab, Page,
+    Octocrab,
     models::{
         AssetId,
         repos::{Asset, Release},
@@ -825,7 +825,7 @@ async fn find_gh_asset(
         let releases = repos.releases();
         match git_tag_or_latest {
             "latest" => releases.get_latest().await?,
-            tag => releases.find_by_tag(tag, allow_draft_env).await?,
+            tag => releases.find_by_tag(tag, allow_draft_env, octocrab).await?,
         }
     };
 
@@ -1075,6 +1075,7 @@ impl ReleasesHandler<'_, '_> {
         &self,
         tag: &str,
         allow_draft_env: Option<&'static str>,
+        octocrab: &Octocrab,
     ) -> anyhow::Result<Release> {
         match self.get_by_tag(tag).await {
             Ok(release) => Ok(release),
@@ -1085,23 +1086,21 @@ impl ReleasesHandler<'_, '_> {
                         octocrab::Error::GitHub { source, .. } if source.status_code == 404
                     ) =>
             {
-                let mut candidates = vec![];
-                for i in 1u32.. {
-                    const PER_PAGE: u8 = 100;
-                    let Page { items, next, .. } =
-                        self.list().per_page(PER_PAGE).page(i).send().await?;
-                    candidates.extend(
-                        items
-                            .into_iter()
-                            .filter(|Release { tag_name, .. }| tag_name == tag),
-                    );
-                    if next.is_none() {
-                        break;
-                    }
-                }
-                match candidates.into_iter().exactly_one() {
+                const PER_PAGE: u8 = 100;
+                match self
+                    .list()
+                    .per_page(PER_PAGE)
+                    .send()
+                    .await?
+                    .into_stream(octocrab)
+                    .try_filter(|Release { tag_name, .. }| future::ready(tag_name == tag))
+                    .try_collect::<Vec<_>>()
+                    .await?
+                    .into_iter()
+                    .exactly_one()
+                {
                     Ok(release) => Ok(release),
-                    Err(err) => match err.count() {
+                    Err(err) => match err.len() {
                         0 => bail!("no releases found for `{tag}`"),
                         _ => bail!("multiple releases found for `{tag}`"),
                     },
