@@ -1,5 +1,5 @@
 plugins {
-    id 'org.jetbrains.kotlin.jvm' version '1.8.20'
+    id 'org.jetbrains.kotlin.jvm' version '2.3.10'
 
     id 'application'
 
@@ -16,7 +16,7 @@ dependencies {
     testImplementation 'org.jetbrains.kotlin:kotlin-test-junit5'
 
     // Use the JUnit 5 integration.
-    testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.11.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-engine:6.0.3'
 
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
@@ -29,7 +29,7 @@ dependencies {
     // https://mvnrepository.com/artifact/jakarta.validation/jakarta.validation-api
     implementation group: 'jakarta.validation', name: 'jakarta.validation-api', version: "3.1.0"
     // https://mvnrepository.com/artifact/jakarta.annotation/jakarta.annotation-api
-    implementation group: 'jakarta.annotation', name: 'jakarta.annotation-api', version: "2.1.1"
+    implementation group: 'jakarta.annotation', name: 'jakarta.annotation-api', version: "3.0.0"
     implementation group: 'com.microsoft.onnxruntime', name: 'onnxruntime', version: "1.19.2"
 }
 

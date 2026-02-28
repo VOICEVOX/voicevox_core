@@ -1,7 +1,7 @@
 plugins {
-    id 'com.android.library' version '8.7.0'
+    id 'com.android.library' version '9.0.1'
     id 'maven-publish'
-    id 'org.jetbrains.kotlin.android' version '1.9.10'
+    id 'org.jetbrains.kotlin.android' version '2.3.10'
 }
 
 version = gradle.ext.version
@@ -13,7 +13,7 @@ repositories {
 
 dependencies {
     // Use JUnit Jupiter for testing.
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter:6.0.3'
 
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 

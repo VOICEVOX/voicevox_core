@@ -155,7 +155,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.name }}-${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         if: '!fromJson(needs.config.outputs.use-released-downloader)'
       - name: Set up Rust
         if: '!fromJson(needs.config.outputs.use-released-downloader)'
