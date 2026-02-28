@@ -236,7 +236,7 @@ jobs:
     env:
       ASSET_NAME: voicevox_core-${{ matrix.artifact_name }}-${{ needs.config.outputs.version }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       # NOTE: PyO3の制約で、RustのターゲットとPythonのビット数を一致させる必要がある。
       # https://github.com/PyO3/pyo3/blob/v0.27.1/pyo3-ffi/build.rs#L138-L143
       - name: Determine Python interpreter architecture
@@ -332,7 +332,7 @@ jobs:
           ESIGNERCKA_TOTP_SECRET: ${{ secrets.ESIGNERCKA_TOTP_SECRET }}
       - name: Upload artifact to build XCFramework
         if: matrix.c_release_format == 'ios-xcframework'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: voicevox_core-${{ matrix.target }}
           path: artifact/${{ env.ASSET_NAME }}
@@ -354,7 +354,7 @@ jobs:
           files: ${{ steps.build-voicevox-core-python-api.outputs.whl }}
       - name: Upload voicevox_core_java_api artifact
         if: matrix.java
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: voicevox_core_java_api-${{ matrix.artifact_name }}
           path: java_artifact
@@ -369,16 +369,16 @@ jobs:
       IOS_AARCH64_PATH: artifact/voicevox_core-aarch64-apple-ios
       ASSET_NAME: voicevox_core-ios-xcframework-cpu-${{ needs.config.outputs.version }}
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/download-artifact@v5
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v8
         with:
           name: voicevox_core-x86_64-apple-ios
           path: ${{ env.IOS_X86_64_PATH }}
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v8
         with:
           name: voicevox_core-aarch64-apple-ios-sim
           path: ${{ env.IOS_AARCH64_SIM_PATH }}
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v8
         with:
           name: voicevox_core-aarch64-apple-ios
           path: ${{ env.IOS_AARCH64_PATH }}
@@ -405,7 +405,7 @@ jobs:
     if: ${{ needs.config.outputs.mode == 'deploy' || needs.config.outputs.mode == 'full-test' }}
     needs: [config, create_draft_release, build_and_deploy]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Set up Rust
         uses: ./.github/actions/rust-toolchain-from-file
       - name: Set up Java
@@ -421,7 +421,7 @@ jobs:
         run: cargo set-version ${{ needs.config.outputs.version }} -p voicevox_core_java_api
 
       - name: "Download artifact"
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           pattern: voicevox_core_java_api-*
           path: artifacts/
