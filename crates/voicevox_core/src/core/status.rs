@@ -176,6 +176,15 @@ impl<R: InferenceRuntime> LoadedModels<R> {
         ) = self
             .0
             .iter()
+            .filter(
+                |(
+                    _,
+                    LoadedModel {
+                        session_sets_with_inner_ids,
+                        ..
+                    },
+                )| D::visit(session_sets_with_inner_ids).is_some(),
+            )
             .find(|(_, LoadedModel { metas, .. })| {
                 metas
                     .iter()
