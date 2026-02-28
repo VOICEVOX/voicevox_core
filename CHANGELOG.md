@@ -54,6 +54,7 @@
 ### Added
 
 - \[ダウンローダー\] `--os`オプションで`android`と`ios`を指定できるようになります。ただしiOSの`c-api`をダウンロードすることはできません ([#1313])。
+- \[ダウンローダー\] 環境変数`VV_DOWNLOADER_C_API_ALLOW_DRAFT`を設定することで、`c-api`のdraft releaseを`--c-api-version`で指定できるようになります。主な用途はこのvoicevox\_coreリポジトリでの内部利用です ([#1315])。
 
 ## [0.16.4] - 2026-02-19 (+09:00)
 
@@ -1467,6 +1468,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1295]: https://github.com/VOICEVOX/voicevox_core/pull/1295
 [#1304]: https://github.com/VOICEVOX/voicevox_core/pull/1304
 [#1313]: https://github.com/VOICEVOX/voicevox_core/pull/1313
+[#1315]: https://github.com/VOICEVOX/voicevox_core/pull/1315
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
