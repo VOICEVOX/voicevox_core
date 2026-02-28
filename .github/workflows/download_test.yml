@@ -210,7 +210,7 @@ jobs:
       - name: Check downloaded version
         run: |
           [ -e "${{ matrix.download_dir }}/c_api/VERSION" ]
-          [ "$(cat "${{ matrix.download_dir }}/c_api/VERSION")" = "${{ env.VERSION }}" ]
+          [ "$(< "${{ matrix.download_dir }}/c_api/VERSION")" = "${{ env.VERSION }}" ]
       - name: Check downloaded files
         run: |
           mapfile -t items < <(echo -n '${{ matrix.check_items }}')
