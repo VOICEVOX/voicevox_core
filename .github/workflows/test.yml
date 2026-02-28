@@ -189,6 +189,11 @@ jobs:
           python-version: "3.10"
       - name: Set up Rust
         uses: ./.github/actions/rust-toolchain-from-file
+      - name: Cache ONNX Runtime
+        if: runner.os == 'macOS' || runner.os == 'Linux'
+        uses: ./.github/actions/cache-onnxruntime
+        with:
+          key: cargo-integration-test-ort-${{ matrix.os }}-${{ hashFiles('Cargo.lock') }}
       - uses: Swatinem/rust-cache@v2
         with:
           key: "cargo-integration-test-cache-${{ matrix.os }}"
