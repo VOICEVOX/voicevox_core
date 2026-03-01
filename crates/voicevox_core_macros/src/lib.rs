@@ -118,9 +118,9 @@ pub fn derive_inference_output_signature(
 /// ↓
 ///
 /// ```
-/// type ManifestDomains = (Option<ManifestDomain<TalkDomain>>,);
-/// //                                            ^^^^^^^^^^
-/// //                                            D ← TalkDomain
+/// type ManifestDomains = (Option<ManifestDomain<<TalkDomain as InferenceDomain>>>,);
+/// //                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/// //                                            D ← <TalkDomain as InferenceDomain>
 /// ```
 #[cfg(not(doctest))]
 #[proc_macro]
