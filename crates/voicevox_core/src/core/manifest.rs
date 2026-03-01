@@ -1,6 +1,6 @@
 use std::{
     collections::BTreeMap,
-    fmt::{self, Display},
+    fmt::{self, Debug, Display},
     sync::Arc,
 };
 
@@ -13,9 +13,9 @@ use serde_with::{serde_as, DisplayFromStr};
 
 use crate::{StyleId, VoiceModelId};
 
-use super::infer::domains::{
-    inference_domain_map_values, ExperimentalTalkOperation, FrameDecodeOperation,
-    InferenceDomainMap, SingingTeacherOperation, TalkOperation,
+use super::infer::{
+    domains::{inference_domain_map_values, InferenceDomainMap},
+    InferenceDomain,
 };
 
 #[derive(Clone, Debug)]
@@ -81,50 +81,15 @@ pub struct Manifest {
     domains: InferenceDomainMap<ManifestDomains>,
 }
 
-pub(super) type ManifestDomains = inference_domain_map_values!(for<D> Option<D::Manifest>);
+pub(super) type ManifestDomains = inference_domain_map_values!(for<D> Option<ManifestDomain<D>>);
 
-// TODO: #825 が終わったら`singing_teacher`と`frame_decode`のやつと統一する
-#[derive(Debug, Index, Deserialize)]
-#[cfg_attr(test, derive(Default))]
-pub(crate) struct TalkManifest {
+#[derive(derive_more::Debug, Index, Deserialize)]
+#[cfg_attr(test, derive(educe::Educe), educe(Default))]
+#[debug(bounds(D::Operation: Debug))]
+pub(crate) struct ManifestDomain<D: InferenceDomain> {
     #[index]
     #[serde(flatten)]
-    filenames: EnumMap<TalkOperation, ModelFile>,
-
-    #[serde(default)]
-    pub(super) style_id_to_inner_voice_id: StyleIdToInnerVoiceId,
-}
-
-// TODO: #825 が終わったら`singing_teacher`と`frame_decode`のやつと統一する
-#[derive(Debug, Index, Deserialize)]
-#[cfg_attr(test, derive(Default))]
-pub(crate) struct ExperimentalTalkManifest {
-    #[index]
-    #[serde(flatten)]
-    filenames: EnumMap<ExperimentalTalkOperation, ModelFile>,
-
-    #[serde(default)]
-    pub(super) style_id_to_inner_voice_id: StyleIdToInnerVoiceId,
-}
-
-#[derive(Debug, Index, Deserialize)]
-#[cfg_attr(test, derive(Default))]
-pub(crate) struct SingingTeacherManifest {
-    #[index]
-    #[serde(flatten)]
-    filenames: EnumMap<SingingTeacherOperation, ModelFile>,
-
-    #[serde(default)]
-    pub(super) style_id_to_inner_voice_id: StyleIdToInnerVoiceId,
-}
-
-// TODO: #825 が終わったら`singing_teacher`と`frame_decode`のやつと統一する
-#[derive(Debug, Index, Deserialize)]
-#[cfg_attr(test, derive(Default))]
-pub(crate) struct FrameDecodeManifest {
-    #[index]
-    #[serde(flatten)]
-    filenames: EnumMap<FrameDecodeOperation, ModelFile>,
+    filenames: EnumMap<D::Operation, ModelFile>,
 
     #[serde(default)]
     pub(super) style_id_to_inner_voice_id: StyleIdToInnerVoiceId,

@@ -34,7 +34,9 @@ use super::{
         },
         InferenceDomain,
     },
-    manifest::{Manifest, ManifestDomains, ModelFile, ModelFileType, StyleIdToInnerVoiceId},
+    manifest::{
+        Manifest, ManifestDomain, ManifestDomains, ModelFile, ModelFileType, StyleIdToInnerVoiceId,
+    },
 };
 
 pub(super) type ModelBytesWithInnerVoiceIdsByDomain = inference_domain_map_values!(
@@ -440,8 +442,9 @@ impl<A: Async> Inner<A> {
     }
 }
 
-type InferenceModelEntries<'manifest> =
-    inference_domain_map_values!(for<D> Option<InferenceModelEntry<D, &'manifest D::Manifest>>);
+type InferenceModelEntries<'manifest> = inference_domain_map_values!(
+    for<D> Option<InferenceModelEntry<D, &'manifest ManifestDomain<D>>>
+);
 
 #[derive(derive_more::Debug)]
 #[debug(bound(D::Operation: Debug))]
@@ -743,13 +746,7 @@ mod tests {
 
     use crate::{CharacterMeta, StyleType};
 
-    use super::super::{
-        infer::domains::InferenceDomainMap,
-        manifest::{
-            ExperimentalTalkManifest, FrameDecodeManifest, ManifestDomains, SingingTeacherManifest,
-            TalkManifest,
-        },
-    };
+    use super::super::{infer::domains::InferenceDomainMap, manifest::ManifestDomains};
 
     #[rstest]
     #[case(
@@ -764,20 +761,20 @@ mod tests {
     )]
     #[case(
         &InferenceDomainMap {
-            talk: Some(TalkManifest::default()),
-            experimental_talk: Some(ExperimentalTalkManifest::default()),
-            singing_teacher: Some(SingingTeacherManifest::default()),
-            frame_decode: Some(FrameDecodeManifest::default()),
+            talk: Some(Default::default()),
+            experimental_talk: Some(Default::default()),
+            singing_teacher: Some(Default::default()),
+            frame_decode: Some(Default::default()),
         },
         &[character(&[StyleType::Talk])],
         Ok(())
     )]
     #[case(
         &InferenceDomainMap {
-            talk: Some(TalkManifest::default()),
-            experimental_talk: Some(ExperimentalTalkManifest::default()),
-            singing_teacher: Some(SingingTeacherManifest::default()),
-            frame_decode: Some(FrameDecodeManifest::default()),
+            talk: Some(Default::default()),
+            experimental_talk: Some(Default::default()),
+            singing_teacher: Some(Default::default()),
+            frame_decode: Some(Default::default()),
         },
         &[character(&[StyleType::Talk, StyleType::Sing])],
         Ok(())
