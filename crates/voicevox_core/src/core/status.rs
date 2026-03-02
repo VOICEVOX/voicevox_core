@@ -513,12 +513,7 @@ mod tests {
     async fn status_is_model_loaded_works() {
         let status = Status::new(
             crate::blocking::Onnxruntime::from_test_util_data().unwrap(),
-            InferenceDomainMap {
-                talk: enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu)),
-                experimental_talk: enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu)),
-                singing_teacher: enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu)),
-                frame_decode: enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu)),
-            },
+            inference_domain_map!(enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu))),
         );
         let vvm = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
         let model_header = vvm.inner().header();
