@@ -112,15 +112,15 @@ pub fn derive_inference_output_signature(
 ///
 /// ```
 /// type ManifestDomains =
-///     (substitute_type!(Option<D::Manifest> where D = TalkDomain as InferenceDomain),);
+///     (substitute_type!(Option<ManifestDomain<D>> where D = TalkDomain as InferenceDomain),);
 /// ```
 ///
 /// ↓
 ///
 /// ```
-/// type ManifestDomains = (Option<<TalkManifest as InferenceDomain>::Manifest>,);
-/// //                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/// //                             T ← <TalkManifest as InferenceDomain>
+/// type ManifestDomains = (Option<ManifestDomain<<TalkDomain as InferenceDomain>>>,);
+/// //                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/// //                                            D ← <TalkDomain as InferenceDomain>
 /// ```
 #[cfg(not(doctest))]
 #[proc_macro]
