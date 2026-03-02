@@ -29,8 +29,8 @@ use crate::{
 use super::{
     infer::{
         domains::{
-            inference_domain_map_values, ExperimentalTalkDomain, FrameDecodeDomain,
-            InferenceDomainMap, SingingTeacherDomain, TalkDomain,
+            inference_domain_map, inference_domain_map_values, ExperimentalTalkDomain,
+            FrameDecodeDomain, InferenceDomainMap, SingingTeacherDomain, TalkDomain,
         },
         InferenceDomain,
     },
@@ -146,88 +146,38 @@ impl<A: Async> Inner<A> {
                 manifest
                     .domains()
                     .each_ref()
-                    .map(InferenceDomainMap {
-                        talk: |talk| {
-                            talk.as_ref()
-                                .map(|manifest| {
-                                    let indices = EnumMap::from_fn(|k| &manifest[k]).try_map(
-                                        |_, ModelFile { filename, .. }| find_entry_index(filename),
-                                    )?;
-                                    Ok(InferenceModelEntry { indices, manifest })
-                                })
-                                .transpose()
-                                .map_err(move |source| {
-                                    error(
-                                        LoadModelErrorKind::ReadZipEntry {
-                                            filename: MANIFEST_FILENAME.to_owned(),
-                                        },
-                                        source,
-                                    )
-                                })
-                        },
-                        experimental_talk: |talk| {
-                            talk.as_ref()
-                                .map(|manifest| {
-                                    let indices = EnumMap::from_fn(|k| &manifest[k]).try_map(
-                                        |_, ModelFile { filename, .. }| find_entry_index(filename),
-                                    )?;
-                                    Ok(InferenceModelEntry { indices, manifest })
-                                })
-                                .transpose()
-                                .map_err(move |source| {
-                                    error(
-                                        LoadModelErrorKind::ReadZipEntry {
-                                            filename: MANIFEST_FILENAME.to_owned(),
-                                        },
-                                        source,
-                                    )
-                                })
-                        },
-                        singing_teacher: |singing_teacher| {
-                            singing_teacher
-                                .as_ref()
-                                .map(|manifest| {
-                                    let indices = EnumMap::from_fn(|k| &manifest[k]).try_map(
-                                        |_, ModelFile { filename, .. }| find_entry_index(filename),
-                                    )?;
-                                    Ok(InferenceModelEntry { indices, manifest })
-                                })
-                                .transpose()
-                                .map_err(move |source| {
-                                    error(
-                                        LoadModelErrorKind::ReadZipEntry {
-                                            filename: MANIFEST_FILENAME.to_owned(),
-                                        },
-                                        source,
-                                    )
-                                })
-                        },
-                        frame_decode: |frame_decode| {
-                            frame_decode
-                                .as_ref()
-                                .map(|manifest| {
-                                    let indices = EnumMap::from_fn(|k| &manifest[k]).try_map(
-                                        |_, ModelFile { filename, .. }| find_entry_index(filename),
-                                    )?;
-                                    Ok(InferenceModelEntry { indices, manifest })
-                                })
-                                .transpose()
-                                .map_err(move |source| {
-                                    error(
-                                        LoadModelErrorKind::ReadZipEntry {
-                                            filename: MANIFEST_FILENAME.to_owned(),
-                                        },
-                                        source,
-                                    )
-                                })
-                        },
-                    })
+                    .map(inference_domain_map!(|manifest| find_entry_indices(
+                        manifest,
+                        find_entry_index,
+                    )))
                     .collect()
-                    .map_err(crate::Error::from)
+                    .map_err(move |source| {
+                        error(
+                            LoadModelErrorKind::ReadZipEntry {
+                                filename: MANIFEST_FILENAME.to_owned(),
+                            },
+                            source,
+                        )
+                        .into()
+                    })
             },
             zip: zip.into_inner().into_inner().into(),
         }
         .try_build();
+
+        fn find_entry_indices<D: InferenceDomain>(
+            manifest: &Option<ManifestDomain<D>>,
+            find_entry_index: impl Fn(&str) -> anyhow::Result<usize>,
+        ) -> anyhow::Result<Option<InferenceModelEntry<'_, D>>> {
+            manifest
+                .as_ref()
+                .map(|manifest| {
+                    let indices = EnumMap::from_fn(|k| &manifest[k])
+                        .try_map(|_, ModelFile { filename, .. }| find_entry_index(filename))?;
+                    Ok(InferenceModelEntry { indices, manifest })
+                })
+                .transpose()
+        }
 
         #[ext]
         impl<K: Enum, V> EnumMap<K, V> {
@@ -301,46 +251,9 @@ impl<A: Async> Inner<A> {
             singing_teacher,
             frame_decode,
         } = self.with_inference_model_entries(|inference_model_entries| {
-            inference_model_entries.each_ref().map(InferenceDomainMap {
-                talk: |talk| {
-                    talk.as_ref()
-                        .map(|InferenceModelEntry { indices, manifest }| {
-                            (
-                                indices.map(|op, i| (i, manifest[op].clone())),
-                                manifest.style_id_to_inner_voice_id.clone(),
-                            )
-                        })
-                },
-                experimental_talk: |talk| {
-                    talk.as_ref()
-                        .map(|InferenceModelEntry { indices, manifest }| {
-                            (
-                                indices.map(|op, i| (i, manifest[op].clone())),
-                                manifest.style_id_to_inner_voice_id.clone(),
-                            )
-                        })
-                },
-                singing_teacher: |singing_teacher| {
-                    singing_teacher
-                        .as_ref()
-                        .map(|InferenceModelEntry { indices, manifest }| {
-                            (
-                                indices.map(|op, i| (i, manifest[op].clone())),
-                                manifest.style_id_to_inner_voice_id.clone(),
-                            )
-                        })
-                },
-                frame_decode: |frame_decode| {
-                    frame_decode
-                        .as_ref()
-                        .map(|InferenceModelEntry { indices, manifest }| {
-                            (
-                                indices.map(|op, i| (i, manifest[op].clone())),
-                                manifest.style_id_to_inner_voice_id.clone(),
-                            )
-                        })
-                },
-            })
+            inference_model_entries
+                .each_ref()
+                .map(inference_domain_map!(|e| e.as_ref().map(Into::into)))
         });
 
         // TODO: Rust 1.85にしたらasync closureに戻す
@@ -442,15 +355,31 @@ impl<A: Async> Inner<A> {
     }
 }
 
-type InferenceModelEntries<'manifest> = inference_domain_map_values!(
-    for<D> Option<InferenceModelEntry<D, &'manifest ManifestDomain<D>>>
-);
+type InferenceModelEntries<'manifest> =
+    inference_domain_map_values!(for<D> Option<InferenceModelEntry<'manifest, D>>);
 
 #[derive(derive_more::Debug)]
 #[debug(bound(D::Operation: Debug))]
-struct InferenceModelEntry<D: InferenceDomain, M> {
+struct InferenceModelEntry<'manifest, D: InferenceDomain> {
     indices: EnumMap<D::Operation, usize>,
-    manifest: M,
+    manifest: &'manifest ManifestDomain<D>,
+}
+
+impl<D> From<&'_ InferenceModelEntry<'_, D>>
+    for (
+        EnumMap<D::Operation, (usize, ModelFile)>,
+        StyleIdToInnerVoiceId,
+    )
+where
+    D: InferenceDomain,
+    <D::Operation as Enum>::Array<usize>: Copy,
+{
+    fn from(InferenceModelEntry { indices, manifest }: &'_ InferenceModelEntry<'_, D>) -> Self {
+        (
+            indices.map(|op, i| (i, manifest[op].clone())),
+            manifest.style_id_to_inner_voice_id.clone(),
+        )
+    }
 }
 
 #[ext]
@@ -746,46 +675,29 @@ mod tests {
 
     use crate::{CharacterMeta, StyleType};
 
-    use super::super::{infer::domains::InferenceDomainMap, manifest::ManifestDomains};
+    use super::super::{
+        infer::domains::{inference_domain_map, InferenceDomainMap},
+        manifest::ManifestDomains,
+    };
 
     #[rstest]
     #[case(
-        &InferenceDomainMap {
-            talk: None,
-            experimental_talk: None,
-            singing_teacher: None,
-            frame_decode: None,
-        },
+        &inference_domain_map!(None),
         &[],
         Ok(())
     )]
     #[case(
-        &InferenceDomainMap {
-            talk: Some(Default::default()),
-            experimental_talk: Some(Default::default()),
-            singing_teacher: Some(Default::default()),
-            frame_decode: Some(Default::default()),
-        },
+        &inference_domain_map!(Some(Default::default())),
         &[character(&[StyleType::Talk])],
         Ok(())
     )]
     #[case(
-        &InferenceDomainMap {
-            talk: Some(Default::default()),
-            experimental_talk: Some(Default::default()),
-            singing_teacher: Some(Default::default()),
-            frame_decode: Some(Default::default()),
-        },
+        &inference_domain_map!(Some(Default::default())),
         &[character(&[StyleType::Talk, StyleType::Sing])],
         Ok(())
     )]
     #[case(
-        &InferenceDomainMap {
-            talk: None,
-            experimental_talk: None,
-            singing_teacher: None,
-            frame_decode: None,
-        },
+        &inference_domain_map!(None),
         &[character(&[StyleType::Talk])],
         Err(())
     )]
