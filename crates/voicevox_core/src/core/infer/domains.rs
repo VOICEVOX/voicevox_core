@@ -129,6 +129,18 @@ where
     }
 }
 
+macro_rules! inference_domain_map {
+    ($elem:expr $(,)?) => {
+        crate::core::infer::domains::InferenceDomainMap {
+            talk: $elem,
+            experimental_talk: $elem,
+            singing_teacher: $elem,
+            frame_decode: $elem,
+        }
+    };
+}
+pub(crate) use inference_domain_map;
+
 pub(crate) trait InferenceDomainMapValues {
     type Talk;
     type ExperimentalTalk;

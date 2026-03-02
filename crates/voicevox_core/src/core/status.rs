@@ -426,8 +426,8 @@ mod tests {
             devices::{DeviceSpec, GpuSpec},
             infer::{
                 domains::{
-                    ExperimentalTalkOperation, FrameDecodeOperation, InferenceDomainMap,
-                    SingingTeacherOperation, TalkOperation,
+                    inference_domain_map, ExperimentalTalkOperation, FrameDecodeOperation,
+                    InferenceDomainMap, SingingTeacherOperation, TalkOperation,
                 },
                 InferenceSessionOptions,
             },
@@ -499,12 +499,7 @@ mod tests {
     async fn status_load_model_works() {
         let status = Status::new(
             crate::blocking::Onnxruntime::from_test_util_data().unwrap(),
-            InferenceDomainMap {
-                talk: enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu)),
-                experimental_talk: enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu)),
-                singing_teacher: enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu)),
-                frame_decode: enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu)),
-            },
+            inference_domain_map!(enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu))),
         );
         let model = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
         let model_contents = &model.inner().read_inference_models().await.unwrap();
