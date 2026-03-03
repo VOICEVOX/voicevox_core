@@ -56,6 +56,9 @@ const DEFAULT_ONNXRUNTIME_BUILDER_REPO: &str = "VOICEVOX/onnxruntime-builder";
 const DEFAULT_ADDITIONAL_LIBRARIES_REPO: &str = "VOICEVOX/voicevox_additional_libraries";
 const DEFAULT_MODELS_REPO: &str = "VOICEVOX/voicevox_vvm";
 
+/// この環境変数が`1`のとき、`c_api_version`でdraft releaseを指定できるようにする。
+///
+/// draft releaseを探すときは`c_api_version`で指定した`tag_name`でルックアップする。
 const C_API_ALLOW_DRAFT_ENV: &str = "VV_DOWNLOADER_C_API_ALLOW_DRAFT";
 
 const ONNXRUNTIME_TERMS_NAME: &str = "VOICEVOX ONNX Runtime 利用規約";
