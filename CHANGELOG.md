@@ -33,11 +33,13 @@
 - fix compat breaking: revive workaround padding in decode() ([#867])
 - feat!: `render`の引数の範囲指定部分を各言語の慣習に合わせる ([#879])
 - feat!: decode.onnxを復活させる ([#918])
+- [#1319]
 
 [#854]: https://github.com/VOICEVOX/voicevox_core/pull/854
 [#864]: https://github.com/VOICEVOX/voicevox_core/pull/864
 [#867]: https://github.com/VOICEVOX/voicevox_core/pull/867
 [#879]: https://github.com/VOICEVOX/voicevox_core/pull/879
+[#1319]: https://github.com/VOICEVOX/voicevox_core/pull/1319
 
 ### もし`TextAnalyzer`機能を充実させた場合
 
@@ -53,7 +55,16 @@
 
 ### Added
 
-- ソング機能が追加されます ([#531], [#732], [#738], [#761], [#895], [#896], [#894], [#1217], [#1236], [#1073], [#1242], [#1250], [#1252], [#1247], [#1253], [#1244], [#1257], [#1255], [#1260], [#1245], [#1246], [#1280], [#1285], [#1279])。
+- \[ダウンローダー\] `--os`オプションで`android`と`ios`を指定できるようになります。ただしiOSの`c-api`をダウンロードすることはできません ([#1313])。
+- \[ダウンローダー\] 環境変数`VV_DOWNLOADER_C_API_ALLOW_DRAFT`を設定することで、`c-api`のdraft releaseを`--c-api-version`で指定できるようになります。主な用途はこのvoicevox\_coreリポジトリでの内部利用です ([#1315])。
+
+## [0.16.4] - 2026-02-19 (+09:00)
+
+主な変更点とその解説については、[GitHub Releaseの本文](https://github.com/VOICEVOX/voicevox_core/releases/tag/0.16.4)をご覧ください。
+
+### Added
+
+- ソング機能が追加されます ([#531], [#732], [#738], [#761], [#895], [#896], [#894], [#1217], [#1236], [#1073], [#1242], [#1250], [#1252], [#1247], [#1253], [#1244], [#1257], [#1255], [#1260], [#1245], [#1246], [#1280], [#1285], [#1279], [#1304])。
 - ドキュメントが改善されます。
     - [バージョン0.16.3](#0163---2025-12-08-0900)で導入された、`AudioQuery`/`AccentPhrase`/`Mora`のバリデーション機能に関するドキュメンテーションがよりわかりやすくなります ([#1251])。
     - \[Python,Java\] 一部のドキュメントの文体が改善されます ([#1238])。
@@ -1057,7 +1068,8 @@ Windows版ダウンローダーのビルドに失敗しています。
 
 - \[Python\] モジュールに`__all__`が適切に設定されます ([#415])。
 
-[Unreleased]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.3...HEAD
+[Unreleased]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.4...HEAD
+[0.16.4]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.3...0.16.4
 [0.16.3]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.2...0.16.3
 [0.16.2]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.1...0.16.2
 [0.16.1]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.0...0.16.1
@@ -1456,6 +1468,9 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1285]: https://github.com/VOICEVOX/voicevox_core/pull/1285
 [#1291]: https://github.com/VOICEVOX/voicevox_core/pull/1291
 [#1295]: https://github.com/VOICEVOX/voicevox_core/pull/1295
+[#1304]: https://github.com/VOICEVOX/voicevox_core/pull/1304
+[#1313]: https://github.com/VOICEVOX/voicevox_core/pull/1313
+[#1315]: https://github.com/VOICEVOX/voicevox_core/pull/1315
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 

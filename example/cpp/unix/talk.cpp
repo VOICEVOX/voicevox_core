@@ -17,7 +17,7 @@
 
 int main(int argc, char *argv[]) {
   if (argc != 2) {
-    std::cout << "使い方: ./simple_tts <文章>" << std::endl;
+    std::cout << "使い方: ./talk <文章>" << std::endl;
     return 0;
   }
 

@@ -34,7 +34,7 @@ use octocrab::{
         AssetId,
         repos::{Asset, Release},
     },
-    repos::RepoHandler,
+    repos::{ReleasesHandler, RepoHandler},
 };
 use rayon::iter::{IntoParallelIterator as _, ParallelIterator as _};
 use semver::{Version, VersionReq};
@@ -55,6 +55,11 @@ const DEFAULT_C_API_REPO: &str = "VOICEVOX/voicevox_core";
 const DEFAULT_ONNXRUNTIME_BUILDER_REPO: &str = "VOICEVOX/onnxruntime-builder";
 const DEFAULT_ADDITIONAL_LIBRARIES_REPO: &str = "VOICEVOX/voicevox_additional_libraries";
 const DEFAULT_MODELS_REPO: &str = "VOICEVOX/voicevox_vvm";
+
+/// この環境変数が`1`のとき、`c_api_version`でdraft releaseを指定できるようにする。
+///
+/// draft releaseを探すときは`c_api_version`で指定した`tag_name`でルックアップする。
+const C_API_ALLOW_DRAFT_ENV: &str = "VV_DOWNLOADER_C_API_ALLOW_DRAFT";
 
 const ONNXRUNTIME_TERMS_NAME: &str = "VOICEVOX ONNX Runtime 利用規約";
 
@@ -400,6 +405,8 @@ enum Os {
     Windows,
     Linux,
     Osx,
+    Android,
+    Ios,
 }
 
 impl Os {
@@ -408,6 +415,8 @@ impl Os {
             "windows" => Some(Self::Windows),
             "linux" => Some(Self::Linux),
             "macos" => Some(Self::Osx),
+            "android" => Some(Self::Android),
+            "ios" => Some(Self::Ios),
             _ => None,
         }
     }
@@ -482,6 +491,13 @@ async fn main() -> anyhow::Result<()> {
         DownloadTarget::value_variants().iter().copied().collect()
     };
 
+    if os == Os::Ios && targets.contains(&DownloadTarget::CApi) {
+        bail!(
+            "`--os ios`の場合、`c-api`をダウンロード対象に含めることはできません。\
+            `--only <TARGET>...`または`--exclude <TARGET>...`で`c-api`をダウンロード対象から\
+            除外してください",
+        );
+    }
     if !targets.contains(&DownloadTarget::CApi) {
         if c_api_version != "latest" {
             warn!(
@@ -547,9 +563,22 @@ async fn main() -> anyhow::Result<()> {
     let octocrab = &octocrab()?;
 
     let c_api = OptionFuture::from(targets.contains(&DownloadTarget::CApi).then(|| {
-        find_gh_asset(octocrab, &c_api_repo, &c_api_version, |tag, _| {
-            Ok(format!("{C_API_LIB_NAME}-{os}-{cpu_arch}-{tag}.zip"))
-        })
+        find_gh_asset(
+            octocrab,
+            &c_api_repo,
+            &c_api_version,
+            Some(C_API_ALLOW_DRAFT_ENV),
+            |tag, _| {
+                if os == Os::Ios {
+                    unreachable!("should have been denied beforehand");
+                }
+                let cpu_arch = match (os, cpu_arch) {
+                    (Os::Android, CpuArch::X64) => "x86_64",
+                    _ => &cpu_arch.to_string(),
+                };
+                Ok(format!("{C_API_LIB_NAME}-{os}-{cpu_arch}-{tag}.zip"))
+            },
+        )
     }))
     .await
     .transpose()?;
@@ -560,6 +589,7 @@ async fn main() -> anyhow::Result<()> {
                 octocrab,
                 &onnxruntime_builder_repo,
                 &onnxruntime_version,
+                None,
                 |_, body| {
                     let body = body.with_context(|| "リリースノートがありません")?;
                     find_onnxruntime(body, os, cpu_arch, &devices)
@@ -585,6 +615,7 @@ async fn main() -> anyhow::Result<()> {
             octocrab,
             &OPEN_JTALK_DIC_REPO,
             OPEN_JTALK_DIC_TAG,
+            None,
             |_, _| Ok(OPEN_JTALK_DIC_FILE.to_owned()),
         )
     }))
@@ -616,6 +647,7 @@ async fn main() -> anyhow::Result<()> {
                 octocrab,
                 &additional_libraries_repo,
                 &additional_libraries_version,
+                None,
                 move |_, _| {
                     Ok({
                         let device = match device {
@@ -779,6 +811,7 @@ async fn find_gh_asset(
     octocrab: &Arc<Octocrab>,
     repo: &RepoName,
     git_tag_or_latest: &str,
+    allow_draft_env: Option<&'static str>,
     asset_name: impl FnOnce(
         &str,         // タグ名
         Option<&str>, // リリースノートの内容
@@ -794,9 +827,9 @@ async fn find_gh_asset(
         let repos = octocrab.repos(&repo.owner, &repo.repo);
         let releases = repos.releases();
         match git_tag_or_latest {
-            "latest" => releases.get_latest().await,
-            tag => releases.get_by_tag(tag).await,
-        }?
+            "latest" => releases.get_latest().await?,
+            tag => releases.find_by_tag(tag, allow_draft_env, octocrab).await?,
+        }
     };
 
     let asset_name = asset_name(&tag_name, body.as_deref()).with_context(|| {
@@ -857,6 +890,8 @@ fn find_onnxruntime(
                     Os::Windows => "Windows",
                     Os::Linux => "Linux",
                     Os::Osx => "macOS",
+                    Os::Android => "Android",
+                    Os::Ios => "iOS",
                 }
                 && spec_cpu_arch
                     == match cpu_arch {
@@ -1033,6 +1068,48 @@ async fn find_models(
             let content = String::from_utf8(content)
                 .with_context(|| format!("`{}` is not valid UTF-8", asset.name))?;
             validate_models_readme_or_terms_txt(content)
+        }
+    }
+}
+
+#[ext]
+impl ReleasesHandler<'_, '_> {
+    async fn find_by_tag(
+        &self,
+        tag: &str,
+        allow_draft_env: Option<&'static str>,
+        octocrab: &Octocrab,
+    ) -> anyhow::Result<Release> {
+        match self.get_by_tag(tag).await {
+            Ok(release) => Ok(release),
+            Err(err)
+                if allow_draft_env.is_some_and(|key| env::var(key).as_deref() == Ok("1"))
+                    && matches!(
+                        &err,
+                        octocrab::Error::GitHub { source, .. } if source.status_code == 404
+                    ) =>
+            {
+                const PER_PAGE: u8 = 100;
+                match self
+                    .list()
+                    .per_page(PER_PAGE)
+                    .send()
+                    .await?
+                    .into_stream(octocrab)
+                    .try_filter(|Release { tag_name, .. }| future::ready(tag_name == tag))
+                    .try_collect::<Vec<_>>()
+                    .await?
+                    .into_iter()
+                    .exactly_one()
+                {
+                    Ok(release) => Ok(release),
+                    Err(err) => match err.len() {
+                        0 => bail!("no releases found for `{tag}`"),
+                        _ => bail!("multiple releases found for `{tag}`"),
+                    },
+                }
+            }
+            Err(err) => Err(err.into()),
         }
     }
 }

@@ -8,15 +8,13 @@ use serde::Deserialize;
 use crate::StyleType;
 
 use super::super::{
-    super::manifest::ExperimentalTalkManifest, InferenceDomain, InferenceInputSignature as _,
-    InferenceOutputSignature as _, OutputTensor,
+    InferenceDomain, InferenceInputSignature as _, InferenceOutputSignature as _, OutputTensor,
 };
 
 pub(crate) enum ExperimentalTalkDomain {}
 
 impl InferenceDomain for ExperimentalTalkDomain {
     type Operation = ExperimentalTalkOperation;
-    type Manifest = ExperimentalTalkManifest;
 
     fn style_types() -> &'static BTreeSet<StyleType> {
         static STYLE_TYPES: LazyLock<BTreeSet<StyleType>> =

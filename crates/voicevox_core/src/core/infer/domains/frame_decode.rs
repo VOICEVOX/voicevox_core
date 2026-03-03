@@ -8,15 +8,13 @@ use serde::Deserialize;
 use crate::StyleType;
 
 use super::super::{
-    super::manifest::FrameDecodeManifest, InferenceDomain, InferenceInputSignature as _,
-    InferenceOutputSignature as _, OutputTensor,
+    InferenceDomain, InferenceInputSignature as _, InferenceOutputSignature as _, OutputTensor,
 };
 
 pub(crate) enum FrameDecodeDomain {}
 
 impl InferenceDomain for FrameDecodeDomain {
     type Operation = FrameDecodeOperation;
-    type Manifest = FrameDecodeManifest;
 
     fn style_types() -> &'static BTreeSet<StyleType> {
         static STYLE_TYPES: LazyLock<BTreeSet<StyleType>> =

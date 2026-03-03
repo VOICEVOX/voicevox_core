@@ -29,16 +29,21 @@ on:
     branches:
       - main
 
-env:
-  # workflow_callでのバージョン名か、'0.0.0'が入る
-  VERSION: ${{ inputs.version || '0.0.0' }}
-
 defaults:
   run:
     shell: bash
 
 jobs:
+  config:
+    runs-on: ubuntu-slim
+    outputs:
+      version: ${{ inputs.version || '0.0.0' }}
+    steps:
+      - name: NOP
+        run: ':'
+
   build_and_deploy_downloader:
+    needs: config
     environment: ${{ inputs.code_signing && 'code_signing' || '' }} # コード署名用のenvironment
     strategy:
       matrix:
@@ -89,7 +94,7 @@ jobs:
         run: cargo install cargo-edit@^0.13 -v --locked
 
       - name: Set version
-        run: cargo set-version "$VERSION" --exclude voicevox_core_python_api --exclude xtask
+        run: cargo set-version ${{ needs.config.outputs.version }} --exclude voicevox_core_python_api --exclude xtask
 
       - name: Build downloader
         run: cargo build -v --release -p downloader --target ${{ matrix.target }}
