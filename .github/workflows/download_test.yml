@@ -206,6 +206,7 @@ jobs:
             cargo run -v -p downloader -- "${opts[@]}"
           fi
         env:
+          VV_DOWNLOADER_C_API_ALLOW_DRAFT: 1
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Check downloaded version
         run: |
