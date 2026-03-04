@@ -3,13 +3,6 @@
 # 2. build_and_deploy等: 各成果物をdraft releaseにアップロード
 # 3. set_tag_name: draft releaseに`tag_name`を設定
 # 4. download_test: draft releaseにアップロードしたダウンローダーとC APIバイナリに対してテスト
-#
-# 3.が何らかの要因で失敗した場合、人間が手で対応してもよい（may）。
-# 4.が失敗する場合、リリース成果物やダウンローダーの機能に問題がないと考えるのなら失敗を許容して5.に進んでもよい。
-#
-# その後、人間が手動で次のことを行う。
-# 5. 前回のリリースを参考にしてdraft releaseの本文を埋める
-# 6. draft releaseのdraftを解除
 
 name: build and deploy workflow
 
