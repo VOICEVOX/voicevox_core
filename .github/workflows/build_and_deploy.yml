@@ -534,7 +534,7 @@ jobs:
             sleep 1
           done
 
-          echo "::error title=set_tag_name::Could not set 'tag_name'. Please proceed the release process manually"
+          echo "::error title=set_tag_name::Could not set 'tag_name'. Please set manually"
           exit 1
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
