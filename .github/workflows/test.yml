@@ -109,8 +109,8 @@ jobs:
       - run: cargo clippy -v --features load-onnxruntime -- -D clippy::all -D warnings --no-deps
       - run: cargo clippy -v -p voicevox_core -p voicevox_core_c_api --features link-onnxruntime --tests -- -D clippy::all -D warnings --no-deps
       - run: cargo clippy -v -p voicevox_core -p voicevox_core_c_api --features link-onnxruntime -- -D clippy::all -D warnings --no-deps
-      - run: cargo +${{ steps.msrv-for-rust-api.outputs.rust-version }} clippy -vp voicevox_core -p --features load-onnxruntime -- -D clippy::all -D warnings --no-deps
-      - run: cargo +${{ steps.msrv-for-rust-api.outputs.rust-version }} clippy -vp voicevox_core -p --features link-onnxruntime -- -D clippy::all -D warnings --no-deps
+      - run: cargo +${{ steps.msrv-for-rust-api.outputs.rust-version }} clippy -vp voicevox_core --features load-onnxruntime -- -D clippy::all -D warnings --no-deps
+      - run: cargo +${{ steps.msrv-for-rust-api.outputs.rust-version }} clippy -vp voicevox_core --features link-onnxruntime -- -D clippy::all -D warnings --no-deps
       - run: cargo fmt -- --check
 
   rust-unit-test:
