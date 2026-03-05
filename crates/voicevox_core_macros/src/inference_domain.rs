@@ -1,8 +1,8 @@
 use indexmap::IndexMap;
 use quote::quote;
 use syn::{
-    parse::{Parse, ParseStream},
     DeriveInput, ItemType, Type,
+    parse::{Parse, ParseStream},
 };
 
 pub(crate) fn derive_inference_operation(

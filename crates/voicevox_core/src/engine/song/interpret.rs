@@ -5,7 +5,7 @@ use ndarray::Array1;
 use typeshare::U53;
 
 use crate::{
-    collections::NonEmptySlice, numerics::U53Ext as _, FrameAudioQuery, FramePhoneme, NoteId,
+    FrameAudioQuery, FramePhoneme, NoteId, collections::NonEmptySlice, numerics::U53Ext as _,
 };
 
 use super::{
@@ -13,7 +13,7 @@ use super::{
         acoustic_feature_extractor::{OptionalConsonant, PhonemeCode},
         ndarray::IteratorExt as _,
     },
-    validate::{note_seq::ValidatedNoteSeq, Lyric, PauOrKeyAndLyric, ValidatedNote},
+    validate::{Lyric, PauOrKeyAndLyric, ValidatedNote, note_seq::ValidatedNoteSeq},
 };
 
 /// 子音長と音符長から音素長を計算する。

@@ -12,8 +12,8 @@ use serde::de::DeserializeOwned;
 use thiserror::Error;
 
 use crate::{
-    asyncs::{Async, BlockingThreadPool, SingleTasked},
     StyleType, SupportedDevices,
+    asyncs::{Async, BlockingThreadPool, SingleTasked},
 };
 
 use super::{

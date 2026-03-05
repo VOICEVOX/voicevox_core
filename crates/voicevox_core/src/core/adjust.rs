@@ -4,6 +4,6 @@ mod post;
 mod pre;
 
 pub(crate) use self::{
-    post::{ensure_minimum_phoneme_length, Array1ExtForPostProcess, ArrayExt},
-    pre::{pad_decoder_feature, Array1ExtForPreProcess},
+    post::{Array1ExtForPostProcess, ArrayExt, ensure_minimum_phoneme_length},
+    pre::{Array1ExtForPreProcess, pad_decoder_feature},
 };

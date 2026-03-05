@@ -22,10 +22,10 @@ use duplicate::duplicate_item;
 use ndarray::{Array, Dimension};
 use ort::{
     execution_providers::{
-        cuda::CuDNNConvAlgorithmSearch, CPUExecutionProvider, CUDAExecutionProvider,
-        DirectMLExecutionProvider, ExecutionProvider as _,
+        CPUExecutionProvider, CUDAExecutionProvider, DirectMLExecutionProvider,
+        ExecutionProvider as _, cuda::CuDNNConvAlgorithmSearch,
     },
-    session::{builder::GraphOptimizationLevel, RunOptions},
+    session::{RunOptions, builder::GraphOptimizationLevel},
     tensor::{PrimitiveTensorElementType, TensorElementType},
     value::ValueType,
 };
@@ -344,9 +344,9 @@ fn extract_outputs(
 
 pub(crate) mod blocking {
     use ort::EnvHandle;
-    use ref_cast::{ref_cast_custom, RefCastCustom};
+    use ref_cast::{RefCastCustom, ref_cast_custom};
 
-    use crate::{error::ErrorRepr, SupportedDevices};
+    use crate::{SupportedDevices, error::ErrorRepr};
 
     use super::super::super::InferenceRuntime;
 
@@ -537,7 +537,7 @@ pub(crate) mod blocking {
 }
 
 pub(crate) mod nonblocking {
-    use ref_cast::{ref_cast_custom, RefCastCustom};
+    use ref_cast::{RefCastCustom, ref_cast_custom};
 
     use crate::SupportedDevices;
 

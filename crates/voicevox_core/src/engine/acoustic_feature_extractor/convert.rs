@@ -1,19 +1,19 @@
 use std::{fmt, str::FromStr};
 
-use bytemuck::{checked::CheckedCastError, Contiguous as _};
+use bytemuck::{Contiguous as _, checked::CheckedCastError};
 use duplicate::duplicate_item;
 use pastey::paste;
 use serde::{
-    de::{self, Deserializer, Unexpected},
     Deserialize,
+    de::{self, Deserializer, Unexpected},
 };
 use strum::EnumCount as _;
 
 use crate::error::{ErrorRepr, InvalidQueryError, InvalidQueryErrorSource};
 
 use super::{
-    sil::Sil, Consonant, MoraTail, NonConsonant, NonPauBaseVowel, OptionalConsonant, Phoneme,
-    PhonemeCode,
+    Consonant, MoraTail, NonConsonant, NonPauBaseVowel, OptionalConsonant, Phoneme, PhonemeCode,
+    sil::Sil,
 };
 
 macro_rules! optional_consonant {

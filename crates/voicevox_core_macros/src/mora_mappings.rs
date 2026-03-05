@@ -1,10 +1,9 @@
 use derive_syn_parse::Parse;
 use quote::quote;
 use syn::{
-    braced,
+    Attribute, DeriveInput, Expr, ItemStatic, LitStr, Token, braced,
     parse::{Parse, ParseStream},
     spanned::Spanned as _,
-    Attribute, DeriveInput, Expr, ItemStatic, LitStr, Token,
 };
 
 pub(crate) fn derive_mora_mappings(input: &DeriveInput) -> syn::Result<proc_macro2::TokenStream> {

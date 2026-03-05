@@ -109,24 +109,10 @@ jobs:
       - run: cargo clippy -v --features load-onnxruntime -- -D clippy::all -D warnings --no-deps
       - run: cargo clippy -v -p voicevox_core -p voicevox_core_c_api --features link-onnxruntime --tests -- -D clippy::all -D warnings --no-deps
       - run: cargo clippy -v -p voicevox_core -p voicevox_core_c_api --features link-onnxruntime -- -D clippy::all -D warnings --no-deps
-      - name: Do `cargo check` the Rust API with its MSRV
-        run: |
-          # TODO: MSRVが1.85以上になれば、このようなことをせずともワークスペース上で直接`cargo check`できる
-          lockfile=$(realpath ./Cargo.lock)
-          rust_api=$(cygpath -wa ./crates/voicevox_core)
-          mkdir /tmp/use-rust-api
-          cd "$_"
-          rustup override set ${{ steps.msrv-for-rust-api.outputs.rust-version }}
-          cargo init
-          cp "$lockfile" ./Cargo.lock
-          {
-            printf "voicevox_core = { path = '%s', features = ['load-onnxruntime'] }\n" "$rust_api"
-            echo 'base64ct = "=1.6.0"'
-            echo 'time = "=0.3.45"'
-          } >> ./Cargo.toml
-          cargo check
-          sed -i 's/load-onnxruntime/link-onnxruntime/' ./Cargo.toml
-          cargo check
+      - run: cargo +${{ steps.msrv-for-rust-api.outputs.rust-version }} clippy -vp voicevox_core -p --features load-onnxruntime --tests -- -D clippy::all -D warnings --no-deps
+      - run: cargo +${{ steps.msrv-for-rust-api.outputs.rust-version }} clippy -vp voicevox_core -p --features load-onnxruntime -- -D clippy::all -D warnings --no-deps
+      - run: cargo +${{ steps.msrv-for-rust-api.outputs.rust-version }} clippy -vp voicevox_core -p --features link-onnxruntime --tests -- -D clippy::all -D warnings --no-deps
+      - run: cargo +${{ steps.msrv-for-rust-api.outputs.rust-version }} clippy -vp voicevox_core -p --features link-onnxruntime -- -D clippy::all -D warnings --no-deps
       - run: cargo fmt -- --check
 
   rust-unit-test:
