@@ -95,7 +95,6 @@ jobs:
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ steps.msrv-for-rust-api.outputs.rust-version }}
-          components: clippy
       - name: Set up Rust (for rest packages)
         uses: ./.github/actions/rust-toolchain-from-file
         with:
@@ -109,8 +108,8 @@ jobs:
       - run: cargo clippy -v --features load-onnxruntime -- -D clippy::all -D warnings --no-deps
       - run: cargo clippy -v -p voicevox_core -p voicevox_core_c_api --features link-onnxruntime --tests -- -D clippy::all -D warnings --no-deps
       - run: cargo clippy -v -p voicevox_core -p voicevox_core_c_api --features link-onnxruntime -- -D clippy::all -D warnings --no-deps
-      - run: cargo +${{ steps.msrv-for-rust-api.outputs.rust-version }} clippy -vp voicevox_core --features load-onnxruntime -- -D clippy::all -D warnings --no-deps
-      - run: cargo +${{ steps.msrv-for-rust-api.outputs.rust-version }} clippy -vp voicevox_core --features link-onnxruntime -- -D clippy::all -D warnings --no-deps
+      - run: cargo +${{ steps.msrv-for-rust-api.outputs.rust-version }} check -vp voicevox_core --features load-onnxruntime
+      - run: cargo +${{ steps.msrv-for-rust-api.outputs.rust-version }} check -vp voicevox_core --features link-onnxruntime
       - run: cargo fmt -- --check
 
   rust-unit-test:
