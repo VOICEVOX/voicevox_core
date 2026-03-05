@@ -1,10 +1,10 @@
 # 処理の流れ
 # 1. create_draft_release: タグなしでdraft releaseを先に作成
-# 2. build_and_deploy等: 各成果物をdraft releaseにアップロード
+# 2. build等: 各成果物をdraft releaseにアップロード
 # 3. set_tag_name: draft releaseに`tag_name`を設定
 # 4. download_test: draft releaseにアップロードしたダウンローダーとC APIバイナリに対してテスト
 
-name: build and deploy workflow
+name: build workflow
 
 on:
   workflow_dispatch:
@@ -226,7 +226,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  build_and_deploy:
+  build:
     needs: [config, create_draft_release]
     environment: ${{ inputs.code_signing && 'code_signing' || '' }} # コード署名用のenvironment
     strategy:
@@ -361,7 +361,7 @@ jobs:
 
   build_xcframework:
     if: ${{ needs.config.outputs.mode == 'deploy' || needs.config.outputs.mode == 'full-test' }}
-    needs: [config, create_draft_release, build_and_deploy]
+    needs: [config, create_draft_release, build]
     runs-on: macos-14
     env:
       IOS_X86_64_PATH: artifact/voicevox_core-x86_64-apple-ios
@@ -403,7 +403,7 @@ jobs:
   build_java_package:
     runs-on: ubuntu-latest
     if: ${{ needs.config.outputs.mode == 'deploy' || needs.config.outputs.mode == 'full-test' }}
-    needs: [config, create_draft_release, build_and_deploy]
+    needs: [config, create_draft_release, build]
     steps:
       - uses: actions/checkout@v5
       - name: Set up Rust
@@ -487,10 +487,10 @@ jobs:
           upload-url: ${{ fromJson(needs.create_draft_release.outputs.release).upload_url }}
           files: /tmp/java_packages.zip
 
-  build_and_deploy_downloader:
+  build_downloader:
     needs: [config, create_draft_release]
     if: needs.config.outputs.mode == 'deploy'
-    uses: ./.github/workflows/build_and_deploy_downloader.yml
+    uses: ./.github/workflows/build-downloader.yml
     with:
       upload_url: ${{ fromJson(needs.create_draft_release.outputs.release).upload_url }}
       version: ${{ needs.config.outputs.version }}
@@ -498,7 +498,7 @@ jobs:
     secrets: inherit
 
   set_tag_name:
-    needs: [config, create_draft_release, build_and_deploy, build_xcframework, build_java_package, build_and_deploy_downloader]
+    needs: [config, create_draft_release, build, build_xcframework, build_java_package, build_downloader]
     if: needs.config.outputs.mode == 'deploy'
     runs-on: ubuntu-latest
     steps:

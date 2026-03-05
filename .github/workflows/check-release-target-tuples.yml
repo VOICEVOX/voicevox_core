@@ -1,4 +1,4 @@
-# deny.tomlの`graph.targets`がbuild and deploy workflowのものと一致しているかを検査する。
+# deny.tomlの`graph.targets`がbuild workflowのものと一致しているかを検査する。
 name: Check release target tuples
 
 on:
@@ -8,7 +8,7 @@ on:
   pull_request:
     paths:
       - .github/workflows/check-release-target-tuples.yml
-      - .github/workflows/build_and_deploy.yml
+      - .github/workflows/build.yml
       - deny.toml
 
 jobs:
@@ -39,7 +39,7 @@ jobs:
             jq -r "$1" <(cat <<< "$json")
           }
 
-          targets=$(jq_r_from_yaml '.jobs.config.steps[] | select(.id == "strategy_matrix").run' ./.github/workflows/build_and_deploy.yml)
+          targets=$(jq_r_from_yaml '.jobs.config.steps[] | select(.id == "strategy_matrix").run' ./.github/workflows/build.yml)
           targets=$(sed -n 's/^ \+"target": \(".*"\),$/\1/p' <<< "$targets")
           targets=$(jq -sr sort[] <<< "$targets")
           [ -n "$targets" ]
