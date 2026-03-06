@@ -24,7 +24,7 @@ on:
       - .cargo/config.toml # 今のところは未使用ではあるが、Rustを利用するワークフローとして統一しておく。
       - .github/actions/rust-toolchain-from-file/**
       - .github/actions/upload-gh-release-assets/**
-      - .github/workflows/build.yml
+      - .github/workflows/build-downloader.yml
   push:
     branches:
       - main
