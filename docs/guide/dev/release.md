@@ -7,8 +7,8 @@
 
 1.において:
 
-- `tag_name`を設定するところが失敗する場合、人間が手で設定することでリリース作業を続行してもよい（may）。
-- `download_test`が失敗する場合、リリース成果物やダウンローダーの機能に問題がないと考えるのなら失敗を許容してリリース作業を続行してもよい（may）。
+- `tag_name`を設定するところが失敗する場合、人間が手で設定することでリリース作業を続行してもよい。
+- `download_test`が失敗する場合、リリース成果物やダウンローダーの機能に問題がないと考えるのなら失敗を許容してリリース作業を続行してもよい。
 
 [`build`ワークフロー]: https://github.com/VOICEVOX/voicevox_core/actions/workflows/build.yml
 [key-changes]: ../user/key-changes
