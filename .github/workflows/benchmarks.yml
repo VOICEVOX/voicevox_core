@@ -43,7 +43,7 @@ jobs:
         run: cargo check -vp test_util
 
       - name: Build
-        run: cargo codspeed build -p voicevox_core --bench benches --features load-onnxruntime -m walltime
+        run: cargo codspeed build -p voicevox_core --bench benches --features buildtime-download-onnxruntime,load-onnxruntime -m walltime
 
       - name: Run the benchmarks
         uses: CodSpeedHQ/action@v4
@@ -84,7 +84,7 @@ jobs:
         working-directory: ./crates/voicevox_core_python_api
         run: |
           poetry install --with dev --with test
-          poetry run maturin develop --locked --profile release -v
+          poetry run maturin develop --locked --profile release -F buildtime-download-onnxruntime -v
 
       - name: Run the benchmarks
         uses: CodSpeedHQ/action@v4

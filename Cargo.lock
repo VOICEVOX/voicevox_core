@@ -5034,6 +5034,7 @@ dependencies = [
  "typeshare",
  "uuid",
  "voicevox-ort",
+ "voicevox_core",
  "voicevox_core_build_features",
  "voicevox_core_macros",
  "windows",
@@ -5781,13 +5782,6 @@ name = "wit-bindgen"
 version = "0.45.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5c573471f125075647d03df72e026074b7203790d41351cd6edc96f46bcccd36"
-
-[[package]]
-name = "workspace-hack"
-version = "0.0.0"
-dependencies = [
- "voicevox_core",
-]
 
 [[package]]
 name = "write16"

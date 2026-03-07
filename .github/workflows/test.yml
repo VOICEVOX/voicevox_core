@@ -77,6 +77,8 @@ jobs:
 
   rust-lint:
     runs-on: windows-latest
+    env:
+      VVCORE_BUILD_DOWNLOAD_AND_COPY_ORT: '0'
     steps:
       - uses: actions/checkout@v5
       - name: Extract Rust API's MSRV
@@ -104,10 +106,18 @@ jobs:
         with:
           python-version: "3.10"
       - uses: Swatinem/rust-cache@v2
+      - run: cargo clippy -vp voicevox_core_build_features
+      - run: cargo clippy -vp voicevox_core_build_features -F download
+      - run: cargo clippy -vp voicevox_core_build_features -F link
+      - run: cargo clippy -vp voicevox_core_build_features -F download,link
       - run: cargo clippy -v --features load-onnxruntime --tests -- -D clippy::all -D warnings --no-deps
       - run: cargo clippy -v --features load-onnxruntime -- -D clippy::all -D warnings --no-deps
       - run: cargo clippy -v -p voicevox_core -p voicevox_core_c_api --features link-onnxruntime --tests -- -D clippy::all -D warnings --no-deps
       - run: cargo clippy -v -p voicevox_core -p voicevox_core_c_api --features link-onnxruntime -- -D clippy::all -D warnings --no-deps
+      - run: cargo +${{ steps.msrv-for-rust-api.outputs.rust-version }} check -vp voicevox_core_build_features
+      - run: cargo +${{ steps.msrv-for-rust-api.outputs.rust-version }} check -vp voicevox_core_build_features -F download
+      - run: cargo +${{ steps.msrv-for-rust-api.outputs.rust-version }} check -vp voicevox_core_build_features -F link
+      - run: cargo +${{ steps.msrv-for-rust-api.outputs.rust-version }} check -vp voicevox_core_build_features -F download,link
       - run: cargo +${{ steps.msrv-for-rust-api.outputs.rust-version }} check -vp voicevox_core --features load-onnxruntime
       - run: cargo +${{ steps.msrv-for-rust-api.outputs.rust-version }} check -vp voicevox_core --features link-onnxruntime
       - run: cargo fmt -- --check
@@ -247,9 +257,6 @@ jobs:
             crates/voicevox_core_c_api/include/voicevox_core.h \
             > example/cpp/unix/voicevox_core/c_api/include/voicevox_core.h
           cp -v target/debug/libvoicevox_core.{so,dylib} example/cpp/unix/voicevox_core/c_api/lib/ || true
-          # FIXME: ↓この二つ要らないのでは？
-          cp -v target/debug/libonnxruntime.so.* example/cpp/unix/voicevox_core/ || true
-          cp -v target/debug/libonnxruntime.*.dylib example/cpp/unix/voicevox_core/ || true
 
       - if: startsWith(matrix.os, 'mac')
         uses: jwlawson/actions-setup-cmake@v2
@@ -331,7 +338,7 @@ jobs:
           poetry install --with dev --with test
       - run: cargo build -p test_util -v # build scriptにより/crates/test_util/data/の生成
       - run: poetry run maturin build --locked
-      - run: poetry run maturin develop --locked
+      - run: poetry run maturin develop -F buildtime-download-onnxruntime --locked
       - name: pytestを実行
         run: poetry run pytest ./python/test/
       - name: Exampleを実行
@@ -384,7 +391,7 @@ jobs:
           # TODO: リポジトリとしてシンボリックリンクを張るか、コピーするべき
           cp ./gradle/wrapper/gradle-wrapper.jar ../../example/kotlin/gradle/wrapper/
 
-          cargo build -p voicevox_core_java_api -v
+          cargo build -p voicevox_core_java_api -F buildtime-download-onnxruntime -v
           cargo build -p test_util -v # build scriptにより/crates/test_util/data/の生成
           mkdir -p "./lib/src/main/resources/dll/$TARGET_NAME"
           cp -v "../../target/debug/$DLL_NAME" "./lib/src/main/resources/dll/$TARGET_NAME/$DLL_NAME"
