@@ -61,6 +61,23 @@
 ### Changed
 
 - \[Rust\] \[BREAKING\] MSRVが1.89.0になります ([#1323])。
+- [#1278]
+    - `ort/{cuda,directml}`フィーチャでEP付きのものがダウンロードできたのができなくなる
+    - ダウンロード場所の変更
+    - `ORT_`系の環境変数が使えなくなる
+    - デフォルトではダウンロードをしなくなる。挙動は環境変数で変える
+    - `Onnxruntime`型の実体の所在が`voicevox_core`側になる
+    - Windowsでsymlinkの作成を試みなくなる
+    - pkgconfigまわり
+        - 特に、`load-onnxruntime`時にダウンロードとコピーが取り止められることがなくなった
+    - default featureとして`buildtime-download-onnxruntime`が追加
+    - ...
+- \[Rust\] 依存ライブラリが変化します ([#1278])。
+    - \[削除\]: `ndarray@0.16`
+    - \[削除\]: `git+https://github.com/VOICEVOX/ort.git?rev=6d69dbd1ddfae713081d844c456be5b8d097e17e#voicevox-ort@2.0.0-rc.10`
+    - \[追加\]: `ndarray@0.17`
+    - \[追加\]: `git+https://github.com/pykeio/ort.git?rev=94417081c47f47f5a7d6a92ce94bb38fda10019f#ort@2.0.0-rc.12`
+    - \[変更\]: `indexmap@2`: `^2.6.0` → `^2.13.0`
 
 ## [0.16.4] - 2026-02-19 (+09:00)
 
@@ -1466,6 +1483,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1269]: https://github.com/VOICEVOX/voicevox_core/pull/1269
 [#1276]: https://github.com/VOICEVOX/voicevox_core/pull/1276
 [#1277]: https://github.com/VOICEVOX/voicevox_core/pull/1277
+[#1278]: https://github.com/VOICEVOX/voicevox_core/pull/1278
 [#1279]: https://github.com/VOICEVOX/voicevox_core/pull/1279
 [#1280]: https://github.com/VOICEVOX/voicevox_core/pull/1280
 [#1283]: https://github.com/VOICEVOX/voicevox_core/pull/1283
