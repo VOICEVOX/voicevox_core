@@ -72,7 +72,9 @@
         - 特に、`load-onnxruntime`時にダウンロードとコピーが取り止められることがなくなった
     - ...
 - \[Rust\] 依存ライブラリが変化します ([#1278])。
-    - TODO
+    - \[削除\]: `git+https://github.com/VOICEVOX/ort.git?rev=6d69dbd1ddfae713081d844c456be5b8d097e17e#voicevox-ort@2.0.0-rc.10`
+    - \[追加\]: TODO: `ort@2.0.0-rc.12`
+    - \[変更\] `indexmap@2`: `^2.6.0` → `^2.13.0`
 
 ## [0.16.4] - 2026-02-19 (+09:00)
 
