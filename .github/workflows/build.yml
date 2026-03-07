@@ -30,10 +30,6 @@ on:
     branches:
       - main
 
-env:
-  VVCORE_BUILD_FORCE_DOWNLOAD_ORT: '0'
-  VVCORE_BUILD_FORCE_COPY_DOWNLOADED_ORT: '0'
-
 defaults:
   run:
     shell: bash
@@ -294,16 +290,24 @@ jobs:
         shell: bash
         run: |
           case ${{ matrix.c_release_format }} in
-            plain-cdylib) linking=load-onnxruntime ;;
-            ios-xcframework) linking=link-onnxruntime ;;
+            plain-cdylib)
+              export VVCORE_BUILD_DOWNLOAD_AND_COPY_ORT=0
+              features=load-onnxruntime ;;
+            ios-xcframework)
+              export VVCORE_BUILD_DOWNLOAD_AND_COPY_ORT=1
+              features=buildtime-download-onnxruntime,link-onnxruntime ;;
           esac
-          cargo build -p voicevox_core_c_api -v --features "$linking" --target ${{ matrix.target }} --profile c-api
+          cargo build -p voicevox_core_c_api -v --features "$features" --target ${{ matrix.target }} --profile c-api
       - name: Build with `link-onnxruntime`
         if: matrix.c_release_format == 'plain-cdylib'
-        run: cargo build -p voicevox_core_c_api -v --features link-onnxruntime --target ${{ matrix.target }}
+        run: cargo build -p voicevox_core_c_api -vF buildtime-download-onnxruntime,link-onnxruntime --target ${{ matrix.target }}
+        env:
+          VVCORE_BUILD_DOWNLOAD_AND_COPY_ORT: '1'
       - name: Test with `link-onnxruntime`
         if: contains(matrix.target, 'windows') || matrix.target == 'aarch64-apple-darwin' || matrix.target == 'x86_64-unknown-linux-gnu'
-        run: cargo test -p voicevox_core --features link-onnxruntime --lib --target ${{ matrix.target }}
+        run: cargo test -p voicevox_core -F buildtime-download-onnxruntime,link-onnxruntime --lib --target ${{ matrix.target }}
+        env:
+          VVCORE_BUILD_DOWNLOAD_AND_COPY_ORT: '1'
       - name: build voicevox_core_python_api
         if: matrix.python_whl
         id: build-voicevox-core-python-api
@@ -314,9 +318,13 @@ jobs:
           (cd crates/voicevox_core_python_api && poetry install --with dev)
           maturin build --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --target ${{ matrix.target }} --release
           echo "whl=$(find ./target/wheels -type f)" >> "$GITHUB_OUTPUT"
+        env:
+          VVCORE_BUILD_DOWNLOAD_AND_COPY_ORT: '0'
       - name: build voicevox_core_java_api
         if: ${{ matrix.java }}
         run: cargo build -p voicevox_core_java_api -vv --target ${{ matrix.target }} --release
+        env:
+          VVCORE_BUILD_DOWNLOAD_AND_COPY_ORT: '0'
       - name: Organize artifact
         run: |
           mkdir -p artifact/${{ env.ASSET_NAME }}/{include,lib}

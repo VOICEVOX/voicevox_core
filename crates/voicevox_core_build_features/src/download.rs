@@ -19,7 +19,7 @@ static TARGET: LazyLock<String> = LazyLock::new(|| env::var("TARGET").unwrap());
 static OUT_DIR: LazyLock<Utf8PathBuf> =
     LazyLock::new(|| env::var("OUT_DIR").expect("`$OUT_DIR` is not UTF-8").into());
 
-pub fn download(add_link_search: bool, copy_libs: bool) -> anyhow::Result<()> {
+pub fn download(add_link_search: bool) -> anyhow::Result<()> {
     let up_to_date = {
         let current_exe_mtime =
             fs_err::metadata(process_path::get_executable_path().unwrap())?.modified()?;
@@ -114,20 +114,18 @@ pub fn download(add_link_search: bool, copy_libs: bool) -> anyhow::Result<()> {
         println!("cargo::rustc-link-search=native={lib_dir}");
     }
 
-    if copy_libs {
-        let dst = OUT_DIR.ancestors().nth(3).unwrap();
-        for dst in [dst, &*dst.join("examples"), &*dst.join("deps")] {
-            // TODO: Rust 1.91なら`std::iter::chain`がある
-            for file_name in itertools::chain([&**lib_versioned_file_name], lib_symlink_file_name) {
-                let dst = &dst.join(file_name);
-                if !up_to_date(dst.as_ref())? {
-                    if dst.is_symlink() {
-                        fs_err::remove_file(dst)?;
-                    }
-                    symlink_or_copy(lib_path, dst)?;
+    let dst = OUT_DIR.ancestors().nth(3).unwrap();
+    for dst in [dst, &*dst.join("examples"), &*dst.join("deps")] {
+        // TODO: Rust 1.91なら`std::iter::chain`がある
+        for file_name in itertools::chain([&**lib_versioned_file_name], lib_symlink_file_name) {
+            let dst = &dst.join(file_name);
+            if !up_to_date(dst.as_ref())? {
+                if dst.is_symlink() {
+                    fs_err::remove_file(dst)?;
                 }
-                println!("cargo::rerun-if-changed={dst}");
+                symlink_or_copy(lib_path, dst)?;
             }
+            println!("cargo::rerun-if-changed={dst}");
         }
     }
     Ok(())

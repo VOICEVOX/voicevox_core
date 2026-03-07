@@ -70,6 +70,7 @@
     - Windowsでsymlinkの作成を試みなくなる
     - pkgconfigまわり
         - 特に、`load-onnxruntime`時にダウンロードとコピーが取り止められることがなくなった
+    - default featureとして`buildtime-download-onnxruntime`が追加
     - ...
 - \[Rust\] 依存ライブラリが変化します ([#1278])。
     - \[削除\]: `git+https://github.com/VOICEVOX/ort.git?rev=6d69dbd1ddfae713081d844c456be5b8d097e17e#voicevox-ort@2.0.0-rc.10`

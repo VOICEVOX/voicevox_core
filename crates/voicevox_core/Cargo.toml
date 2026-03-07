@@ -18,6 +18,7 @@ required-features = ["load-onnxruntime"]
 # rustdocを参照
 [features]
 default = []
+buildtime-download-onnxruntime = ["voicevox_core_build_features/download"]
 load-onnxruntime = ["voicevox-ort/load-dynamic", "dep:libloading"]
 link-onnxruntime = ["voicevox_core_build_features/link"]
 
@@ -81,7 +82,7 @@ test_util.workspace = true
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
 
 [build-dependencies]
-voicevox_core_build_features = { workspace = true, features = ["download"] }
+voicevox_core_build_features.workspace = true
 
 [target."cfg(windows)".dependencies]
 humansize.workspace = true
