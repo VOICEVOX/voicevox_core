@@ -84,7 +84,7 @@ jobs:
         working-directory: ./crates/voicevox_core_python_api
         run: |
           poetry install --with dev --with test
-          poetry run maturin develop --locked --profile release -F buildtime-download-onnxruntime -v
+          poetry run maturin develop --locked --profile release -F voicevox_core/buildtime-download-onnxruntime -v
 
       - name: Run the benchmarks
         uses: CodSpeedHQ/action@v4

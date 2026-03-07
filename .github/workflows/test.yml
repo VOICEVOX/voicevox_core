@@ -338,7 +338,7 @@ jobs:
           poetry install --with dev --with test
       - run: cargo build -p test_util -v # build scriptにより/crates/test_util/data/の生成
       - run: poetry run maturin build --locked
-      - run: poetry run maturin develop -F buildtime-download-onnxruntime --locked
+      - run: poetry run maturin develop -F voicevox_core/buildtime-download-onnxruntime --locked
       - name: pytestを実行
         run: poetry run pytest ./python/test/
       - name: Exampleを実行
@@ -391,7 +391,7 @@ jobs:
           # TODO: リポジトリとしてシンボリックリンクを張るか、コピーするべき
           cp ./gradle/wrapper/gradle-wrapper.jar ../../example/kotlin/gradle/wrapper/
 
-          cargo build -p voicevox_core_java_api -F buildtime-download-onnxruntime -v
+          cargo build -p voicevox_core_java_api -F voicevox_core/buildtime-download-onnxruntime -v
           cargo build -p test_util -v # build scriptにより/crates/test_util/data/の生成
           mkdir -p "./lib/src/main/resources/dll/$TARGET_NAME"
           cp -v "../../target/debug/$DLL_NAME" "./lib/src/main/resources/dll/$TARGET_NAME/$DLL_NAME"

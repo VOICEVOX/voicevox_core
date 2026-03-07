@@ -295,12 +295,12 @@ jobs:
               features=load-onnxruntime ;;
             ios-xcframework)
               export VVCORE_BUILD_DOWNLOAD_AND_COPY_ORT=1
-              features=buildtime-download-onnxruntime,link-onnxruntime ;;
+              features=buildtime-voicevox_core/download-onnxruntime,link-onnxruntime ;;
           esac
           cargo build -p voicevox_core_c_api -v --features "$features" --target ${{ matrix.target }} --profile c-api
       - name: Build with `link-onnxruntime`
         if: matrix.c_release_format == 'plain-cdylib'
-        run: cargo build -p voicevox_core_c_api -vF buildtime-download-onnxruntime,link-onnxruntime --target ${{ matrix.target }}
+        run: cargo build -p voicevox_core_c_api -vF voicevox_core/buildtime-download-onnxruntime,link-onnxruntime --target ${{ matrix.target }}
       - name: Test with `link-onnxruntime`
         if: contains(matrix.target, 'windows') || matrix.target == 'aarch64-apple-darwin' || matrix.target == 'x86_64-unknown-linux-gnu'
         run: cargo test -p voicevox_core -F buildtime-download-onnxruntime,link-onnxruntime --lib --target ${{ matrix.target }}
