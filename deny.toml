@@ -21,6 +21,11 @@ multiple-versions = "allow"
 allow-build-scripts = [
     # FIXME: build/main.rsのような場所に置かれていると駄目なのか、`bypass`からは認識してくれない
 
+    # https://github.com/pykeio/ort/blob/v2.0.0-rc.12/ort-sys/build/main.rs
+    #
+    # This build script does nothing because we enable `disable-linking` feature.
+    { name = "ort-sys", version = "=2.0.0-rc.12" },
+
     # SHA256: b4dd86261a70df757efa53f06ce7543a4dc9c51178b9b023c92069fddee97a29
     { name = "typenum", version = "1" }, # https://docs.rs/crate/typenum/1.15.0/source/build/main.rs
 
@@ -146,11 +151,6 @@ bypass = [
     # system-configuration-sys links System Configuration framework on macOS.
     { name = "system-configuration-sys", version = "0.5", build-script = "cf4c21c898e9671345d4684c75014189623574f9ec96414999a9db2d73b1e40f" },
 
-    # https://github.com/VOICEVOX/ort/blob/da3c9d2645e5aa1cd96c544b53bc83a0deed2751/ort-sys/build.rs
-    #
-    # ONNX Runtime is licensed under `MIT` (https://github.com/microsoft/onnxruntime/blob/v1.11.1/LICENSE)
-    { name = "voicevox-ort-sys", version = "=2.0.0-rc.10", build-script = "c1e166d9f3025251e755ea98bbcce4e2e15d6cc19fd57afc5ef2951e2aca6995" },
-
     # https://docs.rs/crate/zstd-sys/2.0.9+zstd.1.5.5/source/build.rs
     #
     # libzstd is licensed under `GPL-2.0+ OR BSD-3-Clause` (https://github.com/facebook/zstd/blob/v1.5.2/lib/zstd.h#L1-L9)
@@ -160,7 +160,7 @@ bypass = [
 [sources]
 unknown-registry = "deny"
 unknown-git = "deny"
-allow-org.github = ["VOICEVOX"]
+allow-org.github = ["pykeio", "VOICEVOX"]
 
 [licenses]
 allow = [

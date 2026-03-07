@@ -19,7 +19,7 @@ required-features = ["load-onnxruntime"]
 [features]
 default = []
 buildtime-download-onnxruntime = ["voicevox_core_build_features/download"]
-load-onnxruntime = ["voicevox-ort/load-dynamic", "dep:libloading"]
+load-onnxruntime = ["ort/load-dynamic", "dep:libloading"]
 link-onnxruntime = ["voicevox_core_build_features/link"]
 
 [dependencies]
@@ -51,6 +51,7 @@ ndarray.workspace = true
 num-traits.workspace = true
 once_cell.workspace = true
 open_jtalk.workspace = true
+ort = { workspace = true, features = ["std", "ndarray", "tracing", "api-17", "alternative-backend"], default-features = false }
 ouroboros.workspace = true
 pastey.workspace = true
 phf = { workspace = true, features = ["macros"] }
@@ -68,7 +69,6 @@ tracing.workspace = true
 typed_floats = { workspace = true, features = ["serde"] }
 typeshare = { workspace = true, default-features = false }
 uuid = { workspace = true, features = ["v4", "serde"] }
-voicevox-ort = { workspace = true, features = ["std", "ndarray", "tracing", "alternative-backend"], default-features = false }
 voicevox_core_macros.workspace = true
 
 [dev-dependencies]

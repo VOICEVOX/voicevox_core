@@ -24,13 +24,12 @@ use duplicate::duplicate_item;
 use ndarray::{Array, Dimension};
 use ort::{
     environment::Environment,
-    execution_providers::{
+    ep::{
         CPUExecutionProvider, CUDAExecutionProvider, DirectMLExecutionProvider,
-        ExecutionProvider as _, cuda::CuDNNConvAlgorithmSearch,
+        ExecutionProvider as _, cuda::ConvAlgorithmSearch,
     },
     session::{RunOptions, builder::GraphOptimizationLevel},
-    tensor::{PrimitiveTensorElementType, TensorElementType},
-    value::ValueType,
+    value::{PrimitiveTensorElementType, TensorElementType, ValueType},
 };
 use tracing::warn;
 
@@ -49,8 +48,6 @@ static SINGLETON: once_cell::sync::OnceCell<Inner> = once_cell::sync::OnceCell::
 
 #[derive(Debug)]
 struct Inner {
-    _env: &'static Environment, // TODO: `ort`をv2.0.0-rc.11にしたら外に追い出す
-
     #[cfg(feature = "load-onnxruntime")]
     _lib: libloading::Library,
 }
@@ -82,7 +79,7 @@ impl Inner {
                 assert!(!api_base.is_null() && api_base.is_aligned());
                 let api_base = unsafe { &*api_base };
 
-                let _env = setup(
+                setup(
                     api_base,
                     #[cfg(windows)]
                     TargetLibOnnxruntime { dll: &lib },
@@ -90,7 +87,7 @@ impl Inner {
                     TargetLibOnnxruntime { filename },
                 )?;
 
-                Ok(Self { _env, _lib: lib })
+                Ok(Self { _lib: lib })
             })
             .map_err(|source| {
                 ErrorRepr::InitInferenceRuntime {
@@ -113,13 +110,14 @@ impl Inner {
                 assert!(!api_base.is_null() && api_base.is_aligned());
                 let api_base = unsafe { &*api_base };
 
-                let _env = setup(
+                setup(
                     api_base,
                     TargetLibOnnxruntime {
                         _marker: PhantomData,
                     },
                 )?;
-                Ok(Self { _env })
+
+                Ok(Self {})
             })
             .map_err(|source| {
                 ErrorRepr::InitInferenceRuntime {
@@ -131,10 +129,7 @@ impl Inner {
     }
 }
 
-fn setup(
-    api_base: &ort::sys::OrtApiBase,
-    lib: TargetLibOnnxruntime<'_>,
-) -> anyhow::Result<&'static Environment> {
+fn setup(api_base: &ort::sys::OrtApiBase, lib: TargetLibOnnxruntime<'_>) -> anyhow::Result<()> {
     const EXPECTED_MAJOR_VERSION: u64 = 1;
 
     const _: () = assert!(ort::sys::ORT_API_VERSION == 17);
@@ -191,15 +186,19 @@ fn setup(
         warn!("`ort::set_api` already executed");
     }
 
-    let configured = ort::init()
-        .with_name(env!("CARGO_PKG_NAME"))
-        .commit()
-        .expect("could not create a ORT environment"); // v2.0.0-rc.10だと、コケた時点でUBであるため
+    let configured = ort::init().with_name(env!("CARGO_PKG_NAME")).commit();
     if !configured {
         warn!("`ort::environment::EnvironmentBuilder` was already configured");
     }
 
-    Ok(ort::environment::get_environment().expect("should have been already set"))
+    let env = Environment::current()?;
+
+    // TODO: `Environment`の数がゼロだとC API側で謎のdouble freeが起きてSEGVするため、プロセスの終了までゼロにならないようワークアラウンド。
+    // これを解消しないと microsoft/onnxruntime#24579 の可能性が否定しきれないため要調査。
+    static ENV: std::sync::OnceLock<Arc<Environment>> = std::sync::OnceLock::new();
+    ENV.get_or_init(|| env);
+
+    Ok(())
 }
 
 #[derive(Clone, Copy)]
@@ -269,7 +268,7 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
         let sess_builder = &mut ort::session::builder::SessionBuilder::new()?;
         match gpu {
             GpuSpec::Cuda => CUDAExecutionProvider::default()
-                .with_conv_algorithm_search(CuDNNConvAlgorithmSearch::Default)
+                .with_conv_algorithm_search(ConvAlgorithmSearch::Default)
                 .register(sess_builder),
             GpuSpec::Dml => DirectMLExecutionProvider::default().register(sess_builder),
         }
@@ -289,20 +288,24 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
             LazyLock::new(|| ort::info().starts_with("VOICEVOX ORT Build Info: "));
 
         let mut builder = ort::session::Session::builder()?
-            .with_optimization_level(GraphOptimizationLevel::Level1)?
-            .with_intra_threads(options.cpu_num_threads.into())?;
+            .with_optimization_level(GraphOptimizationLevel::Level1)
+            .map_err(ort::Error::<()>::from)?
+            .with_intra_threads(options.cpu_num_threads.into())
+            .map_err(ort::Error::<()>::from)?;
 
         match options.device {
             DeviceSpec::Cpu => {}
             DeviceSpec::Gpu(GpuSpec::Cuda) => {
                 CUDAExecutionProvider::default()
-                    .with_conv_algorithm_search(CuDNNConvAlgorithmSearch::Default)
+                    .with_conv_algorithm_search(ConvAlgorithmSearch::Default)
                     .register(&mut builder)?;
             }
             DeviceSpec::Gpu(GpuSpec::Dml) => {
                 builder = builder
-                    .with_parallel_execution(false)?
-                    .with_memory_pattern(false)?;
+                    .with_parallel_execution(false)
+                    .map_err(ort::Error::<()>::from)?
+                    .with_memory_pattern(false)
+                    .map_err(ort::Error::<()>::from)?;
                 DirectMLExecutionProvider::default().register(&mut builder)?;
             }
         };
@@ -316,20 +319,21 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
                      (note: load/link `voicevox_onnxruntime` instead of ` onnxruntime`)",
                 );
                 builder
-                    .with_config_entry("session.use_vv_bin", "1")?
+                    .with_config_entry("session.use_vv_bin", "1")
+                    .map_err(ort::Error::<()>::from)?
                     .commit_from_memory(bin)
             }
         }?;
 
         let input_param_infos = sess
-            .inputs
+            .inputs()
             .iter()
             .map(|info| {
-                let ValueType::Tensor { ty, .. } = info.input_type else {
+                let ValueType::Tensor { ty, .. } = info.dtype() else {
                     bail!(
                         "unexpected input value type for `{}`. currently `ONNX_TYPE_TENSOR` and \
                          `ONNX_TYPE_SPARSETENSOR` is supported",
-                        info.name,
+                        info.name(),
                     );
                 };
 
@@ -364,29 +368,34 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
                     TensorElementType::Float8E5M2FNUZ => {
                         Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT8E5M2FNUZ")
                     }
+                    TensorElementType::Uint4 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT4"),
+                    TensorElementType::Int4 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_INT4"),
                     TensorElementType::Undefined => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UNDEFINED"),
                 }
                 .map_err(|actual| {
-                    anyhow!("unsupported input datatype `{actual}` for `{}`", info.name)
+                    anyhow!(
+                        "unsupported input datatype `{actual}` for `{}`",
+                        info.name(),
+                    )
                 })?;
 
                 Ok(ParamInfo {
-                    name: info.name.clone().into(),
+                    name: info.name().to_owned().into(),
                     dt,
-                    ndim: info.input_type.tensor_shape().map(|s| s.len()),
+                    ndim: info.dtype().tensor_shape().map(|s| s.len()),
                 })
             })
             .collect::<anyhow::Result<_>>()?;
 
         let output_param_infos = sess
-            .outputs
+            .outputs()
             .iter()
             .map(|info| {
-                let ValueType::Tensor { ty, .. } = info.output_type else {
+                let ValueType::Tensor { ty, .. } = info.dtype() else {
                     bail!(
                         "unexpected output value type for `{}`. currently `ONNX_TYPE_TENSOR` and \
                          `ONNX_TYPE_SPARSETENSOR` is supported",
-                        info.name,
+                        info.name(),
                     );
                 };
 
@@ -421,16 +430,21 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
                     TensorElementType::Float8E5M2FNUZ => {
                         Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT8E5M2FNUZ")
                     }
+                    TensorElementType::Uint4 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT4"),
+                    TensorElementType::Int4 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_INT4"),
                     TensorElementType::Undefined => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UNDEFINED"),
                 }
                 .map_err(|actual| {
-                    anyhow!("unsupported output datatype `{actual}` for `{}`", info.name)
+                    anyhow!(
+                        "unsupported output datatype `{actual}` for `{}`",
+                        info.name(),
+                    )
                 })?;
 
                 Ok(ParamInfo {
-                    name: info.name.clone().into(),
+                    name: info.name().to_owned().into(),
                     dt,
-                    ndim: info.output_type.tensor_shape().map(|s| s.len()),
+                    ndim: info.dtype().tensor_shape().map(|s| s.len()),
                 })
             })
             .collect::<anyhow::Result<_>>()?;

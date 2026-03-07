@@ -62,12 +62,13 @@ libloading = "0.7.3"
 libtest-mimic = "0.6.0"
 log = "0.4.29"
 minus = "5.6.1"
-ndarray = "0.16.1"
-ndarray-stats = "0.6.0"
+ndarray = "0.17.2"
+ndarray-stats = "0.7.0"
 num-traits = "0.2.15"
 octocrab = "0.47.1" # RUSTSEC-2023-0071の回避も検証も面倒なため、0.47に留める
 once_cell = "1.21.3"
 open = "5.3.2"
+ort = { git = "https://github.com/pykeio/ort.git", rev = "94417081c47f47f5a7d6a92ce94bb38fda10019f", default-features = false } # pykeio/ort#546
 ouroboros = "0.18.4"
 parking_lot = "0.12.1"
 parse-display = "0.8.2"
@@ -118,11 +119,6 @@ voicevox_core_build_features = { path = "crates/voicevox_core_build_features" }
 voicevox_core_macros = { path = "crates/voicevox_core_macros" }
 windows = "0.43.0"
 zip = "0.6.3"
-
-[workspace.dependencies.voicevox-ort]
-git = "https://github.com/VOICEVOX/ort.git"
-rev = "da3c9d2645e5aa1cd96c544b53bc83a0deed2751"
-default-features = false
 
 [workspace.dependencies.open_jtalk]
 git = "https://github.com/VOICEVOX/open_jtalk-rs.git"
