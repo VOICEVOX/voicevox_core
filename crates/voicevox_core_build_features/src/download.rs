@@ -6,7 +6,7 @@ use std::{
     sync::LazyLock,
 };
 
-use anyhow::{anyhow, bail, ensure, Context as _};
+use anyhow::{Context as _, anyhow, bail, ensure};
 use camino::Utf8PathBuf;
 use itertools::Itertools as _;
 use serde::Deserialize;

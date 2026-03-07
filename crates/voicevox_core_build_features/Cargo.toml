@@ -1,9 +1,9 @@
 [package]
 name = "voicevox_core_build_features"
 version.workspace = true
-edition = "2021"
+edition.workspace = true
 publish.workspace = true
-rust-version = "1.84.0"
+rust-version = "1.89.0"
 license.workspace = true
 
 [lib]
