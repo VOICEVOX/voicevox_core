@@ -10,20 +10,19 @@ use indexmap::IndexMap;
 use itertools::iproduct;
 
 use crate::{
-    error::{ErrorRepr, LoadModelError, LoadModelErrorKind, LoadModelResult},
     Result,
+    error::{ErrorRepr, LoadModelError, LoadModelErrorKind, LoadModelResult},
 };
 
 use super::{
     infer::{
-        self,
+        self, InferenceDomain, InferenceInputSignature, InferenceRuntime, InferenceSessionOptions,
+        InferenceSignature,
         domains::{
-            inference_domain_map_values, ExperimentalTalkDomain, FrameDecodeDomain,
-            InferenceDomainMap, SingingTeacherDomain, TalkDomain,
+            ExperimentalTalkDomain, FrameDecodeDomain, InferenceDomainMap, SingingTeacherDomain,
+            TalkDomain, inference_domain_map_values,
         },
         session_set::{InferenceSessionCell, InferenceSessionSet},
-        InferenceDomain, InferenceInputSignature, InferenceRuntime, InferenceSessionOptions,
-        InferenceSignature,
     },
     manifest::{InnerVoiceId, StyleIdToInnerVoiceId},
     metas::{self, CharacterMeta, StyleId, StyleMeta, VoiceModelMeta},
@@ -176,6 +175,15 @@ impl<R: InferenceRuntime> LoadedModels<R> {
         ) = self
             .0
             .iter()
+            .filter(
+                |(
+                    _,
+                    LoadedModel {
+                        session_sets_with_inner_ids,
+                        ..
+                    },
+                )| D::visit(session_sets_with_inner_ids).is_some(),
+            )
             .find(|(_, LoadedModel { metas, .. })| {
                 metas
                     .iter()
@@ -416,11 +424,11 @@ mod tests {
         super::{
             devices::{DeviceSpec, GpuSpec},
             infer::{
+                InferenceSessionOptions,
                 domains::{
                     ExperimentalTalkOperation, FrameDecodeOperation, InferenceDomainMap,
-                    SingingTeacherOperation, TalkOperation,
+                    SingingTeacherOperation, TalkOperation, inference_domain_map,
                 },
-                InferenceSessionOptions,
             },
         },
         Status,
@@ -490,12 +498,7 @@ mod tests {
     async fn status_load_model_works() {
         let status = Status::new(
             crate::blocking::Onnxruntime::from_test_util_data().unwrap(),
-            InferenceDomainMap {
-                talk: enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu)),
-                experimental_talk: enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu)),
-                singing_teacher: enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu)),
-                frame_decode: enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu)),
-            },
+            inference_domain_map!(enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu))),
         );
         let model = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
         let model_contents = &model.inner().read_inference_models().await.unwrap();
@@ -509,12 +512,7 @@ mod tests {
     async fn status_is_model_loaded_works() {
         let status = Status::new(
             crate::blocking::Onnxruntime::from_test_util_data().unwrap(),
-            InferenceDomainMap {
-                talk: enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu)),
-                experimental_talk: enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu)),
-                singing_teacher: enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu)),
-                frame_decode: enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu)),
-            },
+            inference_domain_map!(enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu))),
         );
         let vvm = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
         let model_header = vvm.inner().header();

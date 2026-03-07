@@ -8,7 +8,17 @@ import jp.hiroshiba.voicevoxcore.exceptions.InvalidQueryException;
 import jp.hiroshiba.voicevoxcore.internal.Dll;
 
 /**
- * 音符ごとの情報。
+ * 音符または休符。
+ *
+ * <pre>{@code
+ * Note note =
+ *     (new Gson())
+ *         .fromJson("{ \"key\": 65, \"frame_length\": 45, \"lyric\": \"ファ\" }", Note.class);
+ *
+ * Note rest =
+ *     (new Gson())
+ *         .fromJson("{ \"key\": null, \"frame_length\": 45, \"lyric\": \"\" }", Note.class);
+ * }</pre>
  *
  * <p>このクラスは不正な状態を表現しうる。どのような状態が不正なのかについては{@link #validate}を参照。このクラスを使う関数は、不正な状態に対して{@link
  * InvalidQueryException}をスローする。
@@ -32,16 +42,44 @@ public final class Note implements Cloneable {
     Dll.loadLibrary();
   }
 
-  /** ID。 */
+  /**
+   * ID。
+   *
+   * <p>{@link FrameAudioQuery}を生成するときに{@link FramePhoneme#noteId}にコピーされる。歌唱音声には影響しない。
+   */
   @Expose @Nullable public String id;
 
-  /** 音階。 */
+  /**
+   * 音階。
+   *
+   * <ul>
+   *   <li>音符の場合、MIDIのnote number（例: C4なら{@code 60}）。
+   *   <li>休符の場合、{@code null}。
+   * </ul>
+   */
   @Expose @Nullable public Byte key;
 
-  /** 歌詞。 */
+  /**
+   * 歌詞。
+   *
+   * <ul>
+   *   <li>音符の場合、一つのモーラを表すひらがな/カタカナ（例: {@code "ド"}, {@code "ファ"}）。
+   *   <li>休符の場合、空文字列。
+   * </ul>
+   */
   @Expose @Nonnull public String lyric;
 
-  /** 音符のフレーム長。 */
+  /**
+   * 音符のフレーム長。
+   *
+   * <p>秒数に93.75をかけ、端数を調整して整数にしたもの。例として125BPM (<em><strong>B</strong>eats <strong>P</strong>er
+   * <strong>M</strong>inute</em>)における一拍は:
+   *
+   * <p>93.75[フレーム/秒] / (125[拍/分] / 60[秒/分]) = {@code 45}[フレーム/拍]
+   *
+   * <p>ここで設定した値は分割された上で{@link FramePhoneme#frameLength}に割り当てられる。どのように分割されるのかについては <a
+   * href="https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/song.md#%E5%AD%90%E9%9F%B3%E3%81%AE%E4%BE%B5%E9%A3%9F">子音の侵食</a>を参照。
+   */
   @SerializedName("frame_length")
   @Expose
   public long frameLength;

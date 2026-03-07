@@ -10,6 +10,22 @@ import jp.hiroshiba.voicevoxcore.internal.Dll;
 /**
  * 楽譜情報。
  *
+ * <pre>{@code
+ * Score score =
+ *     (new Gson())
+ *         .fromJson(
+ *             "{"
+ *                 + "  \"notes\": [ "
+ *                 + "    { \"key\": null, \"frame_length\": 15, \"lyric\": \"\" },"
+ *                 + "    { \"key\": 60, \"frame_length\": 45, \"lyric\": \"ド\" },"
+ *                 + "    { \"key\": 62, \"frame_length\": 45, \"lyric\": \"レ\" },"
+ *                 + "    { \"key\": 64, \"frame_length\": 45, \"lyric\": \"ミ\" },"
+ *                 + "    { \"key\": null, \"frame_length\": 15, \"lyric\": \"\" }"
+ *                 + "  ]"
+ *                 + "}",
+ *             Score.class);
+ * }</pre>
+ *
  * <p>このクラスは不正な状態を表現しうる。どのような状態が不正なのかについては{@link #validate}を参照。このクラスを使う関数は、不正な状態に対して{@link
  * InvalidQueryException}をスローする。
  *

@@ -1,14 +1,14 @@
 use std::{ops::RangeToInclusive, sync::LazyLock};
 
 use regex::Regex;
-use serde::{de::Error as _, Deserialize, Serialize, Serializer};
+use serde::{Deserialize, Serialize, Serializer, de::Error as _};
 
 use crate::{error::ErrorRepr, result::Result};
 
 use super::{
     super::text::{hankaku_zenkaku, katakana},
     part_of_speech_data::{
-        priority2cost, PartOfSpeechDetail, MAX_PRIORITY, MIN_PRIORITY, PART_OF_SPEECH_DETAIL,
+        MAX_PRIORITY, MIN_PRIORITY, PART_OF_SPEECH_DETAIL, PartOfSpeechDetail, priority2cost,
     },
 };
 
@@ -93,10 +93,10 @@ impl<'de> Deserialize<'de> for UserDictWord {
         let this = Self::new(&surface, pronunciation, accent_type, *word_type, priority)
             .map_err(D::Error::custom)?;
 
-        if let Some(mora_count) = mora_count {
-            if this.mora_count != mora_count {
-                return Err(D::Error::custom("wrong value for `mora_count`"));
-            }
+        if let Some(mora_count) = mora_count
+            && this.mora_count != mora_count
+        {
+            return Err(D::Error::custom("wrong value for `mora_count`"));
         }
 
         Ok(this)

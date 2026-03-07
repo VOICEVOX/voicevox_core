@@ -1,6 +1,6 @@
 use syn::{
-    spanned::Spanned as _, Attribute, Data, DataEnum, DataStruct, DataUnion, Field, Fields, Type,
-    Variant,
+    Attribute, Data, DataEnum, DataStruct, DataUnion, Field, Fields, Type, Variant,
+    spanned::Spanned as _,
 };
 
 pub(crate) fn find_attr<'a>(

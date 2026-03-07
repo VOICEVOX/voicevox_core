@@ -33,11 +33,13 @@
 - fix compat breaking: revive workaround padding in decode() ([#867])
 - feat!: `render`の引数の範囲指定部分を各言語の慣習に合わせる ([#879])
 - feat!: decode.onnxを復活させる ([#918])
+- [#1319]
 
 [#854]: https://github.com/VOICEVOX/voicevox_core/pull/854
 [#864]: https://github.com/VOICEVOX/voicevox_core/pull/864
 [#867]: https://github.com/VOICEVOX/voicevox_core/pull/867
 [#879]: https://github.com/VOICEVOX/voicevox_core/pull/879
+[#1319]: https://github.com/VOICEVOX/voicevox_core/pull/1319
 
 ### もし`TextAnalyzer`機能を充実させた場合
 
@@ -53,15 +55,12 @@
 
 ### Added
 
-- ソング機能が追加されます ([#531], [#732], [#738], [#761], [#895], [#896], [#894], [#1217], [#1236], [#1073], [#1242], [#1250], [#1252], [#1247], [#1253], [#1244], [#1257], [#1255], [#1260], [#1245], [#1246], [#1280])。
-- ドキュメントが改善されます。
-    - [バージョン0.16.3](#0163---2025-12-08-0900)で導入された、`AudioQuery`/`AccentPhrase`/`Mora`のバリデーション機能に関するドキュメンテーションがよりわかりやすくなります ([#1251])。
-    - \[Python,Java\] 一部のドキュメントの文体が改善されます ([#1238])。
-- \[ダウンローダー\] HTTPクライアントのものを含めた、いくつかの依存ライブラリがアップデートされます ([#1265])。
+- \[ダウンローダー\] `--os`オプションで`android`と`ios`を指定できるようになります。ただしiOSの`c-api`をダウンロードすることはできません ([#1313])。
+- \[ダウンローダー\] 環境変数`VV_DOWNLOADER_C_API_ALLOW_DRAFT`を設定することで、`c-api`のdraft releaseを`--c-api-version`で指定できるようになります。主な用途はこのvoicevox\_coreリポジトリでの内部利用です ([#1315])。
 
 ### Changed
 
-- ONNX Runtimeが出す`FATAL`レベルのログの表示形式が少しだけ変わります。また`VERBOSE`レベルのログは[`tracing::Level::TRACE`](https://docs.rs/tracing/0.1/tracing/struct.Level.html#associatedconstant.TRACE)に格下げされます ([#1276])。
+- \[Rust\] \[BREAKING\] MSRVが1.89.0になります ([#1323])。
 - [#1278]
     - `ort/{cuda,directml}`フィーチャでEP付きのものがダウンロードできたのができなくなる
     - ダウンロード場所の変更
@@ -72,18 +71,37 @@
     - pkgconfigまわり
         - 特に、`load-onnxruntime`時にダウンロードとコピーが取り止められることがなくなった
     - ...
+- \[Rust\] 依存ライブラリが変化します ([#1278])。
+    - TODO
+
+## [0.16.4] - 2026-02-19 (+09:00)
+
+主な変更点とその解説については、[GitHub Releaseの本文](https://github.com/VOICEVOX/voicevox_core/releases/tag/0.16.4)をご覧ください。
+
+### Added
+
+- ソング機能が追加されます ([#531], [#732], [#738], [#761], [#895], [#896], [#894], [#1217], [#1236], [#1073], [#1242], [#1250], [#1252], [#1247], [#1253], [#1244], [#1257], [#1255], [#1260], [#1245], [#1246], [#1280], [#1285], [#1279], [#1304])。
+- ドキュメントが改善されます。
+    - [バージョン0.16.3](#0163---2025-12-08-0900)で導入された、`AudioQuery`/`AccentPhrase`/`Mora`のバリデーション機能に関するドキュメンテーションがよりわかりやすくなります ([#1251])。
+    - \[Python,Java\] 一部のドキュメントの文体が改善されます ([#1238])。
+- \[Android\] リリースされるバイナリが[16KBデバイスへの互換性を持つようになり、Google Playが要求する要件を満たす](https://developer.android.com/guide/practices/page-sizes)ようになります。ただし(VOICEVOX) ONNX Runtimeのバージョン1.17は16KBへの互換性が無いことに注意してください。(VOICEVOX) ONNX Runtime バージョン1.22以降であれば対応しています ([#1283])。
+- \[ダウンローダー\] HTTPクライアントのものを含めた、いくつかの依存ライブラリがアップデートされます ([#1265])。
+
+### Changed
+
+- ONNX Runtimeが出す`FATAL`レベルのログの表示形式が少しだけ変わります。また`VERBOSE`レベルのログは[`tracing::Level::TRACE`](https://docs.rs/tracing/0.1/tracing/struct.Level.html#associatedconstant.TRACE)に格下げされます ([#1276])。
 - \[Python,Java\] `AudioQuery`（もしくはその一部）がRustのオブジェクトとして表現できなかったときのエラーが、`InvalidQuery`エラーに包まれるようになります。これまでは`OverflowError`や`RuntimeError`がそのままraiseされていました ([#1237])。
-- \[Rust\] 依存ライブラリが変化します ([#1073], [#1250], [#1265], [#1277], [#1276], [#1278])。
+- \[Rust\] 依存ライブラリが変化します ([#1073], [#1250], [#1265], [#1277], [#1276], [#1291])。
     - \[追加\] `arrayvec@0.7`: `^0.7.6`
     - \[追加\] `derive_more@1`: `into_iterator`フィーチャを追加
     - \[追加\] `num-traits@0.2`: `^0.2.15`
     - \[追加\] `smol_str@0.3`: `^0.3.2`
     - \[追加\] `typed_floats@1`: `^1.0.7`
     - \[追加\] `typeshare@1`: `^1.0.4` (`default-features = false`)
+    - \[変更\] `bytes@1`: `^1.7.2` → `^1.11.1`
     - \[変更\] `regex@1`: `^1.11.0` → `^1.12.0`
     - \[変更\] `serde@1`: `^1.0.27` → `^1.0.228`
     - \[変更\] `voicevox-ort@2.0.0-rc.10`: `22172d0fcf0715c1316f95ea08db50cf55cf0ad4` → `6d69dbd1ddfae713081d844c456be5b8d097e17e`
-    - TODO
 - \[Python\] 型ヒントが[`uuid.UUID`](https://docs.python.org/3/library/uuid.html#uuid.UUID)である引数に、`uuid.UUID`ではないオブジェクトを与えたときのエラーが`TypeError`になります ([#1266])。
 
 ### Fixed
@@ -93,10 +111,12 @@
 
 ### Security
 
-- \[C,Java,ダウンローダー\] 現実的な攻撃シナリオは無かったと考えられますが、以下の脆弱性の影響を受けないようになります ([#1265], [#1269])。
+- \[C,Java,ダウンローダー\] 現実的な攻撃シナリオは無かったと考えられますが、以下の脆弱性の影響を受けないようになります ([#1265], [#1269], [#1291], [#1295])。
     - [RUSTSEC-2025-0023](https://rustsec.org/advisories/RUSTSEC-2025-0023)
     - [RUSTSEC-2025-0024](https://rustsec.org/advisories/RUSTSEC-2025-0024)
     - [RUSTSEC-2025-0055](https://rustsec.org/advisories/RUSTSEC-2025-0055)
+    - [RUSTSEC-2026-0007](https://rustsec.org/advisories/RUSTSEC-2026-0007)
+    - [RUSTSEC-2026-0009](https://rustsec.org/advisories/RUSTSEC-2026-0009)
 
 ## [0.16.3] - 2025-12-08 (+09:00)
 
@@ -1064,7 +1084,8 @@ Windows版ダウンローダーのビルドに失敗しています。
 
 - \[Python\] モジュールに`__all__`が適切に設定されます ([#415])。
 
-[Unreleased]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.3...HEAD
+[Unreleased]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.4...HEAD
+[0.16.4]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.3...0.16.4
 [0.16.3]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.2...0.16.3
 [0.16.2]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.1...0.16.2
 [0.16.1]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.0...0.16.1
@@ -1458,7 +1479,16 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1276]: https://github.com/VOICEVOX/voicevox_core/pull/1276
 [#1277]: https://github.com/VOICEVOX/voicevox_core/pull/1277
 [#1278]: https://github.com/VOICEVOX/voicevox_core/pull/1278
+[#1279]: https://github.com/VOICEVOX/voicevox_core/pull/1279
 [#1280]: https://github.com/VOICEVOX/voicevox_core/pull/1280
+[#1283]: https://github.com/VOICEVOX/voicevox_core/pull/1283
+[#1285]: https://github.com/VOICEVOX/voicevox_core/pull/1285
+[#1291]: https://github.com/VOICEVOX/voicevox_core/pull/1291
+[#1295]: https://github.com/VOICEVOX/voicevox_core/pull/1295
+[#1304]: https://github.com/VOICEVOX/voicevox_core/pull/1304
+[#1313]: https://github.com/VOICEVOX/voicevox_core/pull/1313
+[#1315]: https://github.com/VOICEVOX/voicevox_core/pull/1315
+[#1323]: https://github.com/VOICEVOX/voicevox_core/pull/1323
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 

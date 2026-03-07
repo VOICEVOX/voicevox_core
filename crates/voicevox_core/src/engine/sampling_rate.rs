@@ -3,8 +3,8 @@ use std::{fmt, num::NonZero};
 use duplicate::duplicate_item;
 use pastey::paste;
 use serde::{
-    de::{self, Unexpected},
     Deserialize, Deserializer, Serialize,
+    de::{self, Unexpected},
 };
 
 use crate::error::{InvalidQueryError, InvalidQueryErrorSource};

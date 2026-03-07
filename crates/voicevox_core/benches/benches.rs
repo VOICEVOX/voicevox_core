@@ -207,7 +207,7 @@ mod blocking {
         Onnxruntime, OpenJtalk, Synthesizer, TextAnalyzer as _, VoiceModelFile,
     };
 
-    use crate::{InputText, CONFIG};
+    use crate::{CONFIG, InputText};
 
     pub(crate) static FIXTURE: LazyLock<(Synthesizer<OpenJtalk>, VoiceModelFile)> =
         LazyLock::new(|| {
@@ -349,7 +349,7 @@ mod nonblocking {
         Onnxruntime, OpenJtalk, Synthesizer, TextAnalyzer as _, VoiceModelFile,
     };
 
-    use crate::{InputText, CONFIG};
+    use crate::{CONFIG, InputText};
 
     pub(crate) static FIXTURE: LazyLock<(Synthesizer<OpenJtalk>, VoiceModelFile)> =
         LazyLock::new(|| {

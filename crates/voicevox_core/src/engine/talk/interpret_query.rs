@@ -2,9 +2,9 @@
 
 use super::{
     super::{
+        DEFAULT_SAMPLING_RATE, PhonemeCode,
         acoustic_feature_extractor::{MoraTail, OptionalConsonant},
         talk::{LengthedPhoneme, ValidatedAccentPhrase, ValidatedAudioQuery, ValidatedMora},
-        PhonemeCode, DEFAULT_SAMPLING_RATE,
     },
     full_context_label::mora_to_text,
 };
@@ -164,7 +164,7 @@ impl ValidatedAudioQuery<'_> {
                 let phoneme_id = usize::from(phoneme_data_list[i]);
 
                 for _ in 0..phoneme_length {
-                    let mut phonemes_vec = [0.; PhonemeCode::num_phoneme()]; // TODO: Rust 1.89であればサイズが型推論可能になる
+                    let mut phonemes_vec = [0.; _];
                     phonemes_vec[phoneme_id] = 1.;
                     phoneme.push(phonemes_vec)
                 }

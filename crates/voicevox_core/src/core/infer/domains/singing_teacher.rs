@@ -8,15 +8,13 @@ use serde::Deserialize;
 use crate::StyleType;
 
 use super::super::{
-    super::manifest::SingingTeacherManifest, InferenceDomain, InferenceInputSignature as _,
-    InferenceOutputSignature as _, OutputTensor,
+    InferenceDomain, InferenceInputSignature as _, InferenceOutputSignature as _, OutputTensor,
 };
 
 pub(crate) enum SingingTeacherDomain {}
 
 impl InferenceDomain for SingingTeacherDomain {
     type Operation = SingingTeacherOperation;
-    type Manifest = SingingTeacherManifest;
 
     fn style_types() -> &'static BTreeSet<StyleType> {
         static STYLE_TYPES: LazyLock<BTreeSet<StyleType>> =

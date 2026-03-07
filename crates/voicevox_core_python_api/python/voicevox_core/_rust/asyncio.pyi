@@ -534,9 +534,9 @@ class Synthesizer:
             )
 
         .. |blocking-synthesizer-create-sing-frame-audio-query-score| replace:: 楽譜
-        .. _blocking-synthesizer-create-sing-frame-audio-query-score: #voicevox_core.Score
+        .. _blocking-synthesizer-create-sing-frame-audio-query-score: ../index.html#voicevox_core.Score
         .. |blocking-synthesizer-create-sing-frame-audio-query-frame-audio-query| replace:: 歌唱音声合成用のクエリ
-        .. _blocking-synthesizer-create-sing-frame-audio-query-frame-audio-query: #voicevox_core.FrameAudioQuery
+        .. _blocking-synthesizer-create-sing-frame-audio-query-frame-audio-query: ../index.html#voicevox_core.FrameAudioQuery
         """
         ...
     async def create_sing_frame_f0(
@@ -571,9 +571,9 @@ class Synthesizer:
             frame_audio_query.f0 = new_f0
 
         .. |blocking-synthesizer-create-sing-frame-f0-score| replace:: 楽譜
-        .. _blocking-synthesizer-create-sing-frame-f0-score: #voicevox_core.Score
+        .. _blocking-synthesizer-create-sing-frame-f0-score: ../index.html#voicevox_core.Score
         .. |blocking-synthesizer-create-sing-frame-f0-frame-audio-query| replace:: 歌唱音声合成用のクエリ
-        .. _blocking-synthesizer-create-sing-frame-f0-frame-audio-query: #voicevox_core.FrameAudioQuery
+        .. _blocking-synthesizer-create-sing-frame-f0-frame-audio-query: ../index.html#voicevox_core.FrameAudioQuery
         """
         ...
     async def create_sing_frame_volume(
@@ -613,9 +613,9 @@ class Synthesizer:
             frame_audio_query.volume = new_volume
 
         .. |blocking-synthesizer-create-sing-frame-volume-score| replace:: 楽譜
-        .. _blocking-synthesizer-create-sing-frame-volume-score: #voicevox_core.Score
+        .. _blocking-synthesizer-create-sing-frame-volume-score: ../index.html#voicevox_core.Score
         .. |blocking-synthesizer-create-sing-frame-volume-frame-audio-query| replace:: 歌唱音声合成用のクエリ
-        .. _blocking-synthesizer-create-sing-frame-volume-frame-audio-query: #voicevox_core.FrameAudioQuery
+        .. _blocking-synthesizer-create-sing-frame-volume-frame-audio-query: ../index.html#voicevox_core.FrameAudioQuery
         """
         ...
     async def frame_synthesis(

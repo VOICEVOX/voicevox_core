@@ -1,9 +1,8 @@
 use derive_syn_parse::Parse;
 use quote::ToTokens as _;
 use syn::{
-    parse_quote,
+    Path, PathArguments, PathSegment, Token, Type, TypePath, parse_quote,
     visit_mut::{self, VisitMut},
-    Path, PathArguments, PathSegment, Token, Type, TypePath,
 };
 
 pub(crate) fn substitute_type(input: Substitution) -> syn::Result<proc_macro2::TokenStream> {
@@ -47,19 +46,22 @@ pub(crate) fn substitute_type(input: Substitution) -> syn::Result<proc_macro2::T
             };
 
             match &mut *segments.iter_mut().collect::<Vec<_>>() {
-                [PathSegment {
-                    ident,
-                    arguments: PathArguments::None,
-                }] if *ident == self.arg => {
+                [
+                    PathSegment {
+                        ident,
+                        arguments: PathArguments::None,
+                    },
+                ] if *ident == self.arg => {
                     let replacement = self.replacement.clone();
                     *i = parse_quote!(#replacement);
                 }
-                [PathSegment {
-                    ident: ident1,
-                    arguments: PathArguments::None,
-                }, seg]
-                    if *ident1 == self.arg =>
-                {
+                [
+                    PathSegment {
+                        ident: ident1,
+                        arguments: PathArguments::None,
+                    },
+                    seg,
+                ] if *ident1 == self.arg => {
                     let replacement = self.replacement.clone();
                     let replacement_as = self.replacement_as.clone();
                     *i = parse_quote!(<#replacement as #replacement_as>::#seg);

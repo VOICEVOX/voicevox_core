@@ -17,14 +17,20 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  # 簡易テストとするかどうか。mainブランチとworkflow_dispatch以外は簡易テストとする
-  IS_SIMPLE_TEST: ${{ github.ref != 'refs/heads/main' && github.event_name != 'workflow_dispatch' }}
 
 defaults:
   run:
     shell: bash
 
 jobs:
+  config:
+    runs-on: ubuntu-slim
+    outputs:
+      is-simple-test: ${{ github.ref != 'refs/heads/main' && github.event_name != 'workflow_dispatch' }}
+    steps:
+      - name: NOP
+        run: ':'
+
   shellcheck:
     runs-on: ubuntu-22.04
     steps:
@@ -89,7 +95,6 @@ jobs:
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ steps.msrv-for-rust-api.outputs.rust-version }}
-          components: clippy
       - name: Set up Rust (for rest packages)
         uses: ./.github/actions/rust-toolchain-from-file
         with:
@@ -103,22 +108,8 @@ jobs:
       - run: cargo clippy -v --features load-onnxruntime -- -D clippy::all -D warnings --no-deps
       - run: cargo clippy -v -p voicevox_core -p voicevox_core_c_api --features link-onnxruntime --tests -- -D clippy::all -D warnings --no-deps
       - run: cargo clippy -v -p voicevox_core -p voicevox_core_c_api --features link-onnxruntime -- -D clippy::all -D warnings --no-deps
-      - name: Do `cargo check` the Rust API with its MSRV
-        run: |
-          rust_api=$(realpath ./crates/voicevox_core)
-          mkdir /tmp/use-rust-api
-          cd "$_"
-          rustup override set ${{ steps.msrv-for-rust-api.outputs.rust-version }}
-          cargo init
-          cargo add base64ct@=1.6.0 # TODO: MSRVが1.85以上になったら不要
-          cargo add jlabel@=0.1.4 # TODO: 〃
-          cargo add async-lock@=3.4.1 # TODO: 〃
-          cargo add smol_str@=0.3.2 # TODO: 〃
-          cargo add --path "$rust_api" --features load-onnxruntime
-          cargo check
-          cargo rm voicevox_core
-          cargo add --path "$rust_api" --features link-onnxruntime
-          cargo check
+      - run: cargo +${{ steps.msrv-for-rust-api.outputs.rust-version }} check -vp voicevox_core --features load-onnxruntime
+      - run: cargo +${{ steps.msrv-for-rust-api.outputs.rust-version }} check -vp voicevox_core --features link-onnxruntime
       - run: cargo fmt -- --check
 
   rust-unit-test:
@@ -140,6 +131,7 @@ jobs:
         run: RUST_BACKTRACE=full cargo test --doc -v
 
   rust-integration-test-strategy-matrix: # 実行対象の条件をフィルタリングする
+    needs: config
     runs-on: ubuntu-latest
     outputs:
       includes: ${{ steps.strategy-matrix.outputs.includes }}
@@ -158,7 +150,8 @@ jobs:
           ]'
 
           # FIXME: composite action に切り出す
-          if ${{ env.IS_SIMPLE_TEST }}; then
+          is_simple_test=${{ needs.config.outputs.is-simple-test }}
+          if [ $is_simple_test = true ]; then
             includes=$(echo "$includes" | jq -c '[.[] | select(.can_skip_in_simple_test == false)]')
           fi
           includes=$(echo "$includes" | jq -c '[.[] | del(.can_skip_in_simple_test)]')

@@ -10,15 +10,15 @@ use duplicate::duplicate_item;
 use num_traits::ToPrimitive as _;
 use pastey::paste;
 use serde::{
-    de::{self, Unexpected},
     Deserialize, Deserializer, Serialize,
+    de::{self, Unexpected},
 };
 use typed_floats::{NonNaNFinite, PositiveFinite};
 use typeshare::U53;
 
 use crate::{
-    error::{InvalidQueryError, InvalidQueryErrorSource},
     SamplingRate,
+    error::{InvalidQueryError, InvalidQueryErrorSource},
 };
 
 use super::super::Phoneme;
@@ -41,6 +41,27 @@ pub use self::{key::Key, optional_lyric::OptionalLyric};
 /// # anyhow::Ok(())
 /// ```
 ///
+/// # Example
+///
+/// ```
+/// # use voicevox_core::Score;
+/// #
+/// let score = serde_json::from_str::<Score>(
+///     r#"
+/// {
+///   "notes": [
+///     { "key": null, "frame_length": 15, "lyric": "" },
+///     { "key": 60, "frame_length": 45, "lyric": "ド" },
+///     { "key": 62, "frame_length": 45, "lyric": "レ" },
+///     { "key": 64, "frame_length": 45, "lyric": "ミ" },
+///     { "key": null, "frame_length": 15, "lyric": "" }
+///   ]
+/// }
+///     "#,
+/// )
+/// .unwrap();
+/// ```
+///
 /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
 /// [`validate`メソッド]: Self::validate
 #[derive(Clone, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
@@ -56,7 +77,7 @@ impl From<&'_ Score> for serde_json::Value {
     }
 }
 
-/// 音符ごとの情報。
+/// 音符または休符。
 ///
 /// # Validation
 ///
@@ -72,21 +93,53 @@ impl From<&'_ Score> for serde_json::Value {
 /// # anyhow::Ok(())
 /// ```
 ///
+/// # Example
+///
+/// ```
+/// # use voicevox_core::Note;
+/// #
+/// let note =
+///     serde_json::from_str::<Note>(r#"{ "key": 65, "frame_length": 45, "lyric": "ファ" }"#)
+///         .unwrap();
+///
+/// let rest = serde_json::from_str::<Note>(r#"{ "key": null, "frame_length": 45, "lyric": "" }"#)
+///     .unwrap();
+/// ```
+///
 /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
 /// [`validate`メソッド]: Self::validate
 #[derive(Clone, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct Note {
     /// ID。
+    ///
+    /// [`FrameAudioQuery`]を生成するときに[`FramePhoneme::note_id`]にコピーされる。歌唱音声には影響しない。
     pub id: Option<NoteId>,
 
     /// 音階。
+    ///
+    /// - 音符の場合、`Some(_)`（例: C4なら`60`）。
+    /// - 休符の場合、`None`。
     pub key: Option<Key>,
 
     /// 歌詞。
+    ///
+    /// - 音符の場合、[`PAU`]以外（例: `"ド"`, `"ファ"`）。
+    /// - 休符の場合、[`PAU`]。
+    ///
+    /// [`PAU`]: OptionalLyric::PAU
     pub lyric: OptionalLyric,
 
     /// 音符のフレーム長。
+    ///
+    /// 秒数に93.75をかけ、端数を調整して整数にしたもの。例として125BPM (_**B**eats **P**er
+    /// **M**inute_)における一拍は:
+    ///
+    /// 93.75\[フレーム/秒\] / (125\[拍/分\] / 60\[秒/分\]) = `45`\[フレーム/拍\]
+    ///
+    /// ここで設定した値は分割された上で[`FramePhoneme::frame_length`]に割り当てられる。どのように分割されるのかについては[子音の侵食]を参照。
+    ///
+    /// [子音の侵食]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/song.md#子音の侵食
     pub frame_length: U53,
 }
 
@@ -427,7 +480,7 @@ mod key {
 
     /// 音階。
     ///
-    /// 取り得る値は`0`以上`127`以下。
+    /// MIDIのnote number。取り得る値は`0`以上`127`以下。
     ///
     /// [`TryFrom`]、[`FromStr`]、[`Deserialize`]、[`key!`]からコンストラクトできる。
     ///
@@ -508,10 +561,10 @@ mod key {
         #[must_use = "same reason as `{integer}::strict_add`"]
         #[track_caller]
         pub const fn strict_add(self, rhs: u8) -> Self {
-            if let Some(n) = self.0.checked_add(rhs) {
-                if let Some(ret) = Self::__new(n) {
-                    return ret;
-                }
+            if let Some(n) = self.0.checked_add(rhs)
+                && let Some(ret) = Self::__new(n)
+            {
+                return ret;
             }
             panic!("attempt to add with overflow");
         }
@@ -548,10 +601,10 @@ mod key {
         #[must_use = "same reason as `u{n}::strict_add_signed`"]
         #[track_caller]
         pub const fn strict_add_signed(self, rhs: i8) -> Self {
-            if let Some(n) = self.0.checked_add_signed(rhs) {
-                if let Some(ret) = Self::__new(n) {
-                    return ret;
-                }
+            if let Some(n) = self.0.checked_add_signed(rhs)
+                && let Some(ret) = Self::__new(n)
+            {
+                return ret;
             }
             panic!("attempt to add with overflow");
         }
@@ -582,10 +635,10 @@ mod key {
         #[must_use = "same reason as `{integer}::strict_sub`"]
         #[track_caller]
         pub const fn strict_sub(self, rhs: u8) -> Self {
-            if let Some(n) = self.0.checked_sub(rhs) {
-                if let Some(ret) = Self::__new(n) {
-                    return ret;
-                }
+            if let Some(n) = self.0.checked_sub(rhs)
+                && let Some(ret) = Self::__new(n)
+            {
+                return ret;
             }
             panic!("attempt to subtract with overflow");
         }
@@ -659,7 +712,10 @@ mod optional_lyric {
         mora_mappings::MORA_KANA_TO_MORA_PHONEMES,
     };
 
-    /// 音符の歌詞。空文字列は[無音]。
+    /// 音符の歌詞、または休符を表わす[無音]。
+    ///
+    /// - 音符の歌詞の場合、一つのモーラを表すひらがな/カタカナ。
+    /// - 休符を表わす無音の場合、空文字列。
     ///
     /// # Examples
     ///
@@ -774,11 +830,10 @@ mod tests {
     fn key_strict_add_works() {
         for (lhs, rhs) in iproduct!(Key::MIN.get()..=Key::MAX.get(), 0..=u8::MAX) {
             let lhs = Key::__new(lhs).unwrap();
-            // TODO: Rust 2024にしたらlet chainにする
-            if let Some(sum) = lhs.get().checked_add(rhs) {
-                if sum <= Key::MAX.get() {
-                    assert_eq!(sum, lhs.strict_add(rhs).get());
-                }
+            if let Some(sum) = lhs.get().checked_add(rhs)
+                && sum <= Key::MAX.get()
+            {
+                assert_eq!(sum, lhs.strict_add(rhs).get());
             }
         }
     }
@@ -787,11 +842,10 @@ mod tests {
     fn key_strict_add_signed_works() {
         for (lhs, rhs) in iproduct!(Key::MIN.get()..=Key::MAX.get(), i8::MIN..=i8::MAX) {
             let lhs = Key::__new(lhs).unwrap();
-            // TODO: Rust 2024にしたらlet chainにする
-            if let Some(sum) = lhs.get().checked_add_signed(rhs) {
-                if sum <= Key::MAX.get() {
-                    assert_eq!(sum, lhs.strict_add_signed(rhs).get());
-                }
+            if let Some(sum) = lhs.get().checked_add_signed(rhs)
+                && sum <= Key::MAX.get()
+            {
+                assert_eq!(sum, lhs.strict_add_signed(rhs).get());
             }
         }
     }
@@ -800,11 +854,10 @@ mod tests {
     fn key_strict_sub_works() {
         for (lhs, rhs) in iproduct!(Key::MIN.get()..=Key::MAX.get(), 0..=u8::MAX) {
             let lhs = Key::__new(lhs).unwrap();
-            // TODO: Rust 2024にしたらlet chainにする
-            if let Some(sum) = lhs.get().checked_sub(rhs) {
-                if sum <= Key::MAX.get() {
-                    assert_eq!(sum, lhs.strict_sub(rhs).get());
-                }
+            if let Some(sum) = lhs.get().checked_sub(rhs)
+                && sum <= Key::MAX.get()
+            {
+                assert_eq!(sum, lhs.strict_sub(rhs).get());
             }
         }
     }

@@ -6,8 +6,8 @@ pub use crate::{
     engine::talk::user_dict::{DEFAULT_PRIORITY, DEFAULT_WORD_TYPE},
     engine::validate::Validate,
     synthesizer::{
-        blocking::PerformInference, BlockingTextAnalyzerExt, NonblockingTextAnalyzerExt,
-        DEFAULT_CPU_NUM_THREADS, DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
-        DEFAULT_HEAVY_INFERENCE_CANCELLABLE, MARGIN,
+        BlockingTextAnalyzerExt, DEFAULT_CPU_NUM_THREADS, DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
+        DEFAULT_HEAVY_INFERENCE_CANCELLABLE, MARGIN, NonblockingTextAnalyzerExt,
+        blocking::PerformInference,
     },
 };

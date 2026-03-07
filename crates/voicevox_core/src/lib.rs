@@ -36,7 +36,7 @@
 //! };
 //!
 //! // ダウンローダーにて`onnxruntime`としてダウンロードできるもの
-//! # #[cfg(any())]
+//! # #[cfg(false)]
 //! const VVORT: &str = concatcp!(
 //!     "./voicevox_core/onnxruntime/lib/",
 //!     Onnxruntime::LIB_VERSIONED_FILENAME,
@@ -44,20 +44,20 @@
 //! # use test_util::ONNXRUNTIME_DYLIB_PATH as VVORT;
 //!
 //! // ダウンローダーにて`dict`としてダウンロードできるもの
-//! # #[cfg(any())]
+//! # #[cfg(false)]
 //! const OJT_DIC: &str = "./voicevox_core/dict/open_jtalk_dic_utf_8-1.11";
 //! # use test_util::OPEN_JTALK_DIC_DIR as OJT_DIC;
 //!
 //! // ダウンローダーにて`models`としてダウンロードできるもの
-//! # #[cfg(any())]
+//! # #[cfg(false)]
 //! const VVM: &str = "./voicevox_core/models/vvms/0.vvm";
 //! # use test_util::SAMPLE_VOICE_MODEL_FILE_PATH as VVM;
 //!
-//! # #[cfg(any())]
+//! # #[cfg(false)]
 //! const TARGET_CHARACTER_NAME: &str = "ずんだもん";
 //! # const TARGET_CHARACTER_NAME: &str = "dummy1";
 //! #
-//! # #[cfg(any())]
+//! # #[cfg(false)]
 //! const TARGET_STYLE_NAME: &str = "ノーマル";
 //! # const TARGET_STYLE_NAME: &str = "style1";
 //! #
@@ -117,7 +117,7 @@
 //! };
 //!
 //! // ダウンローダーにて`onnxruntime`としてダウンロードできるもの
-//! # #[cfg(any())]
+//! # #[cfg(false)]
 //! const VVORT: &str = concatcp!(
 //!     "./voicevox_core/onnxruntime/lib/",
 //!     Onnxruntime::LIB_VERSIONED_FILENAME,
@@ -125,23 +125,23 @@
 //! # use test_util::ONNXRUNTIME_DYLIB_PATH as VVORT;
 //!
 //! // ダウンローダーにて`models`としてダウンロードできるもの
-//! # #[cfg(any())]
+//! # #[cfg(false)]
 //! const VVM: &str = "./voicevox_core/models/vvms/s0.vvm";
 //! # use test_util::SAMPLE_VOICE_MODEL_FILE_PATH as VVM;
 //!
-//! # #[cfg(any())]
+//! # #[cfg(false)]
 //! const SINGING_TEACHER_CHARACTER_NAME: &str = "波音リツ";
 //! # const SINGING_TEACHER_CHARACTER_NAME: &str = "dummy4";
 //! #
-//! # #[cfg(any())]
+//! # #[cfg(false)]
 //! const SINGING_TEACHER_STYLE_NAME: &str = "ノーマル";
 //! # const SINGING_TEACHER_STYLE_NAME: &str = "style4-2";
 //! #
-//! # #[cfg(any())]
+//! # #[cfg(false)]
 //! const SINGER_CHARACTER_NAME: &str = "ずんだもん";
 //! # const SINGER_CHARACTER_NAME: &str = "dummy4";
 //! #
-//! # #[cfg(any())]
+//! # #[cfg(false)]
 //! const SINGER_STYLE_NAME: &str = "ノーマル";
 //! # const SINGER_STYLE_NAME: &str = "style4-1";
 //!
@@ -239,11 +239,11 @@
 //!
 //! fn f(synth: &Synthesizer<impl TextAnalyzer>) -> anyhow::Result<()> {
 //! #    const TEXT: &str = "";
-//! #   #[cfg(any())]
+//! #   #[cfg(false)]
 //!     const TEXT: &str = _;
 //! #
 //! #   const STYLE_ID: StyleId = StyleId(0);
-//! #   #[cfg(any())]
+//! #   #[cfg(false)]
 //!     const STYLE_ID: StyleId = _;
 //!
 //!     let wav1 = synth.tts(TEXT, STYLE_ID).perform()?;
@@ -455,15 +455,15 @@ pub use self::{
         voice_model::VoiceModelId,
     },
     engine::{
+        Phoneme, SamplingRate, Sil,
         song::{
             queries::{FrameAudioQuery, FramePhoneme, Key, Note, NoteId, OptionalLyric, Score},
             validate::ensure_compatible,
         },
         talk::{
-            user_dict::{UserDictWord, UserDictWordBuilder, UserDictWordType},
             AccentPhrase, AudioQuery, Mora,
+            user_dict::{UserDictWord, UserDictWordBuilder, UserDictWordType},
         },
-        Phoneme, SamplingRate, Sil,
     },
     error::{Error, ErrorKind},
     result::Result,

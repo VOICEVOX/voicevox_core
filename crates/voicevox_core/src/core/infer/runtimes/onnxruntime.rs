@@ -19,16 +19,16 @@ use std::{
     vec,
 };
 
-use anyhow::{anyhow, bail, ensure, Context as _};
+use anyhow::{Context as _, anyhow, bail, ensure};
 use duplicate::duplicate_item;
 use ndarray::{Array, Dimension};
 use ort::{
     environment::Environment,
     execution_providers::{
-        cuda::CuDNNConvAlgorithmSearch, CPUExecutionProvider, CUDAExecutionProvider,
-        DirectMLExecutionProvider, ExecutionProvider as _,
+        CPUExecutionProvider, CUDAExecutionProvider, DirectMLExecutionProvider,
+        ExecutionProvider as _, cuda::CuDNNConvAlgorithmSearch,
     },
-    session::{builder::GraphOptimizationLevel, RunOptions},
+    session::{RunOptions, builder::GraphOptimizationLevel},
     tensor::{PrimitiveTensorElementType, TensorElementType},
     value::ValueType,
 };
@@ -537,7 +537,7 @@ fn extract_outputs(
 }
 
 pub(crate) mod blocking {
-    use ref_cast::{ref_cast_custom, RefCastCustom};
+    use ref_cast::{RefCastCustom, ref_cast_custom};
 
     use crate::SupportedDevices;
 
@@ -713,7 +713,7 @@ pub(crate) mod blocking {
 }
 
 pub(crate) mod nonblocking {
-    use ref_cast::{ref_cast_custom, RefCastCustom};
+    use ref_cast::{RefCastCustom, ref_cast_custom};
 
     use crate::SupportedDevices;
 

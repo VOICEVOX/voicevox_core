@@ -7,22 +7,17 @@ on:
         description: "テスト対象のコアのバージョン。無指定時はprerelease込みの最新release。"
         type: string
         required: false
-  # 新しいビルドができるまで、このworkflowが壊れて動かないことを許容する
-  # https://github.com/VOICEVOX/voicevox_core/issues/741#issuecomment-1935303742
-  #push:
-  #  branches:
-  #    - main
-  #pull_request:
-  #  paths:
-  #    - "Cargo.*"
-  #    - "crates/downloader/**"
-  #    - rust-toolchain
-  #    - ".cargo/config.toml" # 今のところは未使用ではあるが、Rustを利用するワークフローとして統一しておく。
-  #    - ".github/actions/rust-toolchain-from-file/**"
-  #    - ".github/workflows/download_test.yml"
-
-env:
-  VERSION: ${{ inputs.version || 'prerelease-latest' }}
+  push:
+    branches:
+      - main
+  pull_request:
+    paths:
+      - "Cargo.*"
+      - "crates/downloader/**"
+      - rust-toolchain
+      - ".cargo/config.toml" # 今のところは未使用ではあるが、Rustを利用するワークフローとして統一しておく。
+      - ".github/actions/rust-toolchain-from-file/**"
+      - ".github/workflows/download_test.yml"
 
 defaults:
   run:
@@ -31,14 +26,24 @@ defaults:
 # TODO: テスト内容がv0.14当時の考え方を引きずっているので、今のダウンローダーに合うように再考する。
 
 jobs:
+  config:
+    runs-on: ubuntu-slim
+    outputs:
+      version: ${{ inputs.version || 'prerelease-latest' }}
+      use-released-downloader: ${{ !!inputs.version }}
+    steps:
+      - name: NOP
+        run: ':'
+
   download-releases:
+    needs: config
     strategy:
       fail-fast: false
       matrix:
         include:
           - name: 通常ダウンロード
             os: windows-latest
-            download_command: cargo run -v -p downloader -- # バージョン指定のために -- が必要
+            additional_opts: ''
             download_dir: voicevox_core
             check_items: |
               c_api/lib/voicevox_core.dll
@@ -51,7 +56,7 @@ jobs:
               additional_libraries/
           - name: CpuArch指定
             os: windows-latest
-            download_command: cargo run -v -p downloader -- --cpu-arch x86
+            additional_opts: --cpu-arch x86
             download_dir: voicevox_core
             check_items: |
               c_api/lib/voicevox_core.dll
@@ -62,7 +67,7 @@ jobs:
               additional_libraries/
           - name: output先指定ダウンロード
             os: windows-latest
-            download_command: cargo run -v -p downloader -- -o other_output
+            additional_opts: -o other_output
             download_dir: other_output
             check_items: |
               c_api/lib/voicevox_core.dll
@@ -73,7 +78,7 @@ jobs:
               additional_libraries/
           - name: Min option確認
             os: windows-latest
-            download_command: cargo run -v -p downloader -- --min
+            additional_opts: --min
             download_dir: voicevox_core
             check_items: |
               c_api/lib/voicevox_core.dll
@@ -85,7 +90,7 @@ jobs:
               dict/
           - name: DirectML option確認
             os: windows-latest
-            download_command: cargo run -v -p downloader -- --devices directml
+            additional_opts: --devices directml
             download_dir: voicevox_core
             check_items: |
               c_api/lib/voicevox_core.dll
@@ -103,7 +108,7 @@ jobs:
               additional_libraries/*curand*
           - name: DirectMLかつMin option確認
             os: windows-latest
-            download_command: cargo run -v -p downloader -- --devices directml --min
+            additional_opts: --devices directml --min
             download_dir: voicevox_core
             check_items: |
               c_api/README.txt
@@ -115,7 +120,7 @@ jobs:
               dict/
           - name: cuda option確認
             os: windows-latest
-            download_command: cargo run -v -p downloader -- --devices cuda
+            additional_opts: --devices cuda
             download_dir: voicevox_core
             check_items: |
               c_api/lib/voicevox_core.dll
@@ -137,7 +142,7 @@ jobs:
               additional_libraries/*directml*
           - name: cudaかつmin option確認
             os: windows-latest
-            download_command: cargo run -v -p downloader -- --devices cuda --min
+            additional_opts: --devices cuda --min
             download_dir: voicevox_core
             check_items: |
               c_api/lib/voicevox_core.dll
@@ -151,25 +156,57 @@ jobs:
     name: ${{ matrix.name }}-${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
+        if: '!fromJson(needs.config.outputs.use-released-downloader)'
       - name: Set up Rust
+        if: '!fromJson(needs.config.outputs.use-released-downloader)'
         uses: ./.github/actions/rust-toolchain-from-file
-      - name: Get prerelease latest version
-        if: ${{ env.VERSION == 'prerelease-latest' }}
+      - name: Determine version
         run: |
-          VERSION=$(
-            curl -sSf --retry 3 --retry-delay 5 https://api.github.com/repos/VOICEVOX/voicevox_core/releases \
-              -H 'authorization: Bearer ${{ github.token }}' \
-              -H 'content-type: application/json' |
-            jq -er '.[0].tag_name'
-          )
-          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          version=${{ needs.config.outputs.version }}
+          if [ "$version" = prerelease-latest ]; then
+            version=$(
+              curl -sSf --retry 3 --retry-delay 5 https://api.github.com/repos/VOICEVOX/voicevox_core/releases \
+                -H 'authorization: Bearer ${{ github.token }}' \
+                -H 'content-type: application/json' |
+              jq -er 'map(select(.draft | not)) | .[0].tag_name'
+            )
+          fi
+          echo "VERSION=$version" >> "$GITHUB_ENV"
       - name: Execute download command
         # TODO: `voicevox_onnxruntime-1.17.3`のprerelease指定を外したら`--onnxruntime-version`はlatest指定にする
         # TODO: voicevox_vvm 0.16.0のprerelease指定を外したら`--models-version`の指定をやめる
         # `"y"`を流し込むことで「利用規約への同意」を行う
         # (この際`echo y`ではなく`yes`を使うと謎の要因により無言で異常終了する)
-        run: echo y | ${{ matrix.download_command }} --c-api-version ${{ env.VERSION }} --c-api-repo ${{ github.repository }} --onnxruntime-version voicevox_onnxruntime-1.17.3 --models-version 0.16.0
+        run: |
+          use_released_downloader=${{ needs.config.outputs.use-released-downloader }}
+
+          opts=(
+            --c-api-version "$VERSION"
+            --c-api-repo "$GITHUB_REPOSITORY"
+            --onnxruntime-version voicevox_onnxruntime-1.17.3
+            --models-version 0.16.0
+          )
+          opts+=(${{ matrix.additional_opts }})
+
+          echo y | if [ $use_released_downloader = true ]; then
+            case "$RUNNER_OS,$RUNNER_ARCH" in
+              Windows,X64) downloader_name=download-windows-x64.exe ;;
+              Linux,X64) downloader_name=download-linux-x64 ;;
+              Linux,ARM64) downloader_name=download-linux-arm64 ;;
+              macOS,X64) downloader_name=download-osx-x64 ;;
+              macOS,ARM64) downloader_name=download-osx-arm64 ;;
+              *)
+                echo "::error title=Execute download command::Unexpected runner: ($RUNNER_OS, $RUNNER_ARCH)"
+                exit 1
+            esac
+            gh release -R "$GITHUB_REPOSITORY" download "$VERSION" -p $downloader_name
+            chmod u+x ./$downloader_name
+            ./$downloader_name "${opts[@]}"
+          else
+            cargo run -v -p downloader -- "${opts[@]}"
+          fi
         env:
+          VV_DOWNLOADER_C_API_ALLOW_DRAFT: 1
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Check downloaded version
         run: |
