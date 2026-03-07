@@ -1,5 +1,3 @@
-use std::future::Future;
-
 use easy_ext::ext;
 
 /// `futures_lite::future::block_on`を、[pollster]のように`.block_on()`という形で使えるようにする。

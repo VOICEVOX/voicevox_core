@@ -501,7 +501,7 @@ mod tests {
     use pretty_assertions::assert_eq;
     use strum::EnumCount as _;
 
-    use super::{MoraKana, MORA_KANA_TO_MORA_PHONEMES, MORA_PHONEMES_TO_MORA_KANA};
+    use super::{MORA_KANA_TO_MORA_PHONEMES, MORA_PHONEMES_TO_MORA_KANA, MoraKana};
 
     #[test]
     fn mora_phonemes_to_mora_kana_has_the_same_length_as_mora_kana() {

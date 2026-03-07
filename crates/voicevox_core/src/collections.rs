@@ -118,7 +118,7 @@ impl<T> Deref for NonEmptyVec<T> {
 
 mod non_empty_slice {
     use derive_more::AsRef;
-    use ref_cast::{ref_cast_custom, RefCastCustom};
+    use ref_cast::{RefCastCustom, ref_cast_custom};
 
     #[derive(RefCastCustom, AsRef)]
     #[repr(transparent)]

@@ -11,10 +11,10 @@ use crate::error::{InvalidQueryError, InvalidQueryErrorSource};
 
 use super::{
     super::super::{
+        DEFAULT_SAMPLING_RATE,
         acoustic_feature_extractor::{Consonant, NonConsonant},
         sampling_rate::SamplingRate,
         validate::Validate as _,
-        DEFAULT_SAMPLING_RATE,
     },
     AccentPhrase, AudioQuery, Mora,
 };

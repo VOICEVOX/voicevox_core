@@ -10,20 +10,19 @@ use indexmap::IndexMap;
 use itertools::iproduct;
 
 use crate::{
-    error::{ErrorRepr, LoadModelError, LoadModelErrorKind, LoadModelResult},
     Result,
+    error::{ErrorRepr, LoadModelError, LoadModelErrorKind, LoadModelResult},
 };
 
 use super::{
     infer::{
-        self,
+        self, InferenceDomain, InferenceInputSignature, InferenceRuntime, InferenceSessionOptions,
+        InferenceSignature,
         domains::{
-            inference_domain_map_values, ExperimentalTalkDomain, FrameDecodeDomain,
-            InferenceDomainMap, SingingTeacherDomain, TalkDomain,
+            ExperimentalTalkDomain, FrameDecodeDomain, InferenceDomainMap, SingingTeacherDomain,
+            TalkDomain, inference_domain_map_values,
         },
         session_set::{InferenceSessionCell, InferenceSessionSet},
-        InferenceDomain, InferenceInputSignature, InferenceRuntime, InferenceSessionOptions,
-        InferenceSignature,
     },
     manifest::{InnerVoiceId, StyleIdToInnerVoiceId},
     metas::{self, CharacterMeta, StyleId, StyleMeta, VoiceModelMeta},
@@ -425,11 +424,11 @@ mod tests {
         super::{
             devices::{DeviceSpec, GpuSpec},
             infer::{
-                domains::{
-                    inference_domain_map, ExperimentalTalkOperation, FrameDecodeOperation,
-                    InferenceDomainMap, SingingTeacherOperation, TalkOperation,
-                },
                 InferenceSessionOptions,
+                domains::{
+                    ExperimentalTalkOperation, FrameDecodeOperation, InferenceDomainMap,
+                    SingingTeacherOperation, TalkOperation, inference_domain_map,
+                },
             },
         },
         Status,

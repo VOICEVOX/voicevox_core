@@ -10,15 +10,15 @@ use duplicate::duplicate_item;
 use num_traits::ToPrimitive as _;
 use pastey::paste;
 use serde::{
-    de::{self, Unexpected},
     Deserialize, Deserializer, Serialize,
+    de::{self, Unexpected},
 };
 use typed_floats::{NonNaNFinite, PositiveFinite};
 use typeshare::U53;
 
 use crate::{
-    error::{InvalidQueryError, InvalidQueryErrorSource},
     SamplingRate,
+    error::{InvalidQueryError, InvalidQueryErrorSource},
 };
 
 use super::super::Phoneme;
@@ -561,10 +561,10 @@ mod key {
         #[must_use = "same reason as `{integer}::strict_add`"]
         #[track_caller]
         pub const fn strict_add(self, rhs: u8) -> Self {
-            if let Some(n) = self.0.checked_add(rhs) {
-                if let Some(ret) = Self::__new(n) {
-                    return ret;
-                }
+            if let Some(n) = self.0.checked_add(rhs)
+                && let Some(ret) = Self::__new(n)
+            {
+                return ret;
             }
             panic!("attempt to add with overflow");
         }
@@ -601,10 +601,10 @@ mod key {
         #[must_use = "same reason as `u{n}::strict_add_signed`"]
         #[track_caller]
         pub const fn strict_add_signed(self, rhs: i8) -> Self {
-            if let Some(n) = self.0.checked_add_signed(rhs) {
-                if let Some(ret) = Self::__new(n) {
-                    return ret;
-                }
+            if let Some(n) = self.0.checked_add_signed(rhs)
+                && let Some(ret) = Self::__new(n)
+            {
+                return ret;
             }
             panic!("attempt to add with overflow");
         }
@@ -635,10 +635,10 @@ mod key {
         #[must_use = "same reason as `{integer}::strict_sub`"]
         #[track_caller]
         pub const fn strict_sub(self, rhs: u8) -> Self {
-            if let Some(n) = self.0.checked_sub(rhs) {
-                if let Some(ret) = Self::__new(n) {
-                    return ret;
-                }
+            if let Some(n) = self.0.checked_sub(rhs)
+                && let Some(ret) = Self::__new(n)
+            {
+                return ret;
             }
             panic!("attempt to subtract with overflow");
         }
@@ -830,11 +830,10 @@ mod tests {
     fn key_strict_add_works() {
         for (lhs, rhs) in iproduct!(Key::MIN.get()..=Key::MAX.get(), 0..=u8::MAX) {
             let lhs = Key::__new(lhs).unwrap();
-            // TODO: Rust 2024にしたらlet chainにする
-            if let Some(sum) = lhs.get().checked_add(rhs) {
-                if sum <= Key::MAX.get() {
-                    assert_eq!(sum, lhs.strict_add(rhs).get());
-                }
+            if let Some(sum) = lhs.get().checked_add(rhs)
+                && sum <= Key::MAX.get()
+            {
+                assert_eq!(sum, lhs.strict_add(rhs).get());
             }
         }
     }
@@ -843,11 +842,10 @@ mod tests {
     fn key_strict_add_signed_works() {
         for (lhs, rhs) in iproduct!(Key::MIN.get()..=Key::MAX.get(), i8::MIN..=i8::MAX) {
             let lhs = Key::__new(lhs).unwrap();
-            // TODO: Rust 2024にしたらlet chainにする
-            if let Some(sum) = lhs.get().checked_add_signed(rhs) {
-                if sum <= Key::MAX.get() {
-                    assert_eq!(sum, lhs.strict_add_signed(rhs).get());
-                }
+            if let Some(sum) = lhs.get().checked_add_signed(rhs)
+                && sum <= Key::MAX.get()
+            {
+                assert_eq!(sum, lhs.strict_add_signed(rhs).get());
             }
         }
     }
@@ -856,11 +854,10 @@ mod tests {
     fn key_strict_sub_works() {
         for (lhs, rhs) in iproduct!(Key::MIN.get()..=Key::MAX.get(), 0..=u8::MAX) {
             let lhs = Key::__new(lhs).unwrap();
-            // TODO: Rust 2024にしたらlet chainにする
-            if let Some(sum) = lhs.get().checked_sub(rhs) {
-                if sum <= Key::MAX.get() {
-                    assert_eq!(sum, lhs.strict_sub(rhs).get());
-                }
+            if let Some(sum) = lhs.get().checked_sub(rhs)
+                && sum <= Key::MAX.get()
+            {
+                assert_eq!(sum, lhs.strict_sub(rhs).get());
             }
         }
     }

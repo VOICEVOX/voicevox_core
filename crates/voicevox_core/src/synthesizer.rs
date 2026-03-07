@@ -2,15 +2,14 @@
 //!
 //! メインの部分。[`crate::core`]と[`crate::engine`]の二つはここで用いる。
 
-use anyhow::{anyhow, bail, ensure, Context as _};
+use anyhow::{Context as _, anyhow, bail, ensure};
 use easy_ext::ext;
 use educe::Educe;
 use enum_map::enum_map;
 use futures_util::TryFutureExt as _;
-use itertools::{chain, Itertools as _};
+use itertools::{Itertools as _, chain};
 use std::{
     fmt::{self, Debug},
-    future::Future,
     marker::PhantomData,
     ops::Range,
     sync::Arc,
@@ -19,30 +18,32 @@ use tracing::info;
 use typed_floats::{NonNaNFinite, PositiveFinite};
 
 use crate::{
+    AccentPhrase, AudioQuery, Result, StyleId, VoiceModelId, VoiceModelMeta,
     asyncs::{Async, BlockingThreadPool, SingleTasked},
     collections::{NonEmptyIterator as _, NonEmptySlice, NonEmptyVec},
     core::{
+        Array1ExtForPostProcess as _, Array1ExtForPreProcess as _, ArrayExt as _,
         devices::{self, DeviceSpec, GpuSpec},
         ensure_minimum_phoneme_length,
         infer::{
-            self,
+            self, InferenceRuntime, InferenceSessionOptions,
             domains::{
-                experimental_talk, talk, DecodeInput, DecodeOutput, ExperimentalTalkDomain,
-                ExperimentalTalkOperation, FrameDecodeDomain, FrameDecodeOperation,
-                GenerateFullIntermediateInput, GenerateFullIntermediateOutput, InferenceDomainMap,
+                DecodeInput, DecodeOutput, ExperimentalTalkDomain, ExperimentalTalkOperation,
+                FrameDecodeDomain, FrameDecodeOperation, GenerateFullIntermediateInput,
+                GenerateFullIntermediateOutput, InferenceDomainMap,
                 PredictSingConsonantLengthInput, PredictSingConsonantLengthOutput,
                 PredictSingF0Input, PredictSingF0Output, PredictSingVolumeInput,
                 PredictSingVolumeOutput, RenderAudioSegmentInput, RenderAudioSegmentOutput,
                 SfDecodeInput, SfDecodeOutput, SingingTeacherDomain, SingingTeacherOperation,
-                TalkDomain, TalkOperation,
+                TalkDomain, TalkOperation, experimental_talk, talk,
             },
-            InferenceRuntime, InferenceSessionOptions,
         },
         pad_decoder_feature,
         status::Status,
-        voice_model, Array1ExtForPostProcess as _, Array1ExtForPreProcess as _, ArrayExt as _,
+        voice_model,
     },
     engine::{
+        DEFAULT_SAMPLING_RATE, IteratorExt as _, PhonemeCode,
         song::{
             self,
             interpret::{ConsonantLengthsFeature, PhonemeFeature, SfDecoderFeature},
@@ -50,15 +51,14 @@ use crate::{
             validate::{ValidatedNote, ValidatedScore},
         },
         talk::{
-            create_kana, initial_process, parse_kana, split_mora, DecoderFeature, LengthedPhoneme,
-            ValidatedAccentPhrase, ValidatedAudioQuery, ValidatedMora,
+            DecoderFeature, LengthedPhoneme, ValidatedAccentPhrase, ValidatedAudioQuery,
+            ValidatedMora, create_kana, initial_process, parse_kana, split_mora,
         },
-        to_s16le_pcm, wav_from_s16le, IteratorExt as _, PhonemeCode, DEFAULT_SAMPLING_RATE,
+        to_s16le_pcm, wav_from_s16le,
     },
     error::ErrorRepr,
     future::FutureExt as _,
     numerics::positive_finite_f32,
-    AccentPhrase, AudioQuery, Result, StyleId, VoiceModelId, VoiceModelMeta,
 };
 
 pub const DEFAULT_CPU_NUM_THREADS: u16 = 0;
@@ -1517,7 +1517,7 @@ fn list_windows_video_cards() {
     use humansize::BINARY;
     use tracing::{error, info};
     use windows::Win32::Graphics::Dxgi::{
-        CreateDXGIFactory, IDXGIFactory, DXGI_ADAPTER_DESC, DXGI_ERROR_NOT_FOUND,
+        CreateDXGIFactory, DXGI_ADAPTER_DESC, DXGI_ERROR_NOT_FOUND, IDXGIFactory,
     };
 
     info!("検出されたGPU (DirectMLにはGPU 0が使われます):");
@@ -1627,8 +1627,8 @@ pub(crate) mod blocking {
     use typed_floats::{NonNaNFinite, PositiveFinite};
 
     use crate::{
-        asyncs::SingleTasked, future::FutureExt as _, AccentPhrase, AudioQuery, FrameAudioQuery,
-        Score, StyleId, VoiceModelId, VoiceModelMeta,
+        AccentPhrase, AudioQuery, FrameAudioQuery, Score, StyleId, VoiceModelId, VoiceModelMeta,
+        asyncs::SingleTasked, future::FutureExt as _,
     };
 
     use super::{
@@ -2570,8 +2570,8 @@ pub(crate) mod nonblocking {
     use typed_floats::{NonNaNFinite, PositiveFinite};
 
     use crate::{
-        asyncs::BlockingThreadPool, AccentPhrase, AudioQuery, FrameAudioQuery, Result, Score,
-        StyleId, VoiceModelId, VoiceModelMeta,
+        AccentPhrase, AudioQuery, FrameAudioQuery, Result, Score, StyleId, VoiceModelId,
+        VoiceModelMeta, asyncs::BlockingThreadPool,
     };
 
     use super::{
@@ -3374,8 +3374,8 @@ mod tests {
 
     use super::{AccelerationMode, AsInner as _, DEFAULT_HEAVY_INFERENCE_CANCELLABLE};
     use crate::{
-        asyncs::BlockingThreadPool, engine::talk::Mora, macros::tests::assert_debug_fmt_eq,
         AccentPhrase, FramePhoneme, Note, NoteId, Result, Score, StyleId,
+        asyncs::BlockingThreadPool, engine::talk::Mora, macros::tests::assert_debug_fmt_eq,
     };
     use ::test_util::OPEN_JTALK_DIC_DIR;
     use itertools::Itertools as _;
@@ -4156,22 +4156,24 @@ mod tests {
                 .collect::<Vec<_>>()
         );
 
-        assert!([
-            num_total_frames,
-            frame_audio_query
-                .phonemes
-                .iter()
-                .map(
-                    |&FramePhoneme { frame_length, .. }| typeshare::usize_from_u53_saturated(
-                        frame_length
+        assert!(
+            [
+                num_total_frames,
+                frame_audio_query
+                    .phonemes
+                    .iter()
+                    .map(
+                        |&FramePhoneme { frame_length, .. }| typeshare::usize_from_u53_saturated(
+                            frame_length
+                        )
                     )
-                )
-                .sum::<usize>(),
-            frame_audio_query.f0.len(),
-            frame_audio_query.volume.len(),
-        ]
-        .into_iter()
-        .all_equal());
+                    .sum::<usize>(),
+                frame_audio_query.f0.len(),
+                frame_audio_query.volume.len(),
+            ]
+            .into_iter()
+            .all_equal()
+        );
 
         let f0s = synthesizer
             .create_sing_frame_f0(score, &frame_audio_query, 6000.into())

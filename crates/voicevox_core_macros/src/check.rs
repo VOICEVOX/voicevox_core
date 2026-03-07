@@ -1,4 +1,4 @@
-use syn::{spanned::Spanned as _, Generics};
+use syn::{Generics, spanned::Spanned as _};
 
 pub(crate) fn deny_generics(generics: &Generics) -> syn::Result<()> {
     if !generics.params.is_empty() {
