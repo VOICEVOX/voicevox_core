@@ -1,10 +1,10 @@
 # 処理の流れ
 # 1. create_draft_release: タグなしでdraft releaseを先に作成
-# 2. build_and_deploy等: 各成果物をdraft releaseにアップロード
-# 3. prerelease: 全ビルド成功後に初めてタグを作成し、draftをprereleaseに変更
-#    この段階で失敗した場合、手動でリリース作業を続行する。
+# 2. build等: 各成果物をdraft releaseにアップロード
+# 3. set_tag_name: draft releaseに`tag_name`を設定
+# 4. download_test: draft releaseにアップロードしたダウンローダーとC APIバイナリに対してテスト
 
-name: build and deploy workflow
+name: build workflow
 
 on:
   workflow_dispatch:
@@ -47,7 +47,7 @@ jobs:
     outputs:
       includes: ${{ steps.strategy_matrix.outputs.includes }}
 
-      # - deploy
+      # - draft-release: draft releaseを作り、ビルド成果物をそこにアップロードする。
       # - simple-test: 簡易テスト。mainブランチ、workflow_dispatch以外は簡易テストとする。
       # - full-test
       mode: ${{ steps.strategy_matrix.outputs.mode }}
@@ -60,7 +60,7 @@ jobs:
         run: |
           mode=${{
             case(
-              !!inputs.version && inputs.version != '0.0.0', 'deploy',
+              !!inputs.version && inputs.version != '0.0.0', 'draft-release',
               github.ref != 'refs/heads/main' && github.event_name != 'workflow_dispatch', 'simple-test',
               'full-test'
             )
@@ -185,7 +185,7 @@ jobs:
     needs: config
     runs-on: ubuntu-latest
     outputs:
-      # `deploy`がtrueなら、GitHub REST APIの`Release`オブジェクトの一部。falseならnull。
+      # `draft-release`がtrueなら、GitHub REST APIの`Release`オブジェクトの一部。falseならnull。
       release: ${{ steps.create-draft-release.outputs.release || 'null' }}
     steps:
       - name: Confirm that the tag does not exist at the moment
@@ -206,7 +206,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create a draft release without real tag
-        if: needs.config.outputs.mode == 'deploy'
+        if: needs.config.outputs.mode == 'draft-release'
         id: create-draft-release
         run: |
           name=${{ needs.config.outputs.version }}
@@ -226,7 +226,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  build_and_deploy:
+  build:
     needs: [config, create_draft_release]
     environment: ${{ inputs.code_signing && 'code_signing' || '' }} # コード署名用のenvironment
     strategy:
@@ -341,13 +341,13 @@ jobs:
           cd artifact
           7z a "../${{ env.ASSET_NAME }}.zip" "${{ env.ASSET_NAME }}"
       - name: Upload to Release
-        if: needs.config.outputs.mode == 'deploy' && matrix.c_release_format == 'plain-cdylib'
+        if: needs.config.outputs.mode == 'draft-release' && matrix.c_release_format == 'plain-cdylib'
         uses: ./.github/actions/upload-gh-release-assets
         with:
           upload-url: ${{ fromJson(needs.create_draft_release.outputs.release).upload_url }}
           files: ${{ env.ASSET_NAME }}.zip
       - name: Upload Python whl to Release
-        if: needs.config.outputs.mode == 'deploy' && matrix.python_whl
+        if: needs.config.outputs.mode == 'draft-release' && matrix.python_whl
         uses: ./.github/actions/upload-gh-release-assets
         with:
           upload-url: ${{ fromJson(needs.create_draft_release.outputs.release).upload_url }}
@@ -360,8 +360,8 @@ jobs:
           path: java_artifact
 
   build_xcframework:
-    if: ${{ needs.config.outputs.mode == 'deploy' || needs.config.outputs.mode == 'full-test' }}
-    needs: [config, create_draft_release, build_and_deploy]
+    if: ${{ needs.config.outputs.mode == 'draft-release' || needs.config.outputs.mode == 'full-test' }}
+    needs: [config, create_draft_release, build]
     runs-on: macos-14
     env:
       IOS_X86_64_PATH: artifact/voicevox_core-x86_64-apple-ios
@@ -394,7 +394,7 @@ jobs:
           cd ${{ steps.create-xcframework.outputs.output_asset_path }}
           7z a "../../${{ env.ASSET_NAME }}.zip" "voicevox_core.xcframework"
       - name: Upload to Release
-        if: needs.config.outputs.mode == 'deploy'
+        if: needs.config.outputs.mode == 'draft-release'
         uses: ./.github/actions/upload-gh-release-assets
         with:
           upload-url: ${{ fromJson(needs.create_draft_release.outputs.release).upload_url }}
@@ -402,8 +402,8 @@ jobs:
 
   build_java_package:
     runs-on: ubuntu-latest
-    if: ${{ needs.config.outputs.mode == 'deploy' || needs.config.outputs.mode == 'full-test' }}
-    needs: [config, create_draft_release, build_and_deploy]
+    if: ${{ needs.config.outputs.mode == 'draft-release' || needs.config.outputs.mode == 'full-test' }}
+    needs: [config, create_draft_release, build]
     steps:
       - uses: actions/checkout@v5
       - name: Set up Rust
@@ -481,16 +481,16 @@ jobs:
           zip -r /tmp/java_packages.zip .
 
       - name: Upload to Release
-        if: needs.config.outputs.mode == 'deploy'
+        if: needs.config.outputs.mode == 'draft-release'
         uses: ./.github/actions/upload-gh-release-assets
         with:
           upload-url: ${{ fromJson(needs.create_draft_release.outputs.release).upload_url }}
           files: /tmp/java_packages.zip
 
-  build_and_deploy_downloader:
+  build_downloader:
     needs: [config, create_draft_release]
-    if: needs.config.outputs.mode == 'deploy'
-    uses: ./.github/workflows/build_and_deploy_downloader.yml
+    if: needs.config.outputs.mode == 'draft-release'
+    uses: ./.github/workflows/build-downloader.yml
     with:
       upload_url: ${{ fromJson(needs.create_draft_release.outputs.release).upload_url }}
       version: ${{ needs.config.outputs.version }}
@@ -498,8 +498,8 @@ jobs:
     secrets: inherit
 
   set_tag_name:
-    needs: [config, create_draft_release, build_and_deploy, build_xcframework, build_java_package, build_and_deploy_downloader]
-    if: needs.config.outputs.mode == 'deploy'
+    needs: [config, create_draft_release, build, build_xcframework, build_java_package, build_downloader]
+    if: needs.config.outputs.mode == 'draft-release'
     runs-on: ubuntu-latest
     steps:
       - name: Set the tag name
@@ -527,44 +527,14 @@ jobs:
             sleep 1
           done
 
-          echo "::error title=prerelease::Could not set 'tag_name'. Please proceed the release process manually"
+          echo "::error title=set_tag_name::Could not set 'tag_name'. Please set manually"
           exit 1
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  prerelease:
-    needs: [config, create_draft_release, set_tag_name, download_test]
-    if: needs.config.outputs.mode == 'deploy'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Create the tag
-        run: |
-          tag=${{ needs.config.outputs.version }}
-          gh api \
-            "/repos/$GITHUB_REPOSITORY/git/refs" \
-            --method POST \
-            -H 'Accept: application/vnd.github+json' \
-            -H 'X-GitHub-Api-Version: 2022-11-28' \
-            -f "ref=refs/tags/$tag" \
-            -f "sha=$GITHUB_SHA"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Prerelease
-        run: |
-          gh api \
-            "/repos/$GITHUB_REPOSITORY/releases/${{ fromJson(needs.create_draft_release.outputs.release).id }}" \
-            --method PATCH \
-            -H 'Accept: application/vnd.github+json' \
-            -H 'X-GitHub-Api-Version: 2022-11-28' \
-            -F draft=false \
-            -F prerelease=true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   download_test:
     needs: [config, set_tag_name]
-    if: needs.config.outputs.mode == 'deploy'
+    if: needs.config.outputs.mode == 'draft-release'
     uses: ./.github/workflows/download_test.yml
     with:
       version: ${{ inputs.version }}
