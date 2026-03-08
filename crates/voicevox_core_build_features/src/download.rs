@@ -67,7 +67,7 @@ pub fn download(add_link_search: bool) -> anyhow::Result<()> {
     let lib_symlink_file_name =
         Some(lib_unversioned_file_name()?).filter(|s| s != lib_versioned_file_name);
 
-    // TODO: Rust 1.91なら`std::iter::chain`がある
+    // TODO: MSRVを1.91にしたら`std::iter::chain`にする
     if !itertools::chain([lib_path], importlib_path)
         .map(|p| up_to_date(p.as_ref()))
         .collect::<Result<Vec<_>, _>>()?
@@ -116,7 +116,7 @@ pub fn download(add_link_search: bool) -> anyhow::Result<()> {
 
     let dst = OUT_DIR.ancestors().nth(3).unwrap();
     for dst in [dst, &*dst.join("examples"), &*dst.join("deps")] {
-        // TODO: Rust 1.91なら`std::iter::chain`がある
+        // TODO: MSRVを1.91にしたら`std::iter::chain`にする
         for file_name in itertools::chain([&**lib_versioned_file_name], lib_symlink_file_name) {
             let dst = &dst.join(file_name);
             if !up_to_date(dst.as_ref())? {
