@@ -15,6 +15,7 @@ use std::{
     cmp,
     ffi::CStr,
     fmt::{Debug, Display},
+    mem,
     sync::{Arc, LazyLock},
     vec,
 };
@@ -193,10 +194,9 @@ fn setup(api_base: &ort::sys::OrtApiBase, lib: TargetLibOnnxruntime<'_>) -> anyh
 
     let env = Environment::current()?;
 
-    // TODO: `Environment`の数がゼロだとC API側で謎のdouble freeが起きてSEGVするため、プロセスの終了までゼロにならないようワークアラウンド。
-    // これを解消しないと microsoft/onnxruntime#24579 の可能性が否定しきれないため要調査。
-    static ENV: std::sync::OnceLock<Arc<Environment>> = std::sync::OnceLock::new();
-    ENV.get_or_init(|| env);
+    // `Environment`の数がゼロだとC API側で謎のdouble freeが起きてSEGVするため、プロセスの終了までゼロにならないようワークアラウンド。
+    // TODO: このワークアラウンドによる microsoft/onnxruntime#24579 の可能性が否定しきれないため要調査。
+    mem::forget(env);
 
     Ok(())
 }
