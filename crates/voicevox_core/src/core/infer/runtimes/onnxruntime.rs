@@ -83,9 +83,9 @@ impl Inner {
                 setup(
                     api_base,
                     #[cfg(windows)]
-                    TargetLibOnnxruntime { dll: &lib },
+                    TargetLibOnnxruntimeInfo { dll: &lib },
                     #[cfg(not(windows))]
-                    TargetLibOnnxruntime { filename },
+                    TargetLibOnnxruntimeInfo { filename },
                 )?;
 
                 Ok(Self { _lib: lib })
@@ -113,7 +113,7 @@ impl Inner {
 
                 setup(
                     api_base,
-                    TargetLibOnnxruntime {
+                    TargetLibOnnxruntimeInfo {
                         _marker: PhantomData,
                     },
                 )?;
@@ -130,7 +130,10 @@ impl Inner {
     }
 }
 
-fn setup(api_base: &ort::sys::OrtApiBase, lib: TargetLibOnnxruntime<'_>) -> anyhow::Result<()> {
+fn setup(
+    api_base: &ort::sys::OrtApiBase,
+    lib_info: TargetLibOnnxruntimeInfo<'_>,
+) -> anyhow::Result<()> {
     const EXPECTED_MAJOR_VERSION: u64 = 1;
 
     const _: () = assert!(ort::sys::ORT_API_VERSION == 17);
@@ -163,7 +166,7 @@ fn setup(api_base: &ort::sys::OrtApiBase, lib: TargetLibOnnxruntime<'_>) -> anyh
         cmp::Ordering::Less => bail!(
             "{message_for_version}。\
              ONNX Runtimeはバージョン1.{ORT_API_VERSION}でなくてはなりません",
-            message_for_version = lib.message_for_version(version_string.to_string_lossy()),
+            message_for_version = lib_info.message_for_version(version_string.to_string_lossy()),
             ORT_API_VERSION = ort::sys::ORT_API_VERSION,
         ),
         // TODO: 問題ないとわかっている既知のものであれば警告無しで許容しつつ、未来のものは拒否する。
@@ -171,7 +174,7 @@ fn setup(api_base: &ort::sys::OrtApiBase, lib: TargetLibOnnxruntime<'_>) -> anyh
             "{message_for_version}。\
              対応しているONNX Runtimeのバージョンは1.{ORT_API_VERSION}なので、\
              互換性の問題があるかもしれません",
-            message_for_version = lib.message_for_version(version_string.to_string_lossy()),
+            message_for_version = lib_info.message_for_version(version_string.to_string_lossy()),
             ORT_API_VERSION = ort::sys::ORT_API_VERSION,
         ),
         cmp::Ordering::Equal => {}
@@ -202,7 +205,7 @@ fn setup(api_base: &ort::sys::OrtApiBase, lib: TargetLibOnnxruntime<'_>) -> anyh
 }
 
 #[derive(Clone, Copy)]
-struct TargetLibOnnxruntime<'a> {
+struct TargetLibOnnxruntimeInfo<'a> {
     #[cfg(all(feature = "load-onnxruntime", windows))]
     dll: &'a libloading::Library,
 
@@ -213,7 +216,7 @@ struct TargetLibOnnxruntime<'a> {
     _marker: std::marker::PhantomData<&'a ()>,
 }
 
-impl TargetLibOnnxruntime<'_> {
+impl TargetLibOnnxruntimeInfo<'_> {
     #[cfg(all(feature = "load-onnxruntime", windows))]
     fn message_for_version(self, version_string: impl Display) -> String {
         let Self { dll } = self;
