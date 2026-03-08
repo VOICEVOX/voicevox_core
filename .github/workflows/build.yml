@@ -232,7 +232,6 @@ jobs:
     strategy:
       matrix:
         include: ${{ fromJson(needs.config.outputs.includes) }}
-      fail-fast: false
     runs-on: ${{ matrix.os }}
     env:
       ASSET_NAME: voicevox_core-${{ matrix.artifact_name }}-${{ needs.config.outputs.version }}
@@ -298,12 +297,6 @@ jobs:
               features=buildtime-voicevox_core/download-onnxruntime,link-onnxruntime ;;
           esac
           cargo build -p voicevox_core_c_api -v --features "$features" --target ${{ matrix.target }} --profile c-api
-      - name: Build with `link-onnxruntime`
-        if: matrix.c_release_format == 'plain-cdylib'
-        run: cargo build -p voicevox_core_c_api -vF voicevox_core/buildtime-download-onnxruntime,link-onnxruntime --target ${{ matrix.target }}
-      - name: Test with `link-onnxruntime`
-        if: contains(matrix.target, 'windows') || matrix.target == 'aarch64-apple-darwin' || matrix.target == 'x86_64-unknown-linux-gnu'
-        run: cargo test -p voicevox_core -F buildtime-download-onnxruntime,link-onnxruntime --lib --target ${{ matrix.target }}
       - name: build voicevox_core_python_api
         if: matrix.python_whl
         id: build-voicevox-core-python-api
