@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # !!! コードサイニング証明書を取り扱うので取り扱い注意 !!!
 
-# eSignerCKAを使ってコード署名する
+# Windows上でeSignerCKAを使ってコード署名する
 
 set -eu
 
@@ -49,6 +49,12 @@ THUMBPRINT=$(
     '
 )
 
+# 証明書を破棄
+cleanup() {
+    powershell "& '$INSTALL_DIR\eSignerCKATool.exe' unload"
+}
+trap cleanup EXIT
+
 # 指定ファイルに署名する
 function codesign() {
     TARGET="$1"
@@ -74,6 +80,3 @@ ls $target_file_glob | while read -r target_file; do
         codesign "$target_file"
     fi
 done
-
-# 証明書を破棄
-powershell "& '$INSTALL_DIR\eSignerCKATool.exe' unload"

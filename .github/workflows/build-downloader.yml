@@ -40,7 +40,7 @@ jobs:
       version: ${{ inputs.version || '0.0.0' }}
     steps:
       - name: NOP
-        run: ':'
+        run: ":"
 
   build-downloader:
     needs: config
@@ -110,11 +110,18 @@ jobs:
       - name: Code signing (Windows)
         if: startsWith(matrix.os, 'windows') && inputs.code_signing
         run: |
-          bash build_util/codesign.bash ./${{ matrix.name }}
+          bash build_util/codesign_windows.bash ./${{ matrix.name }}
         env:
           ESIGNERCKA_USERNAME: ${{ secrets.ESIGNERCKA_USERNAME }}
           ESIGNERCKA_PASSWORD: ${{ secrets.ESIGNERCKA_PASSWORD }}
           ESIGNERCKA_TOTP_SECRET: ${{ secrets.ESIGNERCKA_TOTP_SECRET }}
+
+      - name: Code signing (macOS)
+        if: startsWith(matrix.os, 'macos') && inputs.code_signing
+        run: bash build_util/codesign_macos.bash ./${{ matrix.name }}
+        env:
+          APPLE_P12_BASE64: ${{ secrets.APPLE_P12_BASE64 }}
+          APPLE_P12_PASSWORD: ${{ secrets.APPLE_P12_PASSWORD }}
 
       - name: Upload to Release
         if: inputs.upload_url

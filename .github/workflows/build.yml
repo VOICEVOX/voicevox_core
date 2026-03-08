@@ -325,11 +325,17 @@ jobs:
           cp -v target/${{ matrix.target }}/release/*voicevox_core_java_api.{dll,so,dylib} "java_artifact" || true
       - name: Code signing (Windows)
         if: startsWith(matrix.os, 'windows') && inputs.code_signing
-        run: bash build_util/codesign.bash "artifact/${{ env.ASSET_NAME }}/lib/voicevox_core.dll"
+        run: bash build_util/codesign_windows.bash "artifact/${{ env.ASSET_NAME }}/lib/voicevox_core.dll"
         env:
           ESIGNERCKA_USERNAME: ${{ secrets.ESIGNERCKA_USERNAME }}
           ESIGNERCKA_PASSWORD: ${{ secrets.ESIGNERCKA_PASSWORD }}
           ESIGNERCKA_TOTP_SECRET: ${{ secrets.ESIGNERCKA_TOTP_SECRET }}
+      - name: Code signing (macOS)
+        if: contains(matrix.target, '-apple-darwin') && inputs.code_signing
+        run: bash build_util/codesign_macos.bash "artifact/${{ env.ASSET_NAME }}/lib/*voicevox_core.dylib"
+        env:
+          APPLE_P12_BASE64: ${{ secrets.APPLE_P12_BASE64 }}
+          APPLE_P12_PASSWORD: ${{ secrets.APPLE_P12_PASSWORD }}
       - name: Upload artifact to build XCFramework
         if: matrix.c_release_format == 'ios-xcframework'
         uses: actions/upload-artifact@v4
