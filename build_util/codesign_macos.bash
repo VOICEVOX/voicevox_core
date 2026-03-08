@@ -31,11 +31,13 @@ security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
 security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
 security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
 
-# Apple中間証明書のインポート
-DEVELOPER_ID_G2_CA="$(mktemp)"
-curl -fsSL -o "$DEVELOPER_ID_G2_CA" "https://www.apple.com/certificateauthority/DeveloperIDG2CA.cer"
-security import "$DEVELOPER_ID_G2_CA" -k "$KEYCHAIN_PATH"
-rm "$DEVELOPER_ID_G2_CA"
+# Apple中間証明書のインポート（未インストールの場合のみ）
+if ! security find-certificate -c "Developer ID Certification Authority" >/dev/null 2>&1; then
+    DEVELOPER_ID_G2_CA="$(mktemp)"
+    curl -fsSL -o "$DEVELOPER_ID_G2_CA" "https://www.apple.com/certificateauthority/DeveloperIDG2CA.cer"
+    security import "$DEVELOPER_ID_G2_CA" -k "$KEYCHAIN_PATH"
+    rm "$DEVELOPER_ID_G2_CA"
+fi
 
 # .p12証明書のインポート
 security import "$P12_PATH" -k "$KEYCHAIN_PATH" -P "$APPLE_P12_PASSWORD" -T /usr/bin/codesign -A
