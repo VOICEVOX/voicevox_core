@@ -40,7 +40,7 @@ jobs:
       version: ${{ inputs.version || '0.0.0' }}
     steps:
       - name: NOP
-        run: ":"
+        run: ':'
 
   build-downloader:
     needs: config
