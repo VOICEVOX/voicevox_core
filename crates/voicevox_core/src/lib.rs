@@ -2,11 +2,20 @@
 //!
 //! # Feature flags
 //!
-//! このクレートの利用にあたっては以下の二つの[Cargoフィーチャ]のうちどちらかを有効にしなければならない。両方の有効化はコンパイルエラーとなる。[`Onnxruntime`]の初期化方法はこれらのフィーチャによって決まる。
-//!
+//! - **`buildtime-download-onnxruntime`**: ビルド時に後述する環境変数`VVCORE_BUILD_DOWNLOAD_AND_COPY_ORT`が`1`なら、ONNX
+//!   Runtimeのバイナリをダウンロードしてtarget
+//!   directory内の複数箇所に配置する。`VVCORE_BUILD_DOWNLOAD_AND_COPY_ORT`が`1`ではないなら警告を出して何もしない。後述の`link-onnxruntime`フィーチャと合わせると、システムにONNX Runtimeが無くてもビルドが可能になる。
 //! - **`load-onnxruntime`**: ONNX Runtimeを`dlopen`/`LoadLibraryExW`で開く。[CUDA]と[DirectML]が利用可能。
 //! - **`link-onnxruntime`**: ONNX Runtimeをロード時動的リンクする。iOSのような`dlopen`の利用が困難な環境でのみこちらを利用するべきである。_Note_:
 //!   [動的リンク対象のライブラリ名]は`onnxruntime`で固定。変更は`patchelf(1)`や`install_name_tool(1)`で行うこと。また、[ONNX RuntimeのGPU機能]を使うことは不可。
+//!
+//! このクレートの利用にあたっては上記の`load-onnxruntime`か`link-onnxruntime`のうちどちらかを有効にしなければならない。両方の有効化はコンパイルエラーとなる。[`Onnxruntime`]の初期化方法はこれらのフィーチャによって決まる。
+//!
+//! # Build time environment variables
+//!
+//! - **`VVCORE_BUILD_DOWNLOAD_AND_COPY_ORT`**: 前述の`buildtime-download-onnxruntime`フィーチャが有効化されているときのみ機能する。`1`のとき、ONNX
+//!   Runtimeのバイナリをダウンロードしてtarget
+//!   directory内の複数箇所に配置する。`buildtime-download-onnxruntime`フィーチャが無効化されているときは値が`1`であっても、警告のみを出しダウンロードは行わない。
 //!
 //! [Cargoフィーチャ]: https://doc.rust-lang.org/stable/cargo/reference/features.html
 //! [CUDA]: https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html
@@ -15,10 +24,6 @@
 //! https://doc.rust-lang.org/cargo/reference/build-scripts.html#rustc-link-lib
 //! [`Onnxruntime`]: blocking::Onnxruntime
 //! [ONNX RuntimeのGPU機能]: https://onnxruntime.ai/docs/execution-providers/
-//!
-//! # Environment variables
-//!
-//! TODO
 //!
 //! # Examples
 //!
