@@ -61,17 +61,16 @@
 ### Changed
 
 - \[Rust\] \[BREAKING\] MSRVが1.89.0になります ([#1323])。
-- [#1278]
-    - `ort/{cuda,directml}`フィーチャでEP付きのものがダウンロードできたのができなくなる
-    - ダウンロード場所の変更
-    - `ORT_`系の環境変数が使えなくなる
-    - デフォルトではダウンロードをしなくなる。挙動は環境変数で変える
-    - `Onnxruntime`型の実体の所在が`voicevox_core`側になる
-    - Windowsでsymlinkの作成を試みなくなる
-    - pkgconfigまわり
-        - 特に、`load-onnxruntime`時にダウンロードとコピーが取り止められることがなくなった
-    - default featureとして`buildtime-download-onnxruntime`が追加
-    - ...
+- \[Rust\] \[BREAKING\] `load-onnxruntime`フィーチャと`link-onnxruntime`フィーチャの両方において、ビルド時のダウンロードおよびリンカーフラグの設定が[pykeio/ort](https://github.com/pykeio/ort)由来の処理に依存しなくなります。それにより、ビルド時の挙動が以下の点で変わります。なお以下で言及する"ONNX Runtime"はVOICEVOX ONNX Runtimeとは異なることに注意してください [#1278]。
+    - ビルド時のONNX Runtimeのダウンロードおよび[ターゲットディレクトリ](https://doc.rust-lang.org/cargo/reference/config.html#buildtarget-dir)への配置が、デフォルトでは行われなくなります。新しく追加される`buildtime-download-onnxruntime`フィーチャを有効化**した上で**環境変数`VVCORE_BUILD_DOWNLOAD_AND_COPY_ORT`を`1`にすることで、これまで通りダウンロードおよびターゲットディレクトリへの配置が行われます。
+    - ONNX Runtimeのダウンロード先が`{キャッシュディレクトリ}/voicevox_ort/dfbin/`から`{ターゲットディレクトリ}/voicevox_core/downloads/onnxruntime/`になります。
+    - Windows上ではシンボリックリンクの作成を試みなくなります。
+    - `load-onnxruntime`での不必要なpkg-configやライブラリリンクが行われなくなります。
+    - `link-onnxruntime`におけるpkg-configが、Windowsでは`onnxruntime`を対象にするようになります。これまではWindowsであっても`libonnxruntime`を対象にしていました。
+    - `link-onnxruntime`が有効化されていて上述のダウンロードが行われない場合、pkg-configを試みて失敗したら警告を出すようになります。Cargoプロジェクト外でONNX Runtimeを管理するのでなければダウンロードを検討してください。
+    - 以前まで使えていた、pykeio/ortに作用する環境変数が使えなくなります。
+    - 以前までは`voicevox-ort/{cuda,directml}`フィーチャによりEP付きのONNX Runtimeがダウンロードできていましたが、今後はできなくなります。
+- \[Rust\] `Onnxruntime`型のメモリアドレスの所在が`voicevox_core`側になります ([#1278])。
 - \[Rust\] 依存ライブラリが変化します ([#1278])。
     - \[削除\]: `ndarray@0.16`
     - \[削除\]: `git+https://github.com/VOICEVOX/ort.git?rev=6d69dbd1ddfae713081d844c456be5b8d097e17e#voicevox-ort@2.0.0-rc.10`
