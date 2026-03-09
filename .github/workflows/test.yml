@@ -175,10 +175,6 @@ jobs:
         include: ${{ fromJson(needs.rust-integration-test-strategy-matrix.outputs.includes) }}
     runs-on: ${{ matrix.os }}
     steps:
-      # TOMLのmulti-line string literalにCRLFが入らないようにする。
-      - name: Disable `core.autocrlf`
-        if: runner.os == 'Windows'
-        run: git config --global core.autocrlf false
       - uses: actions/checkout@v5
       - name: Set up Python 3.10
         uses: actions/setup-python@v6
