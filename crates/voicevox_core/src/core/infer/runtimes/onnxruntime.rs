@@ -580,8 +580,6 @@ pub(crate) mod blocking {
     /// # Ok(())
     /// # }
     /// ```
-    ///
-    /// [voicevox-ort]: https://github.com/VOICEVOX/ort
     #[cfg_attr(doc, doc(alias = "VoicevoxOnnxruntime"))]
     #[derive(Debug, RefCastCustom)]
     #[repr(transparent)]
@@ -762,7 +760,6 @@ pub(crate) mod nonblocking {
     ///
     /// [blocking]クレートにより動いている。詳しくは[`nonblocking`モジュールのドキュメント]を参照。
     ///
-    /// [voicevox-ort]: https://github.com/VOICEVOX/ort
     /// [blocking]: https://docs.rs/crate/blocking
     /// [`nonblocking`モジュールのドキュメント]: crate::nonblocking
     #[derive(Debug, RefCastCustom)]
