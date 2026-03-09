@@ -31,7 +31,7 @@ pub fn download(add_link_search: bool) -> anyhow::Result<()> {
                 Err(err) => return Err(err),
             };
             let mtime = metadata.modified()?;
-            Ok::<_, io::Error>(mtime <= current_exe_mtime)
+            Ok::<_, io::Error>(mtime >= current_exe_mtime)
         }
     };
 
