@@ -309,7 +309,7 @@ const _: () = {
     use ort::*;
 
     #[expect(path_statements)]
-    init_from; // PLEASE READ → : when `link-onnxruntime` is enabled,`voicevox-ort/load-dynamic` must be disabled
+    init_from; // PLEASE READ → : when `link-onnxruntime` is enabled,`ort/load-dynamic` must be disabled
 
     mod dummy {
         #[expect(non_upper_case_globals)]
