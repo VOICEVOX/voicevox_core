@@ -45,6 +45,9 @@ pub fn download(add_link_search: bool) -> anyhow::Result<()> {
         .join("onnxruntime");
     fs_err::create_dir_all(lib_dir)?;
 
+    let lock = fs_err::File::create(lib_dir.join(".lock"))?;
+    lock.file().lock()?; // FIXME: `fs-err`をv3に上げて`fs_err::File::lock`を使う
+
     let TargetList {
         repository,
         targets,
