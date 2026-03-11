@@ -21,6 +21,11 @@ multiple-versions = "allow"
 allow-build-scripts = [
     # FIXME: build/main.rsのような場所に置かれていると駄目なのか、`bypass`からは認識してくれない
 
+    # https://github.com/pykeio/ort/blob/v2.0.0-rc.12/ort-sys/build/main.rs
+    #
+    # This build script does nothing because we enable `disable-linking` feature.
+    { name = "ort-sys", version = "=2.0.0-rc.12" },
+
     # SHA256: b4dd86261a70df757efa53f06ce7543a4dc9c51178b9b023c92069fddee97a29
     { name = "typenum", version = "1" }, # https://docs.rs/crate/typenum/1.15.0/source/build/main.rs
 
@@ -52,7 +57,6 @@ bypass = [
     { name = "generic-array", version = "0.14", build-script = "08fa30c4a2c1ad24fe5f987e721dfb20131f45ea5b5dc3e836dcf88a8e33248c" }, # https://docs.rs/crate/generic-array/0.14.6/source/build.rs
     { name = "getrandom", version = "0.3", build-script = "9280e324b69c0c80c65de8074046104ac561cbfe0b7856e02a939e491936aaac" }, # https://docs.rs/crate/getrandom/0.3.3/source/build.rs
     { name = "httparse", version = "1", build-script = "eba8e341d746a6cf54249c62afe9eb237e7c21fcf9937223e894549e3a34d489" }, # https://docs.rs/crate/httparse/1.10.1/source/build.rs
-    { name = "indexmap", version = "1", build-script = "558b4d0b9e9b3a44f7e1a2b69f7a7567ea721cd45cb54f4e458e850bf702f35c" }, # https://docs.rs/crate/indexmap/1.9.1/source/build.rs
     { name = "libc", version = "0.2", build-script = "58354054af527041b4a74e94f23b7c0eb27cd5baa074dbc18d6ccbca092090ef" }, # https://docs.rs/crate/libc/0.2.178/source/build.rs
     { name = "libm", version = "0.2", build-script = "2e1393133eb5f84f5a9278b3d68acb31552da924b0c1fdf77b4af583f82afb22" }, # https://docs.rs/crate/libm/0.2.6/source/build.rs
     { name = "lock_api", version = "0.4", build-script = "af84139c71d151adead0b4398c394a7dd16087bb2db44b14a0ed970ce868a6c6" }, # https://docs.rs/crate/lock_api/0.4.9/source/build.rs
@@ -147,11 +151,6 @@ bypass = [
     # system-configuration-sys links System Configuration framework on macOS.
     { name = "system-configuration-sys", version = "0.5", build-script = "cf4c21c898e9671345d4684c75014189623574f9ec96414999a9db2d73b1e40f" },
 
-    # https://github.com/VOICEVOX/ort/blob/22172d0fcf0715c1316f95ea08db50cf55cf0ad4/ort-sys/build.rs
-    #
-    # ONNX Runtime is licensed under `MIT` (https://github.com/microsoft/onnxruntime/blob/v1.11.1/LICENSE)
-    { name = "voicevox-ort-sys", version = "=2.0.0-rc.10", build-script = "2a613dfcd7d2336d78a8d6a7ba46f993944f14526ccbe2a7184c42be4e87a60e" },
-
     # https://docs.rs/crate/zstd-sys/2.0.9+zstd.1.5.5/source/build.rs
     #
     # libzstd is licensed under `GPL-2.0+ OR BSD-3-Clause` (https://github.com/facebook/zstd/blob/v1.5.2/lib/zstd.h#L1-L9)
@@ -161,7 +160,7 @@ bypass = [
 [sources]
 unknown-registry = "deny"
 unknown-git = "deny"
-allow-org.github = ["VOICEVOX"]
+allow-org.github = ["pykeio", "VOICEVOX"]
 
 [licenses]
 allow = [

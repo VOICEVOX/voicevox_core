@@ -12,23 +12,27 @@
 // ```
 
 use std::{
-    fmt::Debug,
+    cmp,
+    ffi::CStr,
+    fmt::{Debug, Display},
+    mem,
     sync::{Arc, LazyLock},
     vec,
 };
 
-use anyhow::{anyhow, bail, ensure};
+use anyhow::{Context as _, anyhow, bail, ensure};
 use duplicate::duplicate_item;
 use ndarray::{Array, Dimension};
 use ort::{
-    execution_providers::{
+    environment::Environment,
+    ep::{
         CPUExecutionProvider, CUDAExecutionProvider, DirectMLExecutionProvider,
-        ExecutionProvider as _, cuda::CuDNNConvAlgorithmSearch,
+        ExecutionProvider as _, cuda::ConvAlgorithmSearch,
     },
     session::{RunOptions, builder::GraphOptimizationLevel},
-    tensor::{PrimitiveTensorElementType, TensorElementType},
-    value::ValueType,
+    value::{PrimitiveTensorElementType, TensorElementType, ValueType},
 };
+use tracing::warn;
 
 use crate::error::ErrorRepr;
 
@@ -40,6 +44,198 @@ use super::super::{
     InferenceRuntime, InferenceSessionOptions, InputScalarKind, OutputScalarKind, OutputTensor,
     ParamInfo, PushInputTensor,
 };
+
+static SINGLETON: once_cell::sync::OnceCell<Inner> = once_cell::sync::OnceCell::new();
+
+#[derive(Debug)]
+struct Inner {
+    #[cfg(feature = "load-onnxruntime")]
+    _lib: libloading::Library,
+}
+
+impl Inner {
+    fn get() -> Option<&'static Self> {
+        SINGLETON.get()
+    }
+
+    #[cfg(feature = "load-onnxruntime")]
+    fn get_or_try_init(filename: &std::ffi::OsStr) -> crate::Result<&'static Self> {
+        use anyhow::Context as _;
+        use libloading::Library;
+
+        SINGLETON
+            .get_or_try_init(|| {
+                // SAFETY: Users' responsibility!
+                let lib = unsafe { Library::new(filename)? };
+                let ort_get_api_base = unsafe {
+                    lib.get::<unsafe extern "C" fn() -> *const ort::sys::OrtApiBase>(
+                        b"OrtGetApiBase",
+                    )
+                }
+                .with_context(|| "`OrtGetApiBase` not found")?;
+
+                // SAFETY: `OrtGetApiBase` should require no preconditions,
+                // and should return a valid `OrtApiBase`.
+                let api_base = unsafe { ({ ort_get_api_base })() };
+                assert!(!api_base.is_null() && api_base.is_aligned());
+                let api_base = unsafe { &*api_base };
+
+                setup(
+                    api_base,
+                    #[cfg(windows)]
+                    TargetLibOnnxruntimeInfo { dll: &lib },
+                    #[cfg(not(windows))]
+                    TargetLibOnnxruntimeInfo { filename },
+                )?;
+
+                Ok(Self { _lib: lib })
+            })
+            .map_err(|source| {
+                ErrorRepr::InitInferenceRuntime {
+                    runtime_display_name: "ONNX Runtime",
+                    source,
+                }
+                .into()
+            })
+    }
+
+    #[cfg(not(feature = "load-onnxruntime"))]
+    fn get_or_try_init() -> crate::Result<&'static Self> {
+        use std::marker::PhantomData;
+
+        SINGLETON
+            .get_or_try_init(|| {
+                // SAFETY: `OrtGetApiBase` should require no preconditions,
+                // and should return a valid `OrtApiBase`.
+                let api_base = unsafe { ort::sys::OrtGetApiBase() };
+                assert!(!api_base.is_null() && api_base.is_aligned());
+                let api_base = unsafe { &*api_base };
+
+                setup(
+                    api_base,
+                    TargetLibOnnxruntimeInfo {
+                        _marker: PhantomData,
+                    },
+                )?;
+
+                Ok(Self {})
+            })
+            .map_err(|source| {
+                ErrorRepr::InitInferenceRuntime {
+                    runtime_display_name: "ONNX Runtime",
+                    source,
+                }
+                .into()
+            })
+    }
+}
+
+fn setup(
+    api_base: &ort::sys::OrtApiBase,
+    lib_info: TargetLibOnnxruntimeInfo<'_>,
+) -> anyhow::Result<()> {
+    const EXPECTED_MAJOR_VERSION: u64 = 1;
+
+    const _: () = assert!(ort::sys::ORT_API_VERSION == 17);
+
+    // SAFETY: `GetVersionString` should require no preconditions,
+    // and should return a valid string.
+    let version_string = unsafe { ((api_base).GetVersionString)() };
+    let version_string = unsafe { CStr::from_ptr(version_string) };
+
+    let (major_version, minor_version) = version_string
+        .to_str()
+        .ok()
+        .and_then(|version_string| {
+            let mut version_string = version_string.split('.');
+            let major_version = version_string.next()?.parse::<u64>().ok()?;
+            let minor_version = version_string
+                .next()
+                .and_then(|s| s.parse().ok())
+                .unwrap_or(0);
+            Some((major_version, minor_version))
+        })
+        .with_context(|| "could not parse the version string")?;
+
+    ensure!(
+        major_version == EXPECTED_MAJOR_VERSION,
+        "invalid major version",
+    );
+
+    match minor_version.cmp(&u64::from(ort::sys::ORT_API_VERSION)) {
+        cmp::Ordering::Less => bail!(
+            "{message_for_version}。\
+             ONNX Runtimeはバージョン1.{ORT_API_VERSION}でなくてはなりません",
+            message_for_version = lib_info.message_for_version(version_string.to_string_lossy()),
+            ORT_API_VERSION = ort::sys::ORT_API_VERSION,
+        ),
+        // TODO: 問題ないとわかっている既知のものであれば警告無しで許容しつつ、未来のものは拒否する。
+        cmp::Ordering::Greater => warn!(
+            "{message_for_version}。\
+             対応しているONNX Runtimeのバージョンは1.{ORT_API_VERSION}なので、\
+             互換性の問題があるかもしれません",
+            message_for_version = lib_info.message_for_version(version_string.to_string_lossy()),
+            ORT_API_VERSION = ort::sys::ORT_API_VERSION,
+        ),
+        cmp::Ordering::Equal => {}
+    };
+
+    // SAFETY: `GetApi` should require no preconditions, and should return a valid `OrtApi`.
+    let api = unsafe { (api_base.GetApi)(ort::sys::ORT_API_VERSION) };
+    assert!(!api.is_null() && api.is_aligned());
+    let api = unsafe { api.read() };
+
+    let inserted = ort::set_api(api);
+    if !inserted {
+        warn!("`ort::set_api` already executed");
+    }
+
+    let configured = ort::init().with_name(env!("CARGO_PKG_NAME")).commit();
+    if !configured {
+        warn!("`ort::environment::EnvironmentBuilder` was already configured");
+    }
+
+    let env = Environment::current()?;
+
+    // `Environment`の数がゼロだとC API側で謎のdouble freeが起きてSEGVするため、プロセスの終了までゼロにならないようワークアラウンド。
+    // TODO: このワークアラウンドによる microsoft/onnxruntime#24579 の可能性が否定しきれないため要調査。
+    mem::forget(env);
+
+    Ok(())
+}
+
+#[derive(Clone, Copy)]
+struct TargetLibOnnxruntimeInfo<'a> {
+    #[cfg(all(feature = "load-onnxruntime", windows))]
+    dll: &'a libloading::Library,
+
+    #[cfg(all(feature = "load-onnxruntime", not(windows)))]
+    filename: &'a std::ffi::OsStr,
+
+    #[cfg(not(feature = "load-onnxruntime"))]
+    _marker: std::marker::PhantomData<&'a ()>,
+}
+
+impl TargetLibOnnxruntimeInfo<'_> {
+    #[cfg(all(feature = "load-onnxruntime", windows))]
+    fn message_for_version(self, version_string: impl Display) -> String {
+        let Self { dll } = self;
+        format!("`{dll:?}`はバージョン{version_string}のONNX Runtimeです")
+    }
+
+    #[cfg(all(feature = "load-onnxruntime", not(windows)))]
+    fn message_for_version(self, version_string: impl Display) -> String {
+        let Self { filename } = self;
+        let filename = filename.to_string_lossy();
+        format!("`{filename}`で指定されたONNX Runtimeはバージョン{version_string}です")
+    }
+
+    #[cfg(not(feature = "load-onnxruntime"))]
+    fn message_for_version(self, version_string: impl Display) -> String {
+        let Self { _marker } = self;
+        format!("リンクされたONNX Runtimeはバージョン{version_string}です")
+    }
+}
 
 impl InferenceRuntime for self::blocking::Onnxruntime {
     type Session = async_lock::Mutex<ort::session::Session>; // WASMでは`ort`を利用しないので、ここはasync-lockを用いてよいはず
@@ -75,7 +271,7 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
         let sess_builder = &mut ort::session::builder::SessionBuilder::new()?;
         match gpu {
             GpuSpec::Cuda => CUDAExecutionProvider::default()
-                .with_conv_algorithm_search(CuDNNConvAlgorithmSearch::Default)
+                .with_conv_algorithm_search(ConvAlgorithmSearch::Default)
                 .register(sess_builder),
             GpuSpec::Dml => DirectMLExecutionProvider::default().register(sess_builder),
         }
@@ -95,20 +291,24 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
             LazyLock::new(|| ort::info().starts_with("VOICEVOX ORT Build Info: "));
 
         let mut builder = ort::session::Session::builder()?
-            .with_optimization_level(GraphOptimizationLevel::Level1)?
-            .with_intra_threads(options.cpu_num_threads.into())?;
+            .with_optimization_level(GraphOptimizationLevel::Level1)
+            .map_err(ort::Error::<()>::from)?
+            .with_intra_threads(options.cpu_num_threads.into())
+            .map_err(ort::Error::<()>::from)?;
 
         match options.device {
             DeviceSpec::Cpu => {}
             DeviceSpec::Gpu(GpuSpec::Cuda) => {
                 CUDAExecutionProvider::default()
-                    .with_conv_algorithm_search(CuDNNConvAlgorithmSearch::Default)
+                    .with_conv_algorithm_search(ConvAlgorithmSearch::Default)
                     .register(&mut builder)?;
             }
             DeviceSpec::Gpu(GpuSpec::Dml) => {
                 builder = builder
-                    .with_parallel_execution(false)?
-                    .with_memory_pattern(false)?;
+                    .with_parallel_execution(false)
+                    .map_err(ort::Error::<()>::from)?
+                    .with_memory_pattern(false)
+                    .map_err(ort::Error::<()>::from)?;
                 DirectMLExecutionProvider::default().register(&mut builder)?;
             }
         };
@@ -122,20 +322,21 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
                      (note: load/link `voicevox_onnxruntime` instead of ` onnxruntime`)",
                 );
                 builder
-                    .with_config_entry("session.use_vv_bin", "1")?
+                    .with_config_entry("session.use_vv_bin", "1")
+                    .map_err(ort::Error::<()>::from)?
                     .commit_from_memory(bin)
             }
         }?;
 
         let input_param_infos = sess
-            .inputs
+            .inputs()
             .iter()
             .map(|info| {
-                let ValueType::Tensor { ty, .. } = info.input_type else {
+                let ValueType::Tensor { ty, .. } = info.dtype() else {
                     bail!(
                         "unexpected input value type for `{}`. currently `ONNX_TYPE_TENSOR` and \
                          `ONNX_TYPE_SPARSETENSOR` is supported",
-                        info.name,
+                        info.name(),
                     );
                 };
 
@@ -170,29 +371,34 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
                     TensorElementType::Float8E5M2FNUZ => {
                         Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT8E5M2FNUZ")
                     }
+                    TensorElementType::Uint4 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT4"),
+                    TensorElementType::Int4 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_INT4"),
                     TensorElementType::Undefined => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UNDEFINED"),
                 }
                 .map_err(|actual| {
-                    anyhow!("unsupported input datatype `{actual}` for `{}`", info.name)
+                    anyhow!(
+                        "unsupported input datatype `{actual}` for `{}`",
+                        info.name(),
+                    )
                 })?;
 
                 Ok(ParamInfo {
-                    name: info.name.clone().into(),
+                    name: info.name().to_owned().into(),
                     dt,
-                    ndim: info.input_type.tensor_shape().map(|s| s.len()),
+                    ndim: info.dtype().tensor_shape().map(|s| s.len()),
                 })
             })
             .collect::<anyhow::Result<_>>()?;
 
         let output_param_infos = sess
-            .outputs
+            .outputs()
             .iter()
             .map(|info| {
-                let ValueType::Tensor { ty, .. } = info.output_type else {
+                let ValueType::Tensor { ty, .. } = info.dtype() else {
                     bail!(
                         "unexpected output value type for `{}`. currently `ONNX_TYPE_TENSOR` and \
                          `ONNX_TYPE_SPARSETENSOR` is supported",
-                        info.name,
+                        info.name(),
                     );
                 };
 
@@ -227,16 +433,21 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
                     TensorElementType::Float8E5M2FNUZ => {
                         Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT8E5M2FNUZ")
                     }
+                    TensorElementType::Uint4 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UINT4"),
+                    TensorElementType::Int4 => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_INT4"),
                     TensorElementType::Undefined => Err("ONNX_TENSOR_ELEMENT_DATA_TYPE_UNDEFINED"),
                 }
                 .map_err(|actual| {
-                    anyhow!("unsupported output datatype `{actual}` for `{}`", info.name)
+                    anyhow!(
+                        "unsupported output datatype `{actual}` for `{}`",
+                        info.name(),
+                    )
                 })?;
 
                 Ok(ParamInfo {
-                    name: info.name.clone().into(),
+                    name: info.name().to_owned().into(),
                     dt,
-                    ndim: info.output_type.tensor_shape().map(|s| s.len()),
+                    ndim: info.dtype().tensor_shape().map(|s| s.len()),
                 })
             })
             .collect::<anyhow::Result<_>>()?;
@@ -343,25 +554,19 @@ fn extract_outputs(
 }
 
 pub(crate) mod blocking {
-    use ort::EnvHandle;
     use ref_cast::{RefCastCustom, ref_cast_custom};
 
-    use crate::{SupportedDevices, error::ErrorRepr};
+    use crate::SupportedDevices;
 
-    use super::super::super::InferenceRuntime;
+    use super::{super::super::InferenceRuntime, Inner};
 
     /// ONNX Runtime。
     ///
-    /// シングルトンであり、インスタンスは高々一つ。
+    /// シングルトンであり、インスタンスは高々一つ。インスタンスは[非同期版の`Onnxruntime`]と共有される。
     ///
-    /// # Rust APIにおけるインスタンスの共有
-    ///
-    /// インスタンスは[voicevox-ort]側に作られる。Rustのクレートとしてこのライブラリを利用する場合、非同期版APIやvoicevox-ortを利用する他クレートともインスタンスが共有される。
-    ///
+    /// [非同期版の`Onnxruntime`]: crate::nonblocking::Onnxruntime
     #[cfg_attr(feature = "load-onnxruntime", doc = "```")]
     #[cfg_attr(not(feature = "load-onnxruntime"), doc = "```compile_fail")]
-    /// # use voicevox_core as another_lib;
-    /// #
     /// # fn main() -> anyhow::Result<()> {
     /// # voicevox_core::blocking::Onnxruntime::load_once()
     /// #     .filename(test_util::ONNXRUNTIME_DYLIB_PATH)
@@ -370,19 +575,15 @@ pub(crate) mod blocking {
     /// use std::ptr;
     ///
     /// let ort1 = voicevox_core::blocking::Onnxruntime::load_once().perform()?;
-    /// let ort2 = another_lib::nonblocking::Onnxruntime::get().expect("`ort1`と同一のはず");
+    /// let ort2 = voicevox_core::nonblocking::Onnxruntime::get().expect("`ort1`と同一のはず");
     /// assert!(ptr::addr_eq(ort1, ort2));
     /// # Ok(())
     /// # }
     /// ```
-    ///
-    /// [voicevox-ort]: https://github.com/VOICEVOX/ort
     #[cfg_attr(doc, doc(alias = "VoicevoxOnnxruntime"))]
     #[derive(Debug, RefCastCustom)]
     #[repr(transparent)]
-    pub struct Onnxruntime {
-        _inner: EnvHandle,
-    }
+    pub struct Onnxruntime(Inner);
 
     impl Onnxruntime {
         /// ONNX Runtimeのライブラリ名。
@@ -437,24 +638,14 @@ pub(crate) mod blocking {
         );
 
         #[ref_cast_custom]
-        const fn new(inner: &EnvHandle) -> &Self;
+        const fn new(inner: &Inner) -> &Self;
 
         /// インスタンスが既に作られているならそれを得る。
         ///
         /// 作られていなければ`None`を返す。
         #[cfg_attr(doc, doc(alias = "voicevox_onnxruntime_get"))]
         pub fn get() -> Option<&'static Self> {
-            EnvHandle::get().map(Self::new)
-        }
-
-        fn once(
-            init: impl FnOnce() -> anyhow::Result<&'static EnvHandle>,
-        ) -> crate::Result<&'static Self> {
-            let inner = init().map_err(|source| ErrorRepr::InitInferenceRuntime {
-                runtime_display_name: "ONNX Runtime",
-                source,
-            })?;
-            Ok(Self::new(inner))
+            Inner::get().map(Self::new)
         }
 
         /// ONNX Runtimeをロードして初期化する。
@@ -474,7 +665,7 @@ pub(crate) mod blocking {
         #[cfg(feature = "link-onnxruntime")]
         #[cfg_attr(docsrs, doc(cfg(feature = "link-onnxruntime")))]
         pub fn init_once() -> crate::Result<&'static Self> {
-            Self::once(|| ort::try_init(None))
+            Inner::get_or_try_init().map(Onnxruntime::new)
         }
 
         #[cfg(test)]
@@ -531,7 +722,7 @@ pub(crate) mod blocking {
 
         /// 実行する。
         pub fn perform(self) -> crate::Result<&'static Onnxruntime> {
-            Onnxruntime::once(|| ort::try_init_from(&self.filename, None))
+            Inner::get_or_try_init(&self.filename).map(Onnxruntime::new)
         }
     }
 }
@@ -543,30 +734,24 @@ pub(crate) mod nonblocking {
 
     /// ONNX Runtime。
     ///
-    /// シングルトンであり、インスタンスは高々一つ。
+    /// シングルトンであり、インスタンスは高々一つ。インスタンスは[ブロッキング版の`Onnxruntime`]と共有される。
     ///
-    /// # Rust APIにおけるインスタンスの共有
-    ///
-    /// インスタンスは[voicevox-ort]側に作られる。Rustのクレートとしてこのライブラリを利用する場合、ブロッキング版APIやvoicevox-ortを利用する他クレートともインスタンスが共有される。
+    /// [ブロッキング版の`Onnxruntime`]: crate::blocking::Onnxruntime
     #[cfg_attr(feature = "load-onnxruntime", doc = "```")]
     #[cfg_attr(not(feature = "load-onnxruntime"), doc = "```compile_fail")]
-    /// # use voicevox_core as another_lib;
-    /// #
     /// # #[pollster::main]
     /// # async fn main() -> anyhow::Result<()> {
     /// # voicevox_core::blocking::Onnxruntime::load_once()
     /// #     .filename(test_util::ONNXRUNTIME_DYLIB_PATH)
     /// #     .perform()?;
     /// #
+    /// use std::ptr;
+    ///
     /// let ort1 = voicevox_core::nonblocking::Onnxruntime::load_once()
     ///     .perform()
     ///     .await?;
-    /// let ort2 = another_lib::blocking::Onnxruntime::get().expect("`ort1`と同一のはず");
-    /// assert_eq!(ptr_addr(ort1), ptr_addr(ort2));
-    ///
-    /// fn ptr_addr(obj: &impl Sized) -> usize {
-    ///     obj as *const _ as _
-    /// }
+    /// let ort2 = voicevox_core::blocking::Onnxruntime::get().expect("`ort1`と同一のはず");
+    /// assert!(ptr::addr_eq(ort1, ort2));
     /// # Ok(())
     /// # }
     /// ```
@@ -575,7 +760,6 @@ pub(crate) mod nonblocking {
     ///
     /// [blocking]クレートにより動いている。詳しくは[`nonblocking`モジュールのドキュメント]を参照。
     ///
-    /// [voicevox-ort]: https://github.com/VOICEVOX/ort
     /// [blocking]: https://docs.rs/crate/blocking
     /// [`nonblocking`モジュールのドキュメント]: crate::nonblocking
     #[derive(Debug, RefCastCustom)]

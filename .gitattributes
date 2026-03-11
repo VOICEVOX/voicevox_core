@@ -1,1 +1,4 @@
 /crates/voicevox_core_c_api/include/voicevox_core.h linguist-generated=true
+
+# TOML 1.1ではmulti-line string literalの値がCRLFを反映してしまうため。
+/crates/voicevox_core_c_api/tests/e2e/snapshots.toml eol=lf

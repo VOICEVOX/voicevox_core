@@ -2,11 +2,21 @@
 //!
 //! # Feature flags
 //!
-//! このクレートの利用にあたっては以下の二つの[Cargoフィーチャ]のうちどちらかを有効にしなければならない。両方の有効化はコンパイルエラーとなる。[`Onnxruntime`]の初期化方法はこれらのフィーチャによって決まる。
-//!
+//! - **`buildtime-download-onnxruntime`**: ビルド時に後述する環境変数`VVCORE_BUILD_DOWNLOAD_AND_COPY_ORT`が`1`なら、ONNX
+//!   Runtimeのバイナリをダウンロードしてtarget
+//!   directory内の複数箇所に配置する。`VVCORE_BUILD_DOWNLOAD_AND_COPY_ORT`が`1`ではないなら警告を出して何もしない。後述の`link-onnxruntime`フィーチャと合わせると、システムにONNX Runtimeが無くてもビルドが可能になる。
 //! - **`load-onnxruntime`**: ONNX Runtimeを`dlopen`/`LoadLibraryExW`で開く。[CUDA]と[DirectML]が利用可能。
-//! - **`link-onnxruntime`**: ONNX Runtimeをロード時動的リンクする。iOSのような`dlopen`の利用が困難な環境でのみこちらを利用するべきである。_Note_:
+//! - **`link-onnxruntime`**: ONNX Runtimeをロード時動的リンクする。そのためビルドするためにはシステムにONNX
+//!   Runtimeがインストールされているか、`buildtime-download-onnxruntime`によるダウンロードを行う必要がある。iOSのような`dlopen`の利用が困難な環境でのみこちらを利用するべきである。_Note_:
 //!   [動的リンク対象のライブラリ名]は`onnxruntime`で固定。変更は`patchelf(1)`や`install_name_tool(1)`で行うこと。また、[ONNX RuntimeのGPU機能]を使うことは不可。
+//!
+//! このクレートの利用にあたっては上記の`load-onnxruntime`か`link-onnxruntime`のうちどちらかを有効にしなければならない。両方の有効化はコンパイルエラーとなる。[`Onnxruntime`]の初期化方法はこれらのフィーチャによって決まる。
+//!
+//! # Build time environment variables
+//!
+//! - **`VVCORE_BUILD_DOWNLOAD_AND_COPY_ORT`**: `buildtime-download-onnxruntime`フィーチャが有効化されているときのみ機能する。`1`のとき、ONNX
+//!   Runtimeのバイナリをダウンロードしてtarget
+//!   directory内の複数箇所に配置する。`buildtime-download-onnxruntime`フィーチャが無効化されているときは値が`1`であっても、警告のみを出しダウンロードは行わない。
 //!
 //! [Cargoフィーチャ]: https://doc.rust-lang.org/stable/cargo/reference/features.html
 //! [CUDA]: https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html
@@ -288,28 +298,23 @@
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
-#[cfg(not(any(feature = "load-onnxruntime", feature = "link-onnxruntime")))]
-compile_error!("either `load-onnxruntime` or `link-onnxruntime` must be enabled");
+#[cfg(all(not(doc), feature = "load-onnxruntime", feature = "link-onnxruntime"))]
+compile_error!("`load-onnxruntime` and `link-onnxruntime` cannot be enabled at the same time");
 
-#[cfg(not(doc))]
+#[cfg(all(not(feature = "load-onnxruntime"), feature = "link-onnxruntime"))]
 const _: () = {
-    #[cfg(all(feature = "load-onnxruntime", feature = "link-onnxruntime"))]
-    compile_error!("`load-onnxruntime` and `link-onnxruntime` cannot be enabled at the same time");
+    use dummy::*;
 
-    // Rust APIでvoicevox-ortを他のクレートが利用する可能性を考え、voicevox-ort側とfeatureがズレ
-    // ないようにする
+    #[expect(unused_imports)]
+    use ort::*;
 
-    #[cfg(feature = "load-onnxruntime")]
-    ort::assert_feature!(
-        cfg(feature = "load-dynamic"),
-        "when `load-onnxruntime` is enabled,`voicevox-ort/load-dynamic` must be also enabled",
-    );
+    #[expect(path_statements)]
+    init_from; // PLEASE READ → : when `link-onnxruntime` is enabled,`ort/load-dynamic` must be disabled
 
-    #[cfg(feature = "link-onnxruntime")]
-    ort::assert_feature!(
-        cfg(not(feature = "load-dynamic")),
-        "when `link-onnxruntime` is enabled,`voicevox-ort/load-dynamic` must be disabled",
-    );
+    mod dummy {
+        #[expect(non_upper_case_globals)]
+        pub(super) const init_from: () = ();
+    }
 };
 
 /// ```compile_fail
