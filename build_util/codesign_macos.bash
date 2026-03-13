@@ -40,7 +40,15 @@ rm "$DEVELOPER_ID_G2_CA"
 # .p12証明書のインポート
 security import "$P12_PATH" -k "$KEYCHAIN_PATH" -P "$APPLE_P12_PASSWORD" -T /usr/bin/codesign -A
 security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH" >/dev/null
-security list-keychains -d user -s "$KEYCHAIN_PATH" "$(security list-keychains -d user | tr -d '"' | xargs)"
+
+ORIGINAL_KEYCHAINS=()
+while IFS= read -r line; do
+    line="${line#"${line%%[![:space:]]*}"}"
+    line="${line#\"}"
+    line="${line%\"}"
+    [ -n "$line" ] && ORIGINAL_KEYCHAINS+=("$line")
+done < <(security list-keychains -d user)
+security list-keychains -d user -s "$KEYCHAIN_PATH" "${ORIGINAL_KEYCHAINS[@]}"
 
 IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN_PATH" | awk 'match($0,/[0-9A-F]{40}/){print substr($0,RSTART,RLENGTH); exit}')
 if [ -z "$IDENTITY" ]; then
@@ -50,7 +58,7 @@ fi
 
 # 証明書を破棄
 cleanup() {
-    security list-keychains -d user -s "$(security list-keychains -d user | tr -d '"' | grep -v "$KEYCHAIN_PATH" | xargs)"
+    security list-keychains -d user -s "${ORIGINAL_KEYCHAINS[@]}"
     security delete-keychain "$KEYCHAIN_PATH"
     rm -f "$P12_PATH"
 }
