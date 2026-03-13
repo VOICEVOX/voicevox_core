@@ -58,7 +58,6 @@ fi
 
 # 証明書を破棄
 cleanup() {
-    security list-keychains -d user -s "${ORIGINAL_KEYCHAINS[@]}"
     security delete-keychain "$KEYCHAIN_PATH"
     rm -f "$P12_PATH"
 }
