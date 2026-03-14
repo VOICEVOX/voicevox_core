@@ -41,7 +41,7 @@ pub enum OnExistingVoiceModelId {
     #[default]
     Error,
 
-    /// 再初期化する。
+    /// 再読み込みする。
     ///
     /// VOICEVOX
     /// COREでは、長文のテキストを一度に音声合成するとCPU/GPUメモリが大量に占有されたままになる。再読み込みを行うとメモリの使用量が元に戻る。
