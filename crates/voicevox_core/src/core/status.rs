@@ -45,7 +45,7 @@ pub enum OnExistingVoiceModelId {
     ///
     /// VOICEVOX
     /// COREでは、長文のテキストを一度に音声合成するとCPU/GPUメモリが大量に占有されたままになる。再読み込みを行うとメモリの使用量が元に戻る。
-    Reinit,
+    Reload,
 
     /// 何もしない。
     Skip,
@@ -315,7 +315,7 @@ impl<R: InferenceRuntime> LoadedModels<R> {
                         id: model_header.manifest.id,
                     }))
                 }
-                OnExistingVoiceModelId::Reinit | OnExistingVoiceModelId::Skip => Ok(()),
+                OnExistingVoiceModelId::Reload | OnExistingVoiceModelId::Skip => Ok(()),
             };
         }
 
@@ -362,7 +362,7 @@ impl<R: InferenceRuntime> LoadedModels<R> {
                 OnExistingVoiceModelId::Error => {
                     unreachable!("should have been rejected by `ensure_acceptable`");
                 }
-                OnExistingVoiceModelId::Reinit => {
+                OnExistingVoiceModelId::Reload => {
                     entry.insert(model);
                     Ok(())
                 }

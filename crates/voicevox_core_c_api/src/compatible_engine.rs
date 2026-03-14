@@ -175,7 +175,7 @@ pub extern "C" fn load_model(style_id: i64) -> bool {
         let synthesizer = ensure_initialized!(synthesizer);
         if let Err(err) = synthesizer
             .load_voice_model(vvm)
-            .on_existing(OnExistingVoiceModelId::Reinit)
+            .on_existing(OnExistingVoiceModelId::Reload)
             .perform()
         {
             set_message(&format!("{err}"));
