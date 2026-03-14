@@ -77,7 +77,9 @@
 //!
 //! dbg!(synth.is_gpu_mode());
 //!
-//! synth.load_voice_model(&VoiceModelFile::open(VVM)?)?;
+//! synth
+//!     .load_voice_model(&VoiceModelFile::open(VVM)?)
+//!     .perform()?;
 //!
 //! let StyleMeta { id: style_id, .. } = synth
 //!     .metas()
@@ -158,7 +160,9 @@
 //!
 //! dbg!(synth.is_gpu_mode());
 //!
-//! synth.load_voice_model(&VoiceModelFile::open(VVM)?)?;
+//! synth
+//!     .load_voice_model(&VoiceModelFile::open(VVM)?)
+//!     .perform()?;
 //!
 //! let metas = &synth.metas();
 //! let find_style = |character_name, style_name, style_types: &[_]| {
@@ -291,7 +295,9 @@
 //! #     let ojt = OpenJtalk::new(OPEN_JTALK_DIC_DIR)?;
 //! #     Synthesizer::builder(ort).text_analyzer(ojt).build()?
 //! # };
-//! # synth.load_voice_model(&VoiceModelFile::open(SAMPLE_VOICE_MODEL_FILE_PATH)?)?;
+//! # synth
+//! #     .load_voice_model(&VoiceModelFile::open(SAMPLE_VOICE_MODEL_FILE_PATH)?)
+//! #     .perform()?;
 //! # f(synth)?;
 //! # anyhow::Ok(())
 //! ```
@@ -458,6 +464,7 @@ pub use self::{
     core::{
         devices::SupportedDevices,
         metas::{CharacterMeta, CharacterVersion, StyleId, StyleMeta, StyleType, VoiceModelMeta},
+        status::OnExistingVoiceModelId,
         voice_model::VoiceModelId,
     },
     engine::{

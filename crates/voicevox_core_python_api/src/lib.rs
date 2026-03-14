@@ -760,7 +760,7 @@ mod blocking {
         ) -> PyResult<()> {
             let this = self.synthesizer.read()?;
             let model = &model.get().model.read()?;
-            this.load_voice_model(model).into_py_result(py)
+            this.load_voice_model(model).perform().into_py_result(py)
         }
 
         fn unload_voice_model(&self, voice_model_id: Uuid, py: Python<'_>) -> PyResult<()> {
@@ -1493,6 +1493,7 @@ mod asyncio {
                 .clone()
                 .read()?
                 .load_voice_model(model)
+                .perform()
                 .await;
             Python::attach(|py| result.into_py_result(py))
         }

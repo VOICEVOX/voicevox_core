@@ -55,11 +55,13 @@
 
 ### Added
 
+- `Synthesizer::load_voice_model`にオプション`on_existing`が追加されます ([#1331])。
 - \[ダウンローダー\] `--os`オプションで`android`と`ios`を指定できるようになります。ただしiOSの`c-api`をダウンロードすることはできません ([#1313])。
 - \[ダウンローダー\] 環境変数`VV_DOWNLOADER_C_API_ALLOW_DRAFT`を設定することで、`c-api`のdraft releaseを`--c-api-version`で指定できるようになります。主な用途はこのvoicevox\_coreリポジトリでの内部利用です ([#1315])。
 
 ### Changed
 
+- \[Rust\] \[BREAKING\] `Synthesizer::load_voice_model`がビルダースタイルになります ([#1331])。
 - \[Rust\] \[BREAKING\] MSRVが1.89.0になります ([#1323])。
 - \[Rust\] \[BREAKING\] `load-onnxruntime`フィーチャと`link-onnxruntime`フィーチャの両方において、ビルド時のダウンロードおよびリンカーフラグの設定が[pykeio/ort](https://github.com/pykeio/ort)由来の処理に依存しなくなります。それにより、ビルド時の挙動が以下の点で変わります。なお以下で言及する"ONNX Runtime"はVOICEVOX ONNX Runtimeとは異なることに注意してください [#1278]。
     - ビルド時のONNX Runtimeのダウンロードおよび[ターゲットディレクトリ](https://doc.rust-lang.org/cargo/reference/config.html#buildtarget-dir)への配置が、デフォルトでは行われなくなります。新しく追加される`buildtime-download-onnxruntime`フィーチャを有効化**した上で**環境変数`VVCORE_BUILD_DOWNLOAD_AND_COPY_ORT`を`1`にすることで、これまで通りダウンロードおよびターゲットディレクトリへの配置が行われます。
@@ -1493,6 +1495,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1313]: https://github.com/VOICEVOX/voicevox_core/pull/1313
 [#1315]: https://github.com/VOICEVOX/voicevox_core/pull/1315
 [#1323]: https://github.com/VOICEVOX/voicevox_core/pull/1323
+[#1331]: https://github.com/VOICEVOX/voicevox_core/pull/1331
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 

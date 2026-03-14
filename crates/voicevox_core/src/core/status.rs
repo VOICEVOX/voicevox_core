@@ -29,6 +29,27 @@ use super::{
     voice_model::{ModelBytesWithInnerVoiceIdsByDomain, VoiceModelHeader, VoiceModelId},
 };
 
+/// `Synthesizer::load_voice_model`の実行時に、同じ[`id`]の`VoiceModelFile`が既に読み込まれていたときのふるまい。
+///
+/// [`id`]: VoiceModelId
+#[derive(Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[non_exhaustive]
+pub enum OnExistingVoiceModelId {
+    /// エラー。
+    ///
+    /// デフォルトのふるまい。
+    #[default]
+    Error,
+
+    /// 再初期化する。
+    ///
+    /// 長文のテキストを一度に音声合成することによってGPUメモリが大量に占有されたとき、再初期化が使える。
+    Reinit,
+
+    /// 何もしない。
+    Skip,
+}
+
 #[derive(Debug)]
 pub(crate) struct Status<R: InferenceRuntime> {
     pub(crate) rt: &'static R,
@@ -52,11 +73,12 @@ impl<R: InferenceRuntime> Status<R> {
         &self,
         model_header: &VoiceModelHeader,
         model_contents: &InferenceDomainMap<ModelBytesWithInnerVoiceIdsByDomain>,
+        on_existing: OnExistingVoiceModelId,
     ) -> Result<()> {
         self.loaded_models
             .lock()
             .unwrap()
-            .ensure_acceptable(model_header)?;
+            .ensure_acceptable(model_header, on_existing)?;
 
         let session_sets_with_inner_ids = model_contents
             .create_session_sets(self.rt, &self.session_options)
@@ -66,10 +88,11 @@ impl<R: InferenceRuntime> Status<R> {
                 source: Some(source),
             })?;
 
-        self.loaded_models
-            .lock()
-            .unwrap()
-            .insert(model_header, session_sets_with_inner_ids)?;
+        self.loaded_models.lock().unwrap().insert(
+            model_header,
+            session_sets_with_inner_ids,
+            on_existing,
+        )?;
         Ok(())
     }
 
@@ -267,12 +290,17 @@ impl<R: InferenceRuntime> LoadedModels<R> {
     ///
     /// 次の場合にエラーを返す。
     ///
-    /// - 現在持っている音声モデルIDかスタイルIDが`model_header`と重複するとき
-    /// - 必要であるはずの`InferenceDomain`のモデルデータが欠けているとき
+    /// 1. `on_existing`が`Error`かつ、現在持っている音声モデルIDが`model_header`と重複するとき
+    /// 2. 1.を満たさず、現在持っているスタイルIDが`model_header`と重複するとき
+    /// 3. 必要であるはずの`InferenceDomain`のモデルデータが欠けているとき (← FIXME: これやっていないのでは？)
     // FIXME: コメントとテストを書く
     // - https://github.com/VOICEVOX/voicevox_core/pull/761#discussion_r1589978521
     // - https://github.com/VOICEVOX/voicevox_core/pull/761#discussion_r1589976759
-    fn ensure_acceptable(&self, model_header: &VoiceModelHeader) -> LoadModelResult<()> {
+    fn ensure_acceptable(
+        &self,
+        model_header: &VoiceModelHeader,
+        on_existing: OnExistingVoiceModelId,
+    ) -> LoadModelResult<()> {
         let error = |context| LoadModelError {
             path: model_header.path.clone(),
             context,
@@ -280,9 +308,14 @@ impl<R: InferenceRuntime> LoadedModels<R> {
         };
 
         if self.0.contains_key(&model_header.manifest.id) {
-            return Err(error(LoadModelErrorKind::ModelAlreadyLoaded {
-                id: model_header.manifest.id,
-            }));
+            return match on_existing {
+                OnExistingVoiceModelId::Error => {
+                    Err(error(LoadModelErrorKind::ModelAlreadyLoaded {
+                        id: model_header.manifest.id,
+                    }))
+                }
+                OnExistingVoiceModelId::Reinit | OnExistingVoiceModelId::Skip => Ok(()),
+            };
         }
 
         // FIXME: https://github.com/VOICEVOX/voicevox_core/pull/761#discussion_r1590200343
@@ -313,18 +346,32 @@ impl<R: InferenceRuntime> LoadedModels<R> {
         &mut self,
         model_header: &VoiceModelHeader,
         session_sets_with_inner_ids: InferenceDomainMap<SessionSetsWithInnerVoiceIdsByDomain<R>>,
+        on_existing: OnExistingVoiceModelId,
     ) -> Result<()> {
-        self.ensure_acceptable(model_header)?;
+        self.ensure_acceptable(model_header, on_existing)?;
 
-        let prev = self.0.insert(
-            model_header.manifest.id,
-            LoadedModel {
-                metas: model_header.metas.clone(),
-                session_sets_with_inner_ids,
+        let entry = self.0.entry(model_header.manifest.id);
+        let model = LoadedModel {
+            metas: model_header.metas.clone(),
+            session_sets_with_inner_ids,
+        };
+
+        match entry {
+            indexmap::map::Entry::Occupied(mut entry) => match on_existing {
+                OnExistingVoiceModelId::Error => {
+                    unreachable!("should have been rejected by `ensure_acceptable`");
+                }
+                OnExistingVoiceModelId::Reinit => {
+                    entry.insert(model);
+                    Ok(())
+                }
+                OnExistingVoiceModelId::Skip => Ok(()),
             },
-        );
-        assert!(prev.is_none());
-        Ok(())
+            indexmap::map::Entry::Vacant(entry) => {
+                entry.insert(model);
+                Ok(())
+            }
+        }
     }
 
     fn remove(&mut self, model_id: VoiceModelId) -> Result<()> {
@@ -502,7 +549,8 @@ mod tests {
         );
         let model = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
         let model_contents = &model.inner().read_inference_models().await.unwrap();
-        let result = status.insert_model(model.inner().header(), model_contents);
+        let result =
+            status.insert_model(model.inner().header(), model_contents, Default::default());
         assert_debug_fmt_eq!(Ok(()), result);
         assert_eq!(1, status.loaded_models.lock().unwrap().0.len());
     }
@@ -521,7 +569,7 @@ mod tests {
             !status.is_loaded_model(model_header.manifest.id),
             "model should  not be loaded"
         );
-        let result = status.insert_model(model_header, model_contents);
+        let result = status.insert_model(model_header, model_contents, Default::default());
         assert_debug_fmt_eq!(Ok(()), result);
         assert!(
             status.is_loaded_model(model_header.manifest.id),

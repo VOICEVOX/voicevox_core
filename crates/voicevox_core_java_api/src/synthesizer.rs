@@ -165,7 +165,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
             env.get_rust_field::<_, _, RustField>(&this, "handle")
         }?
         .clone();
-        internal.load_voice_model(&model)?;
+        internal.load_voice_model(&model).perform()?;
         Ok(())
     })
 }

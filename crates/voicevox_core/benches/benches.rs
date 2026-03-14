@@ -219,7 +219,7 @@ mod blocking {
                 .build()
                 .unwrap();
             let vvm = VoiceModelFile::open(&CONFIG.vvm).unwrap();
-            synth.load_voice_model(&vvm).unwrap();
+            synth.load_voice_model(&vvm).perform().unwrap();
             (synth, vvm)
         });
 
@@ -275,7 +275,7 @@ mod blocking {
 
         let run = || {
             synth.unload_voice_model(vvm.id()).unwrap();
-            synth.load_voice_model(vvm).unwrap();
+            synth.load_voice_model(vvm).perform().unwrap();
         };
         for _ in 0..CONFIG.iterations_for_unload_and_load_vvm().warmups {
             run();
@@ -362,7 +362,7 @@ mod nonblocking {
                     .build()
                     .unwrap();
                 let vvm = VoiceModelFile::open(&CONFIG.vvm).await.unwrap();
-                synth.load_voice_model(&vvm).await.unwrap();
+                synth.load_voice_model(&vvm).perform().await.unwrap();
                 (synth, vvm)
             })
         });
@@ -423,7 +423,7 @@ mod nonblocking {
 
         let run = || {
             synth.unload_voice_model(vvm.id()).unwrap();
-            pollster::block_on(synth.load_voice_model(vvm)).unwrap();
+            pollster::block_on(synth.load_voice_model(vvm).perform()).unwrap();
         };
         for _ in 0..CONFIG.iterations_for_unload_and_load_vvm().warmups {
             run();
