@@ -33,6 +33,7 @@ use super::{
 ///
 /// [`id`]: VoiceModelId
 #[derive(Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[cfg_attr(test, derive(strum::EnumIter))]
 #[non_exhaustive]
 pub enum OnExistingVoiceModelId {
     /// エラー。
@@ -462,22 +463,32 @@ type SessionSetsWithInnerVoiceIdsByDomain<R> =
 
 #[cfg(test)]
 mod tests {
-    use enum_map::enum_map;
-    use pretty_assertions::assert_eq;
-    use rstest::rstest;
+    use std::sync::{Arc, LazyLock};
 
-    use crate::macros::tests::assert_debug_fmt_eq;
+    use enum_map::{Enum, EnumMap, enum_map};
+    use ndarray::{Array, Dimension};
+    use pretty_assertions::assert_eq;
+    use rstest::{fixture, rstest};
+    use strum::IntoEnumIterator as _;
+    use uuid::{Uuid, uuid};
+
+    use crate::{
+        CharacterMeta, CharacterVersion, OnExistingVoiceModelId, StyleMeta, StyleType,
+        SupportedDevices, macros::tests::assert_debug_fmt_eq,
+    };
 
     use super::{
         super::{
             devices::{DeviceSpec, GpuSpec},
             infer::{
-                InferenceSessionOptions,
+                InferenceOperation, InferenceRuntime, InferenceSessionOptions, InputScalarKind,
+                OutputScalarKind, OutputTensor, ParamInfo, PushInputTensor,
                 domains::{
                     ExperimentalTalkOperation, FrameDecodeOperation, InferenceDomainMap,
                     SingingTeacherOperation, TalkOperation, inference_domain_map,
                 },
             },
+            voice_model::{ModelBytes, ModelBytesWithInnerVoiceIdsByDomain, VoiceModelHeader},
         },
         Status,
     };
@@ -515,10 +526,7 @@ mod tests {
                 FrameDecodeOperation::SfDecode => heavy_session_options,
             },
         };
-        let status = Status::new(
-            crate::blocking::Onnxruntime::from_test_util_data().unwrap(),
-            session_options,
-        );
+        let status = Status::new(&InferenceRuntimeMock, session_options);
 
         assert_eq!(
             light_session_options,
@@ -542,39 +550,244 @@ mod tests {
     }
 
     #[rstest]
-    #[tokio::test]
-    async fn status_load_model_works() {
-        let status = Status::new(
-            crate::blocking::Onnxruntime::from_test_util_data().unwrap(),
-            inference_domain_map!(enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu))),
+    fn status_load_model_works(status: Status<InferenceRuntimeMock>) {
+        let result = status.insert_model(
+            &header(uuid!("00000000-0000-4000-a000-000000000001"), [0]),
+            &DUMMY_CONTENTS,
+            Default::default(),
         );
-        let model = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
-        let model_contents = &model.inner().read_inference_models().await.unwrap();
-        let result =
-            status.insert_model(model.inner().header(), model_contents, Default::default());
         assert_debug_fmt_eq!(Ok(()), result);
         assert_eq!(1, status.loaded_models.lock().unwrap().0.len());
     }
 
     #[rstest]
-    #[tokio::test]
-    async fn status_is_model_loaded_works() {
-        let status = Status::new(
-            crate::blocking::Onnxruntime::from_test_util_data().unwrap(),
-            inference_domain_map!(enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu))),
-        );
-        let vvm = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
-        let model_header = vvm.inner().header();
-        let model_contents = &vvm.inner().read_inference_models().await.unwrap();
+    fn status_is_model_loaded_works(status: Status<InferenceRuntimeMock>) {
+        let model_header = &header(uuid!("00000000-0000-4000-a000-000000000001"), [0]);
         assert!(
             !status.is_loaded_model(model_header.manifest.id),
             "model should  not be loaded"
         );
-        let result = status.insert_model(model_header, model_contents, Default::default());
+        let result = status.insert_model(model_header, &DUMMY_CONTENTS, Default::default());
         assert_debug_fmt_eq!(Ok(()), result);
         assert!(
             status.is_loaded_model(model_header.manifest.id),
             "model should be loaded",
         );
+    }
+
+    #[rstest]
+    fn insert_model_without_id_duplications_succeeds_regardless_of_on_existing(
+        status: Status<InferenceRuntimeMock>,
+    ) {
+        let h1 = &header(uuid!("00000000-0000-4000-a000-000000000001"), [0, 1]);
+        let h2 = &header(uuid!("00000000-0000-4000-a000-000000000002"), [2, 3]);
+
+        for o in OnExistingVoiceModelId::iter() {
+            status.insert_model(h1, &DUMMY_CONTENTS, o).unwrap();
+            status.insert_model(h2, &DUMMY_CONTENTS, o).unwrap();
+            assert!(status.is_loaded_model(h1.manifest.id));
+            assert!(status.is_loaded_model(h2.manifest.id));
+
+            status.unload_model(h1.manifest.id).unwrap();
+            status.unload_model(h2.manifest.id).unwrap();
+            assert!(!status.is_loaded_model(h1.manifest.id));
+            assert!(!status.is_loaded_model(h2.manifest.id));
+        }
+    }
+
+    #[rstest]
+    fn style_id_duplication_is_denied_regardless_of_on_existing(
+        status: Status<InferenceRuntimeMock>,
+    ) {
+        use OnExistingVoiceModelId::Error;
+
+        let h1 = &header(uuid!("00000000-0000-4000-a000-000000000001"), [0, 1]);
+        let h2 = &header(uuid!("00000000-0000-4000-a000-000000000002"), [1, 2]);
+
+        status.insert_model(h1, &DUMMY_CONTENTS, Error).unwrap();
+
+        for o in OnExistingVoiceModelId::iter() {
+            let err = status.insert_model(h2, &DUMMY_CONTENTS, o).unwrap_err();
+            assert_eq!(crate::ErrorKind::StyleAlreadyLoaded, err.kind());
+        }
+    }
+
+    #[rstest]
+    fn same_model_id_bypasses_style_id_check(status: Status<InferenceRuntimeMock>) {
+        use OnExistingVoiceModelId::{Error, Reload, Skip};
+
+        let h1 = &header(uuid!("00000000-0000-4000-a000-000000000001"), [0, 1]);
+        let h2 = &header(uuid!("00000000-0000-4000-a000-000000000001"), [1, 2]);
+
+        status.insert_model(h1, &DUMMY_CONTENTS, Error).unwrap();
+
+        let err = status.insert_model(h1, &DUMMY_CONTENTS, Error).unwrap_err();
+        assert_eq!(crate::ErrorKind::ModelAlreadyLoaded, err.kind());
+        status.insert_model(h2, &DUMMY_CONTENTS, Reload).unwrap();
+        status.insert_model(h1, &DUMMY_CONTENTS, Skip).unwrap();
+    }
+
+    #[rstest]
+    fn on_existing_error_denies_model_id_duplication(status: Status<InferenceRuntimeMock>) {
+        use OnExistingVoiceModelId::Error;
+
+        let h = &header(uuid!("00000000-0000-4000-a000-000000000001"), [0]);
+
+        status.insert_model(h, &DUMMY_CONTENTS, Error).unwrap();
+        let err = status.insert_model(h, &DUMMY_CONTENTS, Error).unwrap_err();
+        assert_eq!(crate::ErrorKind::ModelAlreadyLoaded, err.kind());
+    }
+
+    #[rstest]
+    fn on_existing_reload_allows_model_id_duplication(status: Status<InferenceRuntimeMock>) {
+        use OnExistingVoiceModelId::Reload;
+
+        let h = &header(uuid!("00000000-0000-4000-a000-000000000001"), [0]);
+
+        status.insert_model(h, &DUMMY_CONTENTS, Reload).unwrap();
+        status.insert_model(h, &DUMMY_CONTENTS, Reload).unwrap();
+    }
+
+    #[rstest]
+    fn on_existing_skip_allows_model_id_duplication(status: Status<InferenceRuntimeMock>) {
+        use OnExistingVoiceModelId::Skip;
+
+        let h = &header(uuid!("00000000-0000-4000-a000-000000000001"), [0]);
+
+        status.insert_model(h, &DUMMY_CONTENTS, Skip).unwrap();
+        status.insert_model(h, &DUMMY_CONTENTS, Skip).unwrap();
+    }
+
+    fn header<const N: usize>(model_id: Uuid, styles: [u32; N]) -> VoiceModelHeader {
+        VoiceModelHeader {
+            manifest: serde_json::from_str(&format!(
+                r#"
+                {{
+                  "vvm_format_version": 1,
+                  "id": "{model_id}",
+                  "metas_filename": "metas.json",
+                  "talk": {{
+                    "predict_duration": {{
+                      "type": "onnx",
+                      "filename": "predict_duration.onnx"
+                    }},
+                    "predict_intonation": {{
+                      "type": "onnx",
+                      "filename": "predict_intonation.onnx"
+                    }},
+                    "decode": {{
+                      "type": "onnx",
+                      "filename": "decode.onnx"
+                    }}
+                  }}
+                }}"#,
+            ))
+            .unwrap(),
+            metas: [CharacterMeta {
+                name: "".to_owned(),
+                styles: styles
+                    .into_iter()
+                    .map(|id| StyleMeta {
+                        id: id.into(),
+                        name: "".to_owned(),
+                        r#type: StyleType::Talk,
+                        order: None,
+                    })
+                    .collect(),
+                version: CharacterVersion("".to_owned()),
+                speaker_uuid: "".to_owned(),
+                order: None,
+            }]
+            .into(),
+            path: "".into(),
+        }
+    }
+
+    #[fixture]
+    fn status() -> Status<InferenceRuntimeMock> {
+        Status::new(
+            &InferenceRuntimeMock,
+            inference_domain_map!(enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu))),
+        )
+    }
+
+    static DUMMY_CONTENTS: LazyLock<InferenceDomainMap<ModelBytesWithInnerVoiceIdsByDomain>> =
+        LazyLock::new(|| InferenceDomainMap {
+            talk: Some((
+                Default::default(),
+                EnumMap::from_fn(|op: TalkOperation| ModelBytes::Onnx(vec![op.into_usize() as u8])),
+            )),
+            experimental_talk: None,
+            singing_teacher: None,
+            frame_decode: None,
+        });
+
+    struct InferenceRuntimeMock;
+
+    impl InferenceRuntime for InferenceRuntimeMock {
+        type Session = ();
+        type RunContext = DummyRunContext;
+
+        const DISPLAY_NAME: &'static str = "InferenceRuntimeMock";
+
+        fn supported_devices(&self) -> crate::Result<SupportedDevices> {
+            unimplemented!();
+        }
+
+        fn test_gpu(&self, _: GpuSpec) -> anyhow::Result<()> {
+            unimplemented!();
+        }
+
+        fn new_session(
+            &self,
+            model: &ModelBytes,
+            _: InferenceSessionOptions,
+        ) -> anyhow::Result<(
+            Self::Session,
+            Vec<ParamInfo<InputScalarKind>>,
+            Vec<ParamInfo<OutputScalarKind>>,
+        )> {
+            let ModelBytes::Onnx(model) = model else {
+                unreachable!()
+            };
+            let [op] = **model else { unreachable!() };
+            let op = TalkOperation::from_usize(op.into());
+            let (in_infos, out_infos) = TalkOperation::PARAM_INFOS[op];
+            Ok(((), in_infos.to_owned(), out_infos.to_owned()))
+        }
+
+        fn run_blocking(_: Self::RunContext) -> anyhow::Result<Vec<OutputTensor>> {
+            unimplemented!();
+        }
+
+        async fn run_async(_: Self::RunContext, _: bool) -> anyhow::Result<Vec<OutputTensor>> {
+            unimplemented!();
+        }
+    }
+
+    enum DummyRunContext {}
+
+    impl<T> From<Arc<T>> for DummyRunContext {
+        fn from(_: Arc<T>) -> Self {
+            unimplemented!();
+        }
+    }
+
+    impl PushInputTensor for DummyRunContext {
+        fn push_int64(
+            &mut self,
+            _: &'static str,
+            _: Array<i64, impl Dimension + 'static>,
+        ) -> anyhow::Result<()> {
+            unimplemented!();
+        }
+
+        fn push_float32(
+            &mut self,
+            _: &'static str,
+            _: Array<f32, impl Dimension + 'static>,
+        ) -> anyhow::Result<()> {
+            unimplemented!();
+        }
     }
 }
