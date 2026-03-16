@@ -257,6 +257,7 @@ impl<A: OutputScalar, D: Dimension> TryFrom<OutputTensor> for Array<A, D> {
     }
 }
 
+#[cfg_attr(test, derive(Clone))]
 pub(crate) struct ParamInfo<D> {
     name: Cow<'static, str>,
     dt: D,
