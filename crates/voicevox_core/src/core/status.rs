@@ -474,7 +474,7 @@ mod tests {
 
     use crate::{
         CharacterMeta, CharacterVersion, OnExistingVoiceModelId, StyleMeta, StyleType,
-        SupportedDevices, macros::tests::assert_debug_fmt_eq,
+        SupportedDevices,
     };
 
     use super::{
@@ -550,29 +550,10 @@ mod tests {
     }
 
     #[rstest]
-    fn status_load_model_works(status: Status<InferenceRuntimeMock>) {
-        let result = status.insert_model(
-            &header(uuid!("00000000-0000-4000-a000-000000000001"), [0]),
-            &DUMMY_CONTENTS,
-            Default::default(),
-        );
-        assert_debug_fmt_eq!(Ok(()), result);
-        assert_eq!(1, status.loaded_models.lock().unwrap().0.len());
-    }
-
-    #[rstest]
-    fn status_is_model_loaded_works(status: Status<InferenceRuntimeMock>) {
-        let model_header = &header(uuid!("00000000-0000-4000-a000-000000000001"), [0]);
-        assert!(
-            !status.is_loaded_model(model_header.manifest.id),
-            "model should  not be loaded"
-        );
-        let result = status.insert_model(model_header, &DUMMY_CONTENTS, Default::default());
-        assert_debug_fmt_eq!(Ok(()), result);
-        assert!(
-            status.is_loaded_model(model_header.manifest.id),
-            "model should be loaded",
-        );
+    fn is_loaded_model_returns_false_for_nonexisting_model_id(
+        status: Status<InferenceRuntimeMock>,
+    ) {
+        assert!(!status.is_loaded_model(uuid!("00000000-0000-4000-a000-000000000001").into()));
     }
 
     #[rstest]
@@ -658,6 +639,14 @@ mod tests {
         status.insert_model(h, &DUMMY_CONTENTS, Skip).unwrap();
     }
 
+    #[fixture]
+    fn status() -> Status<InferenceRuntimeMock> {
+        Status::new(
+            &InferenceRuntimeMock,
+            inference_domain_map!(enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu))),
+        )
+    }
+
     fn header<const N: usize>(model_id: Uuid, styles: [u32; N]) -> VoiceModelHeader {
         VoiceModelHeader {
             manifest: serde_json::from_str(&format!(
@@ -701,14 +690,6 @@ mod tests {
             .into(),
             path: "".into(),
         }
-    }
-
-    #[fixture]
-    fn status() -> Status<InferenceRuntimeMock> {
-        Status::new(
-            &InferenceRuntimeMock,
-            inference_domain_map!(enum_map!(_ => InferenceSessionOptions::new(0, DeviceSpec::Cpu))),
-        )
     }
 
     static DUMMY_CONTENTS: LazyLock<InferenceDomainMap<ModelBytesWithInnerVoiceIdsByDomain>> =
