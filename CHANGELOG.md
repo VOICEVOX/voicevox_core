@@ -55,7 +55,7 @@
 
 ### Added
 
-- `Synthesizer::load_voice_model`にオプション`on_existing`が追加されます ([#1331])。
+- \[Rust\] `Synthesizer::load_voice_model`にオプション`on_existing`が追加されます ([#1331])。
 - \[ダウンローダー\] `--os`オプションで`android`と`ios`を指定できるようになります。ただしiOSの`c-api`をダウンロードすることはできません ([#1313])。
 - \[ダウンローダー\] 環境変数`VV_DOWNLOADER_C_API_ALLOW_DRAFT`を設定することで、`c-api`のdraft releaseを`--c-api-version`で指定できるようになります。主な用途はこのvoicevox\_coreリポジトリでの内部利用です ([#1315])。
 
