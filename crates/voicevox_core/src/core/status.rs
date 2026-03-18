@@ -294,7 +294,6 @@ impl<R: InferenceRuntime> LoadedModels<R> {
     ///
     /// 1. `on_existing`が`Error`かつ、現在持っている音声モデルIDが`model_header`と重複するとき
     /// 2. 1.を満たさず、現在持っているスタイルIDが`model_header`と重複するとき
-    /// 3. 必要であるはずの`InferenceDomain`のモデルデータが欠けているとき (← FIXME: これやっていないのでは？)
     // FIXME: コメントとテストを書く
     // - https://github.com/VOICEVOX/voicevox_core/pull/761#discussion_r1589978521
     // - https://github.com/VOICEVOX/voicevox_core/pull/761#discussion_r1589976759
