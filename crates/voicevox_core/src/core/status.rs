@@ -29,6 +29,29 @@ use super::{
     voice_model::{ModelBytesWithInnerVoiceIdsByDomain, VoiceModelHeader, VoiceModelId},
 };
 
+/// `Synthesizer::load_voice_model`の実行時に、同じ[`id`]の`VoiceModelFile`が既に読み込まれていたときのふるまい。
+///
+/// [`id`]: VoiceModelId
+#[derive(Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[cfg_attr(test, derive(strum::EnumIter))]
+#[non_exhaustive]
+pub enum OnExistingVoiceModelId {
+    /// エラー。
+    ///
+    /// デフォルトのふるまい。
+    #[default]
+    Error,
+
+    /// 再読み込みする。
+    ///
+    /// VOICEVOX
+    /// COREでは、長文のテキストを一度に音声合成するとCPU/GPUメモリが大量に占有されたままになる。再読み込みを行うとメモリの使用量が元に戻る。
+    Reload,
+
+    /// 何もしない。
+    Skip,
+}
+
 #[derive(Debug)]
 pub(crate) struct Status<R: InferenceRuntime> {
     pub(crate) rt: &'static R,
@@ -52,11 +75,12 @@ impl<R: InferenceRuntime> Status<R> {
         &self,
         model_header: &VoiceModelHeader,
         model_contents: &InferenceDomainMap<ModelBytesWithInnerVoiceIdsByDomain>,
+        on_existing: OnExistingVoiceModelId,
     ) -> Result<()> {
         self.loaded_models
             .lock()
             .unwrap()
-            .ensure_acceptable(model_header)?;
+            .ensure_acceptable(model_header, on_existing)?;
 
         let session_sets_with_inner_ids = model_contents
             .create_session_sets(self.rt, &self.session_options)
@@ -66,10 +90,11 @@ impl<R: InferenceRuntime> Status<R> {
                 source: Some(source),
             })?;
 
-        self.loaded_models
-            .lock()
-            .unwrap()
-            .insert(model_header, session_sets_with_inner_ids)?;
+        self.loaded_models.lock().unwrap().insert(
+            model_header,
+            session_sets_with_inner_ids,
+            on_existing,
+        )?;
         Ok(())
     }
 
@@ -267,11 +292,16 @@ impl<R: InferenceRuntime> LoadedModels<R> {
     ///
     /// 次の場合にエラーを返す。
     ///
-    /// - 現在持っている音声モデルIDかスタイルIDが`model_header`と重複するとき
+    /// 1. `on_existing`が`Error`かつ、現在持っている音声モデルIDが`model_header`と重複するとき
+    /// 2. 1.を満たさず、現在持っているスタイルIDが`model_header`と重複するとき
     // FIXME: コメントとテストを書く
     // - https://github.com/VOICEVOX/voicevox_core/pull/761#discussion_r1589978521
     // - https://github.com/VOICEVOX/voicevox_core/pull/761#discussion_r1589976759
-    fn ensure_acceptable(&self, model_header: &VoiceModelHeader) -> LoadModelResult<()> {
+    fn ensure_acceptable(
+        &self,
+        model_header: &VoiceModelHeader,
+        on_existing: OnExistingVoiceModelId,
+    ) -> LoadModelResult<()> {
         let error = |context| LoadModelError {
             path: model_header.path.clone(),
             context,
@@ -279,9 +309,14 @@ impl<R: InferenceRuntime> LoadedModels<R> {
         };
 
         if self.0.contains_key(&model_header.manifest.id) {
-            return Err(error(LoadModelErrorKind::ModelAlreadyLoaded {
-                id: model_header.manifest.id,
-            }));
+            return match on_existing {
+                OnExistingVoiceModelId::Error => {
+                    Err(error(LoadModelErrorKind::ModelAlreadyLoaded {
+                        id: model_header.manifest.id,
+                    }))
+                }
+                OnExistingVoiceModelId::Reload | OnExistingVoiceModelId::Skip => Ok(()),
+            };
         }
 
         // FIXME: https://github.com/VOICEVOX/voicevox_core/pull/761#discussion_r1590200343
@@ -312,18 +347,32 @@ impl<R: InferenceRuntime> LoadedModels<R> {
         &mut self,
         model_header: &VoiceModelHeader,
         session_sets_with_inner_ids: InferenceDomainMap<SessionSetsWithInnerVoiceIdsByDomain<R>>,
+        on_existing: OnExistingVoiceModelId,
     ) -> Result<()> {
-        self.ensure_acceptable(model_header)?;
+        self.ensure_acceptable(model_header, on_existing)?;
 
-        let prev = self.0.insert(
-            model_header.manifest.id,
-            LoadedModel {
-                metas: model_header.metas.clone(),
-                session_sets_with_inner_ids,
+        let entry = self.0.entry(model_header.manifest.id);
+        let model = LoadedModel {
+            metas: model_header.metas.clone(),
+            session_sets_with_inner_ids,
+        };
+
+        match entry {
+            indexmap::map::Entry::Occupied(mut entry) => match on_existing {
+                OnExistingVoiceModelId::Error => {
+                    unreachable!("should have been rejected by `ensure_acceptable`");
+                }
+                OnExistingVoiceModelId::Reload => {
+                    entry.insert(model);
+                    Ok(())
+                }
+                OnExistingVoiceModelId::Skip => Ok(()),
             },
-        );
-        assert!(prev.is_none());
-        Ok(())
+            indexmap::map::Entry::Vacant(entry) => {
+                entry.insert(model);
+                Ok(())
+            }
+        }
     }
 
     fn remove(&mut self, model_id: VoiceModelId) -> Result<()> {
@@ -419,11 +468,12 @@ mod tests {
     use ndarray::{Array, Dimension};
     use pretty_assertions::assert_eq;
     use rstest::{fixture, rstest};
+    use strum::IntoEnumIterator as _;
     use uuid::{Uuid, uuid};
 
     use crate::{
-        CharacterMeta, CharacterVersion, StyleMeta, StyleType, SupportedDevices,
-        macros::tests::assert_debug_fmt_eq,
+        CharacterMeta, CharacterVersion, OnExistingVoiceModelId, StyleMeta, StyleType,
+        SupportedDevices,
     };
 
     use super::{
@@ -499,28 +549,93 @@ mod tests {
     }
 
     #[rstest]
-    fn status_load_model_works(status: Status<InferenceRuntimeMock>) {
-        let result = status.insert_model(
-            &header(uuid!("00000000-0000-4000-a000-000000000001"), [0]),
-            &DUMMY_CONTENTS,
-        );
-        assert_debug_fmt_eq!(Ok(()), result);
-        assert_eq!(1, status.loaded_models.lock().unwrap().0.len());
+    fn is_loaded_model_returns_false_for_nonexisting_model_id(
+        status: Status<InferenceRuntimeMock>,
+    ) {
+        assert!(!status.is_loaded_model(uuid!("00000000-0000-4000-a000-000000000001").into()));
     }
 
     #[rstest]
-    fn status_is_model_loaded_works(status: Status<InferenceRuntimeMock>) {
-        let model_header = &header(uuid!("00000000-0000-4000-a000-000000000001"), [0]);
-        assert!(
-            !status.is_loaded_model(model_header.manifest.id),
-            "model should  not be loaded"
-        );
-        let result = status.insert_model(model_header, &DUMMY_CONTENTS);
-        assert_debug_fmt_eq!(Ok(()), result);
-        assert!(
-            status.is_loaded_model(model_header.manifest.id),
-            "model should be loaded",
-        );
+    fn insert_model_without_id_duplications_succeeds_regardless_of_on_existing(
+        status: Status<InferenceRuntimeMock>,
+    ) {
+        let h1 = &header(uuid!("00000000-0000-4000-a000-000000000001"), [0, 1]);
+        let h2 = &header(uuid!("00000000-0000-4000-a000-000000000002"), [2, 3]);
+
+        for o in OnExistingVoiceModelId::iter() {
+            status.insert_model(h1, &DUMMY_CONTENTS, o).unwrap();
+            status.insert_model(h2, &DUMMY_CONTENTS, o).unwrap();
+            assert!(status.is_loaded_model(h1.manifest.id));
+            assert!(status.is_loaded_model(h2.manifest.id));
+
+            status.unload_model(h1.manifest.id).unwrap();
+            status.unload_model(h2.manifest.id).unwrap();
+            assert!(!status.is_loaded_model(h1.manifest.id));
+            assert!(!status.is_loaded_model(h2.manifest.id));
+        }
+    }
+
+    #[rstest]
+    fn style_id_duplication_is_denied_regardless_of_on_existing(
+        status: Status<InferenceRuntimeMock>,
+    ) {
+        use OnExistingVoiceModelId::Error;
+
+        let h1 = &header(uuid!("00000000-0000-4000-a000-000000000001"), [0, 1]);
+        let h2 = &header(uuid!("00000000-0000-4000-a000-000000000002"), [1, 2]);
+
+        status.insert_model(h1, &DUMMY_CONTENTS, Error).unwrap();
+
+        for o in OnExistingVoiceModelId::iter() {
+            let err = status.insert_model(h2, &DUMMY_CONTENTS, o).unwrap_err();
+            assert_eq!(crate::ErrorKind::StyleAlreadyLoaded, err.kind());
+        }
+    }
+
+    #[rstest]
+    fn same_model_id_bypasses_style_id_check(status: Status<InferenceRuntimeMock>) {
+        use OnExistingVoiceModelId::{Error, Reload, Skip};
+
+        let h1 = &header(uuid!("00000000-0000-4000-a000-000000000001"), [0, 1]);
+        let h2 = &header(uuid!("00000000-0000-4000-a000-000000000001"), [1, 2]);
+
+        status.insert_model(h1, &DUMMY_CONTENTS, Error).unwrap();
+
+        let err = status.insert_model(h1, &DUMMY_CONTENTS, Error).unwrap_err();
+        assert_eq!(crate::ErrorKind::ModelAlreadyLoaded, err.kind());
+        status.insert_model(h2, &DUMMY_CONTENTS, Reload).unwrap();
+        status.insert_model(h1, &DUMMY_CONTENTS, Skip).unwrap();
+    }
+
+    #[rstest]
+    fn on_existing_error_denies_model_id_duplication(status: Status<InferenceRuntimeMock>) {
+        use OnExistingVoiceModelId::Error;
+
+        let h = &header(uuid!("00000000-0000-4000-a000-000000000001"), [0]);
+
+        status.insert_model(h, &DUMMY_CONTENTS, Error).unwrap();
+        let err = status.insert_model(h, &DUMMY_CONTENTS, Error).unwrap_err();
+        assert_eq!(crate::ErrorKind::ModelAlreadyLoaded, err.kind());
+    }
+
+    #[rstest]
+    fn on_existing_reload_allows_model_id_duplication(status: Status<InferenceRuntimeMock>) {
+        use OnExistingVoiceModelId::Reload;
+
+        let h = &header(uuid!("00000000-0000-4000-a000-000000000001"), [0]);
+
+        status.insert_model(h, &DUMMY_CONTENTS, Reload).unwrap();
+        status.insert_model(h, &DUMMY_CONTENTS, Reload).unwrap();
+    }
+
+    #[rstest]
+    fn on_existing_skip_allows_model_id_duplication(status: Status<InferenceRuntimeMock>) {
+        use OnExistingVoiceModelId::Skip;
+
+        let h = &header(uuid!("00000000-0000-4000-a000-000000000001"), [0]);
+
+        status.insert_model(h, &DUMMY_CONTENTS, Skip).unwrap();
+        status.insert_model(h, &DUMMY_CONTENTS, Skip).unwrap();
     }
 
     #[fixture]

@@ -18,7 +18,8 @@ use tracing::info;
 use typed_floats::{NonNaNFinite, PositiveFinite};
 
 use crate::{
-    AccentPhrase, AudioQuery, Result, StyleId, VoiceModelId, VoiceModelMeta,
+    AccentPhrase, AudioQuery, OnExistingVoiceModelId, Result, StyleId, VoiceModelId,
+    VoiceModelMeta,
     asyncs::{Async, BlockingThreadPool, SingleTasked},
     collections::{NonEmptyIterator as _, NonEmptySlice, NonEmptyVec},
     core::{
@@ -148,6 +149,11 @@ impl Default for InitializeOptions {
             cpu_num_threads: DEFAULT_CPU_NUM_THREADS,
         }
     }
+}
+
+#[derive(Default, Clone, Copy, Debug)]
+struct LoadVoiceModelOptions {
+    on_existing: OnExistingVoiceModelId,
 }
 
 trait AsyncExt: infer::AsyncExt {
@@ -397,12 +403,27 @@ trait AsInner {
         self.use_gpu()
     }
 
-    async fn load_voice_model(&self, model: &voice_model::Inner<Self::Async>) -> crate::Result<()> {
+    async fn load_voice_model(
+        &self,
+        model: &voice_model::Inner<Self::Async>,
+        options: LoadVoiceModelOptions,
+    ) -> crate::Result<()> {
+        // TOCTOUが起きたとしてもモデルを二度ロードするだけで済む。
+        // それよりも`Status`のロック期間を最小にすることを優先したい。
+        if options.on_existing == OnExistingVoiceModelId::Skip
+            && self.is_loaded_voice_model(model.id())
+        {
+            return Ok(());
+        }
+
         let model_bytes = model.read_inference_models().await?;
 
         let status = self.status().clone();
         let header = model.header().clone();
-        Self::Async::unblock(move || status.insert_model(&header, &model_bytes)).await
+        Self::Async::unblock(move || {
+            status.insert_model(&header, &model_bytes, options.on_existing)
+        })
+        .await
     }
 
     fn unload_voice_model(&self, voice_model_id: VoiceModelId) -> Result<()> {
@@ -1627,13 +1648,13 @@ pub(crate) mod blocking {
     use typed_floats::{NonNaNFinite, PositiveFinite};
 
     use crate::{
-        AccentPhrase, AudioQuery, FrameAudioQuery, Score, StyleId, VoiceModelId, VoiceModelMeta,
-        asyncs::SingleTasked, future::FutureExt as _,
+        AccentPhrase, AudioQuery, FrameAudioQuery, OnExistingVoiceModelId, Score, StyleId,
+        VoiceModelId, VoiceModelMeta, asyncs::SingleTasked, future::FutureExt as _,
     };
 
     use super::{
         AccelerationMode, AsInner as _, AssumeSingleTasked, InitializeOptions, Inner,
-        InnerRefWithoutTextAnalyzer, SynthesisOptions, TtsOptions,
+        InnerRefWithoutTextAnalyzer, LoadVoiceModelOptions, SynthesisOptions, TtsOptions,
     };
 
     pub use super::AudioFeature;
@@ -1702,11 +1723,15 @@ pub(crate) mod blocking {
 
         /// 音声モデルを読み込む。
         #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_load_voice_model"))]
-        pub fn load_voice_model(
-            &self,
-            model: &crate::blocking::VoiceModelFile,
-        ) -> crate::Result<()> {
-            self.0.load_voice_model(model.inner()).block_on()
+        pub fn load_voice_model<'a>(
+            &'a self,
+            model: &'a crate::blocking::VoiceModelFile,
+        ) -> LoadVoiceModel<'a> {
+            LoadVoiceModel {
+                synthesizer: self.0.without_text_analyzer(),
+                model,
+                options: Default::default(),
+            }
         }
 
         /// 音声モデルの読み込みを解除する。
@@ -2455,6 +2480,31 @@ pub(crate) mod blocking {
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
     #[derive(Debug)]
+    pub struct LoadVoiceModel<'a> {
+        synthesizer: InnerRefWithoutTextAnalyzer<'a, SingleTasked>,
+        model: &'a crate::blocking::VoiceModelFile,
+        options: LoadVoiceModelOptions,
+    }
+
+    impl LoadVoiceModel<'_> {
+        /// 同じ`id`の[`VoiceModelFile`]が既に読み込まれていたときのふるまい。
+        ///
+        /// [`VoiceModelFile`]: crate::blocking::VoiceModelFile
+        pub fn on_existing(mut self, on_existing: OnExistingVoiceModelId) -> Self {
+            self.options.on_existing = on_existing;
+            self
+        }
+
+        /// 実行する。
+        pub fn perform(self) -> crate::Result<()> {
+            self.synthesizer
+                .load_voice_model(self.model.inner(), self.options)
+                .block_on()
+        }
+    }
+
+    #[must_use = "this is a builder. it does nothing until `perform`ed"]
+    #[derive(Debug)]
     pub struct PrecomputeRender<'a> {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, SingleTasked>,
         audio_query: &'a AudioQuery,
@@ -2570,13 +2620,13 @@ pub(crate) mod nonblocking {
     use typed_floats::{NonNaNFinite, PositiveFinite};
 
     use crate::{
-        AccentPhrase, AudioQuery, FrameAudioQuery, Result, Score, StyleId, VoiceModelId,
-        VoiceModelMeta, asyncs::BlockingThreadPool,
+        AccentPhrase, AudioQuery, FrameAudioQuery, OnExistingVoiceModelId, Result, Score, StyleId,
+        VoiceModelId, VoiceModelMeta, asyncs::BlockingThreadPool,
     };
 
     use super::{
         AccelerationMode, AsInner as _, AssumeBlockable, FrameSynthesisOptions, InitializeOptions,
-        Inner, InnerRefWithoutTextAnalyzer, SynthesisOptions, TtsOptions,
+        Inner, InnerRefWithoutTextAnalyzer, LoadVoiceModelOptions, SynthesisOptions, TtsOptions,
     };
 
     /// 音声シンセサイザ。
@@ -2646,11 +2696,15 @@ pub(crate) mod nonblocking {
         }
 
         /// 音声モデルを読み込む。
-        pub async fn load_voice_model(
-            &self,
-            model: &crate::nonblocking::VoiceModelFile,
-        ) -> Result<()> {
-            self.0.load_voice_model(model.inner()).await
+        pub fn load_voice_model<'a>(
+            &'a self,
+            model: &'a crate::nonblocking::VoiceModelFile,
+        ) -> LoadVoiceModel<'a> {
+            LoadVoiceModel {
+                synthesizer: self.0.without_text_analyzer(),
+                model,
+                options: Default::default(),
+            }
         }
 
         /// 音声モデルの読み込みを解除する。
@@ -3242,6 +3296,31 @@ pub(crate) mod nonblocking {
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
     #[derive(Debug)]
+    pub struct LoadVoiceModel<'a> {
+        synthesizer: InnerRefWithoutTextAnalyzer<'a, BlockingThreadPool>,
+        model: &'a crate::nonblocking::VoiceModelFile,
+        options: LoadVoiceModelOptions,
+    }
+
+    impl LoadVoiceModel<'_> {
+        /// 同じ`id`の[`VoiceModelFile`]が既に読み込まれていたときのふるまい。
+        ///
+        /// [`VoiceModelFile`]: crate::nonblocking::VoiceModelFile
+        pub fn on_existing(mut self, on_existing: OnExistingVoiceModelId) -> Self {
+            self.options.on_existing = on_existing;
+            self
+        }
+
+        /// 実行する。
+        pub async fn perform(self) -> crate::Result<()> {
+            self.synthesizer
+                .load_voice_model(self.model.inner(), self.options)
+                .await
+        }
+    }
+
+    #[must_use = "this is a builder. it does nothing until `perform`ed"]
+    #[derive(Debug)]
     pub struct Synthesis<'a> {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, BlockingThreadPool>,
         audio_query: &'a AudioQuery,
@@ -3396,6 +3475,7 @@ mod tests {
 
         let result = syntesizer
             .load_voice_model(&crate::nonblocking::VoiceModelFile::sample().await.unwrap())
+            .perform()
             .await;
 
         assert_debug_fmt_eq!(
@@ -3438,6 +3518,7 @@ mod tests {
         );
         syntesizer
             .load_voice_model(&crate::nonblocking::VoiceModelFile::sample().await.unwrap())
+            .perform()
             .await
             .unwrap();
 
@@ -3463,6 +3544,7 @@ mod tests {
 
         syntesizer
             .load_voice_model(&crate::nonblocking::VoiceModelFile::sample().await.unwrap())
+            .perform()
             .await
             .unwrap();
 
@@ -3494,6 +3576,7 @@ mod tests {
         .unwrap();
         syntesizer
             .load_voice_model(&crate::nonblocking::VoiceModelFile::sample().await.unwrap())
+            .perform()
             .await
             .unwrap();
 
@@ -3536,6 +3619,7 @@ mod tests {
         .unwrap();
         syntesizer
             .load_voice_model(&crate::nonblocking::VoiceModelFile::sample().await.unwrap())
+            .perform()
             .await
             .unwrap();
 
@@ -3590,6 +3674,7 @@ mod tests {
         .unwrap();
         syntesizer
             .load_voice_model(&crate::nonblocking::VoiceModelFile::sample().await.unwrap())
+            .perform()
             .await
             .unwrap();
 
@@ -3625,6 +3710,7 @@ mod tests {
         .unwrap();
         syntesizer
             .load_voice_model(&crate::nonblocking::VoiceModelFile::sample().await.unwrap())
+            .perform()
             .await
             .unwrap();
 
@@ -3662,6 +3748,7 @@ mod tests {
         .unwrap();
         syntesizer
             .load_voice_model(&crate::nonblocking::VoiceModelFile::sample().await.unwrap())
+            .perform()
             .await
             .unwrap();
 
@@ -3772,7 +3859,7 @@ mod tests {
         .unwrap();
 
         let model = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
-        syntesizer.load_voice_model(model).await.unwrap();
+        syntesizer.load_voice_model(model).perform().await.unwrap();
 
         let query = match input {
             Input::Kana(input) => {
@@ -3843,7 +3930,7 @@ mod tests {
         .unwrap();
 
         let model = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
-        syntesizer.load_voice_model(model).await.unwrap();
+        syntesizer.load_voice_model(model).perform().await.unwrap();
 
         let accent_phrases = match input {
             Input::Kana(input) => {
@@ -3911,7 +3998,7 @@ mod tests {
         .unwrap();
 
         let model = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
-        syntesizer.load_voice_model(model).await.unwrap();
+        syntesizer.load_voice_model(model).perform().await.unwrap();
 
         let accent_phrases = syntesizer
             .create_accent_phrases("同じ、文章、です。完全に、同一です。", StyleId::new(1))
@@ -3974,7 +4061,7 @@ mod tests {
         .unwrap();
 
         let model = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
-        syntesizer.load_voice_model(model).await.unwrap();
+        syntesizer.load_voice_model(model).perform().await.unwrap();
 
         let accent_phrases = syntesizer
             .create_accent_phrases("これはテストです", StyleId::new(0))
@@ -4015,7 +4102,7 @@ mod tests {
         .unwrap();
 
         let model = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
-        syntesizer.load_voice_model(model).await.unwrap();
+        syntesizer.load_voice_model(model).perform().await.unwrap();
 
         let accent_phrases = syntesizer
             .create_accent_phrases("これはテストです", StyleId::new(0))
@@ -4056,7 +4143,7 @@ mod tests {
         .unwrap();
 
         let model = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
-        syntesizer.load_voice_model(model).await.unwrap();
+        syntesizer.load_voice_model(model).perform().await.unwrap();
 
         let accent_phrases = syntesizer
             .create_accent_phrases("これはテストです", StyleId::new(0))
@@ -4115,7 +4202,7 @@ mod tests {
         .unwrap();
 
         let model = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
-        synthesizer.load_voice_model(model).await.unwrap();
+        synthesizer.load_voice_model(model).perform().await.unwrap();
 
         let score = &Score {
             notes: vec![

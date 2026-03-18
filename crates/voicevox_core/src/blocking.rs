@@ -23,7 +23,9 @@ pub mod onnxruntime {
 }
 
 pub mod synthesizer {
-    pub use crate::synthesizer::blocking::{Builder, FrameSynthesis, Synthesis, Tts, TtsFromKana};
+    pub use crate::synthesizer::blocking::{
+        Builder, FrameSynthesis, LoadVoiceModel, Synthesis, Tts, TtsFromKana,
+    };
 
     // TODO: 後で復活させる
     // https://github.com/VOICEVOX/voicevox_core/issues/970

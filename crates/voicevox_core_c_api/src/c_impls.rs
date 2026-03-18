@@ -104,7 +104,7 @@ impl *const VoicevoxSynthesizer {
         self,
         model: &voicevox_core::blocking::VoiceModelFile,
     ) -> CApiResult<()> {
-        self.body().load_voice_model(model)?;
+        self.body().load_voice_model(model).perform()?;
         Ok(())
     }
 

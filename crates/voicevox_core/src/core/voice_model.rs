@@ -199,7 +199,7 @@ impl<A: Async> Inner<A> {
         }
     }
 
-    fn id(&self) -> VoiceModelId {
+    pub(crate) fn id(&self) -> VoiceModelId {
         self.borrow_header().manifest.id
     }
 
