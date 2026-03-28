@@ -386,8 +386,8 @@ mod blocking {
     use uuid::Uuid;
     use voicevox_core::{
         __internal::interop::BlockingTextAnalyzerExt as _, AccelerationMode, AccentPhrase,
-        AudioQuery, FrameAudioQuery, Score, StyleId, SupportedDevices, UserDictWord,
-        VoiceModelMeta,
+        AudioQuery, FrameAudioQuery, OnExistingVoiceModelId, Score, StyleId, SupportedDevices,
+        UserDictWord, VoiceModelMeta,
     };
 
     use crate::{
@@ -758,7 +758,7 @@ mod blocking {
             &self,
             model: &Bound<'_, VoiceModelFile>,
             #[pyo3(from_py_with = crate::convert::from_on_existing_voice_model_id)]
-            on_existing: voicevox_core::OnExistingVoiceModelId,
+            on_existing: OnExistingVoiceModelId,
             py: Python<'_>,
         ) -> PyResult<()> {
             let this = self.synthesizer.read()?;
@@ -1159,8 +1159,8 @@ mod asyncio {
     use uuid::Uuid;
     use voicevox_core::{
         __internal::interop::NonblockingTextAnalyzerExt as _, AccelerationMode, AccentPhrase,
-        AudioQuery, FrameAudioQuery, Score, StyleId, SupportedDevices, UserDictWord,
-        VoiceModelMeta,
+        AudioQuery, FrameAudioQuery, OnExistingVoiceModelId, Score, StyleId, SupportedDevices,
+        UserDictWord, VoiceModelMeta,
     };
 
     use crate::{
@@ -1497,7 +1497,7 @@ mod asyncio {
             &self,
             model: Py<VoiceModelFile>,
             #[pyo3(from_py_with = crate::convert::from_on_existing_voice_model_id)]
-            on_existing: voicevox_core::OnExistingVoiceModelId,
+            on_existing: OnExistingVoiceModelId,
         ) -> PyResult<()> {
             let model = &*model.get().model.read()?;
             let result = self
