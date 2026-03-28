@@ -426,7 +426,7 @@ typedef struct VoicevoxInitializeOptions {
  */
 typedef struct VoicevoxLoadVoiceModelOptions {
   /**
-   * 同じIDの音声モデルが既に読み込まれていたときのふるまい
+   * 同じIDの ::VoicevoxVoiceModelFile が既に読み込まれていたときのふるまい
    */
   VoicevoxOnExistingVoiceModelId on_existing;
 } VoicevoxLoadVoiceModelOptions;
