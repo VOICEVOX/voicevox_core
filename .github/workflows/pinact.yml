@@ -1,4 +1,4 @@
-name: Check typos
+name: Check pinact
 
 on:
   push:
@@ -14,11 +14,14 @@ defaults:
     shell: bash
 
 jobs:
-  typos:
+  pinact:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
 
-      - name: typos-action
-        uses: crate-ci/typos@85f62a8a84f939ae994ab3763f01a0296d61a7ee # v1.36.2
+      - name: pinact-action
+        uses: suzuki-shunsuke/pinact-action@28aeb220eb3252ad0d4422dd5d9368e925acbd8d # v1.3.0
+        with:
+          skip_push: "true"
+          min_age: "7"
