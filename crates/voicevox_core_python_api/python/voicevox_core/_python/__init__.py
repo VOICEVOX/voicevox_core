@@ -258,6 +258,26 @@ def _(mode: AccelerationMode):
     _: str = mode
 
 
+OnExistingVoiceModelId: TypeAlias = Literal["ERROR", "RELOAD", "SKIP"] | _Reserved
+"""
+同じ ``id`` の音声モデルが既に読み込まれていたときのふるまいを設定する設定値。
+
+============= =============================================
+値            説明
+``"ERROR"``   エラー。デフォルトのふるまい。
+``"RELOAD"``  再読み込みする。
+``"SKIP"``    スキップする。
+``_Reserved`` 将来のために予約されている値。この値が存在することは決してない。
+              ``str`` のサブタイプであるため、 ``OnExistingVoiceModelId`` を ``str`` として
+              扱うことは可能。
+============= =============================================
+"""
+
+
+def _(on_existing: OnExistingVoiceModelId):
+    _: str = on_existing
+
+
 @dataclasses.dataclass
 class Mora:
     """
