@@ -5,6 +5,10 @@ on:
     branches:
       - main
   pull_request:
+    paths:
+      - .github/pinact.yaml
+      - .github/actions/**
+      - .github/workflows/*.yml
   workflow_dispatch:
 
 defaults:
@@ -18,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
 
-      - name: pinact-action
+      - name: Pinact
         uses: suzuki-shunsuke/pinact-action@28aeb220eb3252ad0d4422dd5d9368e925acbd8d # v1.3.0
         with:
           skip_push: "true"
