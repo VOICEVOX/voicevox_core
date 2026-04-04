@@ -1,4 +1,4 @@
-name: Check pinact
+name: Pinact
 
 on:
   push:
