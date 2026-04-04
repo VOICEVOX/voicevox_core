@@ -51,6 +51,18 @@ cargo run -p downloader -- -h
 typos
 ```
 
+## GitHub Actions のバージョン固定
+
+[pinact](https://github.com/suzuki-shunsuke/pinact) を使って GitHub Actions のバージョンを full-length commit SHA に固定しています。
+
+```bash
+# バージョンを固定する
+pinact run
+
+# バージョンを更新して固定する
+pinact run --update --min-age 7
+```
+
 ## CHANGELOG.mdの更新
 
 プルリクエストにて[CHANGELOG.md](./CHANGELOG.md)も同時に更新するかどうかは任意です。しない場合は、メンテナが後から行います。
