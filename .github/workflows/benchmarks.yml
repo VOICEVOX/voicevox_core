@@ -46,7 +46,7 @@ jobs:
         run: cargo codspeed build -p voicevox_core --bench benches --features buildtime-download-onnxruntime,load-onnxruntime -m walltime
 
       - name: Run the benchmarks
-        uses: CodSpeedHQ/action@v4
+        uses: CodSpeedHQ/action@281164b0f014a4e7badd2c02cecad9b595b70537 # v4.11.1
         with:
           run: cargo codspeed run -m walltime
           mode: walltime
@@ -87,7 +87,7 @@ jobs:
           poetry run maturin develop --locked --profile release -F voicevox_core/buildtime-download-onnxruntime -v
 
       - name: Run the benchmarks
-        uses: CodSpeedHQ/action@v4
+        uses: CodSpeedHQ/action@281164b0f014a4e7badd2c02cecad9b595b70537 # v4.11.1
         with:
           run: poetry run pytest ./python/benches/ --codspeed --codspeed-mode walltime
           mode: walltime

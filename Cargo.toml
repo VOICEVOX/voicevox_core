@@ -32,7 +32,7 @@ derive-getters = "0.2.0"
 derive-new = "0.5.9"
 derive-syn-parse = "0.2.0"
 derive_more = "1.0.0"
-divan = { version = "4.2.1", package = "codspeed-divan-compat" }
+divan = { version = "4.4.1", package = "codspeed-divan-compat" }
 duct = "0.13.7"
 duplicate = "2.0.0"
 easy-ext = "1.0.2"
