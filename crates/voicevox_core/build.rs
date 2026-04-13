@@ -4,6 +4,7 @@ use std::{env, sync::LazyLock};
 compile_error!("either `load-onnxruntime` or `link-onnxruntime` must be enabled");
 
 const ENV_DOWNLOAD_AND_COPY_ORT: &str = "VVCORE_BUILD_DOWNLOAD_AND_COPY_ORT";
+const ENV_TARGET_ENV: &str = "CARGO_CFG_TARGET_ENV";
 static DOWNLOAD_AND_COPY_ORT: LazyLock<bool> = LazyLock::new(|| is_true(ENV_DOWNLOAD_AND_COPY_ORT));
 
 fn main() -> Result<(), build_features::Error> {
@@ -12,6 +13,13 @@ fn main() -> Result<(), build_features::Error> {
     }
 
     println!("cargo::rerun-if-changed=build.rs");
+    println!("cargo::rerun-if-env-changed={ENV_TARGET_ENV}");
+
+    if cfg!(feature = "load-onnxruntime") && env::var(ENV_TARGET_ENV).is_ok_and(|s| s == "musl") {
+        println!(
+            "cargo::warning=`load-onnxruntime` is unavailable on musl targets because `dlopen` is unsupported; use `link-onnxruntime` instead",
+        );
+    }
 
     if cfg!(feature = "buildtime-download-onnxruntime") {
         println!("cargo::rerun-if-env-changed={ENV_DOWNLOAD_AND_COPY_ORT}");

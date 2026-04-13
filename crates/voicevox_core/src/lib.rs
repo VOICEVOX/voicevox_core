@@ -6,6 +6,7 @@
 //!   Runtimeのバイナリをダウンロードしてtarget
 //!   directory内の複数箇所に配置する。`VVCORE_BUILD_DOWNLOAD_AND_COPY_ORT`が`1`ではないなら警告を出して何もしない。後述の`link-onnxruntime`フィーチャと合わせると、システムにONNX Runtimeが無くてもビルドが可能になる。
 //! - **`load-onnxruntime`**: ONNX Runtimeを`dlopen`/`LoadLibraryExW`で開く。[CUDA]と[DirectML]が利用可能。
+//!   またmuslをターゲットとしたビルドでは`dlopen`をサポートしないため、このフラグは利用不可であるため、`link-onnxruntime`を利用する必要がある。
 //! - **`link-onnxruntime`**: ONNX Runtimeをロード時動的リンクする。そのためビルドするためにはシステムにONNX
 //!   Runtimeがインストールされているか、`buildtime-download-onnxruntime`によるダウンロードを行う必要がある。iOSのような`dlopen`の利用が困難な環境でのみこちらを利用するべきである。_Note_:
 //!   [動的リンク対象のライブラリ名]は`onnxruntime`で固定。変更は`patchelf(1)`や`install_name_tool(1)`で行うこと。また、[ONNX RuntimeのGPU機能]を使うことは不可。
