@@ -85,7 +85,9 @@ jobs:
           targets: ${{ matrix.target }}
 
       - name: Install cargo-binstall
-        uses: taiki-e/install-action@cargo-binstall
+        uses: taiki-e/install-action@58e862542551f667fa44c8a2a4a1d64ad477c96a # v2.75.17
+        with:
+          tool: cargo-binstall
 
       - name: Install cargo-edit
         # cargo-binstall だと quickinstall の不具合 (cargo-bins/cargo-quickinstall#466) で cargo-edit v0.13 系の導入が失敗する。

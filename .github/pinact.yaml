@@ -6,8 +6,6 @@ files:
   - pattern: ".github/actions/*/action.yml"
 
 ignore_actions:
-  - name: taiki-e/install-action
-    ref: cargo-binstall
   - name: dtolnay/rust-toolchain
     ref: master
   - name: dtolnay/install
