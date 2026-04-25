@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/suzuki-shunsuke/pinact/main/json-schema/pinact.json
+version: 3
+
+files:
+  - pattern: ".github/workflows/*.yml"
+  - pattern: ".github/actions/*/action.yml"
+
+ignore_actions:
+  - name: taiki-e/install-action
+    ref: cargo-binstall
+  - name: dtolnay/rust-toolchain
+    ref: master
+  - name: dtolnay/install
+    ref: cargo-docs-rs
