@@ -20,7 +20,7 @@ jobs:
   generate_api_document:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           submodules: true
       - name: Set up Rust
@@ -82,7 +82,7 @@ jobs:
           mkdir -p public/apis/java_api
           cp -r crates/voicevox_core_java_api/lib/build/docs/javadoc/* public/apis/java_api
       - name: Uplaod api document
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v5
         if: ${{ github.ref_name == 'main' }}
         with:
           path: public
@@ -100,4 +100,4 @@ jobs:
     steps:
       - name: Deploy to GitHub pages
         id: api
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
