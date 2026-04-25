@@ -34,32 +34,26 @@ pub const ONNXRUNTIME_DYLIB_PATH: &str = {
         };
     }
 
-    #[cfg(target_os = "windows")]
-    macro_rules! lib_versioned_filename {
-        () => {
-            "onnxruntime.dll"
-        };
+    cfg_select! {
+        target_os = "windows" => concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../target/voicevox_core/downloads/onnxruntime/",
+            "onnxruntime.dll",
+        ),
+        target_os = "linux" => concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../target/voicevox_core/downloads/onnxruntime/",
+            "libonnxruntime.so.",
+            version!(),
+        ),
+        target_os = "macos" => concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../target/voicevox_core/downloads/onnxruntime/",
+            "libonnxruntime.",
+            version!(),
+            ".dylib",
+        ),
     }
-
-    #[cfg(target_os = "linux")]
-    macro_rules! lib_versioned_filename {
-        () => {
-            concat!("libonnxruntime.so.", version!())
-        };
-    }
-
-    #[cfg(target_os = "macos")]
-    macro_rules! lib_versioned_filename {
-        () => {
-            concat!("libonnxruntime.", version!(), ".dylib")
-        };
-    }
-
-    concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/../../target/voicevox_core/downloads/onnxruntime/",
-        lib_versioned_filename!(),
-    )
 };
 
 pub const OPEN_JTALK_DIC_DIR: &str = concat!(
