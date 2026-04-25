@@ -1084,10 +1084,8 @@ impl ReleasesHandler<'_, '_> {
             Ok(release) => Ok(release),
             Err(err)
                 if allow_draft_env.is_some_and(|key| env::var(key).as_deref() == Ok("1"))
-                    && matches!(
-                        &err,
-                        octocrab::Error::GitHub { source, .. } if source.status_code == 404
-                    ) =>
+                    && let octocrab::Error::GitHub { source, .. } = &err
+                    && source.status_code == 404 =>
             {
                 const PER_PAGE: u8 = 100;
                 match self
