@@ -29,6 +29,7 @@ const_format.workspace = true
 duplicate.workspace = true
 easy-ext.workspace = true
 educe.workspace = true
+either.workspace = true
 libc.workspace = true
 ndarray.workspace = true
 parking_lot = { workspace = true, features = ["arc_lock"] }
@@ -38,6 +39,7 @@ serde_json = { workspace = true, features = ["preserve_order"] }
 thiserror.workspace = true
 tracing.workspace = true
 tracing-subscriber = { workspace = true, features = ["env-filter"] }
+typed_floats = { workspace = true, features = ["serde"] }
 uuid.workspace = true
 voicevox_core.workspace = true
 

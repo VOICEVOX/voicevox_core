@@ -24,7 +24,7 @@ pub enum VoicevoxResultCode {
     VOICEVOX_RESULT_STYLE_NOT_FOUND_ERROR = 6,
     /// 音声モデルIDに対する音声モデルが見つからなかった
     VOICEVOX_RESULT_MODEL_NOT_FOUND_ERROR = 7,
-    /// 推論に失敗した
+    /// 推論に失敗した、もしくは推論結果が異常
     VOICEVOX_RESULT_RUN_MODEL_ERROR = 8,
     /// 入力テキストの解析に失敗した
     VOICEVOX_RESULT_ANALYZE_TEXT_ERROR = 11,
@@ -60,6 +60,18 @@ pub enum VoicevoxResultCode {
     VOICEVOX_RESULT_INVALID_USER_DICT_WORD_ERROR = 24,
     /// UUIDの変換に失敗した
     VOICEVOX_RESULT_INVALID_UUID_ERROR = 25,
+    /// 無効なMora
+    VOICEVOX_RESULT_INVALID_MORA_ERROR = 30,
+    /// 無効な楽譜
+    VOICEVOX_RESULT_INVALID_SCORE_ERROR = 31,
+    /// 無効なノート
+    VOICEVOX_RESULT_INVALID_NOTE_ERROR = 32,
+    /// 無効なFrameAudioQuery
+    VOICEVOX_RESULT_INVALID_FRAME_AUDIO_QUERY_ERROR = 33,
+    /// 無効なFramePhoneme
+    VOICEVOX_RESULT_INVALID_FRAME_PHONEME_ERROR = 34,
+    /// 楽譜とFrameAudioQueryの組み合わせが不正
+    VOICEVOX_RESULT_INCOMPATIBLE_QUERIES_ERROR = 35,
 }
 
 pub(crate) const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'static CStr {
@@ -82,7 +94,7 @@ pub(crate) const fn error_result_to_message(result_code: VoicevoxResultCode) -> 
             c"指定されたIDに対する音声モデルが見つかりませんでした。読み込まれていないか、読み込み\
               が既に解除されています"
         }
-        VOICEVOX_RESULT_RUN_MODEL_ERROR => c"推論に失敗しました",
+        VOICEVOX_RESULT_RUN_MODEL_ERROR => c"正常に推論することができませんでした",
         VOICEVOX_RESULT_ANALYZE_TEXT_ERROR => c"入力テキストの解析に失敗しました",
         VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR => c"入力テキストが無効なUTF-8データでした",
         VOICEVOX_RESULT_PARSE_KANA_ERROR => {
@@ -106,5 +118,13 @@ pub(crate) const fn error_result_to_message(result_code: VoicevoxResultCode) -> 
             c"ユーザー辞書の単語のバリデーションに失敗しました"
         }
         VOICEVOX_RESULT_INVALID_UUID_ERROR => c"UUIDの変換に失敗しました",
+        VOICEVOX_RESULT_INVALID_MORA_ERROR => c"無効なモーラです",
+        VOICEVOX_RESULT_INVALID_SCORE_ERROR => c"無効な楽譜です",
+        VOICEVOX_RESULT_INVALID_NOTE_ERROR => c"無効なノートです",
+        VOICEVOX_RESULT_INVALID_FRAME_AUDIO_QUERY_ERROR => c"無効なFrameAudioQueryです",
+        VOICEVOX_RESULT_INVALID_FRAME_PHONEME_ERROR => c"無効なFramePhonemeです",
+        VOICEVOX_RESULT_INCOMPATIBLE_QUERIES_ERROR => {
+            c"不正な楽譜とFrameAudioQueryの組み合わせです。異なる音素ID列です"
+        }
     }
 }

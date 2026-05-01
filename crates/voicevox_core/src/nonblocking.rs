@@ -34,6 +34,7 @@ pub mod onnxruntime {
 
 pub mod synthesizer {
     pub use crate::synthesizer::nonblocking::{
-        Builder, CreateAccentPhrases, CreateAudioQuery, Synthesis, Tts, TtsFromKana,
+        Builder, CreateAccentPhrases, CreateAudioQuery, FrameSynthesis, LoadVoiceModel, Synthesis,
+        Tts, TtsFromKana,
     };
 }

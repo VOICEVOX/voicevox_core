@@ -99,7 +99,7 @@ impl<R: InferenceRuntime, I: InferenceInputSignature> InferenceSessionCell<R, I>
             A::run_session::<R>(ctx, cancellable).await?.try_into()
         }
         .await
-        .map_err(ErrorRepr::RunModel)
+        .map_err(|source| ErrorRepr::RunModel { note: None, source })
         .map_err(Into::into)
     }
 }

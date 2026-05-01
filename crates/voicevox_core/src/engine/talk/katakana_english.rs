@@ -31,7 +31,7 @@ impl HankakuAlphabets {
 mod hankaku_alphabets {
     use std::sync::LazyLock;
 
-    use ref_cast::{ref_cast_custom, RefCastCustom};
+    use ref_cast::{RefCastCustom, ref_cast_custom};
     use regex::Regex;
 
     #[derive(RefCastCustom)]

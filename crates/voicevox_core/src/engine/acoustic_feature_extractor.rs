@@ -1,13 +1,16 @@
-use std::str::FromStr;
+pub(super) mod convert;
 
-use bytemuck::{checked::CheckedCastError, CheckedBitPattern, Contiguous, NoUninit};
-use duplicate::duplicate_item;
+use bytemuck::{CheckedBitPattern, Contiguous, NoUninit};
+use serde_with::SerializeDisplay;
 use strum::EnumCount;
 
-use self::sil::Sil;
+pub use self::sil::Sil;
 
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, derive_more::Display)]
-pub(super) enum Phoneme {
+/// 音素。
+#[derive(
+    Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, derive_more::Display, SerializeDisplay,
+)]
+pub enum Phoneme {
     /// `pau`。
     #[display("pau")]
     MorablePau,
@@ -193,68 +196,199 @@ pub(super) enum Phoneme {
     ConsonantZ,
 }
 
-impl FromStr for Phoneme {
-    type Err = String;
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, derive_more::Display)]
+pub(crate) enum Consonant {
+    /// `b`。
+    #[display("b")]
+    B,
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if let Ok(sil) = s.parse() {
-            Ok(Self::Sil(sil))
-        } else {
-            match s {
-                "pau" => Ok(Self::MorablePau),
-                "A" => Ok(Self::UnvoicedVowelA),
-                "E" => Ok(Self::UnvoicedVowelE),
-                "I" => Ok(Self::UnvoicedVowelI),
-                "N" => Ok(Self::MorableN),
-                "O" => Ok(Self::UnvoicedVowelO),
-                "U" => Ok(Self::UnvoicedVowelU),
-                "a" => Ok(Self::VoicedVowelA),
-                "b" => Ok(Self::ConsonantB),
-                "by" => Ok(Self::ConsonantBy),
-                "ch" => Ok(Self::ConsonantCh),
-                "cl" => Ok(Self::MorableCl),
-                "d" => Ok(Self::ConsonantD),
-                "dy" => Ok(Self::ConsonantDy),
-                "e" => Ok(Self::VoicedVowelE),
-                "f" => Ok(Self::ConsonantF),
-                "g" => Ok(Self::ConsonantG),
-                "gw" => Ok(Self::ConsonantGw),
-                "gy" => Ok(Self::ConsonantGy),
-                "h" => Ok(Self::ConsonantH),
-                "hy" => Ok(Self::ConsonantHy),
-                "i" => Ok(Self::VoicedVowelI),
-                "j" => Ok(Self::ConsonantJ),
-                "k" => Ok(Self::ConsonantK),
-                "kw" => Ok(Self::ConsonantKw),
-                "ky" => Ok(Self::ConsonantKy),
-                "m" => Ok(Self::ConsonantM),
-                "my" => Ok(Self::ConsonantMy),
-                "n" => Ok(Self::ConsonantN),
-                "ny" => Ok(Self::ConsonantNy),
-                "o" => Ok(Self::VoicedVowelO),
-                "p" => Ok(Self::ConsonantP),
-                "py" => Ok(Self::ConsonantPy),
-                "r" => Ok(Self::ConsonantR),
-                "ry" => Ok(Self::ConsonantRy),
-                "s" => Ok(Self::ConsonantS),
-                "sh" => Ok(Self::ConsonantSh),
-                "t" => Ok(Self::ConsonantT),
-                "ts" => Ok(Self::ConsonantTs),
-                "ty" => Ok(Self::ConsonantTy),
-                "u" => Ok(Self::VoicedVowelU),
-                "v" => Ok(Self::ConsonantV),
-                "w" => Ok(Self::ConsonantW),
-                "y" => Ok(Self::ConsonantY),
-                "z" => Ok(Self::ConsonantZ),
-                s => Err(format!("invalid phoneme: {s:?}")),
-            }
-        }
-    }
+    /// `by`。
+    #[display("by")]
+    By,
+
+    /// `ch`。
+    #[display("ch")]
+    Ch,
+
+    /// `d`。
+    #[display("d")]
+    D,
+
+    /// `dy`。
+    #[display("dy")]
+    Dy,
+
+    /// `f`。
+    #[display("f")]
+    F,
+
+    /// `g`。
+    #[display("g")]
+    G,
+
+    /// `gw`。
+    #[display("gw")]
+    Gw,
+
+    /// `gy`。
+    #[display("gy")]
+    Gy,
+
+    /// `h`。
+    #[display("h")]
+    H,
+
+    /// `hy`。
+    #[display("hy")]
+    Hy,
+
+    /// `j`。
+    #[display("j")]
+    J,
+
+    /// `k`。
+    #[display("k")]
+    K,
+
+    /// `kw`。
+    #[display("kw")]
+    Kw,
+
+    /// `ky`。
+    #[display("ky")]
+    Ky,
+
+    /// `m`。
+    #[display("m")]
+    M,
+
+    /// `my`。
+    #[display("my")]
+    My,
+
+    /// `n`。
+    #[display("n")]
+    N,
+
+    /// `ny`。
+    #[display("ny")]
+    Ny,
+
+    /// `p`。
+    #[display("p")]
+    P,
+
+    /// `py`。
+    #[display("py")]
+    Py,
+
+    /// `r`。
+    #[display("r")]
+    R,
+
+    /// `ry`。
+    #[display("ry")]
+    Ry,
+
+    /// `s`。
+    #[display("s")]
+    S,
+
+    /// `sh`。
+    #[display("sh")]
+    Sh,
+
+    /// `t`。
+    #[display("t")]
+    T,
+
+    /// `ts`。
+    #[display("ts")]
+    Ts,
+
+    /// `ty`。
+    #[display("ty")]
+    Ty,
+
+    /// `v`。
+    #[display("v")]
+    V,
+
+    /// `w`。
+    #[display("w")]
+    W,
+
+    /// `y`。
+    #[display("y")]
+    Y,
+
+    /// `z`。
+    #[display("z")]
+    Z,
+}
+
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, derive_more::Display)]
+pub(crate) enum NonConsonant {
+    /// `pau`。
+    #[display("pau")]
+    MorablePau,
+
+    /// `sil`。
+    #[display("{_0}")]
+    Sil(Sil),
+
+    /// `A`。
+    #[display("A")]
+    UnvoicedVowelA,
+
+    /// `E`。
+    #[display("E")]
+    UnvoicedVowelE,
+
+    /// `I`。
+    #[display("I")]
+    UnvoicedVowelI,
+
+    /// `N`。
+    #[display("N")]
+    MorableN,
+
+    /// `O`。
+    #[display("O")]
+    UnvoicedVowelO,
+
+    /// `U`。
+    #[display("U")]
+    UnvoicedVowelU,
+
+    /// `a`。
+    #[display("a")]
+    VoicedVowelA,
+
+    /// `cl`。
+    #[display("cl")]
+    MorableCl,
+
+    /// `e`。
+    #[display("e")]
+    VoicedVowelE,
+
+    /// `i`。
+    #[display("i")]
+    VoicedVowelI,
+
+    /// `o`。
+    #[display("o")]
+    VoicedVowelO,
+
+    /// `u`。
+    #[display("u")]
+    VoicedVowelU,
 }
 
 /// 音素IDのうち、`-1` ([`OptionalConsonant::None`])を除いたもの。
-#[derive(Clone, Copy, Contiguous, NoUninit, EnumCount)]
-#[cfg_attr(test, derive(PartialEq, Debug, strum::EnumIter))]
+#[derive(Clone, Copy, PartialEq, Contiguous, CheckedBitPattern, NoUninit, EnumCount)]
+#[cfg_attr(test, derive(Debug, strum::EnumIter))]
 #[repr(i64)]
 pub(crate) enum PhonemeCode {
     //None = -1,
@@ -305,90 +439,9 @@ pub(crate) enum PhonemeCode {
     ConsonantZ = 44,
 }
 
-impl PhonemeCode {
-    pub(crate) const fn num_phoneme() -> usize {
-        Self::COUNT
-    }
-
-    const fn space_phoneme() -> Self {
-        Self::MorablePau
-    }
-}
-
-impl From<Phoneme> for PhonemeCode {
-    fn from(phoneme: Phoneme) -> Self {
-        macro_rules! convert {
-            ($($variant:ident),* $(,)?) => {
-                match phoneme {
-                    $(Phoneme::$variant => Self::$variant,)*
-                    Phoneme::Sil(_) => Self::space_phoneme(),
-                }
-            };
-        }
-
-        convert!(
-            MorablePau,
-            UnvoicedVowelA,
-            UnvoicedVowelE,
-            UnvoicedVowelI,
-            MorableN,
-            UnvoicedVowelO,
-            UnvoicedVowelU,
-            VoicedVowelA,
-            ConsonantB,
-            ConsonantBy,
-            ConsonantCh,
-            MorableCl,
-            ConsonantD,
-            ConsonantDy,
-            VoicedVowelE,
-            ConsonantF,
-            ConsonantG,
-            ConsonantGw,
-            ConsonantGy,
-            ConsonantH,
-            ConsonantHy,
-            VoicedVowelI,
-            ConsonantJ,
-            ConsonantK,
-            ConsonantKw,
-            ConsonantKy,
-            ConsonantM,
-            ConsonantMy,
-            ConsonantN,
-            ConsonantNy,
-            VoicedVowelO,
-            ConsonantP,
-            ConsonantPy,
-            ConsonantR,
-            ConsonantRy,
-            ConsonantS,
-            ConsonantSh,
-            ConsonantT,
-            ConsonantTs,
-            ConsonantTy,
-            VoicedVowelU,
-            ConsonantV,
-            ConsonantW,
-            ConsonantY,
-            ConsonantZ,
-        )
-    }
-}
-
-impl From<PhonemeCode> for usize {
-    fn from(phoneme: PhonemeCode) -> Self {
-        const _: () =
-            assert!(0 <= PhonemeCode::MIN_VALUE && PhonemeCode::MAX_VALUE <= u16::MAX as _);
-        phoneme
-            .into_integer()
-            .try_into()
-            .expect("should be ensured by the above assertion")
-    }
-}
-
-#[expect(dead_code, reason = "we use `bytemuck` to construct values instead")]
-#[derive(Clone, Copy, CheckedBitPattern, NoUninit, EnumCount)]
+#[derive(
+    Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash, CheckedBitPattern, NoUninit, EnumCount,
+)]
 #[repr(i64)]
 pub(crate) enum OptionalConsonant {
     None = -1,
@@ -439,7 +492,7 @@ pub(crate) enum OptionalConsonant {
     ConsonantZ = 44,
 }
 
-#[expect(dead_code, reason = "we use `bytemuck` to construct values instead")]
+#[expect(dead_code, reason = "we use `bytemuck` to construct values")]
 #[derive(Clone, Copy, CheckedBitPattern, NoUninit, EnumCount)]
 #[repr(i64)]
 pub(crate) enum MoraTail {
@@ -491,63 +544,99 @@ pub(crate) enum MoraTail {
     //ConsonantZ = 44,
 }
 
-impl MoraTail {
-    pub(crate) fn is_unvoiced(self) -> bool {
-        matches!(
-            self,
-            Self::UnvoicedVowelA
-                | Self::UnvoicedVowelI
-                | Self::UnvoicedVowelU
-                | Self::UnvoicedVowelE
-                | Self::UnvoicedVowelO
-                | Self::MorableCl
-                | Self::MorablePau
-        )
-    }
-}
-
-#[duplicate_item(
-    T;
-    [ OptionalConsonant ];
-    [ MoraTail ];
-)]
-impl TryFrom<PhonemeCode> for T {
-    type Error = ();
-
-    fn try_from(phoneme: PhonemeCode) -> Result<Self, Self::Error> {
-        bytemuck::checked::try_cast(phoneme).map_err(|err| {
-            assert_eq!(
-                CheckedCastError::InvalidBitPattern,
-                err,
-                "there should be no size/alignment issues",
-            );
-        })
-    }
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, NoUninit, EnumCount)]
+#[cfg_attr(test, derive(strum::EnumIter))]
+#[repr(i64)]
+pub(crate) enum NonPauBaseVowel {
+    //None = -1,
+    //MorablePau = 0,
+    //UnvoicedVowelA = 1,
+    //UnvoicedVowelE = 2,
+    //UnvoicedVowelI = 3,
+    MorableN = 4,
+    //UnvoicedVowelO = 5,
+    //UnvoicedVowelU = 6,
+    VoicedVowelA = 7,
+    //ConsonantB = 8,
+    //ConsonantBy = 9,
+    //ConsonantCh = 10,
+    MorableCl = 11,
+    //ConsonantD = 12,
+    //ConsonantDy = 13,
+    VoicedVowelE = 14,
+    //ConsonantF = 15,
+    //ConsonantG = 16,
+    //ConsonantGw = 17,
+    //ConsonantGy = 18,
+    //ConsonantH = 19,
+    //ConsonantHy = 20,
+    VoicedVowelI = 21,
+    //ConsonantJ = 22,
+    //ConsonantK = 23,
+    //ConsonantKw = 24,
+    //ConsonantKy = 25,
+    //ConsonantM = 26,
+    //ConsonantMy = 27,
+    //ConsonantN = 28,
+    //ConsonantNy = 29,
+    VoicedVowelO = 30,
+    //ConsonantP = 31,
+    //ConsonantPy = 32,
+    //ConsonantR = 33,
+    //ConsonantRy = 34,
+    //ConsonantS = 35,
+    //ConsonantSh = 36,
+    //ConsonantT = 37,
+    //ConsonantTs = 38,
+    //ConsonantTy = 39,
+    VoicedVowelU = 40,
+    //ConsonantV = 41,
+    //ConsonantW = 42,
+    //ConsonantY = 43,
+    //ConsonantZ = 44,
 }
 
 const _: () = assert!(PhonemeCode::MIN_VALUE == 0);
 const _: () = assert!(PhonemeCode::MAX_VALUE == 44);
 const _: () = assert!(PhonemeCode::COUNT == 45);
 const _: () = assert!(MoraTail::COUNT == 13);
+const _: () = assert!(NonPauBaseVowel::COUNT == 7);
 const _: () = assert!(OptionalConsonant::COUNT == PhonemeCode::COUNT - MoraTail::COUNT + 1);
 
 mod sil {
-    use std::str::FromStr;
+    use std::borrow::Cow;
 
-    #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, derive_more::Display)]
-    pub(in super::super) struct Sil(
-        String, // invariant: must contain "sil"
+    use derive_more::AsRef;
+    use serde_with::SerializeDisplay;
+
+    /// `sil` (_silent_)。
+    #[derive(
+        Clone,
+        PartialEq,
+        Eq,
+        PartialOrd,
+        Ord,
+        Hash,
+        Debug,
+        derive_more::Display,
+        AsRef,
+        SerializeDisplay,
+    )]
+    #[as_ref(str)]
+    pub struct Sil(
+        Cow<'static, str>, // invariant: must contain "sil"
     );
 
-    impl FromStr for Sil {
-        type Err = ();
+    impl Sil {
+        pub(super) const DEFAULT: Self = Self(Cow::Borrowed("sil"));
 
-        fn from_str(s: &str) -> Result<Self, Self::Err> {
-            if s.contains("sil") {
-                Ok(Self(s.to_owned()))
-            } else {
-                Err(())
-            }
+        pub(super) fn new(s: &str) -> Option<Self> {
+            s.contains("sil").then(|| {
+                Self(match s {
+                    "sil" => "sil".into(),
+                    s => s.to_owned().into(),
+                })
+            })
         }
     }
 }
@@ -559,7 +648,9 @@ mod tests {
     use rstest::rstest;
     use strum::IntoEnumIterator as _;
 
-    use super::{MoraTail, OptionalConsonant, Phoneme, PhonemeCode};
+    use crate::error::{ErrorRepr, InvalidQueryError};
+
+    use super::{Consonant, MoraTail, NonConsonant, OptionalConsonant, Phoneme, PhonemeCode};
 
     #[test]
     fn each_phoneme_code_should_be_categorized_into_consonant_xor_mora_tail() {
@@ -598,10 +689,50 @@ mod tests {
     #[case("")]
     #[case("invalid")]
     fn test_invalid_phoneme(#[case] s: &str) {
-        assert_eq!(
-            format!("invalid phoneme: {s:?}"),
-            s.parse::<Phoneme>().unwrap_err(),
-        );
+        let err = s.parse::<Phoneme>().unwrap_err();
+        let crate::Error(ErrorRepr::InvalidQuery(InvalidQueryError {
+            what: "音素",
+            value: Some(value),
+            source: None,
+        })) = err
+        else {
+            panic!("unexpected error: {err:?}");
+        };
+        assert_eq!(format!("{s:?}"), format!("{value:?}"));
+    }
+
+    #[rstest]
+    #[case("")]
+    #[case("invalid")]
+    #[case("a")]
+    fn test_invalid_consonant(#[case] s: &str) {
+        let err = s.parse::<Consonant>().unwrap_err();
+        let crate::Error(ErrorRepr::InvalidQuery(InvalidQueryError {
+            what: "子音",
+            value: Some(value),
+            source: Some(_),
+        })) = err
+        else {
+            panic!("unexpected error: {err:?}");
+        };
+        assert_eq!(format!("{s:?}"), format!("{value:?}"));
+    }
+
+    #[rstest]
+    #[case("")]
+    #[case("invalid")]
+    #[case("k")]
+    fn test_invalid_non_consonant(#[case] s: &str) {
+        let err = s.parse::<NonConsonant>().unwrap_err();
+        let crate::Error(ErrorRepr::InvalidQuery(InvalidQueryError {
+            what: "非子音",
+            value: Some(value),
+            source: Some(_),
+        })) = err
+        else {
+            panic!("unexpected error: {err:?}");
+        };
+        assert_eq!(format!("{s:?}"), format!("{value:?}"));
     }
 
     #[rstest]

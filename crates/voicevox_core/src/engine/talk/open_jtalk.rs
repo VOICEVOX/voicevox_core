@@ -9,8 +9,8 @@ use camino::{Utf8Path, Utf8PathBuf};
 use easy_ext::ext;
 use itertools::Itertools as _;
 use open_jtalk::{
-    mecab_dict_index, text2mecab, JpCommon, ManagedResource, Mecab, Njd, NjdNode, Text2MecabError,
-    Utf8LibcString,
+    JpCommon, ManagedResource, Mecab, Njd, NjdNode, Text2MecabError, Utf8LibcString,
+    mecab_dict_index, text2mecab,
 };
 use tempfile::NamedTempFile;
 
@@ -286,7 +286,7 @@ pub(crate) mod blocking {
     use super::Inner;
 
     use super::{
-        super::{extract_full_context_label, AccentPhrase},
+        super::{AccentPhrase, extract_full_context_label},
         FullcontextExtractor,
     };
 
@@ -363,7 +363,7 @@ pub(crate) mod blocking {
 pub(crate) mod nonblocking {
     use camino::Utf8Path;
 
-    use super::super::{extract_full_context_label, AccentPhrase};
+    use super::super::{AccentPhrase, extract_full_context_label};
 
     /// テキスト解析器としてのOpen JTalk。
     ///
@@ -393,7 +393,7 @@ pub(crate) mod nonblocking {
             &self,
             user_dict: &crate::nonblocking::UserDict,
         ) -> crate::result::Result<()> {
-            let inner = self.0 .0.clone();
+            let inner = self.0.0.clone();
             let words = user_dict.to_mecab_format();
             crate::task::asyncify(move || inner.use_user_dict(&words)).await
         }
@@ -412,7 +412,7 @@ pub(crate) mod nonblocking {
             if text.is_empty() {
                 return Ok(Vec::new());
             }
-            let inner = self.0 .0.clone();
+            let inner = self.0.0.clone();
             let text = text.to_owned();
             crate::task::asyncify(move || {
                 extract_full_context_label(&*inner, &text, enable_katakana_english)

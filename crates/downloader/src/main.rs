@@ -34,7 +34,7 @@ use octocrab::{
         AssetId,
         repos::{Asset, Release},
     },
-    repos::RepoHandler,
+    repos::{ReleasesHandler, RepoHandler},
 };
 use rayon::iter::{IntoParallelIterator as _, ParallelIterator as _};
 use semver::{Version, VersionReq};
@@ -42,7 +42,6 @@ use strum::{Display, IntoStaticStr};
 use tokio::task::{JoinError, JoinSet};
 use tracing::{error, info, warn};
 use unicode_width::UnicodeWidthStr as _;
-use url::Url;
 use zip::ZipArchive;
 
 const DEFAULT_OUTPUT: &str = if cfg!(windows) {
@@ -57,6 +56,11 @@ const DEFAULT_ONNXRUNTIME_BUILDER_REPO: &str = "VOICEVOX/onnxruntime-builder";
 const DEFAULT_ADDITIONAL_LIBRARIES_REPO: &str = "VOICEVOX/voicevox_additional_libraries";
 const DEFAULT_MODELS_REPO: &str = "VOICEVOX/voicevox_vvm";
 
+/// この環境変数が`1`のとき、`c_api_version`でdraft releaseを指定できるようにする。
+///
+/// draft releaseを探すときは`c_api_version`で指定した`tag_name`でルックアップする。
+const C_API_ALLOW_DRAFT_ENV: &str = "VV_DOWNLOADER_C_API_ALLOW_DRAFT";
+
 const ONNXRUNTIME_TERMS_NAME: &str = "VOICEVOX ONNX Runtime 利用規約";
 
 static SUPPORTED_MODELS_VERSIONS: LazyLock<VersionReq> =
@@ -66,11 +70,12 @@ const MODELS_DIR_NAME: &str = "vvms";
 const MODELS_TERMS_NAME: &str = "VOICEVOX 音声モデル 利用規約";
 const MODELS_TERMS_FILE: &str = "TERMS.txt";
 
-static OPEN_JTALK_DIC_URL: LazyLock<Url> = LazyLock::new(|| {
-    "https://jaist.dl.sourceforge.net/project/open-jtalk/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz"
-        .parse()
-        .unwrap()
+static OPEN_JTALK_DIC_REPO: LazyLock<RepoName> = LazyLock::new(|| RepoName {
+    owner: "r9y9".to_owned(),
+    repo: "open_jtalk".to_owned(),
 });
+const OPEN_JTALK_DIC_TAG: &str = "v1.11.1";
+const OPEN_JTALK_DIC_FILE: &str = "open_jtalk_dic_utf_8-1.11.tar.gz";
 
 static PROGRESS_STYLE0: LazyLock<ProgressStyle> =
     LazyLock::new(|| ProgressStyle::with_template("{prefix}").unwrap());
@@ -400,6 +405,8 @@ enum Os {
     Windows,
     Linux,
     Osx,
+    Android,
+    Ios,
 }
 
 impl Os {
@@ -408,6 +415,8 @@ impl Os {
             "windows" => Some(Self::Windows),
             "linux" => Some(Self::Linux),
             "macos" => Some(Self::Osx),
+            "android" => Some(Self::Android),
+            "ios" => Some(Self::Ios),
             _ => None,
         }
     }
@@ -482,6 +491,13 @@ async fn main() -> anyhow::Result<()> {
         DownloadTarget::value_variants().iter().copied().collect()
     };
 
+    if os == Os::Ios && targets.contains(&DownloadTarget::CApi) {
+        bail!(
+            "`--os ios`の場合、`c-api`をダウンロード対象に含めることはできません。\
+            `--only <TARGET>...`または`--exclude <TARGET>...`で`c-api`をダウンロード対象から\
+            除外してください",
+        );
+    }
     if !targets.contains(&DownloadTarget::CApi) {
         if c_api_version != "latest" {
             warn!(
@@ -547,9 +563,22 @@ async fn main() -> anyhow::Result<()> {
     let octocrab = &octocrab()?;
 
     let c_api = OptionFuture::from(targets.contains(&DownloadTarget::CApi).then(|| {
-        find_gh_asset(octocrab, &c_api_repo, &c_api_version, |tag, _| {
-            Ok(format!("{C_API_LIB_NAME}-{os}-{cpu_arch}-{tag}.zip"))
-        })
+        find_gh_asset(
+            octocrab,
+            &c_api_repo,
+            &c_api_version,
+            Some(C_API_ALLOW_DRAFT_ENV),
+            |tag, _| {
+                if os == Os::Ios {
+                    unreachable!("should have been denied beforehand");
+                }
+                let cpu_arch = match (os, cpu_arch) {
+                    (Os::Android, CpuArch::X64) => "x86_64",
+                    _ => &cpu_arch.to_string(),
+                };
+                Ok(format!("{C_API_LIB_NAME}-{os}-{cpu_arch}-{tag}.zip"))
+            },
+        )
     }))
     .await
     .transpose()?;
@@ -560,6 +589,7 @@ async fn main() -> anyhow::Result<()> {
                 octocrab,
                 &onnxruntime_builder_repo,
                 &onnxruntime_version,
+                None,
                 |_, body| {
                     let body = body.with_context(|| "リリースノートがありません")?;
                     find_onnxruntime(body, os, cpu_arch, &devices)
@@ -575,6 +605,18 @@ async fn main() -> anyhow::Result<()> {
             &models_repo,
             models_version.as_ref(),
             &models_pattern,
+        )
+    }))
+    .await
+    .transpose()?;
+
+    let dict = OptionFuture::from(targets.contains(&DownloadTarget::Dict).then(|| {
+        find_gh_asset(
+            octocrab,
+            &OPEN_JTALK_DIC_REPO,
+            OPEN_JTALK_DIC_TAG,
+            None,
+            |_, _| Ok(OPEN_JTALK_DIC_FILE.to_owned()),
         )
     }))
     .await
@@ -605,6 +647,7 @@ async fn main() -> anyhow::Result<()> {
                 octocrab,
                 &additional_libraries_repo,
                 &additional_libraries_version,
+                None,
                 move |_, _| {
                     Ok({
                         let device = match device {
@@ -644,6 +687,10 @@ async fn main() -> anyhow::Result<()> {
     }
     if let Some(ModelsWithTerms { tag, .. }) = &models {
         info!("ダウンロードモデルバージョン: {tag}");
+    }
+    if let Some(GhAsset { tag, .. }) = &dict {
+        assert_eq!(OPEN_JTALK_DIC_TAG, tag);
+        info!("ダウンロードOpen JTalk辞書バージョン: {OPEN_JTALK_DIC_TAG}");
     }
 
     let progresses = MultiProgress::new();
@@ -690,9 +737,9 @@ async fn main() -> anyhow::Result<()> {
             .await?,
         );
     }
-    if targets.contains(&DownloadTarget::Dict) {
-        tasks.spawn(download_and_extract_from_sourceforge(
-            &OPEN_JTALK_DIC_URL,
+    if let Some(dict) = dict {
+        tasks.spawn(download_and_extract_from_gh(
+            dict,
             Stripping::None,
             output.join(DownloadTarget::Dict.dir_name()),
             &progresses,
@@ -764,6 +811,7 @@ async fn find_gh_asset(
     octocrab: &Arc<Octocrab>,
     repo: &RepoName,
     git_tag_or_latest: &str,
+    allow_draft_env: Option<&'static str>,
     asset_name: impl FnOnce(
         &str,         // タグ名
         Option<&str>, // リリースノートの内容
@@ -779,9 +827,9 @@ async fn find_gh_asset(
         let repos = octocrab.repos(&repo.owner, &repo.repo);
         let releases = repos.releases();
         match git_tag_or_latest {
-            "latest" => releases.get_latest().await,
-            tag => releases.get_by_tag(tag).await,
-        }?
+            "latest" => releases.get_latest().await?,
+            tag => releases.find_by_tag(tag, allow_draft_env, octocrab).await?,
+        }
     };
 
     let asset_name = asset_name(&tag_name, body.as_deref()).with_context(|| {
@@ -842,6 +890,8 @@ fn find_onnxruntime(
                     Os::Windows => "Windows",
                     Os::Linux => "Linux",
                     Os::Osx => "macOS",
+                    Os::Android => "Android",
+                    Os::Ios => "iOS",
                 }
                 && spec_cpu_arch
                     == match cpu_arch {
@@ -1004,8 +1054,8 @@ async fn find_models(
     impl RepoHandler<'_> {
         async fn fetch_asset_utf8_content(&self, asset: &Asset) -> anyhow::Result<String> {
             let content = self
-                .releases()
-                .stream_asset(asset.id)
+                .release_assets()
+                .stream(asset.id.0)
                 .await?
                 .try_fold(
                     Vec::with_capacity(asset.size as _),
@@ -1018,6 +1068,46 @@ async fn find_models(
             let content = String::from_utf8(content)
                 .with_context(|| format!("`{}` is not valid UTF-8", asset.name))?;
             validate_models_readme_or_terms_txt(content)
+        }
+    }
+}
+
+#[ext]
+impl ReleasesHandler<'_, '_> {
+    async fn find_by_tag(
+        &self,
+        tag: &str,
+        allow_draft_env: Option<&'static str>,
+        octocrab: &Octocrab,
+    ) -> anyhow::Result<Release> {
+        match self.get_by_tag(tag).await {
+            Ok(release) => Ok(release),
+            Err(err)
+                if allow_draft_env.is_some_and(|key| env::var(key).as_deref() == Ok("1"))
+                    && let octocrab::Error::GitHub { source, .. } = &err
+                    && source.status_code == 404 =>
+            {
+                const PER_PAGE: u8 = 100;
+                match self
+                    .list()
+                    .per_page(PER_PAGE)
+                    .send()
+                    .await?
+                    .into_stream(octocrab)
+                    .try_filter(|Release { tag_name, .. }| future::ready(tag_name == tag))
+                    .try_collect::<Vec<_>>()
+                    .await?
+                    .into_iter()
+                    .exactly_one()
+                {
+                    Ok(release) => Ok(release),
+                    Err(err) => match err.len() {
+                        0 => bail!("no releases found for `{tag}`"),
+                        _ => bail!("multiple releases found for `{tag}`"),
+                    },
+                }
+            }
+            Err(err) => Err(err.into()),
         }
     }
 }
@@ -1142,8 +1232,8 @@ fn download_and_extract_from_gh(
     Ok(retry(tries, async move || {
         let bytes_stream = octocrab
             .repos(&repo.owner, &repo.repo)
-            .releases()
-            .stream_asset(id)
+            .release_assets()
+            .stream(id.0)
             .await?
             .map_err(Into::into);
 
@@ -1153,48 +1243,6 @@ fn download_and_extract_from_gh(
             archive_kind,
             stripping,
             WebService::Github,
-            &output,
-            pb.clone(),
-        )
-        .await
-    }))
-}
-
-/// # Panics
-///
-/// `url`が"sourceforge.net"のものでなければパニックする。
-fn download_and_extract_from_sourceforge(
-    url: &'static Url,
-    stripping: Stripping,
-    output: PathBuf,
-    progresses: &MultiProgress,
-    tries: Tries,
-) -> anyhow::Result<impl Future<Output = anyhow::Result<()>> + use<>> {
-    if !url.host_str().is_some_and(|host| {
-        host.split('.')
-            .collect::<Vec<_>>()
-            .ends_with(&["sourceforge", "net"])
-    }) {
-        panic!("`url` must be for SourceForge");
-    }
-    let name = url
-        .path_segments()
-        .and_then(|s| { s }.next_back())
-        .unwrap_or_default();
-    let archive_kind = ArchiveKind::from_filename(name)?;
-    let pb = add_progress_bar(progresses, 0, name);
-
-    Ok(retry(tries, async move || {
-        let res = reqwest::get(url.clone()).await?.error_for_status()?;
-        let content_length = res.content_length();
-        let bytes_stream = res.bytes_stream().map_err(Into::into);
-
-        download_and_extract(
-            bytes_stream,
-            content_length,
-            archive_kind,
-            stripping,
-            WebService::Sourceforge,
             &output,
             pb.clone(),
         )
@@ -1247,8 +1295,8 @@ async fn fetch_model(
 ) -> anyhow::Result<()> {
     let bytes_stream = octocrab
         .repos(&repo.owner, &repo.repo)
-        .releases()
-        .stream_asset(*id)
+        .release_assets()
+        .stream(id.0)
         .await?
         .map_err(Into::into);
     let pb = with_style(pb.clone(), &PROGRESS_STYLE1).await?;
@@ -1290,7 +1338,7 @@ async fn download_and_extract(
     content_length: Option<u64>,
     archive_kind: ArchiveKind,
     stripping: Stripping,
-    service: WebService,
+    WebService::Github: WebService,
     output: &Path,
     pb: ProgressBar,
 ) -> anyhow::Result<()> {
@@ -1299,7 +1347,7 @@ async fn download_and_extract(
         bytes_stream,
         content_length,
         archive_kind.into(),
-        service,
+        WebService::Github,
         pb.clone(),
     )
     .await?;
@@ -1412,7 +1460,7 @@ async fn download(
     mut bytes_stream: impl Stream<Item = anyhow::Result<Bytes>> + Unpin,
     content_length: Option<u64>,
     kind: FileKind,
-    service: WebService,
+    WebService::Github: WebService,
     pb: ProgressBar,
 ) -> anyhow::Result<Vec<u8>> {
     if let Some(content_length) = content_length {
@@ -1425,7 +1473,7 @@ async fn download(
             downloaded.extend_from_slice(&chunk);
             pos_tx.send(downloaded.len() as _)?;
         }
-        validate_archive_file(downloaded, kind, service)
+        validate_archive_file(downloaded, kind, WebService::Github)
     })
     .await;
 
@@ -1455,16 +1503,19 @@ async fn download(
 // ただしどちらもoctocrab側の対応が必要。
 // cf. https://github.com/VOICEVOX/voicevox_core/issues/1120
 // その際、`download_and_extract_from_sourceforge`の名前も`…_from_url`に戻す。
-/// [`octocrab::repo::ReleasesHandler::stream_asset`]でダウンロードしたものを検証する。
+/// [`octocrab::repo::ReleaseAssetsHandler::stream`]でダウンロードしたものを検証する。
 fn validate_archive_file(
     content: Vec<u8>,
     content_kind: FileKind,
-    service: WebService,
+    WebService::Github: WebService,
 ) -> anyhow::Result<Vec<u8>> {
     match (content_kind, &*content) {
         (FileKind::ZipOrVvm, [0x50, 0x4b, 0x03, 0x04, ..])
         | (FileKind::Tgz, [0x1f, 0x8b, 0x08, ..]) => Ok(content),
-        (_, content) => Err(error_for_unexpected_file_content(content, service)),
+        (_, content) => Err(error_for_unexpected_file_content(
+            content,
+            WebService::Github,
+        )),
     }
 }
 
@@ -1481,9 +1532,12 @@ fn validate_models_readme_or_terms_txt(content: String) -> anyhow::Result<String
     }
 }
 
-fn error_for_unexpected_file_content(content: &[u8], service: WebService) -> anyhow::Error {
-    let mut msg = format!("予期しない応答を{service}が返しました");
-    if let (WebService::Github, Ok(content)) = (service, str::from_utf8(content)) {
+fn error_for_unexpected_file_content(
+    content: &[u8],
+    WebService::Github: WebService,
+) -> anyhow::Error {
+    let mut msg = format!("予期しない応答を{}が返しました", WebService::Github);
+    if let Ok(content) = str::from_utf8(content) {
         msg += ": ";
         msg += content.trim_end();
         if content.contains("API rate limit exceeded for") {
@@ -1499,9 +1553,6 @@ fn error_for_unexpected_file_content(content: &[u8], service: WebService) -> any
 enum WebService {
     #[strum(to_string = "GitHub")]
     Github,
-
-    #[strum(to_string = "SourceForge")]
-    Sourceforge,
 }
 
 struct GhAsset {

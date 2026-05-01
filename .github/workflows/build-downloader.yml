@@ -1,42 +1,49 @@
-name: build and deploy downloader workflow
+name: build downloader workflow
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: # ビルドのみ行い、デプロイしない。デプロイは`build`からの`workflow_call`から行われる。
+  workflow_call:
     inputs:
+      upload_url:
+        description: "リリースの`Release.upload_url`"
+        type: string
+        required: true
       version:
         description: "バージョン情報（A.BB.C / A.BB.C-preview.D）"
+        type: string
         required: true
       code_signing:
         description: "コード署名する"
         type: boolean
-        required: false
-        default: false
-  release:
-    types:
-      - published
+        required: true
   pull_request:
     paths:
       - Cargo.*
       - rust-toolchain
       - crates/downloader/**
-      - .github/workflows/build_and_deploy_downloader.yml
+      - .cargo/config.toml # 今のところは未使用ではあるが、Rustを利用するワークフローとして統一しておく。
+      - .github/actions/rust-toolchain-from-file/**
+      - .github/actions/upload-gh-release-assets/**
+      - .github/workflows/build-downloader.yml
   push:
-    paths:
-      - Cargo.*
-      - rust-toolchain
-      - crates/downloader/**
-      - .github/workflows/build_and_deploy_downloader.yml
-
-env:
-  # releaseタグ名か、workflow_dispatchでのバージョン名か、'0.0.0'が入る
-  VERSION: ${{ github.event.release.tag_name || inputs.version || '0.0.0' }}
+    branches:
+      - main
 
 defaults:
   run:
     shell: bash
 
 jobs:
-  deploy_and_deploy_downloader:
+  config:
+    runs-on: ubuntu-slim
+    outputs:
+      version: ${{ inputs.version || '0.0.0' }}
+    steps:
+      - name: NOP
+        run: ':'
+
+  build-downloader:
+    needs: config
     environment: ${{ inputs.code_signing && 'code_signing' || '' }} # コード署名用のenvironment
     strategy:
       matrix:
@@ -87,7 +94,7 @@ jobs:
         run: cargo install cargo-edit@^0.13 -v --locked
 
       - name: Set version
-        run: cargo set-version "$VERSION" --exclude voicevox_core_python_api --exclude xtask
+        run: cargo set-version ${{ needs.config.outputs.version }} --exclude voicevox_core_python_api --exclude xtask
 
       - name: Build downloader
         run: cargo build -v --release -p downloader --target ${{ matrix.target }}
@@ -103,17 +110,22 @@ jobs:
       - name: Code signing (Windows)
         if: startsWith(matrix.os, 'windows') && inputs.code_signing
         run: |
-          bash build_util/codesign.bash ./${{ matrix.name }}
+          bash build_util/codesign_windows.bash ./${{ matrix.name }}
         env:
           ESIGNERCKA_USERNAME: ${{ secrets.ESIGNERCKA_USERNAME }}
           ESIGNERCKA_PASSWORD: ${{ secrets.ESIGNERCKA_PASSWORD }}
           ESIGNERCKA_TOTP_SECRET: ${{ secrets.ESIGNERCKA_TOTP_SECRET }}
 
+      - name: Code signing (macOS)
+        if: startsWith(matrix.os, 'macos') && inputs.code_signing
+        run: bash build_util/codesign_macos.bash ./${{ matrix.name }}
+        env:
+          APPLE_P12_BASE64: ${{ secrets.APPLE_P12_BASE64 }}
+          APPLE_P12_PASSWORD: ${{ secrets.APPLE_P12_PASSWORD }}
+
       - name: Upload to Release
-        if: env.VERSION != '0.0.0'
-        uses: softprops/action-gh-release@v2
+        if: inputs.upload_url
+        uses: ./.github/actions/upload-gh-release-assets
         with:
-          prerelease: true
-          tag_name: ${{ env.VERSION }}
+          upload-url: ${{ inputs.upload_url }}
           files: ${{ matrix.name }}
-          target_commitish: ${{ github.sha }}

@@ -15,18 +15,19 @@ use pyo3::{
 use ref_cast::RefCast;
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::json;
-use uuid::Uuid;
 use voicevox_core::{
-    __internal::interop::ToJsonValue as _, AccelerationMode, AccentPhrase, AudioQuery,
-    SupportedDevices, UserDictWord, VoiceModelMeta,
+    __internal::interop::{ToJsonValue as _, Validate},
+    AccelerationMode, AccentPhrase, AudioQuery, FrameAudioQuery, SupportedDevices, UserDictWord,
+    VoiceModelMeta,
 };
 
 use crate::{
     _ReservedFields, AnalyzeTextError, GetSupportedDevicesError, GpuSupportError,
-    InitInferenceRuntimeError, InvalidModelDataError, InvalidModelFormatError, InvalidWordError,
-    LoadUserDictError, ModelAlreadyLoadedError, ModelNotFoundError, NotLoadedOpenjtalkDictError,
-    OpenZipFileError, ParseKanaError, ReadZipEntryError, RunModelError, SaveUserDictError,
-    StyleAlreadyLoadedError, StyleNotFoundError, UseUserDictError, WordNotFoundError,
+    IncompatibleQueriesError, InitInferenceRuntimeError, InvalidModelDataError,
+    InvalidModelFormatError, InvalidQueryError, InvalidWordError, LoadUserDictError,
+    ModelAlreadyLoadedError, ModelNotFoundError, NotLoadedOpenjtalkDictError, OpenZipFileError,
+    ParseKanaError, ReadZipEntryError, RunModelError, SaveUserDictError, StyleAlreadyLoadedError,
+    StyleNotFoundError, UseUserDictError, WordNotFoundError,
 };
 
 pub(crate) fn from_acceleration_mode(ob: &Bound<'_, PyAny>) -> PyResult<AccelerationMode> {
@@ -41,33 +42,51 @@ pub(crate) fn from_acceleration_mode(ob: &Bound<'_, PyAny>) -> PyResult<Accelera
     }
 }
 
-pub(crate) fn from_audio_query(ob: &Bound<'_, PyAny>) -> PyResult<AudioQuery> {
+pub(crate) fn from_audio_query<T: HasCamelCaseFields>(ob: &Bound<'_, PyAny>) -> PyResult<T> {
     let py = ob.py();
 
     let fields = dataclasses_asdict(ob)?
         .iter()
         .map(|(key, value)| {
-            let key = match key.downcast::<PyString>()?.to_str()? {
-                "accent_phrases" => "accent_phrases".to_owned(),
-                key => key.to_lower_camel_case(),
+            let key = key.cast::<PyString>()?.to_str()?;
+            let key = if T::SNAKE_CASE_FIELDS.contains(&key) {
+                key.to_owned()
+            } else {
+                key.to_lower_camel_case()
             };
             Ok((key, value))
         })
         .collect::<PyResult<Vec<_>>>()?
         .into_py_dict(py)?;
 
-    serde_pyobject::from_pyobject(fields).map_err(Into::into)
+    serde_pyobject::from_pyobject(fields).map_err(|serde_pyobject::Error(cause)| {
+        let err = InvalidQueryError::new_err(T::validation_error_description());
+        err.set_cause(py, Some(cause));
+        err
+    })
+}
+
+pub(crate) trait HasCamelCaseFields: Validate {
+    const SNAKE_CASE_FIELDS: &[&str];
+}
+
+impl HasCamelCaseFields for AudioQuery {
+    const SNAKE_CASE_FIELDS: &[&str] = &["accent_phrases"];
+}
+
+impl HasCamelCaseFields for FrameAudioQuery {
+    const SNAKE_CASE_FIELDS: &[&str] = &[];
 }
 
 pub(crate) fn from_accent_phrases(ob: &Bound<'_, PyAny>) -> PyResult<Vec<AccentPhrase>> {
-    ob.downcast::<PyList>()?
+    ob.cast::<PyList>()?
         .iter()
-        .map(|p| from_dataclass_via_serde(&p))
+        .map(|p| from_query_like_via_serde(&p))
         .collect()
 }
 
 pub(crate) fn from_utf8_path(ob: &Bound<'_, PyAny>) -> PyResult<Utf8PathBuf> {
-    PathBuf::extract_bound(ob)?
+    PathBuf::extract(ob.as_borrowed())?
         .into_os_string()
         .into_string()
         .map(Utf8PathBuf::from)
@@ -133,9 +152,9 @@ impl RustData for VoiceModelMeta {
                         kwargs
                             .get_item("styles")?
                             .expect("should be present")
-                            .downcast::<PyList>()?
+                            .cast::<PyList>()?
                             .iter()
-                            .map(|style| style_meta_cls.call((), Some(style.downcast()?)))
+                            .map(|style| style_meta_cls.call((), Some(style.cast()?)))
                             .collect::<Result<Vec<_>, _>>()?,
                     )
                 })
@@ -164,18 +183,18 @@ impl RustData for AudioQuery {
                 kwargs
                     .get_item("accent_phrases")?
                     .expect("should be present")
-                    .downcast::<PyList>()?
+                    .cast::<PyList>()?
                     .iter()
                     .map(|phrase| {
-                        let phrase = phrase.downcast::<PyDict>()?;
+                        let phrase = phrase.cast::<PyDict>()?;
                         phrase.set_item(
                             "moras",
                             phrase
                                 .get_item("moras")?
                                 .expect("should be present")
-                                .downcast::<PyList>()?
+                                .cast::<PyList>()?
                                 .iter()
-                                .map(|mora| mora_cls.call((), Some(mora.downcast()?)))
+                                .map(|mora| mora_cls.call((), Some(mora.cast()?)))
                                 .collect::<Result<Vec<_>, _>>()?,
                         )?;
                         accent_phrase_cls.call((), Some(phrase))
@@ -183,7 +202,7 @@ impl RustData for AudioQuery {
                     .collect::<Result<Vec<_>, _>>()?,
             )?;
             for key in kwargs.keys().iter() {
-                let key = key.downcast::<PyString>()?.to_str()?;
+                let key = key.cast::<PyString>()?.to_str()?;
                 let key_rename = key.to_snake_case();
                 if key_rename != key {
                     let val = kwargs.get_item(key)?.expect("should be present");
@@ -214,9 +233,9 @@ impl RustData for Vec<AccentPhrase> {
                         kwargs
                             .get_item("moras")?
                             .expect("should be present")
-                            .downcast::<PyList>()?
+                            .cast::<PyList>()?
                             .iter()
-                            .map(|mora| mora_cls.call((), Some(mora.downcast()?)))
+                            .map(|mora| mora_cls.call((), Some(mora.cast()?)))
                             .collect::<Result<Vec<_>, _>>()?,
                     )
                 })
@@ -234,31 +253,57 @@ impl RustData for UserDictWord {
     }
 }
 
-#[derive(From)]
-pub(crate) struct ToPyUuid(pub(crate) Uuid);
-
-impl<'py> IntoPyObject<'py> for ToPyUuid {
+impl RustData for FrameAudioQuery {
     type Target = PyAny;
-    type Output = Bound<'py, PyAny>;
-    type Error = PyErr;
 
-    fn into_pyobject(self, py: Python<'py>) -> Result<Self::Output, Self::Error> {
-        to_py_uuid(py, self.0)
+    fn to_dataclass<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, Self::Target>> {
+        let (frame_audio_query_cls, frame_phoneme_cls) = {
+            let module = py.import("voicevox_core")?;
+            (
+                module.getattr("FrameAudioQuery")?,
+                module.getattr("FramePhoneme")?,
+            )
+        };
+
+        to_dataclass_via_serde(self, &frame_audio_query_cls, |kwargs| {
+            kwargs.set_item(
+                "phonemes",
+                kwargs
+                    .get_item("phonemes")?
+                    .expect("should be present")
+                    .cast::<PyList>()?
+                    .iter()
+                    .map(|frame_phoneme| frame_phoneme_cls.call((), Some(frame_phoneme.cast()?)))
+                    .collect::<Result<Vec<_>, _>>()?,
+            )?;
+            for key in kwargs.keys().iter() {
+                let key = key.cast::<PyString>()?.to_str()?;
+                let key_rename = key.to_snake_case();
+                if key_rename != key {
+                    let val = kwargs.get_item(key)?.expect("should be present");
+                    kwargs.set_item(key_rename, val)?;
+                    kwargs.del_item(key)?;
+                }
+            }
+            Ok(())
+        })
     }
 }
 
-fn from_dataclass_via_serde<T: DeserializeOwned>(instance: &Bound<'_, PyAny>) -> PyResult<T> {
+pub(crate) fn from_query_like_via_serde<T: Validate>(instance: &Bound<'_, PyAny>) -> PyResult<T> {
+    let py = instance.py();
     let fields = dataclasses_asdict(instance)?;
-    serde_pyobject::from_pyobject(fields).map_err(Into::into)
+    serde_pyobject::from_pyobject(fields).map_err(|serde_pyobject::Error(cause)| {
+        let err = InvalidQueryError::new_err(T::validation_error_description());
+        err.set_cause(py, Some(cause));
+        err
+    })
 }
 
 fn dataclasses_asdict<'py>(instance: &Bound<'py, PyAny>) -> PyResult<Bound<'py, PyDict>> {
     let py = instance.py();
     let asdict = py.import("dataclasses")?.getattr("asdict")?;
-    asdict
-        .call1((instance,))?
-        .downcast_into()
-        .map_err(Into::into)
+    asdict.call1((instance,))?.cast_into().map_err(Into::into)
 }
 
 fn to_dataclass_via_serde<'py>(
@@ -267,21 +312,11 @@ fn to_dataclass_via_serde<'py>(
     modify: impl FnOnce(&Bound<'py, PyDict>) -> PyResult<()>,
 ) -> PyResult<Bound<'py, PyAny>> {
     let py = class.py();
-    let kwargs = &serde_pyobject::to_pyobject(py, &x)?.downcast_into::<PyDict>()?;
+    let kwargs = &serde_pyobject::to_pyobject(py, &x)?.cast_into::<PyDict>()?;
     modify(kwargs)?;
     class.call((), Some(kwargs))
 }
 
-pub(crate) fn to_rust_uuid(ob: &Bound<'_, PyAny>) -> PyResult<Uuid> {
-    ob.getattr("hex")?
-        .extract::<&str>()?
-        .parse::<Uuid>()
-        .into_py_value_result()
-}
-fn to_py_uuid(py: Python<'_>, uuid: Uuid) -> PyResult<Bound<'_, PyAny>> {
-    let uuid = uuid.hyphenated().to_string();
-    py.import("uuid")?.call_method1("UUID", (uuid,))
-}
 pub(crate) fn to_rust_user_dict_word(
     ob: &Bound<'_, PyAny>,
 ) -> PyResult<voicevox_core::UserDictWord> {
@@ -383,6 +418,8 @@ pub(crate) impl<T> voicevox_core::Result<T> {
                 ErrorKind::WordNotFound => WordNotFoundError::new_err(msg),
                 ErrorKind::UseUserDict => UseUserDictError::new_err(msg),
                 ErrorKind::InvalidWord => InvalidWordError::new_err(msg),
+                ErrorKind::InvalidQuery => InvalidQueryError::new_err(msg),
+                ErrorKind::IncompatibleQueries => IncompatibleQueriesError::new_err(msg),
                 ErrorKind::__NonExhaustive => unreachable!(),
             };
 
@@ -416,7 +453,7 @@ impl SupportedDevices {
         cls.call(
             (),
             Some(&{
-                let kwargs = serde_pyobject::to_pyobject(py, &self)?.downcast_into::<PyDict>()?;
+                let kwargs = serde_pyobject::to_pyobject(py, &self)?.cast_into::<PyDict>()?;
                 kwargs.set_item("_reserved", _ReservedFields)?;
                 kwargs
             }),
@@ -435,13 +472,6 @@ where
 
     pub(crate) fn to_json(&self) -> String {
         serde_json::to_string(self).expect("should not fail")
-    }
-}
-
-#[ext]
-impl<T> std::result::Result<T, uuid::Error> {
-    fn into_py_value_result(self) -> PyResult<T> {
-        self.map_err(|e| PyValueError::new_err(e.to_string()))
     }
 }
 

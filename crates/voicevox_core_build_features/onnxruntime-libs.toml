@@ -1,0 +1,15 @@
+repository = "VOICEVOX/onnxruntime-builder"
+targets = {
+  "aarch64-linux-android" = { artifact-name = "onnxruntime-android-arm64", lib-sha256 = "6edeba86a37728b53c081bb0ed356377490378fbaa6527dce2e5bfd38630159b" },
+  "x86_64-linux-android" = { artifact-name = "onnxruntime-android-x64", lib-sha256 = "fbd8cb32bed7ca4fdaa6e59de86ee6f8f41ca824089c7886005c5f4606bc52cd" },
+  "aarch64-apple-ios" = { artifact-name = "onnxruntime-ios-arm64", lib-sha256 = "1b98d933d3aca959a48307a1ea695b1a1ea9b24b3196df066e7800affb80e5b7" },
+  "aarch64-apple-ios-sim" = { artifact-name = "onnxruntime-ios-sim-arm64", lib-sha256 = "e8fb3971114178c52faddfa5a4ab1df7eff8386812c276dba053e4ab688f5682" },
+  "x86_64-apple-ios" = { artifact-name = "onnxruntime-ios-sim-x86_64", lib-sha256 = "418f80da0715082487cec27350a88b868cded43e6c99248722dabf53efbe71d4" },
+  "aarch64-unknown-linux-gnu" = { artifact-name = "onnxruntime-linux-arm64", lib-sha256 = "d43ee77a3575e68b6edc2e95ea5262bc0c3d288259d413a5395d7ff1a0eadd4a" },
+  "armv7-unknown-linux-gnueabihf" = { artifact-name = "onnxruntime-linux-armhf", lib-sha256 = "efcce3328c9ce0a718de02120afe4dbfe44c7e8d2349139d7c21d44e604b0335" },
+  "x86_64-unknown-linux-gnu" = { artifact-name = "onnxruntime-linux-x64", lib-sha256 = "e73a8cfc1ca65d71e9006ec6aaa909d0dbe1c4e64077d32979337cf333f47bfa" },
+  "aarch64-apple-darwin" = { artifact-name = "onnxruntime-osx-arm64", lib-sha256 = "2dbea88f87151f2e2a9f1f36af1c3c9a02e8d5e588f258f177c24bca075bbc3e" },
+  "x86_64-apple-darwin" = { artifact-name = "onnxruntime-osx-x86_64", lib-sha256 = "43f05e602636c41285d588f7af14a2a0decf51c15f5f2a42919fb8d7b38e2cc1" },
+  "x86_64-pc-windows-msvc" = { artifact-name = "onnxruntime-win-x64", lib-sha256 = "d882dbccbc61227487c877fd922b9e848e0398d4568cb9d296bd942623b42250", importlib-sha256 = "c0ef79398e56b030f44f0056cbc4d282d2397da525df0c86ba1268d5474860bc" },
+  "i686-pc-windows-msvc" = { artifact-name = "onnxruntime-win-x86", lib-sha256 = "f938d897367c0d47f86ebdff5bb30b39ceb3ebfc4b41699ae72825b4f34def07", importlib-sha256 = "ff5d10f1cf9bcdc6315d10467e3c6a3db2f735ff42e2a6cb38b403c42f1a1722" },
+}

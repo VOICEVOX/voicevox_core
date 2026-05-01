@@ -6,6 +6,7 @@ extern "system" fn Java_jp_hiroshiba_voicevoxcore_internal_Dll_00024LoggerInitia
     _: JNIEnv<'_>,
     _: JObject<'_>,
 ) {
+    // FIXME: `cfg_select!`を使うなりして、`android_logger`は`target.'cfg(target_os = "android")'.dependencies`にする
     if cfg!(target_os = "android") {
         android_logger::init_once(
             android_logger::Config::default()

@@ -8,11 +8,12 @@ use derive_new::new;
 use duplicate::duplicate_item;
 use enum_map::{Enum, EnumMap};
 use ndarray::{Array, ArrayD, Dimension, ShapeError};
+use serde::de::DeserializeOwned;
 use thiserror::Error;
 
 use crate::{
-    asyncs::{Async, BlockingThreadPool, SingleTasked},
     StyleType, SupportedDevices,
+    asyncs::{Async, BlockingThreadPool, SingleTasked},
 };
 
 use super::{
@@ -99,7 +100,6 @@ pub(crate) trait InferenceRuntime: 'static {
 /// 共に扱われるべき推論操作の集合を示す。
 pub(crate) trait InferenceDomain: Sized {
     type Operation: InferenceOperation;
-    type Manifest;
 
     /// 対応する`StyleType`。
     ///
@@ -115,7 +115,7 @@ pub(crate) trait InferenceDomain: Sized {
 /// それぞれのバリアントには、対応する`InferenceSignature`が存在するべきである。
 ///
 /// `::macros::InferenceOperation`により導出される。
-pub(crate) trait InferenceOperation: Copy + Enum {
+pub(crate) trait InferenceOperation: Copy + DeserializeOwned + Enum {
     /// `{InferenceInputSignature,InferenceOutputSignature}::PARAM_INFOS`を集めたもの。
     #[expect(
         clippy::type_complexity,
@@ -257,6 +257,7 @@ impl<A: OutputScalar, D: Dimension> TryFrom<OutputTensor> for Array<A, D> {
     }
 }
 
+#[cfg_attr(test, derive(Clone))]
 pub(crate) struct ParamInfo<D> {
     name: Cow<'static, str>,
     dt: D,

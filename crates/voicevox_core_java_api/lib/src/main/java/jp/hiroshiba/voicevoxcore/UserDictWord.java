@@ -7,12 +7,13 @@ import jakarta.validation.constraints.Min;
 /**
  * ユーザー辞書の単語。
  *
- * <p>JSONの形式はVOICEVOX ENGINEと同じになっている。ただし今後の破壊的変更にて変わる可能性がある。<a
+ * <p>{@code UserDict.load}および{@code UserDict.save}におけるJSONの形式はVOICEVOX
+ * ENGINEに合わせた形となっており、ビルダーおよびゲッターで扱う構造とは大幅に異なる。ただし今後の破壊的変更にて変わる可能性がある。<a
  * href="https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/serialization.md"
  * target="_blank">データのシリアライゼーション</a>を参照。
  *
- * <p>現在この型はGSONに対応しているが、将来的には <a href="https://github.com/VOICEVOX/voicevox_core/issues/984"
- * target="_blank">Jacksonに切り替わる予定</a> 。
+ * <p>現在この型はGsonをサポートしていない。将来的には<a href="https://github.com/VOICEVOX/voicevox_core/issues/984"
+ * target="_blank">Jacksonに対応する予定</a> 。
  */
 public class UserDictWord {
   /** 単語の表層形。 */

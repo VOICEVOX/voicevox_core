@@ -1,19 +1,23 @@
 use crate::{
-    core::devices::DeviceAvailabilities,
-    engine::talk::{user_dict::InvalidWordError, KanaParseError},
     StyleId, StyleType, VoiceModelId,
+    core::devices::DeviceAvailabilities,
+    engine::{
+        DEFAULT_SAMPLING_RATE,
+        song::queries::Key,
+        talk::{KanaParseError, user_dict::InvalidWordError},
+    },
 };
 //use engine::
 use duplicate::duplicate_item;
 use itertools::Itertools as _;
-use std::{collections::BTreeSet, path::PathBuf};
+use std::{collections::BTreeSet, fmt::Debug, path::PathBuf};
 use thiserror::Error;
 use uuid::Uuid;
 
 /// VOICEVOX COREのエラー。
 #[derive(Error, Debug)]
 #[error(transparent)]
-pub struct Error(#[from] ErrorRepr);
+pub struct Error(#[from] pub(crate) ErrorRepr);
 
 #[duplicate_item(
     E;
@@ -53,6 +57,8 @@ impl Error {
             ErrorRepr::WordNotFound(_) => ErrorKind::WordNotFound,
             ErrorRepr::UseUserDict(_) => ErrorKind::UseUserDict,
             ErrorRepr::InvalidWord(_) => ErrorKind::InvalidWord,
+            ErrorRepr::InvalidQuery { .. } => ErrorKind::InvalidQuery,
+            ErrorRepr::IncompatibleQueries(_) => ErrorKind::IncompatibleQueries,
         }
     }
 }
@@ -94,8 +100,15 @@ pub(crate) enum ErrorRepr {
     )]
     ModelNotFound { model_id: VoiceModelId },
 
-    #[error("推論に失敗しました")]
-    RunModel(#[source] anyhow::Error),
+    #[error(
+        "正常に推論することができませんでした{}",
+        note.as_ref().map(|s| format!("。NOTE: {s}")).unwrap_or_default()
+    )]
+    RunModel {
+        note: Option<&'static str>,
+        #[source]
+        source: anyhow::Error,
+    },
 
     #[error("入力テキストの解析に失敗しました")]
     AnalyzeText {
@@ -121,6 +134,12 @@ pub(crate) enum ErrorRepr {
 
     #[error(transparent)]
     InvalidWord(#[from] InvalidWordError),
+
+    #[error(transparent)]
+    InvalidQuery(#[from] InvalidQueryError),
+
+    #[error(transparent)]
+    IncompatibleQueries(IncompatibleQueriesError),
 }
 
 /// エラーの種類。
@@ -155,7 +174,7 @@ pub enum ErrorKind {
     StyleNotFound,
     /// 音声モデルIDに対する音声モデルが見つからなかった。
     ModelNotFound,
-    /// 推論に失敗した。
+    /// 推論に失敗した、もしくは推論結果が異常。
     RunModel,
     /// 入力テキストの解析に失敗した。
     AnalyzeText,
@@ -171,6 +190,17 @@ pub enum ErrorKind {
     UseUserDict,
     /// ユーザー辞書の単語のバリデーションに失敗した。
     InvalidWord,
+    /// [`AudioQuery`]、[`FrameAudioQuery`]、[`Score`]、もしくはその一部が不正。
+    ///
+    /// [`AudioQuery`]: crate::AudioQuery
+    /// [`FrameAudioQuery`]: crate::FrameAudioQuery
+    /// [`Score`]: crate::Score
+    InvalidQuery,
+    /// [`FrameAudioQuery`]と[`Score`]の組み合わせが不正。
+    ///
+    /// [`FrameAudioQuery`]: crate::FrameAudioQuery
+    /// [`Score`]: crate::Score
+    IncompatibleQueries,
     #[doc(hidden)]
     __NonExhaustive,
 }
@@ -201,4 +231,81 @@ pub(crate) enum LoadModelErrorKind {
     StyleAlreadyLoaded { id: StyleId },
     #[display("モデルデータを読むことができませんでした")]
     InvalidModelData,
+}
+
+#[derive(Error, Debug)]
+#[error(
+    "不正な{what}です{value}",
+    value = value
+        .as_ref()
+        .map(|value| format!(": {value:?}"))
+        .unwrap_or_default()
+)]
+pub(crate) struct InvalidQueryError {
+    pub(crate) what: &'static str,
+    pub(crate) value: Option<Box<dyn Debug + Send + Sync + 'static>>,
+    #[source]
+    pub(crate) source: Option<InvalidQueryErrorSource>,
+}
+
+impl From<InvalidQueryError> for Error {
+    fn from(err: InvalidQueryError) -> Self {
+        ErrorRepr::InvalidQuery(err).into()
+    }
+}
+
+#[derive(Error, Debug)]
+pub(crate) enum InvalidQueryErrorSource {
+    #[error("この二つの有無は一致していなければなりません")]
+    PartiallyPresent,
+
+    #[error("子音ではありません")]
+    IsNotConsonant,
+
+    #[error("子音です")]
+    IsConsonant,
+
+    #[error("\"sil\"を含む文字列である必要があります")]
+    MustContainSil,
+
+    #[error("`0`にすることはできません")]
+    IsZero,
+
+    #[error("0より大きい{DEFAULT_SAMPLING_RATE}の倍数でなければなりません")]
+    IsNotMultipleOfBaseSamplingRate,
+
+    #[error("lyricが空文字列の場合、keyはnullである必要があります。")]
+    UnnecessaryKeyForPau,
+
+    #[error("keyがnullの場合、lyricは空文字列である必要があります。")]
+    MissingKeyForNonPau,
+
+    #[error("{}以上{}以下である必要があります", Key::MIN, Key::MAX)]
+    OutOfRangeKeyValue,
+
+    #[error("{_0}")]
+    NotInteger(serde_json::Error),
+
+    #[error(r#"notesはpau (lyric="")から始まる必要があります"#)]
+    InitialNoteMustBePau,
+
+    #[error(transparent)]
+    InvalidAsSuperset(Box<InvalidQueryError>),
+
+    #[error("{fields}が不正です")]
+    InvalidFields {
+        fields: String,
+        #[source]
+        source: Box<InvalidQueryError>,
+    },
+}
+
+#[derive(Clone, Copy, Error, Debug)]
+#[error("不正な楽譜とFrameAudioQueryの組み合わせです。異なる音素ID列です")]
+pub(crate) struct IncompatibleQueriesError;
+
+impl From<IncompatibleQueriesError> for Error {
+    fn from(err: IncompatibleQueriesError) -> Self {
+        ErrorRepr::IncompatibleQueries(err).into()
+    }
 }

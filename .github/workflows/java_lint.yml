@@ -9,6 +9,7 @@ on:
       - 'crates/voicevox_core_java_api/**.java'
       - 'crates/voicevox_core_java_api/gradle/**'
       - 'crates/voicevox_core_java_api/gradlew'
+      - 'crates/voicevox_core_java_api/lib/build.gradle'
       - 'crates/voicevox_core_java_api/settings.gradle'
       - '.github/workflows/java_lint.yml'
 

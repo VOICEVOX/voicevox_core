@@ -7,16 +7,29 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
+import jp.hiroshiba.voicevoxcore.exceptions.InvalidQueryException;
+import jp.hiroshiba.voicevoxcore.internal.Convert;
 import jp.hiroshiba.voicevoxcore.internal.Dll;
 
 /**
  * AudioQuery（音声合成用のクエリ）。
  *
- * <p>JSONの形式はVOICEVOX ENGINEと同じになっている。ただし今後の破壊的変更にて変わる可能性がある。<a
+ * <p>このクラスは不正な状態を表現しうる。どのような状態が不正なのかについては{@link #validate}を参照。このクラスを使う関数は、不正な状態に対して{@link
+ * InvalidQueryException}をスローする。
+ *
+ * <p>コンストラクト時には、不正な状態であるかの検証は行われない。外部からのデータが不正でないことを確かめるには、コンストラクト後に{@code validate()}を用いる必要がある。
+ *
+ * <pre>{@code
+ * AudioQuery audioQuery = (new Gson()).fromJson(json, AudioQuery.class);
+ * audioQuery.validate();
+ * }</pre>
+ *
+ * <p>GsonにおいてはVOICEVOX ENGINEに合わせる形で、フィールド名は{@link
+ * #accentPhrases}のみsnake_caseとなり残りはcamelCaseとなる。ただし今後の破壊的変更にて変わる可能性がある。<a
  * href="https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/serialization.md"
  * target="_blank">データのシリアライゼーション</a>を参照。
  *
- * <p>現在この型はGSONに対応しているが、将来的には <a href="https://github.com/VOICEVOX/voicevox_core/issues/984"
+ * <p>Gsonについては将来的には <a href="https://github.com/VOICEVOX/voicevox_core/issues/984"
  * target="_blank">Jacksonに切り替わる予定</a> 。
  */
 public class AudioQuery {
@@ -74,6 +87,48 @@ public class AudioQuery {
     this.kana = null;
   }
 
+  /**
+   * このインスタンスが不正であるときエラーを返す。
+   *
+   * <p>不正であるとは、{@code @throws}で示す条件を満たすことである。
+   *
+   * <p>また次の状態に対してはログで警告を出す。将来的にはエラーになる予定。
+   *
+   * <ul>
+   *   <li>{@link #accentPhrases}の要素のうちいずれかが警告が出る状態。
+   *   <li>{@link #speedScale}が負。
+   *   <li>{@link #volumeScale}が負。
+   *   <li>{@link #prePhonemeLength}が負。
+   *   <li>{@link #postPhonemeLength}が負。
+   *   <li>{@link #outputSamplingRate}が{@code 24000}以外の値（エラーと同様将来的に解消予定）。
+   * </ul>
+   *
+   * @throws InvalidQueryException 次のうちどれかを満たす場合
+   *     <ul>
+   *       <li>JSONへのシリアライズが不可。
+   *           <ul>
+   *             <li>{@link #speedScale}がNaNもしくは±infinity。
+   *             <li>{@link #pitchScale}がNaNもしくは±infinity。
+   *             <li>{@link #intonationScale}がNaNもしくは±infinity。
+   *             <li>{@link #volumeScale}がNaNもしくは±infinity。
+   *             <li>{@link #prePhonemeLength}がNaNもしくは±infinity。
+   *             <li>{@link #postPhonemeLength}がNaNもしくは±infinity。
+   *           </ul>
+   *       <li><a
+   *           href="https://voicevox.github.io/voicevox_core/apis/rust_api/voicevox_core/struct.AudioQuery.html">Rust
+   *           APIの{@code AudioQuery}型</a>としてデシリアライズ不可。
+   *           <ul>
+   *             <li>{@link #outputSamplingRate}が負であるか、もしくは2<sup>32</sup>-1を超過する。
+   *           </ul>
+   *       <li>{@link #accentPhrases}の要素のうちいずれかが不正。
+   *       <li>{@link #outputSamplingRate}が{@code 24000}の倍数ではない、もしくは{@code 0} (将来的に解消予定。cf. <a
+   *           href="https://github.com/VOICEVOX/voicevox_core/issues/762">#762</a>)
+   *     </ul>
+   */
+  public void validate() {
+    rsValidate();
+  }
+
   @Override
   public boolean equals(Object obj) {
     if (!(obj instanceof AudioQuery)) {
@@ -93,7 +148,8 @@ public class AudioQuery {
 
   public static AudioQuery fromAccentPhrases(List<AccentPhrase> accentPhrases) {
     Gson gson = new Gson();
-    String queryJson = rsFromAccentPhrases(gson.toJson(accentPhrases));
+    String queryJson =
+        rsFromAccentPhrases(Convert.jsonFromQueryLike(accentPhrases, "不正なアクセント句の列です"));
     AudioQuery query = gson.fromJson(queryJson, AudioQuery.class);
     if (query == null) {
       throw new NullPointerException();
@@ -103,4 +159,6 @@ public class AudioQuery {
 
   @Nonnull
   private static native String rsFromAccentPhrases(String accentPhrases);
+
+  private native void rsValidate();
 }

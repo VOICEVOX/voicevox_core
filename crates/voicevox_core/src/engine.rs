@@ -2,8 +2,19 @@
 
 mod acoustic_feature_extractor;
 mod audio_file;
-mod mora_list;
+mod mora_mappings;
+mod ndarray;
+mod sampling_rate;
+pub(crate) mod song;
 pub(crate) mod talk;
+pub(crate) mod validate;
 
-pub use self::audio_file::wav_from_s16le;
-pub(crate) use self::{acoustic_feature_extractor::PhonemeCode, audio_file::to_s16le_pcm};
+pub(crate) use self::{
+    acoustic_feature_extractor::PhonemeCode, audio_file::to_s16le_pcm, ndarray::IteratorExt,
+    sampling_rate::DEFAULT_SAMPLING_RATE,
+};
+pub use self::{
+    acoustic_feature_extractor::{Phoneme, Sil},
+    audio_file::wav_from_s16le,
+    sampling_rate::SamplingRate,
+};

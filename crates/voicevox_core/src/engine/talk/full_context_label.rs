@@ -5,7 +5,7 @@ use smallvec::SmallVec;
 
 use crate::AccentPhrase;
 
-use super::{super::mora_list::MORA_LIST_MINIMUM, open_jtalk::FullcontextExtractor};
+use super::{super::mora_mappings::MORA_PHONEMES_TO_MORA_KANA, open_jtalk::FullcontextExtractor};
 
 #[derive(thiserror::Error, Debug)]
 #[error("入力テキストからのフルコンテキストラベル抽出に失敗しました: {context}")]
@@ -134,15 +134,18 @@ fn generate_moras(accent_phrase: &[Label]) -> std::result::Result<Vec<crate::Mor
 
             // 音素が3つ以上ある場合：
             // position_forwardとposition_backwardが飽和している場合は無視する
-            [Label {
-                mora:
-                    Some(jlabel::Mora {
-                        position_forward: 49,
-                        position_backward: 49,
-                        ..
-                    }),
-                ..
-            }, ..] => {}
+            [
+                Label {
+                    mora:
+                        Some(jlabel::Mora {
+                            position_forward: 49,
+                            position_backward: 49,
+                            ..
+                        }),
+                    ..
+                },
+                ..,
+            ] => {}
             _ => {
                 return Err(ErrorKind::TooLongMora);
             }
@@ -178,15 +181,10 @@ pub fn mora_to_text(consonant: Option<&str>, vowel: &str) -> String {
 }
 
 fn mora2text(mora: &str) -> &str {
-    for &[text, consonant, vowel] in MORA_LIST_MINIMUM {
-        if mora.len() >= consonant.len()
-            && &mora[..consonant.len()] == consonant
-            && &mora[consonant.len()..] == vowel
-        {
-            return text;
-        }
-    }
-    mora
+    MORA_PHONEMES_TO_MORA_KANA
+        .get(mora)
+        .map(Into::into)
+        .unwrap_or(mora)
 }
 
 #[cfg(test)]
@@ -202,10 +200,10 @@ mod tests {
     use crate::AccentPhrase;
 
     use super::super::{
+        Mora,
         full_context_label::{extract_full_context_label, generate_accent_phrases},
         open_jtalk::FullcontextExtractor,
         text_analyzer::DEFAULT_ENABLE_KATAKANA_ENGLISH,
-        Mora,
     };
 
     fn mora(text: &str, consonant: Option<&str>, vowel: &str) -> Mora {

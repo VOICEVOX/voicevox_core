@@ -2,7 +2,11 @@
 name: Check shebangs and filemodes
 
 on:
+  pull_request:
   push:
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
   check:

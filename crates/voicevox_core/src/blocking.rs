@@ -24,7 +24,8 @@ pub mod onnxruntime {
 
 pub mod synthesizer {
     pub use crate::synthesizer::blocking::{
-        Builder, CreateAccentPhrases, CreateAudioQuery, Synthesis, Tts, TtsFromKana,
+        Builder, CreateAccentPhrases, CreateAudioQuery, FrameSynthesis, LoadVoiceModel, Synthesis,
+        Tts, TtsFromKana,
     };
 
     // TODO: 後で復活させる

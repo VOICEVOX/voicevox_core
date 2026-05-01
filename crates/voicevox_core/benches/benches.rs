@@ -14,6 +14,7 @@
 //!       "acceleration-mode":"GPU",
 //!       "vvm": "../../voicevox_core/models/vvms/0.vvm",
 //!       "include-long-input-text": true,
+//!       "include-open-and-close-vvm": true,
 //!       "iterate-more": true
 //!     }' \
 //!   cargo bench -p voicevox_core --features load-onnxruntime --bench benches
@@ -80,6 +81,10 @@ struct Config {
     /// 長文の入力でのベンチマークも行う。
     #[serde(default)]
     include_long_input_text: bool,
+
+    /// `open_and_close_vvm`を実行対象に含める。
+    #[serde(default)]
+    include_open_and_close_vvm: bool,
 
     /// イテレート回数を、ウォームアップも含めて増やす。
     #[serde(default)]
@@ -202,7 +207,7 @@ mod blocking {
         Onnxruntime, OpenJtalk, Synthesizer, TextAnalyzer as _, VoiceModelFile,
     };
 
-    use crate::{InputText, CONFIG};
+    use crate::{CONFIG, InputText};
 
     pub(crate) static FIXTURE: LazyLock<(Synthesizer<OpenJtalk>, VoiceModelFile)> =
         LazyLock::new(|| {
@@ -214,7 +219,7 @@ mod blocking {
                 .build()
                 .unwrap();
             let vvm = VoiceModelFile::open(&CONFIG.vvm).unwrap();
-            synth.load_voice_model(&vvm).unwrap();
+            synth.load_voice_model(&vvm).perform().unwrap();
             (synth, vvm)
         });
 
@@ -249,6 +254,7 @@ mod blocking {
     #[divan::bench(
         sample_count = CONFIG.iterations_for_light_operations().sample_count,
         sample_size = CONFIG.iterations_for_light_operations().sample_size,
+        ignore = !CONFIG.include_open_and_close_vvm,
     )]
     fn open_and_close_vvm(bencher: Bencher<'_, '_>) {
         let run = || {
@@ -269,7 +275,7 @@ mod blocking {
 
         let run = || {
             synth.unload_voice_model(vvm.id()).unwrap();
-            synth.load_voice_model(vvm).unwrap();
+            synth.load_voice_model(vvm).perform().unwrap();
         };
         for _ in 0..CONFIG.iterations_for_unload_and_load_vvm().warmups {
             run();
@@ -343,7 +349,7 @@ mod nonblocking {
         Onnxruntime, OpenJtalk, Synthesizer, TextAnalyzer as _, VoiceModelFile,
     };
 
-    use crate::{InputText, CONFIG};
+    use crate::{CONFIG, InputText};
 
     pub(crate) static FIXTURE: LazyLock<(Synthesizer<OpenJtalk>, VoiceModelFile)> =
         LazyLock::new(|| {
@@ -356,7 +362,7 @@ mod nonblocking {
                     .build()
                     .unwrap();
                 let vvm = VoiceModelFile::open(&CONFIG.vvm).await.unwrap();
-                synth.load_voice_model(&vvm).await.unwrap();
+                synth.load_voice_model(&vvm).perform().await.unwrap();
                 (synth, vvm)
             })
         });
@@ -395,6 +401,7 @@ mod nonblocking {
     #[divan::bench(
         sample_count = CONFIG.iterations_for_light_operations().sample_count,
         sample_size = CONFIG.iterations_for_light_operations().sample_size,
+        ignore = !CONFIG.include_open_and_close_vvm,
     )]
     fn open_and_close_vvm(bencher: Bencher<'_, '_>) {
         let run = || {
@@ -416,7 +423,7 @@ mod nonblocking {
 
         let run = || {
             synth.unload_voice_model(vvm.id()).unwrap();
-            pollster::block_on(synth.load_voice_model(vvm)).unwrap();
+            pollster::block_on(synth.load_voice_model(vvm).perform()).unwrap();
         };
         for _ in 0..CONFIG.iterations_for_unload_and_load_vvm().warmups {
             run();

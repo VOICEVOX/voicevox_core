@@ -8,6 +8,8 @@ if TYPE_CHECKING:
         AccentPhrase,
         AudioQuery,
         CharacterMeta,
+        FrameAudioQuery,
+        Score,
         StyleId,
         SupportedDevices,
         UserDictWord,
@@ -509,6 +511,147 @@ class Synthesizer:
         Returns
         -------
         WAVデータ。
+        """
+        ...
+    async def create_sing_frame_audio_query(
+        self,
+        score: Score,
+        style_id: StyleId | int,
+    ) -> FrameAudioQuery:
+        """
+        |blocking-synthesizer-create-sing-frame-audio-query-score|_ から |blocking-synthesizer-create-sing-frame-audio-query-frame-audio-query| を作成する。
+
+        詳細はユーザーガイド `歌唱音声合成
+        <https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/song.md>`_
+        を参照。
+
+        .. code-block::
+
+            from voicevox_core import Note, Score
+
+            SINGING_TEACHER = 6000
+
+            SCORE = Score(
+                [
+                    Note(15, ""),
+                    Note(45, "ド", key=60),
+                    Note(45, "レ", key=62),
+                    Note(45, "ミ", key=64),
+                    Note(15, ""),
+                ],
+            )
+
+            frame_audio_query = await synthesizer.create_sing_frame_audio_query(
+                SCORE, SINGING_TEACHER
+            )
+
+        .. |blocking-synthesizer-create-sing-frame-audio-query-score| replace:: 楽譜
+        .. _blocking-synthesizer-create-sing-frame-audio-query-score: ../index.html#voicevox_core.Score
+        .. |blocking-synthesizer-create-sing-frame-audio-query-frame-audio-query| replace:: 歌唱音声合成用のクエリ
+        .. _blocking-synthesizer-create-sing-frame-audio-query-frame-audio-query: ../index.html#voicevox_core.FrameAudioQuery
+        """
+        ...
+    async def create_sing_frame_f0(
+        self,
+        score: Score,
+        frame_audio_query: FrameAudioQuery,
+        style_id: StyleId | int,
+    ) -> list[float]:
+        """
+        |blocking-synthesizer-create-sing-frame-f0-score|_ と |blocking-synthesizer-create-sing-frame-f0-frame-audio-query| から、フレームごとの基本周波数を生成する。
+
+        詳細はユーザーガイド `歌唱音声合成
+        <https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/song.md>`_
+        を参照。
+
+        .. code-block::
+
+            SINGING_TEACHER = 6000
+
+            frame_audio_query = await synthesizer.create_sing_frame_audio_query(
+                score, SINGING_TEACHER
+            )
+
+            # `Note.key`や`FramePhoneme.frame_length`を変更
+            for note in score.notes:
+                if note.key is not None:
+                    note.key += 1
+
+            new_f0 = await synthesizer.create_sing_frame_f0(
+                score, frame_audio_query, SINGING_TEACHER
+            )
+            frame_audio_query.f0 = new_f0
+
+        .. |blocking-synthesizer-create-sing-frame-f0-score| replace:: 楽譜
+        .. _blocking-synthesizer-create-sing-frame-f0-score: ../index.html#voicevox_core.Score
+        .. |blocking-synthesizer-create-sing-frame-f0-frame-audio-query| replace:: 歌唱音声合成用のクエリ
+        .. _blocking-synthesizer-create-sing-frame-f0-frame-audio-query: ../index.html#voicevox_core.FrameAudioQuery
+        """
+        ...
+    async def create_sing_frame_volume(
+        self,
+        score: Score,
+        frame_audio_query: FrameAudioQuery,
+        style_id: StyleId | int,
+    ) -> list[float]:
+        """
+        |blocking-synthesizer-create-sing-frame-volume-score|_ と |blocking-synthesizer-create-sing-frame-volume-frame-audio-query| から、フレームごとの音量を生成する。
+
+        詳細はユーザーガイド `歌唱音声合成
+        <https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/song.md>`_
+        を参照。
+
+        .. code-block::
+
+            SINGING_TEACHER = 6000
+
+            frame_audio_query = await synthesizer.create_sing_frame_audio_query(
+                score, SINGING_TEACHER
+            )
+
+            # `Note.key`や`FramePhoneme.frame_length`を変更
+            for note in score.notes:
+                if note.key is not None:
+                    note.key += 1
+
+            new_f0 = await synthesizer.create_sing_frame_f0(
+                score, frame_audio_query, SINGING_TEACHER
+            )
+            frame_audio_query.f0 = new_f0
+
+            new_volume = await synthesizer.create_sing_frame_volume(
+                score, frame_audio_query, SINGING_TEACHER
+            )
+            frame_audio_query.volume = new_volume
+
+        .. |blocking-synthesizer-create-sing-frame-volume-score| replace:: 楽譜
+        .. _blocking-synthesizer-create-sing-frame-volume-score: ../index.html#voicevox_core.Score
+        .. |blocking-synthesizer-create-sing-frame-volume-frame-audio-query| replace:: 歌唱音声合成用のクエリ
+        .. _blocking-synthesizer-create-sing-frame-volume-frame-audio-query: ../index.html#voicevox_core.FrameAudioQuery
+        """
+        ...
+    async def frame_synthesis(
+        self,
+        frame_audio_query: FrameAudioQuery,
+        style_id: StyleId | int,
+        *,
+        cancellable: bool = False,
+    ) -> bytes:
+        """
+        歌唱音声合成を行う。
+
+        詳細はユーザーガイド `歌唱音声合成
+        <https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/song.md>`_
+        を参照。
+
+        ``cancellable``
+        を有効化しない限り、非同期タスクとしてキャンセルしても終わるまで停止しない。
+
+        .. code-block::
+
+            SINGER = 3000
+
+            wav = await synthesizer.frame_synthesis(frame_audio_query, SINGER)
         """
         ...
     async def close(self) -> None: ...

@@ -23,8 +23,6 @@ pub(crate) mod blocking {
 }
 
 pub(crate) mod nonblocking {
-    use std::future::Future;
-
     use crate::AccentPhrase;
 
     /// テキスト解析器。

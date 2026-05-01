@@ -4,11 +4,26 @@ import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import jp.hiroshiba.voicevoxcore.exceptions.InvalidQueryException;
 
 /**
  * モーラ（子音＋母音）ごとの情報。
  *
- * <p>現在この型はGSONに対応しているが、将来的には <a href="https://github.com/VOICEVOX/voicevox_core/issues/984"
+ * <p>このクラスは不正な状態を表現しうる。どのような状態が不正なのかについては{@link #validate}を参照。このクラスを使う関数は、不正な状態に対して{@link
+ * InvalidQueryException}をスローする。
+ *
+ * <p>コンストラクト時には、不正な状態であるかの検証は行われない。外部からのデータが不正でないことを確かめるには、コンストラクト後に{@code validate()}を用いる必要がある。
+ *
+ * <pre>{@code
+ * Mora mora = (new Gson()).fromJson(json, Mora.class);
+ * mora.validate();
+ * }</pre>
+ *
+ * <p>Gsonにおいてはフィールド名はsnake_caseとなる。<a
+ * href="https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/serialization.md"
+ * target="_blank">データのシリアライゼーション</a>を参照。
+ *
+ * <p>Gsonについては将来的には <a href="https://github.com/VOICEVOX/voicevox_core/issues/984"
  * target="_blank">Jacksonに切り替わる予定</a> 。
  */
 public class Mora implements Cloneable {
@@ -56,6 +71,35 @@ public class Mora implements Cloneable {
     this.pitch = 0.0;
   }
 
+  /**
+   * このインスタンスが不正であるときエラーを返す。
+   *
+   * <p>不正であるとは、{@code @throws}で示す条件を満たすことである。
+   *
+   * <p>また次の状態に対してはログで警告を出す。将来的にはエラーになる予定。
+   *
+   * <ul>
+   *   <li>{@link #consonantLength}が負。
+   *   <li>{@link #vowelLength}が負。
+   * </ul>
+   *
+   * @throws InvalidQueryException 次のうちどれかを満たす場合
+   *     <ul>
+   *       <li>JSONへのシリアライズが不可。
+   *           <ul>
+   *             <li>{@link #consonantLength}がNaN、infinity、もしくは負。
+   *             <li>{@link #vowelLength}がNaN、infinity、もしくは負。
+   *             <li>{@link #pitch}がNaNもしくは±infinity。
+   *           </ul>
+   *       <li>{@link #consonant}と{@link #consonantLength}の有無が不一致。
+   *       <li>{@link #consonant}が子音以外の音素であるか、もしくは音素として不正。
+   *       <li>{@link #vowel}が子音であるか、もしくは音素として不正。
+   *     </ul>
+   */
+  public void validate() {
+    rsValidate();
+  }
+
   @Override
   public boolean equals(Object obj) {
     if (!(obj instanceof Mora)) {
@@ -80,4 +124,6 @@ public class Mora implements Cloneable {
     ret.pitch = pitch;
     return ret;
   }
+
+  private native void rsValidate();
 }

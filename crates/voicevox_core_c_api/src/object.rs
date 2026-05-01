@@ -7,7 +7,7 @@
 use std::{
     any,
     collections::{HashMap, HashSet},
-    fmt::{Debug, Display},
+    fmt::{self, Debug, Display},
     mem,
     num::NonZero,
     ops::{Deref, DerefMut},
@@ -143,7 +143,7 @@ impl<T: CApiObject> NonNull<T> {
             .split("::")
             .last()
             .expect("should not empty");
-        format!("`{type_name}` ({self:018p})")
+        fmt::from_fn(move |f| write!(f, "`{type_name}` ({self:018p})"))
     }
 
     fn panic_for_deleted(self) -> ! {

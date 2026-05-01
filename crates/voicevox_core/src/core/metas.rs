@@ -169,7 +169,12 @@ pub struct StyleMeta {
 
 /// [<i>スタイル</i>]に対応するモデルの種類。
 ///
+/// # Serde
+///
+/// [Serde]においては各バリアント名はsnake\_caseとなる。
+///
 /// [<i>スタイル</i>]: StyleMeta
+/// [Serde]: serde
 #[derive(
     Default,
     Clone,
@@ -189,16 +194,40 @@ pub struct StyleMeta {
 #[non_exhaustive]
 pub enum StyleType {
     /// 音声合成クエリの作成と音声合成が可能。
+    ///
+    /// # Serde
+    ///
+    /// [Serde]においては`"talk"`という値で表される。
+    ///
+    /// [Serde]: serde
     #[default]
     Talk,
 
     /// 歌唱音声合成用のクエリの作成が可能。
+    ///
+    /// # Serde
+    ///
+    /// [Serde]においては`"singing_teacher"`という値で表される。
+    ///
+    /// [Serde]: serde
     SingingTeacher,
 
     /// 歌唱音声合成が可能。
+    ///
+    /// # Serde
+    ///
+    /// [Serde]においては`"frame_decode"`という値で表される。
+    ///
+    /// [Serde]: serde
     FrameDecode,
 
     /// 歌唱音声合成用のクエリの作成と歌唱音声合成が可能。
+    ///
+    /// # Serde
+    ///
+    /// [Serde]においては`"sing"`という値で表される。
+    ///
+    /// [Serde]: serde
     Sing,
 }
 

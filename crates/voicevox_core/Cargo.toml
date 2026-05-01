@@ -1,9 +1,9 @@
 [package]
 name = "voicevox_core"
 version.workspace = true
-edition = "2021"
+edition.workspace = true
 publish.workspace = true
-rust-version = "1.84.0" # TODO: Rust 1.88以降にするときは、 #1083 (async closures) および #1104 (let chain, `#[cfg(false)]`) と同じことをする
+rust-version = "1.89.0"
 license.workspace = true
 
 [package.metadata.docs.rs]
@@ -18,11 +18,13 @@ required-features = ["load-onnxruntime"]
 # rustdocを参照
 [features]
 default = []
-load-onnxruntime = ["voicevox-ort/load-dynamic"]
-link-onnxruntime = []
+buildtime-download-onnxruntime = ["voicevox_core_build_features/download"]
+load-onnxruntime = ["ort/load-dynamic", "dep:libloading"]
+link-onnxruntime = ["voicevox_core_build_features/link"]
 
 [dependencies]
 anyhow.workspace = true
+arrayvec.workspace = true
 async-fs.workspace = true
 async-lock.workspace = true
 async_zip = { workspace = true, features = ["deflate"] }
@@ -32,7 +34,7 @@ camino.workspace = true
 const_format.workspace = true
 derive-getters.workspace = true
 derive-new.workspace = true
-derive_more = { workspace = true, features = ["add", "as_ref", "debug", "deref", "display", "from", "from_str", "index", "into"] }
+derive_more = { workspace = true, features = ["add", "as_ref", "debug", "deref", "display", "from", "from_str", "index", "into", "into_iterator"] }
 duplicate.workspace = true
 easy-ext.workspace = true
 educe.workspace = true
@@ -45,21 +47,29 @@ indexmap = { workspace = true, features = ["serde"] }
 itertools.workspace = true
 jlabel.workspace = true
 kanalizer.workspace = true
+libloading = { workspace = true, optional = true }
 ndarray.workspace = true
+num-traits.workspace = true
+once_cell.workspace = true
 open_jtalk.workspace = true
+ort = { workspace = true, features = ["std", "ndarray", "tracing", "api-17", "alternative-backend"], default-features = false }
 ouroboros.workspace = true
+pastey.workspace = true
+phf = { workspace = true, features = ["macros"] }
 ref-cast.workspace = true
 regex.workspace = true
 serde = { workspace = true, features = ["derive", "rc"] }
 serde_json = { workspace = true, features = ["preserve_order"] }
 serde_with.workspace = true
 smallvec.workspace = true
+smol_str.workspace = true
 strum = { workspace = true, features = ["derive"] }
 tempfile = "3.19.1"
 thiserror.workspace = true
 tracing.workspace = true
+typed_floats = { workspace = true, features = ["serde"] }
+typeshare = { workspace = true, default-features = false }
 uuid = { workspace = true, features = ["v4", "serde"] }
-voicevox-ort = { workspace = true, features = ["download-binaries", "__init-for-voicevox"] }
 voicevox_core_macros.workspace = true
 
 [dev-dependencies]
@@ -71,11 +81,15 @@ rstest.workspace = true
 rstest_reuse.workspace = true
 test_util.workspace = true
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
+voicevox_core = { workspace = true, features = ["buildtime-download-onnxruntime"] }
+
+[build-dependencies]
+voicevox_core_build_features.workspace = true
 
 [target."cfg(windows)".dependencies]
 humansize.workspace = true
 windows = { workspace = true, features = ["Win32_Foundation", "Win32_Graphics_Dxgi"] }
 
 [lints.rust]
-unsafe_code = "allow" # WindowsのGPU情報表示に、Win32を利用
+unsafe_code = "allow" # 色々必要なため
 rust_2018_idioms = "warn"

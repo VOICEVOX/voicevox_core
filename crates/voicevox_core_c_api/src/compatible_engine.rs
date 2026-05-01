@@ -10,7 +10,7 @@ use libc::c_int;
 use tracing::warn;
 use voicevox_core::{
     __internal::interop::{PerformInference as _, ToJsonValue as _},
-    StyleId, VoiceModelId,
+    OnExistingVoiceModelId, StyleId, VoiceModelId,
 };
 
 use crate::{helpers::display_error, init_logger_once};
@@ -144,7 +144,7 @@ pub extern "C" fn initialize(use_gpu: bool, cpu_num_threads: c_int, load_all_mod
 
         if load_all_models {
             for model in &voice_model_set().all_vvms {
-                synthesizer.load_voice_model(model)?;
+                synthesizer.load_voice_model(model).perform()?;
             }
         }
 
@@ -173,10 +173,11 @@ pub extern "C" fn load_model(style_id: i64) -> bool {
         let vvm = model_set.model_map.get(model_id).unwrap();
         let synthesizer = &mut *lock_synthesizer();
         let synthesizer = ensure_initialized!(synthesizer);
-        if let Err(err) = synthesizer.unload_voice_model(*model_id) {
-            assert_eq!(voicevox_core::ErrorKind::ModelNotFound, err.kind());
-        }
-        if let Err(err) = synthesizer.load_voice_model(vvm) {
+        if let Err(err) = synthesizer
+            .load_voice_model(vvm)
+            .on_existing(OnExistingVoiceModelId::Reload)
+            .perform()
+        {
             set_message(&format!("{err}"));
             false
         } else {

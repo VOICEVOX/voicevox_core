@@ -1,5 +1,5 @@
 use crate::{
-    common::{JNIEnvExt as _, JavaApiError, throw_if_err},
+    common::{JNIEnvExt as _, query_from_json, throw_if_err},
     object, object_type, static_field,
 };
 
@@ -8,7 +8,7 @@ use jni::{
     objects::{JObject, JString},
     sys::{jboolean, jint, jobject},
 };
-use std::sync::Arc;
+use std::{borrow::Cow, sync::Arc};
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
@@ -165,7 +165,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
             env.get_rust_field::<_, _, RustField>(&this, "handle")
         }?
         .clone();
-        internal.load_voice_model(&model)?;
+        internal.load_voice_model(&model).perform()?;
         Ok(())
     })
 }
@@ -392,7 +392,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
     throw_if_err(env, std::ptr::null_mut(), |env| {
         let accent_phrases_json: String = env.get_string(&accent_phrases_json)?.into();
         let accent_phrases: Vec<voicevox_core::AccentPhrase> =
-            serde_json::from_str(&accent_phrases_json).map_err(JavaApiError::DeJson)?;
+            query_from_json(&accent_phrases_json)?;
         let style_id = style_id as u32;
 
         let internal = unsafe {
@@ -429,7 +429,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
     throw_if_err(env, std::ptr::null_mut(), |env| {
         let accent_phrases_json: String = env.get_string(&accent_phrases_json)?.into();
         let accent_phrases: Vec<voicevox_core::AccentPhrase> =
-            serde_json::from_str(&accent_phrases_json).map_err(JavaApiError::DeJson)?;
+            query_from_json(&accent_phrases_json)?;
         let style_id = style_id as u32;
 
         let internal = unsafe {
@@ -466,7 +466,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
     throw_if_err(env, std::ptr::null_mut(), |env| {
         let accent_phrases_json: String = env.get_string(&accent_phrases_json)?.into();
         let accent_phrases: Vec<voicevox_core::AccentPhrase> =
-            serde_json::from_str(&accent_phrases_json).map_err(JavaApiError::DeJson)?;
+            query_from_json(&accent_phrases_json)?;
         let style_id = style_id as u32;
 
         let internal = unsafe {
@@ -503,8 +503,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {
         let audio_query: String = env.get_string(&query_json)?.into();
-        let audio_query: voicevox_core::AudioQuery =
-            serde_json::from_str(&audio_query).map_err(JavaApiError::DeJson)?;
+        let audio_query: voicevox_core::AudioQuery = query_from_json(&audio_query)?;
         let style_id = style_id as u32;
 
         let internal = unsafe {
@@ -600,6 +599,166 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
         let j_bytes = env.byte_array_from_slice(&wave)?;
 
         Ok(j_bytes.into_raw())
+    })
+}
+
+// SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+#[unsafe(no_mangle)]
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rsCreateSingFrameAudioQuery<
+    'local,
+>(
+    env: JNIEnv<'local>,
+    this: JObject<'local>,
+    score: JString<'local>,
+    style_id: jint,
+) -> jobject {
+    throw_if_err(env, std::ptr::null_mut(), |env| {
+        let score = &env.get_string(&score)?;
+        let score = &query_from_json(&Cow::from(score))?;
+
+        let style_id = style_id as u32;
+
+        let internal = unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.blocking.Synthesizer.handle` must correspond to
+            //   `Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>`.
+            type RustField =
+                Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>;
+            env.get_rust_field::<_, _, RustField>(&this, "handle")
+        }?
+        .clone();
+
+        let frame_audio_query = &internal
+            .create_sing_frame_audio_query(score, voicevox_core::StyleId::new(style_id))?;
+        let frame_audio_query = serde_json::Value::from(frame_audio_query).to_string();
+        let frame_audio_query = env.new_string(frame_audio_query)?;
+        Ok(frame_audio_query.into_raw())
+    })
+}
+
+// SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+#[unsafe(no_mangle)]
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rsCreateSingFrameF0<
+    'local,
+>(
+    env: JNIEnv<'local>,
+    this: JObject<'local>,
+    score: JString<'local>,
+    frame_audio_query: JString<'local>,
+    style_id: jint,
+) -> jobject {
+    throw_if_err(env, std::ptr::null_mut(), |env| {
+        let score = &env.get_string(&score)?;
+        let score = &query_from_json(&Cow::from(score))?;
+
+        let frame_audio_query = &env.get_string(&frame_audio_query)?;
+        let frame_audio_query = &query_from_json(&Cow::from(frame_audio_query))?;
+
+        let style_id = style_id as u32;
+
+        let internal = unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.blocking.Synthesizer.handle` must correspond to
+            //   `Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>`.
+            type RustField =
+                Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>;
+            env.get_rust_field::<_, _, RustField>(&this, "handle")
+        }?
+        .clone();
+
+        let f0s = internal.create_sing_frame_f0(
+            score,
+            frame_audio_query,
+            voicevox_core::StyleId::new(style_id),
+        )?;
+        // TODO: typed_floatsにissueかPRを出しに行き、スライス変換かbytemuck対応を入れてもらう
+        let f0s = &f0s.into_iter().map(Into::into).collect::<Vec<_>>();
+
+        let ret = env.new_float_array(f0s.len().try_into().unwrap())?;
+        env.set_float_array_region(&ret, 0, f0s)?;
+        Ok(ret.into_raw())
+    })
+}
+
+// SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+#[unsafe(no_mangle)]
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rsCreateSingFrameVolume<
+    'local,
+>(
+    env: JNIEnv<'local>,
+    this: JObject<'local>,
+    score: JString<'local>,
+    frame_audio_query: JString<'local>,
+    style_id: jint,
+) -> jobject {
+    throw_if_err(env, std::ptr::null_mut(), |env| {
+        let score = &env.get_string(&score)?;
+        let score = &query_from_json(&Cow::from(score))?;
+
+        let frame_audio_query = &env.get_string(&frame_audio_query)?;
+        let frame_audio_query = &query_from_json(&Cow::from(frame_audio_query))?;
+
+        let style_id = style_id as u32;
+
+        let internal = unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.blocking.Synthesizer.handle` must correspond to
+            //   `Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>`.
+            type RustField =
+                Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>;
+            env.get_rust_field::<_, _, RustField>(&this, "handle")
+        }?
+        .clone();
+
+        let volumes = internal.create_sing_frame_volume(
+            score,
+            frame_audio_query,
+            voicevox_core::StyleId::new(style_id),
+        )?;
+        // TODO: typed_floatsにissueかPRを出しに行き、スライス変換かbytemuck対応を入れてもらう
+        let volumes = &volumes.into_iter().map(Into::into).collect::<Vec<_>>();
+
+        let ret = env.new_float_array(volumes.len().try_into().unwrap())?;
+        env.set_float_array_region(&ret, 0, volumes)?;
+        Ok(ret.into_raw())
+    })
+}
+
+// SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+#[unsafe(no_mangle)]
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rsFrameSynthesis<
+    'local,
+>(
+    env: JNIEnv<'local>,
+    this: JObject<'local>,
+    frame_audio_query: JString<'local>,
+    style_id: jint,
+) -> jobject {
+    throw_if_err(env, std::ptr::null_mut(), |env| {
+        let frame_audio_query = &env.get_string(&frame_audio_query)?;
+        let frame_audio_query = &query_from_json(&Cow::from(frame_audio_query))?;
+
+        let style_id = style_id as u32;
+
+        let internal = unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.blocking.Synthesizer.handle` must correspond to
+            //   `Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>`.
+            type RustField =
+                Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>;
+            env.get_rust_field::<_, _, RustField>(&this, "handle")
+        }?
+        .clone();
+
+        let wav = &internal
+            .frame_synthesis(frame_audio_query, voicevox_core::StyleId::new(style_id))
+            .perform()?;
+        let wav = env.byte_array_from_slice(wav)?;
+        Ok(wav.into_raw())
     })
 }
 
