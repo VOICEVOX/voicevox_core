@@ -105,7 +105,7 @@ jobs:
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: "3.10"
-      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+      - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
       - run: cargo clippy -vp voicevox_core_build_features
       - run: cargo clippy -vp voicevox_core_build_features -F download
       - run: cargo clippy -vp voicevox_core_build_features -F link
@@ -132,7 +132,7 @@ jobs:
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: "3.10"
-      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+      - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
         with:
           key: "cargo-unit-test-cache"
       - name: Run cargo unit test
@@ -182,7 +182,7 @@ jobs:
           python-version: "3.10"
       - name: Set up Rust
         uses: ./.github/actions/rust-toolchain-from-file
-      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+      - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
         with:
           key: "cargo-integration-test-cache-${{ matrix.os }}"
       - name: Run cargo integration test (load-onnxruntime)
