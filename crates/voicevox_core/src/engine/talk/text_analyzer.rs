@@ -1,29 +1,32 @@
-// TODO: 破壊的変更をするタイミングで、`analyze`として`enable_katakana_english`を指定可能にする(あとデフォルトを`true`にする)。
+use std::marker::PhantomData;
+
+use educe::Educe;
 
 pub const DEFAULT_ENABLE_KATAKANA_ENGLISH: bool = false;
 
-pub(crate) mod blocking {
-    use crate::AccentPhrase;
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Educe)]
+#[educe(Default)]
+#[non_exhaustive]
+pub struct AnalyzeTextOptions<'a> {
+    #[educe(Default(expression = "DEFAULT_ENABLE_KATAKANA_ENGLISH"))]
+    pub enable_katakana_english: bool,
 
-    /// テキスト解析器。
-    pub trait TextAnalyzer: Sync {
-        /// テキストを解析する。
-        fn analyze(&self, text: &str) -> anyhow::Result<Vec<AccentPhrase>>;
+    pub _marker: PhantomData<&'a ()>,
+}
 
-        /// `OpenTalk`専用。
-        #[doc(hidden)]
-        fn __analyze_with_options(
-            &self,
-            text: &str,
-            #[allow(unused_variables)] enable_katakana_english: bool,
-        ) -> anyhow::Result<Vec<AccentPhrase>> {
-            self.analyze(text)
+impl AnalyzeTextOptions<'_> {
+    pub fn enable_katakana_english(self, enable_katakana_english: bool) -> Self {
+        Self {
+            enable_katakana_english,
+            ..self
         }
     }
 }
 
-pub(crate) mod nonblocking {
+pub(crate) mod blocking {
     use crate::AccentPhrase;
+
+    use super::AnalyzeTextOptions;
 
     /// テキスト解析器。
     pub trait TextAnalyzer: Sync {
@@ -31,16 +34,23 @@ pub(crate) mod nonblocking {
         fn analyze(
             &self,
             text: &str,
-        ) -> impl Future<Output = anyhow::Result<Vec<AccentPhrase>>> + Send;
+            options: AnalyzeTextOptions<'_>,
+        ) -> anyhow::Result<Vec<AccentPhrase>>;
+    }
+}
 
-        /// `OpenTalk`専用。
-        #[doc(hidden)]
-        fn __analyze_with_options(
+pub(crate) mod nonblocking {
+    use crate::AccentPhrase;
+
+    use super::AnalyzeTextOptions;
+
+    /// テキスト解析器。
+    pub trait TextAnalyzer: Sync {
+        /// テキストを解析する。
+        fn analyze(
             &self,
             text: &str,
-            #[allow(unused_variables)] enable_katakana_english: bool,
-        ) -> impl Future<Output = anyhow::Result<Vec<AccentPhrase>>> + Send {
-            self.analyze(text)
-        }
+            options: AnalyzeTextOptions<'_>,
+        ) -> impl Future<Output = anyhow::Result<Vec<AccentPhrase>>> + Send;
     }
 }

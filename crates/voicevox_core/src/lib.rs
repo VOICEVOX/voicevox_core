@@ -479,6 +479,7 @@ pub use self::{
         },
         talk::{
             AccentPhrase, AudioQuery, Mora,
+            text_analyzer::AnalyzeTextOptions,
             user_dict::{UserDictWord, UserDictWordBuilder, UserDictWordType},
         },
     },

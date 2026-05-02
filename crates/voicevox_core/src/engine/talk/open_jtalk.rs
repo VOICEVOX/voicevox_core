@@ -283,6 +283,8 @@ pub(crate) mod blocking {
 
     use camino::Utf8Path;
 
+    use crate::AnalyzeTextOptions;
+
     use super::Inner;
 
     use super::{
@@ -325,14 +327,10 @@ pub(crate) mod blocking {
     }
 
     impl crate::blocking::TextAnalyzer for self::OpenJtalk {
-        fn analyze(&self, text: &str) -> anyhow::Result<Vec<AccentPhrase>> {
-            self.__analyze_with_options(text, false)
-        }
-
-        fn __analyze_with_options(
+        fn analyze(
             &self,
             text: &str,
-            #[allow(unused_variables)] enable_katakana_english: bool,
+            options: AnalyzeTextOptions<'_>,
         ) -> anyhow::Result<Vec<AccentPhrase>> {
             if text.is_empty() {
                 return Ok(Vec::new());
@@ -340,7 +338,7 @@ pub(crate) mod blocking {
             Ok(extract_full_context_label(
                 &*self.0,
                 text,
-                enable_katakana_english,
+                options.enable_katakana_english,
             )?)
         }
     }
@@ -362,6 +360,8 @@ pub(crate) mod blocking {
 
 pub(crate) mod nonblocking {
     use camino::Utf8Path;
+
+    use crate::AnalyzeTextOptions;
 
     use super::super::{AccentPhrase, extract_full_context_label};
 
@@ -400,14 +400,10 @@ pub(crate) mod nonblocking {
     }
 
     impl crate::nonblocking::TextAnalyzer for self::OpenJtalk {
-        async fn analyze(&self, text: &str) -> anyhow::Result<Vec<AccentPhrase>> {
-            self.__analyze_with_options(text, false).await
-        }
-
-        async fn __analyze_with_options(
+        async fn analyze(
             &self,
             text: &str,
-            enable_katakana_english: bool,
+            options: AnalyzeTextOptions<'_>,
         ) -> anyhow::Result<Vec<AccentPhrase>> {
             if text.is_empty() {
                 return Ok(Vec::new());
@@ -415,7 +411,7 @@ pub(crate) mod nonblocking {
             let inner = self.0.0.clone();
             let text = text.to_owned();
             crate::task::asyncify(move || {
-                extract_full_context_label(&*inner, &text, enable_katakana_english)
+                extract_full_context_label(&*inner, &text, options.enable_katakana_english)
             })
             .await
             .map_err(Into::into)

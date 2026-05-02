@@ -386,8 +386,8 @@ mod blocking {
     use uuid::Uuid;
     use voicevox_core::{
         __internal::interop::BlockingTextAnalyzerExt as _, AccelerationMode, AccentPhrase,
-        AudioQuery, FrameAudioQuery, Score, StyleId, SupportedDevices, UserDictWord,
-        VoiceModelMeta,
+        AnalyzeTextOptions, AudioQuery, FrameAudioQuery, Score, StyleId, SupportedDevices,
+        UserDictWord, VoiceModelMeta,
     };
 
     use crate::{
@@ -615,7 +615,7 @@ mod blocking {
 
         fn analyze(&self, text: &str, py: Python<'_>) -> PyResult<ToDataclass<Vec<AccentPhrase>>> {
             self.open_jtalk
-                .analyze_(text)
+                .analyze_(text, Default::default())
                 .map(Into::into)
                 .into_py_result(py)
         }
@@ -626,8 +626,12 @@ mod blocking {
     struct OwnedOpenJtalk(Py<OpenJtalk>);
 
     impl voicevox_core::blocking::TextAnalyzer for OwnedOpenJtalk {
-        fn analyze(&self, text: &str) -> anyhow::Result<Vec<AccentPhrase>> {
-            self.0.get().open_jtalk.analyze(text)
+        fn analyze(
+            &self,
+            text: &str,
+            options: AnalyzeTextOptions<'_>,
+        ) -> anyhow::Result<Vec<AccentPhrase>> {
+            self.0.get().open_jtalk.analyze(text, options)
         }
     }
 
@@ -808,7 +812,7 @@ mod blocking {
             let synthesizesr = self.synthesizer.read()?;
 
             synthesizesr
-                .create_audio_query_with_options(text, StyleId::new(style_id))
+                .create_audio_query(text, StyleId::new(style_id))
                 .__enable_katakana_english(enable_katakana_english)
                 .perform()
                 .map(Into::into)
@@ -846,7 +850,7 @@ mod blocking {
             let synthesizer = self.synthesizer.read()?;
 
             synthesizer
-                .create_accent_phrases_with_options(text, StyleId::new(style_id))
+                .create_accent_phrases(text, StyleId::new(style_id))
                 .__enable_katakana_english(enable_katakana_english)
                 .perform()
                 .map(Into::into)
@@ -1177,8 +1181,8 @@ mod asyncio {
     use uuid::Uuid;
     use voicevox_core::{
         __internal::interop::NonblockingTextAnalyzerExt as _, AccelerationMode, AccentPhrase,
-        AudioQuery, FrameAudioQuery, Score, StyleId, SupportedDevices, UserDictWord,
-        VoiceModelMeta,
+        AnalyzeTextOptions, AudioQuery, FrameAudioQuery, Score, StyleId, SupportedDevices,
+        UserDictWord, VoiceModelMeta,
     };
 
     use crate::{
@@ -1412,10 +1416,7 @@ mod asyncio {
         async fn analyze(&self, text: String) -> PyResult<ToDataclass<Vec<AccentPhrase>>> {
             let accent_phrases = self
                 .open_jtalk
-                .analyze_(
-                    &text,
-                    voicevox_core::__internal::interop::DEFAULT_ENABLE_KATAKANA_ENGLISH,
-                )
+                .analyze_(&text, Default::default())
                 .await
                 .map(Into::into);
             Python::attach(|py| accent_phrases.into_py_result(py))
@@ -1427,8 +1428,12 @@ mod asyncio {
     struct OwnedOpenJtalk(Py<OpenJtalk>);
 
     impl voicevox_core::nonblocking::TextAnalyzer for OwnedOpenJtalk {
-        async fn analyze(&self, text: &str) -> anyhow::Result<Vec<AccentPhrase>> {
-            self.0.get().open_jtalk.analyze(text).await
+        async fn analyze(
+            &self,
+            text: &str,
+            options: AnalyzeTextOptions<'_>,
+        ) -> anyhow::Result<Vec<AccentPhrase>> {
+            self.0.get().open_jtalk.analyze(text, options).await
         }
     }
 
@@ -1573,7 +1578,7 @@ mod asyncio {
             let synthesizer = self.synthesizer.clone();
             let audio_query = synthesizer
                 .read()?
-                .create_audio_query_with_options(&text, StyleId::new(style_id))
+                .create_audio_query(&text, StyleId::new(style_id))
                 .__enable_katakana_english(enable_katakana_english)
                 .perform()
                 .await
@@ -1611,7 +1616,7 @@ mod asyncio {
             let synthesizer = self.synthesizer.clone();
             let accent_phrases = synthesizer
                 .read()?
-                .create_accent_phrases_with_options(&text, StyleId::new(style_id))
+                .create_accent_phrases(&text, StyleId::new(style_id))
                 .__enable_katakana_english(enable_katakana_english)
                 .perform()
                 .await

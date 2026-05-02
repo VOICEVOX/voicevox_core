@@ -381,7 +381,9 @@ pub unsafe extern "C" fn voicevox_open_jtalk_rc_analyze(
         CStr::from_ptr(text)
     };
     into_result_code_with_error((|| {
-        let accent_phrases = &open_jtalk.body().analyze_(ensure_utf8(text)?)?;
+        let accent_phrases = &open_jtalk
+            .body()
+            .analyze_(ensure_utf8(text)?, Default::default())?;
         let accent_phrases = serde_json::to_string(accent_phrases).expect("should not fail");
         let accent_phrases = CString::new(accent_phrases).expect("should not contain '\\0'");
         unsafe {
@@ -1241,7 +1243,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query_with_options(
 
         let audio_query = synthesizer
             .body()
-            .create_audio_query_with_options(text, StyleId::new(style_id))
+            .create_audio_query(text, StyleId::new(style_id))
             .enable_katakana_english(enable_katakana_english)
             .perform()?;
         let audio_query = CString::new(audio_query_model_to_json(&audio_query))
@@ -1380,7 +1382,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases_with_options
         let text = ensure_utf8(unsafe { CStr::from_ptr(text) })?;
         let accent_phrases = synthesizer
             .body()
-            .create_accent_phrases_with_options(text, StyleId::new(style_id))
+            .create_accent_phrases(text, StyleId::new(style_id))
             .enable_katakana_english(enable_katakana_english)
             .perform()?;
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))

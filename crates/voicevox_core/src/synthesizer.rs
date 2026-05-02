@@ -18,8 +18,8 @@ use tracing::info;
 use typed_floats::{NonNaNFinite, PositiveFinite};
 
 use crate::{
-    AccentPhrase, AudioQuery, OnExistingVoiceModelId, Result, StyleId, VoiceModelId,
-    VoiceModelMeta,
+    AccentPhrase, AnalyzeTextOptions, AudioQuery, OnExistingVoiceModelId, Result, StyleId,
+    VoiceModelId, VoiceModelMeta,
     asyncs::{Async, BlockingThreadPool, SingleTasked},
     collections::{NonEmptyIterator as _, NonEmptySlice, NonEmptyVec},
     core::{
@@ -54,7 +54,6 @@ use crate::{
         talk::{
             DecoderFeature, LengthedPhoneme, ValidatedAccentPhrase, ValidatedAudioQuery,
             ValidatedMora, create_kana, initial_process, parse_kana, split_mora,
-            text_analyzer::DEFAULT_ENABLE_KATAKANA_ENGLISH,
         },
         to_s16le_pcm, wav_from_s16le,
     },
@@ -68,18 +67,8 @@ pub const DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK: bool = true;
 pub const DEFAULT_HEAVY_INFERENCE_CANCELLABLE: bool =
     <BlockingThreadPool as infer::AsyncExt>::DEFAULT_HEAVY_INFERENCE_CANCELLABLE;
 
-#[derive(Debug)]
-struct CreateAccentPhrasesOptions {
-    enable_katakana_english: bool,
-}
-
-impl Default for CreateAccentPhrasesOptions {
-    fn default() -> Self {
-        Self {
-            enable_katakana_english: DEFAULT_ENABLE_KATAKANA_ENGLISH,
-        }
-    }
-}
+#[derive(Default, Debug)]
+struct CreateAccentPhrasesOptions(AnalyzeTextOptions<'static>);
 
 #[derive(derive_more::Debug)]
 #[debug(bound(A::Cancellable: Debug))]
@@ -284,16 +273,24 @@ impl<T> From<Inner<T, BlockingThreadPool>>
 struct AssumeSingleTasked<T>(T);
 
 impl<T: crate::blocking::TextAnalyzer> crate::nonblocking::TextAnalyzer for AssumeSingleTasked<T> {
-    async fn analyze(&self, text: &str) -> anyhow::Result<Vec<AccentPhrase>> {
-        self.0.analyze(text)
+    async fn analyze(
+        &self,
+        text: &str,
+        options: AnalyzeTextOptions<'_>,
+    ) -> anyhow::Result<Vec<AccentPhrase>> {
+        self.0.analyze(text, options)
     }
 }
 
 pub struct AssumeBlockable<T>(T);
 
 impl<T: crate::nonblocking::TextAnalyzer> crate::blocking::TextAnalyzer for AssumeBlockable<T> {
-    fn analyze(&self, text: &str) -> anyhow::Result<Vec<AccentPhrase>> {
-        self.0.analyze(text).block_on()
+    fn analyze(
+        &self,
+        text: &str,
+        options: AnalyzeTextOptions<'_>,
+    ) -> anyhow::Result<Vec<AccentPhrase>> {
+        self.0.analyze(text, options).block_on()
     }
 }
 
@@ -786,10 +783,7 @@ trait AsInner {
     where
         Self::TextAnalyzer: crate::nonblocking::TextAnalyzer,
     {
-        let accent_phrases = self
-            .text_analyzer()
-            .analyze_(text, options.enable_katakana_english)
-            .await?;
+        let accent_phrases = self.text_analyzer().analyze_(text, options.0).await?;
         self.replace_mora_data(&accent_phrases, style_id).await
     }
 
@@ -1615,8 +1609,12 @@ impl AudioQuery {
 
 #[ext(BlockingTextAnalyzerExt)]
 impl<T: crate::blocking::TextAnalyzer> T {
-    pub fn analyze_(&self, text: &str) -> crate::Result<Vec<AccentPhrase>> {
-        self.analyze(text).map_err(|source| {
+    pub fn analyze_(
+        &self,
+        text: &str,
+        options: AnalyzeTextOptions<'_>,
+    ) -> crate::Result<Vec<AccentPhrase>> {
+        self.analyze(text, options).map_err(|source| {
             ErrorRepr::AnalyzeText {
                 text: text.to_owned(),
                 source,
@@ -1631,16 +1629,15 @@ impl<T: crate::nonblocking::TextAnalyzer> T {
     pub fn analyze_(
         &self,
         text: &str,
-        enable_katakana_english: bool,
+        options: AnalyzeTextOptions<'_>,
     ) -> impl Future<Output = crate::Result<Vec<AccentPhrase>>> + Send {
-        self.__analyze_with_options(text, enable_katakana_english)
-            .map_err(|source| {
-                ErrorRepr::AnalyzeText {
-                    text: text.to_owned(),
-                    source,
-                }
-                .into()
-            })
+        self.analyze(text, options).map_err(|source| {
+            ErrorRepr::AnalyzeText {
+                text: text.to_owned(),
+                source,
+            }
+            .into()
+        })
     }
 }
 
@@ -2264,7 +2261,9 @@ pub(crate) mod blocking {
         /// #
         /// use voicevox_core::StyleId;
         ///
-        /// let accent_phrases = synthesizer.create_accent_phrases("こんにちは", StyleId::new(302))?;
+        /// let accent_phrases = synthesizer
+        ///     .create_accent_phrases("こんにちは", StyleId::new(302))
+        ///     .perform()?;
         /// #
         /// # Ok(())
         /// # }
@@ -2274,20 +2273,7 @@ pub(crate) mod blocking {
         /// [`replace_mora_data`]: Self::replace_mora_data
         /// [音声の調整]: ../index.html#音声の調整
         #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_create_accent_phrases"))]
-        pub fn create_accent_phrases(
-            &self,
-            text: &str,
-            style_id: StyleId,
-        ) -> crate::Result<Vec<AccentPhrase>> {
-            self.0
-                .create_accent_phrases(text, style_id, &Default::default())
-                .block_on()
-        }
-
-        /// [`create_accent_phrases`]のオプション付き版。
-        ///
-        /// [`create_accent_phrases`]: Self::create_accent_phrases
-        pub fn create_accent_phrases_with_options<'a>(
+        pub fn create_accent_phrases<'a>(
             &'a self,
             text: &'a str,
             style_id: StyleId,
@@ -2322,7 +2308,9 @@ pub(crate) mod blocking {
         /// #
         /// use voicevox_core::StyleId;
         ///
-        /// let audio_query = synthesizer.create_audio_query("こんにちは", StyleId::new(302))?;
+        /// let audio_query = synthesizer
+        ///     .create_audio_query("こんにちは", StyleId::new(302))
+        ///     .perform()?;
         /// #
         /// # Ok(())
         /// # }
@@ -2332,20 +2320,7 @@ pub(crate) mod blocking {
         /// [`create_accent_phrases`]: Self::create_accent_phrases
         /// [音声の調整]: ../index.html#音声の調整
         #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_create_audio_query"))]
-        pub fn create_audio_query(
-            &self,
-            text: &str,
-            style_id: StyleId,
-        ) -> crate::Result<AudioQuery> {
-            self.0
-                .create_audio_query(text, style_id, &Default::default())
-                .block_on()
-        }
-
-        /// [`create_audio_query`]のオプション付き版。
-        ///
-        /// [`create_audio_query`]: Self::create_audio_query
-        pub fn create_audio_query_with_options<'a>(
+        pub fn create_audio_query<'a>(
             &'a self,
             text: &'a str,
             style_id: StyleId,
@@ -2574,7 +2549,7 @@ pub(crate) mod blocking {
     impl<T: crate::blocking::TextAnalyzer> CreateAccentPhrases<'_, T> {
         #[doc(hidden)]
         pub fn __enable_katakana_english(mut self, enable_katakana_english: bool) -> Self {
-            self.options.enable_katakana_english = enable_katakana_english;
+            self.options.0.enable_katakana_english = enable_katakana_english;
             self
         }
 
@@ -2611,7 +2586,7 @@ pub(crate) mod blocking {
     impl<T: crate::blocking::TextAnalyzer> CreateAudioQuery<'_, T> {
         #[doc(hidden)]
         pub fn __enable_katakana_english(mut self, enable_katakana_english: bool) -> Self {
-            self.options.enable_katakana_english = enable_katakana_english;
+            self.options.0.enable_katakana_english = enable_katakana_english;
             self
         }
 
@@ -2759,7 +2734,7 @@ pub(crate) mod blocking {
     impl<T: crate::blocking::TextAnalyzer> Tts<'_, T> {
         #[doc(hidden)]
         pub fn __enable_katakana_english(mut self, enable_katakana_english: bool) -> Self {
-            self.options.create_accent_phrases.enable_katakana_english = enable_katakana_english;
+            self.options.create_accent_phrases.0.enable_katakana_english = enable_katakana_english;
             self
         }
 
@@ -3325,6 +3300,7 @@ pub(crate) mod nonblocking {
         ///
         /// let accent_phrases = synthesizer
         ///     .create_accent_phrases("こんにちは", StyleId::new(302))
+        ///     .perform()
         ///     .await?;
         /// #
         /// # Ok(())
@@ -3334,20 +3310,7 @@ pub(crate) mod nonblocking {
         /// [`TextAnalyzer::analyze`]: crate::nonblocking::TextAnalyzer::analyze
         /// [`replace_mora_data`]: Self::replace_mora_data
         /// [音声の調整]: ../index.html#音声の調整
-        pub async fn create_accent_phrases(
-            &self,
-            text: &str,
-            style_id: StyleId,
-        ) -> Result<Vec<AccentPhrase>> {
-            self.0
-                .create_accent_phrases(text, style_id, &Default::default())
-                .await
-        }
-
-        /// [`create_accent_phrases`]のオプション付き版。
-        ///
-        /// [`create_accent_phrases`]: Self::create_accent_phrases
-        pub fn create_accent_phrases_with_options<'a>(
+        pub fn create_accent_phrases<'a>(
             &'a self,
             text: &'a str,
             style_id: StyleId,
@@ -3381,6 +3344,7 @@ pub(crate) mod nonblocking {
         ///
         /// let audio_query = synthesizer
         ///     .create_audio_query("こんにちは", StyleId::new(302))
+        ///     .perform()
         ///     .await?;
         /// #
         /// # Ok(())
@@ -3390,20 +3354,7 @@ pub(crate) mod nonblocking {
         /// [AudioQuery]: crate::AudioQuery
         /// [`create_accent_phrases`]: Self::create_accent_phrases
         /// [音声の調整]: ../index.html#音声の調整
-        pub async fn create_audio_query(
-            &self,
-            text: &str,
-            style_id: StyleId,
-        ) -> Result<AudioQuery> {
-            self.0
-                .create_audio_query(text, style_id, &Default::default())
-                .await
-        }
-
-        /// [`create_audio_query`]のオプション付き版。
-        ///
-        /// [`create_audio_query`]: Self::create_audio_query
-        pub fn create_audio_query_with_options<'a>(
+        pub fn create_audio_query<'a>(
             &'a self,
             text: &'a str,
             style_id: StyleId,
@@ -3520,7 +3471,7 @@ pub(crate) mod nonblocking {
     impl<T: crate::nonblocking::TextAnalyzer> CreateAccentPhrases<'_, T> {
         #[doc(hidden)]
         pub fn __enable_katakana_english(mut self, enable_katakana_english: bool) -> Self {
-            self.options.enable_katakana_english = enable_katakana_english;
+            self.options.0.enable_katakana_english = enable_katakana_english;
             self
         }
 
@@ -3557,7 +3508,7 @@ pub(crate) mod nonblocking {
     impl<T: crate::nonblocking::TextAnalyzer> CreateAudioQuery<'_, T> {
         #[doc(hidden)]
         pub fn __enable_katakana_english(mut self, enable_katakana_english: bool) -> Self {
-            self.options.enable_katakana_english = enable_katakana_english;
+            self.options.0.enable_katakana_english = enable_katakana_english;
             self
         }
 
@@ -3713,7 +3664,7 @@ pub(crate) mod nonblocking {
     impl<T: crate::nonblocking::TextAnalyzer> Tts<'_, T> {
         #[doc(hidden)]
         pub fn __enable_katakana_english(mut self, enable_katakana_english: bool) -> Self {
-            self.options.create_accent_phrases.enable_katakana_english = enable_katakana_english;
+            self.options.create_accent_phrases.0.enable_katakana_english = enable_katakana_english;
             self
         }
 
@@ -4161,7 +4112,12 @@ mod tests {
                     .create_audio_query_from_kana(input, StyleId::new(0))
                     .await
             }
-            Input::Japanese(input) => syntesizer.create_audio_query(input, StyleId::new(0)).await,
+            Input::Japanese(input) => {
+                syntesizer
+                    .create_audio_query(input, StyleId::new(0))
+                    .perform()
+                    .await
+            }
         }
         .unwrap();
 
@@ -4235,6 +4191,7 @@ mod tests {
             Input::Japanese(input) => {
                 syntesizer
                     .create_accent_phrases(input, StyleId::new(0))
+                    .perform()
                     .await
             }
         }
@@ -4296,6 +4253,7 @@ mod tests {
 
         let accent_phrases = syntesizer
             .create_accent_phrases("同じ、文章、です。完全に、同一です。", StyleId::new(1))
+            .perform()
             .await
             .unwrap();
         assert_eq!(accent_phrases.len(), 5);
@@ -4359,6 +4317,7 @@ mod tests {
 
         let accent_phrases = syntesizer
             .create_accent_phrases("これはテストです", StyleId::new(0))
+            .perform()
             .await
             .unwrap();
 
@@ -4400,6 +4359,7 @@ mod tests {
 
         let accent_phrases = syntesizer
             .create_accent_phrases("これはテストです", StyleId::new(0))
+            .perform()
             .await
             .unwrap();
 
@@ -4441,6 +4401,7 @@ mod tests {
 
         let accent_phrases = syntesizer
             .create_accent_phrases("これはテストです", StyleId::new(0))
+            .perform()
             .await
             .unwrap();
 

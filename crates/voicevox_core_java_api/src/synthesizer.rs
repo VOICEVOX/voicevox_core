@@ -292,7 +292,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
         .clone();
 
         let audio_query = internal
-            .create_audio_query_with_options(&text, voicevox_core::StyleId::new(style_id))
+            .create_audio_query(&text, voicevox_core::StyleId::new(style_id))
             .enable_katakana_english(enable_katakana_english != 0)
             .perform()?;
 
@@ -367,7 +367,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
         .clone();
 
         let accent_phrases = internal
-            .create_accent_phrases_with_options(&text, voicevox_core::StyleId::new(style_id))
+            .create_accent_phrases(&text, voicevox_core::StyleId::new(style_id))
             .enable_katakana_english(enable_katakana_english != 0)
             .perform()?;
 
