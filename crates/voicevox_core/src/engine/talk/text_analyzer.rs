@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use educe::Educe;
 
-pub const DEFAULT_ENABLE_KATAKANA_ENGLISH: bool = false;
+pub const DEFAULT_ENABLE_KATAKANA_ENGLISH: bool = true;
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Educe)]
 #[educe(Default)]

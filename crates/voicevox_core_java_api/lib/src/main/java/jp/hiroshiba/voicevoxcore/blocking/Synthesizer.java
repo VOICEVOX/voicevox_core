@@ -721,7 +721,7 @@ public class Synthesizer {
     private Synthesizer synthesizer;
     private String text;
     private int styleId;
-    private boolean katakanaEnglish;
+    private boolean katakanaEnglish = true;
     private boolean interrogativeUpspeak;
 
     private TtsConfigurator(Synthesizer synthesizer, String text, int styleId) {
