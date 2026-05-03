@@ -181,7 +181,7 @@ fn verify(content: &[u8], expected_sha256: &[u8; 32]) -> anyhow::Result<()> {
 }
 
 fn extract_lib(tgz: &[u8], lib_name: &str) -> anyhow::Result<Vec<u8>> {
-    return binstall_tar::Archive::new(flate2::read::GzDecoder::new(tgz))
+    return tar::Archive::new(flate2::read::GzDecoder::new(tgz))
         .entries()?
         .map(|entry| {
             let entry = entry?;
@@ -199,7 +199,7 @@ fn extract_lib(tgz: &[u8], lib_name: &str) -> anyhow::Result<Vec<u8>> {
         .exactly_one()
         .map_err(|_| anyhow!("could not find 'lib/{lib_name}' in the asset"));
 
-    fn read_bytes<'a>(entry: binstall_tar::Entry<'a, impl Read + 'a>) -> io::Result<Vec<u8>> {
+    fn read_bytes<'a>(entry: tar::Entry<'a, impl Read + 'a>) -> io::Result<Vec<u8>> {
         let mut buf = Vec::with_capacity(entry.size() as _);
         { entry }.read_to_end(&mut buf)?;
         Ok(buf)

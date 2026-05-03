@@ -82,13 +82,15 @@
 
 ### Security
 
-- \[Rust,ダウンローダー\] 以下の脆弱性登録の影響を受けないようになります ([#1349])。
+- \[Rust,ダウンローダー\] 以下の脆弱性登録の影響を受けないようになります ([#1349], [#1350])。
     - [RUSTSEC-2026-0044](https://rustsec.org/advisories/RUSTSEC-2026-0044)
     - [RUSTSEC-2026-0045](https://rustsec.org/advisories/RUSTSEC-2026-0045)
     - [RUSTSEC-2026-0046](https://rustsec.org/advisories/RUSTSEC-2026-0046)
     - [RUSTSEC-2026-0047](https://rustsec.org/advisories/RUSTSEC-2026-0047)
     - [RUSTSEC-2026-0048](https://rustsec.org/advisories/RUSTSEC-2026-0048)
     - [RUSTSEC-2026-0049](https://rustsec.org/advisories/RUSTSEC-2026-0049)
+    - [RUSTSEC-2026-0067](https://rustsec.org/advisories/RUSTSEC-2026-0067)
+    - [RUSTSEC-2026-0068](https://rustsec.org/advisories/RUSTSEC-2026-0068)
     - [RUSTSEC-2026-0098](https://rustsec.org/advisories/RUSTSEC-2026-0098)
     - [RUSTSEC-2026-0099](https://rustsec.org/advisories/RUSTSEC-2026-0099)
     - [RUSTSEC-2026-0104](https://rustsec.org/advisories/RUSTSEC-2026-0104)
@@ -1510,6 +1512,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1323]: https://github.com/VOICEVOX/voicevox_core/pull/1323
 [#1331]: https://github.com/VOICEVOX/voicevox_core/pull/1331
 [#1349]: https://github.com/VOICEVOX/voicevox_core/pull/1349
+[#1350]: https://github.com/VOICEVOX/voicevox_core/pull/1350
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
