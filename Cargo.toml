@@ -101,7 +101,7 @@ smallvec = "1.13.2"
 smol_str = "0.3.2"
 strum = "0.24.1"
 syn = "2.0.87"
-tar = "0.4.42"
+tar = "0.4.45"
 tempfile = "3.13.0"
 test_util = { path = "crates/test_util" }
 thiserror = "1.0.64"
