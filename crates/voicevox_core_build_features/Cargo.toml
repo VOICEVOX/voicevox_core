@@ -13,7 +13,6 @@ name = "build_features"
 default = []
 download = [
   "dep:anyhow",
-  "dep:binstall-tar",
   "dep:camino",
   "dep:flate2",
   "dep:fs-err",
@@ -24,6 +23,7 @@ download = [
   "dep:serde",
   "dep:serde_with",
   "dep:sha2",
+  "dep:tar",
   "dep:toml",
 ]
 link = [
@@ -34,7 +34,6 @@ link = [
 
 [dependencies]
 anyhow = { workspace = true, optional = true }
-binstall-tar = { workspace = true, optional = true }
 camino = { workspace = true, optional = true }
 flate2 = { workspace = true, optional = true }
 fs-err = { workspace = true, optional = true }
@@ -46,6 +45,7 @@ reqwest = { workspace = true, features = ["blocking"], optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
 serde_with = { workspace = true, features = ["hex"], optional = true }
 sha2 = { workspace = true, optional = true }
+tar = { workspace = true, optional = true }
 toml = { workspace = true, optional = true }
 
 [target."cfg(unix)".dependencies]

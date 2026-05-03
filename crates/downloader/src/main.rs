@@ -1391,7 +1391,7 @@ async fn download_and_extract(
     }
 
     fn read_tgz(tgz: &[u8]) -> anyhow::Result<Vec<(PathBuf, Vec<u8>)>> {
-        binstall_tar::Archive::new(GzDecoder::new(tgz))
+        tar::Archive::new(GzDecoder::new(tgz))
             .entries()?
             .map(|entry| {
                 let entry = entry?;
