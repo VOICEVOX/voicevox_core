@@ -80,6 +80,19 @@
     - \[追加\]: `git+https://github.com/pykeio/ort.git?rev=94417081c47f47f5a7d6a92ce94bb38fda10019f#ort@2.0.0-rc.12`
     - \[変更\]: `indexmap@2`: `^2.6.0` → `^2.13.0`
 
+### Security
+
+- \[Rust,ダウンローダー\] 以下の脆弱性登録の影響を受けないようになります ([#1349])。
+    - [RUSTSEC-2026-0044](https://rustsec.org/advisories/RUSTSEC-2026-0044)
+    - [RUSTSEC-2026-0045](https://rustsec.org/advisories/RUSTSEC-2026-0045)
+    - [RUSTSEC-2026-0046](https://rustsec.org/advisories/RUSTSEC-2026-0046)
+    - [RUSTSEC-2026-0047](https://rustsec.org/advisories/RUSTSEC-2026-0047)
+    - [RUSTSEC-2026-0048](https://rustsec.org/advisories/RUSTSEC-2026-0048)
+    - [RUSTSEC-2026-0049](https://rustsec.org/advisories/RUSTSEC-2026-0049)
+    - [RUSTSEC-2026-0098](https://rustsec.org/advisories/RUSTSEC-2026-0098)
+    - [RUSTSEC-2026-0099](https://rustsec.org/advisories/RUSTSEC-2026-0099)
+    - [RUSTSEC-2026-0104](https://rustsec.org/advisories/RUSTSEC-2026-0104)
+
 ## [0.16.4] - 2026-02-19 (+09:00)
 
 主な変更点とその解説については、[GitHub Releaseの本文](https://github.com/VOICEVOX/voicevox_core/releases/tag/0.16.4)をご覧ください。
@@ -1496,6 +1509,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1315]: https://github.com/VOICEVOX/voicevox_core/pull/1315
 [#1323]: https://github.com/VOICEVOX/voicevox_core/pull/1323
 [#1331]: https://github.com/VOICEVOX/voicevox_core/pull/1331
+[#1349]: https://github.com/VOICEVOX/voicevox_core/pull/1349
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
