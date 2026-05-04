@@ -30,10 +30,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
 
       - name: Set up Rust toolchain, cache and cargo-codspeed binary
-        uses: moonrepo/setup-rust@v1
+        uses: moonrepo/setup-rust@abb2d32350334249b178c401e5ec5836e0cd88d3 # v1.3.0
         with:
           bins: cargo-codspeed
           cache-target: release
@@ -46,7 +46,7 @@ jobs:
         run: cargo codspeed build -p voicevox_core --bench benches --features buildtime-download-onnxruntime,load-onnxruntime -m walltime
 
       - name: Run the benchmarks
-        uses: CodSpeedHQ/action@v4
+        uses: CodSpeedHQ/action@93bbfdc546455345ae00c6f4e100a37838b37bcf # v4.14.0
         with:
           run: cargo codspeed run -m walltime
           mode: walltime
@@ -61,16 +61,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
 
       - name: Set up Rust toolchain and cache
-        uses: moonrepo/setup-rust@v1
+        uses: moonrepo/setup-rust@abb2d32350334249b178c401e5ec5836e0cd88d3 # v1.3.0
         with:
           cache-target: release
           inherit-toolchain: true
 
       - name: Set up Python 3.10
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: "3.10"
 
@@ -87,7 +87,7 @@ jobs:
           poetry run maturin develop --locked --profile release -F voicevox_core/buildtime-download-onnxruntime -v
 
       - name: Run the benchmarks
-        uses: CodSpeedHQ/action@v4
+        uses: CodSpeedHQ/action@93bbfdc546455345ae00c6f4e100a37838b37bcf # v4.14.0
         with:
           run: poetry run pytest ./python/benches/ --codspeed --codspeed-mode walltime
           mode: walltime

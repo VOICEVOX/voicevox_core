@@ -82,6 +82,21 @@
 - \[C\] \[BREAKING\] `voicevox_synthesizer_load_voice_model`に引数`VoicevoxLoadVoiceModelOptions options`が追加されます ([#1337])。
 - \[Java\] \[BREAKING\] `Synthesizer#load_voice_model`がビルダースタイルになります ([#1337])。
 
+### Security
+
+- \[Rust,ダウンローダー\] 以下の脆弱性登録の影響を受けないようになります ([#1349], [#1350])。
+    - [RUSTSEC-2026-0044](https://rustsec.org/advisories/RUSTSEC-2026-0044)
+    - [RUSTSEC-2026-0045](https://rustsec.org/advisories/RUSTSEC-2026-0045)
+    - [RUSTSEC-2026-0046](https://rustsec.org/advisories/RUSTSEC-2026-0046)
+    - [RUSTSEC-2026-0047](https://rustsec.org/advisories/RUSTSEC-2026-0047)
+    - [RUSTSEC-2026-0048](https://rustsec.org/advisories/RUSTSEC-2026-0048)
+    - [RUSTSEC-2026-0049](https://rustsec.org/advisories/RUSTSEC-2026-0049)
+    - [RUSTSEC-2026-0067](https://rustsec.org/advisories/RUSTSEC-2026-0067)
+    - [RUSTSEC-2026-0068](https://rustsec.org/advisories/RUSTSEC-2026-0068)
+    - [RUSTSEC-2026-0098](https://rustsec.org/advisories/RUSTSEC-2026-0098)
+    - [RUSTSEC-2026-0099](https://rustsec.org/advisories/RUSTSEC-2026-0099)
+    - [RUSTSEC-2026-0104](https://rustsec.org/advisories/RUSTSEC-2026-0104)
+
 ## [0.16.4] - 2026-02-19 (+09:00)
 
 主な変更点とその解説については、[GitHub Releaseの本文](https://github.com/VOICEVOX/voicevox_core/releases/tag/0.16.4)をご覧ください。
@@ -1499,6 +1514,8 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1323]: https://github.com/VOICEVOX/voicevox_core/pull/1323
 [#1331]: https://github.com/VOICEVOX/voicevox_core/pull/1331
 [#1337]: https://github.com/VOICEVOX/voicevox_core/pull/1337
+[#1349]: https://github.com/VOICEVOX/voicevox_core/pull/1349
+[#1350]: https://github.com/VOICEVOX/voicevox_core/pull/1350
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
