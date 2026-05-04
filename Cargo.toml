@@ -120,8 +120,8 @@ windows = "0.43.0"
 zip = "0.6.3"
 
 [workspace.dependencies.kanalizer]
-git = "https://github.com/qryxip/kanalizer.git"
-branch = "pr/feat-infer-make-rust-apis-msrv-1-84"
+git = "https://github.com/VOICEVOX/kanalizer.git"
+rev = "f0b5c62b904d612500ef7036c538209a70f1a91d"
 
 [workspace.dependencies.open_jtalk]
 git = "https://github.com/qryxip/open_jtalk-rs.git"
