@@ -184,6 +184,8 @@ jobs:
   create_draft_release:
     needs: config
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     outputs:
       # `draft-release`がtrueなら、GitHub REST APIの`Release`オブジェクトの一部。falseならnull。
       release: ${{ steps.create-draft-release.outputs.release || 'null' }}
@@ -229,6 +231,8 @@ jobs:
   build:
     needs: [config, create_draft_release]
     environment: ${{ inputs.code_signing && 'code_signing' || '' }} # コード署名用のenvironment
+    permissions:
+      contents: write
     strategy:
       matrix:
         include: ${{ fromJson(needs.config.outputs.includes) }}
@@ -379,6 +383,8 @@ jobs:
     if: ${{ needs.config.outputs.mode == 'draft-release' || needs.config.outputs.mode == 'full-test' }}
     needs: [config, create_draft_release, build]
     runs-on: macos-14
+    permissions:
+      contents: write
     env:
       IOS_X86_64_PATH: artifact/voicevox_core-x86_64-apple-ios
       IOS_AARCH64_SIM_PATH: artifact/voicevox_core-aarch64-apple-ios-sim
@@ -418,6 +424,8 @@ jobs:
 
   build_java_package:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     if: ${{ needs.config.outputs.mode == 'draft-release' || needs.config.outputs.mode == 'full-test' }}
     needs: [config, create_draft_release, build]
     steps:
@@ -508,6 +516,8 @@ jobs:
   build_downloader:
     needs: [config, create_draft_release]
     if: needs.config.outputs.mode == 'draft-release'
+    permissions:
+      contents: write
     uses: ./.github/workflows/build-downloader.yml
     with:
       upload_url: ${{ fromJson(needs.create_draft_release.outputs.release).upload_url }}
@@ -519,6 +529,8 @@ jobs:
     needs: [config, create_draft_release, build, build_xcframework, build_java_package, build_downloader]
     if: needs.config.outputs.mode == 'draft-release'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Set the tag name
         run: |
