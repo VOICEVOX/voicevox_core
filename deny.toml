@@ -29,17 +29,17 @@ allow-build-scripts = [
     # SHA256: b4dd86261a70df757efa53f06ce7543a4dc9c51178b9b023c92069fddee97a29
     { name = "typenum", version = "1" }, # https://docs.rs/crate/typenum/1.15.0/source/build/main.rs
 
-    # https://docs.rs/crate/aws-lc-sys/0.35.0/source/builder/main.rs
-    # SHA256: 180047fd086dc17c9a9491ebfb39123a0dab29edfa21bfc8c1d6c3cff385a9c3
+    # https://docs.rs/crate/aws-lc-sys/0.40.0/source/builder/main.rs
+    # SHA256: f13e021619f64da72ffab37bf54216b30a721e481bde86d9aebda10e004efc2d
     #
-    # aws-lc-sys inherits the license of aws-lc: https://docs.rs/crate/aws-lc-sys/0.35.0/source/LICENSE
-    { name = "aws-lc-sys", version = "0.35" },
+    # aws-lc-sys inherits the license of aws-lc: https://docs.rs/crate/aws-lc-sys/0.40.0/source/LICENSE
+    { name = "aws-lc-sys", version = "0.40" },
 ]
 bypass = [
     { name = "anyhow", version = "1", build-script = "2cd2c3a980dcecdf1b0e0f1fff31b440d8ddcab9340434d4f678ed807a9d7cdd" }, # https://docs.rs/crate/anyhow/1.0.99/source/build.rs
     { name = "assert_cmd", version = "2", build-script = "367a36318cd9bb47aeb730f8a8ddad39c10b926175465393f0d5b01cbd993d44" }, # https://docs.rs/crate/assert_cmd/2.0.16/source/build.rs
     { name = "async-trait", version = "0.1", build-script = "b45aa3a5c177cbeaeb4847163088924491ac27b79534f8ea4c53ed3e10c163ea" }, # https://docs.rs/crate/async-trait/0.1.57/source/build.rs
-    { name = "aws-lc-rs", version = "1", build-script = "84ca0d8a8a61487e0c36215b23b144239ffc9af760dd7e7bcde6a76aa68bc3c5" }, # https://docs.rs/crate/aws-lc-rs/1.15.2/source/build.rs
+    { name = "aws-lc-rs", version = "1", build-script = "791f97e6abdb685bcc722342d49f2646b3146b209f68753669c178716f6cee01" }, # https://docs.rs/crate/aws-lc-rs/1.16.3/source/build.rs
     { name = "bindgen", version = "0.70", build-script = "4a9c4ac3759572e17de312a9d3f4ced3b6fd3c71811729e5a8d06bfbd1ac8f82" }, # https://docs.rs/crate/bindgen/0.70.1/source/build.rs
     { name = "bindgen", version = "0.71", build-script = "f7a10af0a21662e104e0058da7e3471a20be328eef6c7c41988525be90fdfe92" }, # https://docs.rs/crate/bindgen/0.71.1/source/build.rs
     { name = "camino", version = "1", build-script = "cbdfaa56ff8e211896e75fc7867e3230aa8aa09fdda901111db957c65306f1d8" }, # https://docs.rs/crate/camino/1.1.9/source/build.rs
@@ -172,7 +172,6 @@ allow = [
     "ISC",
     "MIT",
     "MPL-2.0",
-    "OpenSSL",
     "Unicode-3.0",
     "Zlib",
 ]
