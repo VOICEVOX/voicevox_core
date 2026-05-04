@@ -46,6 +46,7 @@ futures-util = { workspace = true, features = ["io"] }
 indexmap = { workspace = true, features = ["serde"] }
 itertools.workspace = true
 jlabel.workspace = true
+kanalizer.workspace = true
 libloading = { workspace = true, optional = true }
 ndarray.workspace = true
 num-traits.workspace = true
@@ -63,7 +64,7 @@ serde_with.workspace = true
 smallvec.workspace = true
 smol_str.workspace = true
 strum = { workspace = true, features = ["derive"] }
-tempfile.workspace = true
+tempfile = "3.19.1"
 thiserror.workspace = true
 tracing.workspace = true
 typed_floats = { workspace = true, features = ["serde"] }

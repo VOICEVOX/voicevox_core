@@ -21,7 +21,7 @@ camino = "1.1.9"
 cargo_metadata = "0.18.1"
 cbindgen = "0.28.0"
 chrono = { version = "0.4.38", default-features = false }
-clap = { version = "4.5.19", features = ["cargo"] }
+clap = { version = "4.5.48", features = ["cargo"] }
 color-eyre = "0.6.5"
 color-print = "0.3.7"
 colorchoice = "1.0.2"
@@ -63,7 +63,7 @@ log = "0.4.29"
 minus = "5.6.1"
 ndarray = "0.17.2"
 ndarray-stats = "0.7.0"
-num-traits = "0.2.15"
+num-traits = "0.2.19"
 octocrab = "0.47.1" # RUSTSEC-2023-0071の回避も検証も面倒なため、0.47に留める
 once_cell = "1.21.3"
 open = "5.3.2"
@@ -101,7 +101,7 @@ smol_str = "0.3.2"
 strum = "0.24.1"
 syn = "2.0.87"
 tar = "0.4.45"
-tempfile = "3.13.0"
+tempfile = "3.23.0"
 test_util = { path = "crates/test_util" }
 thiserror = "1.0.64"
 tokio = "1.48.0"
@@ -119,9 +119,13 @@ voicevox_core_macros = { path = "crates/voicevox_core_macros" }
 windows = "0.43.0"
 zip = "0.6.3"
 
+[workspace.dependencies.kanalizer]
+git = "https://github.com/VOICEVOX/kanalizer.git"
+rev = "f0b5c62b904d612500ef7036c538209a70f1a91d"
+
 [workspace.dependencies.open_jtalk]
-git = "https://github.com/VOICEVOX/open_jtalk-rs.git"
-rev = "7c87b4227bb005b439a3ad473b48ce8975829576"
+git = "https://github.com/qryxip/open_jtalk-rs.git"
+branch = "pr/feat-add-njd-update"
 
 # FIXME: iOS対応のpull request(https://github.com/wesleywiser/process_path/pull/16)がマージされる見込みが無いため
 [workspace.dependencies.process_path]

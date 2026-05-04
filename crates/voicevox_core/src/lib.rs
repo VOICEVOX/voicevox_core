@@ -260,25 +260,25 @@
 //!     let wav1 = synth.tts(TEXT, STYLE_ID).perform()?;
 //!
 //!     let wav2 = {
-//!         let query = synth.create_audio_query(TEXT, STYLE_ID)?;
+//!         let query = synth.create_audio_query(TEXT, STYLE_ID).perform()?;
 //!         synth.synthesis(&query, STYLE_ID).perform()?
 //!     };
 //!
 //!     let wav3 = {
-//!         let phrases = synth.create_accent_phrases(TEXT, STYLE_ID)?;
+//!         let phrases = synth.create_accent_phrases(TEXT, STYLE_ID).perform()?;
 //!         let query = AudioQuery::from(phrases);
 //!         synth.synthesis(&query, STYLE_ID).perform()?
 //!     };
 //!
 //!     let wav4 = {
-//!         let phrases = synth.text_analyzer().analyze(TEXT)?;
+//!         let phrases = synth.text_analyzer().analyze(TEXT, Default::default())?;
 //!         let phrases = synth.replace_mora_data(&phrases, STYLE_ID)?;
 //!         let query = AudioQuery::from(phrases);
 //!         synth.synthesis(&query, STYLE_ID).perform()?
 //!     };
 //!
 //!     let wav5 = {
-//!         let phrases = synth.text_analyzer().analyze(TEXT)?;
+//!         let phrases = synth.text_analyzer().analyze(TEXT, Default::default())?;
 //!         let phrases = synth.replace_phoneme_length(&phrases, STYLE_ID)?;
 //!         let phrases = synth.replace_mora_pitch(&phrases, STYLE_ID)?;
 //!         let query = AudioQuery::from(phrases);
@@ -476,6 +476,7 @@ pub use self::{
         },
         talk::{
             AccentPhrase, AudioQuery, Mora,
+            text_analyzer::AnalyzeTextOptions,
             user_dict::{UserDictWord, UserDictWordBuilder, UserDictWordType},
         },
     },
