@@ -172,9 +172,10 @@ allow = [
     "ISC",
     "MIT",
     "MPL-2.0",
+    "OpenSSL",
     "Unicode-3.0",
     "Zlib",
 ]
 clarify = [
-    { name = "ring", version = "0.17", expression = "MIT AND ISC AND OpenSSL", license-files = [{ path = "LICENSE", hash = 0xbd0eed23 }] },
+    { name = "ring", version = "0.17", expression = "MIT AND ISC AND OpenSSL", license-files = [{ path = "LICENSE", hash = 0x0d99693a }] },
 ]
