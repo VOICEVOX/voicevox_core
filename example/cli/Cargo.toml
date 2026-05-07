@@ -1,5 +1,5 @@
 [package]
-name = "cli"
+name = "voicevox_cli"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
@@ -7,3 +7,8 @@ rust-version.workspace = true
 license.workspace = true
 
 [dependencies]
+anyhow = { workspace = true }
+camino = { workspace = true }
+clap = { workspace = true, features = ["derive"] }
+const_format = { workspace = true }
+voicevox_core = { workspace = true, features = ["load-onnxruntime"] }
