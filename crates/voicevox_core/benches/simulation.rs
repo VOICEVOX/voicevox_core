@@ -8,7 +8,6 @@ fn main() {
         .perform()
         .unwrap();
     let _ = *blocking::FIXTURE;
-    let _ = *nonblocking::FIXTURE;
 
     divan::main();
 }
@@ -66,20 +65,13 @@ mod blocking {
             (synth, vvm)
         });
 
-    #[divan::bench(sample_count = 100, sample_size = 10)]
-    fn construct_open_jtalk(bencher: Bencher<'_, '_>) {
-        bencher.bench_local(|| {
-            divan::black_box_drop(OpenJtalk::new(test_util::OPEN_JTALK_DIC_DIR).unwrap());
-        });
-    }
-
-    #[divan::bench(args = InputText::ALL, sample_count = 100, sample_size = 10)]
+    #[divan::bench(args = InputText::ALL, sample_count = 300, sample_size = 10)]
     fn analyze_text(bencher: Bencher<'_, '_>, input: InputText) {
         let ojt = FIXTURE.0.text_analyzer();
         bencher.bench_local(|| ojt.analyze(input.value).unwrap());
     }
 
-    #[divan::bench(sample_count = 100, sample_size = 10)]
+    #[divan::bench(sample_count = 300, sample_size = 10)]
     fn open_and_close_vvm(bencher: Bencher<'_, '_>) {
         bencher.bench_local(|| {
             divan::black_box_drop(
@@ -88,7 +80,7 @@ mod blocking {
         });
     }
 
-    #[divan::bench(args = InputText::ALL, sample_count = 100, sample_size = 10)]
+    #[divan::bench(args = InputText::ALL, sample_count = 300, sample_size = 10)]
     fn replace_mora_pitch(bencher: Bencher<'_, '_>, input: InputText) {
         let (synth, _) = &*FIXTURE;
 
@@ -97,93 +89,12 @@ mod blocking {
         bencher.bench_local(|| synth.replace_mora_pitch(input, STYLE_ID).unwrap());
     }
 
-    #[divan::bench(args = InputText::ALL, sample_count = 100, sample_size = 10)]
+    #[divan::bench(args = InputText::ALL, sample_count = 300, sample_size = 10)]
     fn replace_phoneme_length(bencher: Bencher<'_, '_>, input: InputText) {
         let (synth, _) = &*FIXTURE;
 
         let input = &synth.text_analyzer().analyze(input.value).unwrap();
 
         bencher.bench_local(|| synth.replace_phoneme_length(input, STYLE_ID).unwrap());
-    }
-}
-
-mod nonblocking {
-    use std::sync::LazyLock;
-
-    use divan::Bencher;
-    use voicevox_core::{
-        AccelerationMode,
-        nonblocking::{Onnxruntime, OpenJtalk, Synthesizer, TextAnalyzer as _, VoiceModelFile},
-    };
-
-    use crate::{InputText, STYLE_ID};
-
-    pub(crate) static FIXTURE: LazyLock<(Synthesizer<OpenJtalk>, VoiceModelFile)> =
-        LazyLock::new(|| {
-            pollster::block_on(async {
-                let ort = Onnxruntime::get().expect("should have been initialized");
-                let ojt = OpenJtalk::new(test_util::OPEN_JTALK_DIC_DIR).await.unwrap();
-                let synth = Synthesizer::builder(ort)
-                    .text_analyzer(ojt)
-                    .acceleration_mode(AccelerationMode::Cpu)
-                    .build()
-                    .unwrap();
-                let vvm = VoiceModelFile::open(test_util::SAMPLE_VOICE_MODEL_FILE_PATH)
-                    .await
-                    .unwrap();
-                synth.load_voice_model(&vvm).perform().await.unwrap();
-                (synth, vvm)
-            })
-        });
-
-    #[divan::bench(sample_count = 100, sample_size = 10)]
-    fn construct_open_jtalk(bencher: Bencher<'_, '_>) {
-        bencher.bench_local(|| {
-            divan::black_box_drop(
-                pollster::block_on(OpenJtalk::new(test_util::OPEN_JTALK_DIC_DIR)).unwrap(),
-            );
-        });
-    }
-
-    #[divan::bench(args = InputText::ALL, sample_count = 100, sample_size = 10)]
-    #[pollster::main]
-    async fn analyze_text(bencher: Bencher<'_, '_>, input: InputText) {
-        let ojt = FIXTURE.0.text_analyzer();
-        bencher.bench_local(|| pollster::block_on(ojt.analyze(input.value)).unwrap());
-    }
-
-    #[divan::bench(sample_count = 100, sample_size = 10)]
-    fn open_and_close_vvm(bencher: Bencher<'_, '_>) {
-        bencher.bench_local(|| {
-            divan::black_box_drop(
-                pollster::block_on(VoiceModelFile::open(
-                    test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
-                ))
-                .unwrap(),
-            );
-        });
-    }
-
-    #[divan::bench(args = InputText::ALL, sample_count = 100, sample_size = 10)]
-    #[pollster::main]
-    async fn replace_mora_pitch(bencher: Bencher<'_, '_>, input: InputText) {
-        let (synth, _) = &*FIXTURE;
-
-        let input = &synth.text_analyzer().analyze(input.value).await.unwrap();
-
-        bencher
-            .bench_local(|| pollster::block_on(synth.replace_mora_pitch(input, STYLE_ID)).unwrap());
-    }
-
-    #[divan::bench(args = InputText::ALL, sample_count = 100, sample_size = 10)]
-    #[pollster::main]
-    async fn replace_phoneme_length(bencher: Bencher<'_, '_>, input: InputText) {
-        let (synth, _) = &*FIXTURE;
-
-        let input = &synth.text_analyzer().analyze(input.value).await.unwrap();
-
-        bencher.bench_local(|| {
-            pollster::block_on(synth.replace_phoneme_length(input, STYLE_ID)).unwrap()
-        });
     }
 }
