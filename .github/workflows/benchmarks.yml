@@ -10,16 +10,10 @@ on:
       - .github/workflows/benchmarks.yml
       - Cargo.*
       - crates/voicevox_core/Cargo.toml
-      - crates/voicevox_core/benches/*.rs
+      - crates/voicevox_core/benches/simulation.rs
       - crates/voicevox_core/src/**
       - crates/voicevox_core_macros/Cargo.toml
       - crates/voicevox_core_macros/src/**
-      - crates/voicevox_core_python_api/Cargo.toml
-      - crates/voicevox_core_python_api/poetry.lock
-      - crates/voicevox_core_python_api/pyproject.toml
-      - crates/voicevox_core_python_api/python/benches/*.py
-      - crates/voicevox_core_python_api/python/voicevox_core/**
-      - crates/voicevox_core_python_api/src/**
       - model/**
       - rust-toolchain
   workflow_dispatch:
@@ -43,52 +37,10 @@ jobs:
         run: cargo check -vp test_util
 
       - name: Build
-        run: cargo codspeed build -p voicevox_core --bench benches --features buildtime-download-onnxruntime,load-onnxruntime -m walltime
+        run: cargo codspeed build -p voicevox_core --bench simulation --features buildtime-download-onnxruntime,load-onnxruntime -m simulation
 
       - name: Run the benchmarks
         uses: CodSpeedHQ/action@93bbfdc546455345ae00c6f4e100a37838b37bcf # v4.14.0
         with:
-          run: cargo codspeed run -m walltime
-          mode: walltime
-        env:
-          VOICEVOX_CORE_BENCH_CONFIG: |
-            {
-              "include-long-input-text": ${{ github.event_name != 'pull_request' }}
-            }
-
-  python-api:
-    name: Python API
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
-
-      - name: Set up Rust toolchain and cache
-        uses: moonrepo/setup-rust@abb2d32350334249b178c401e5ec5836e0cd88d3 # v1.3.0
-        with:
-          cache-target: release
-          inherit-toolchain: true
-
-      - name: Set up Python 3.10
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
-        with:
-          python-version: "3.10"
-
-      - name: Install Poetry
-        run: pip install --upgrade poetry
-
-      - name: Set up test data
-        run: cargo check -vp test_util
-
-      - name: Build
-        working-directory: ./crates/voicevox_core_python_api
-        run: |
-          poetry install --with dev --with test
-          poetry run maturin develop --locked --profile release -F voicevox_core/buildtime-download-onnxruntime -v
-
-      - name: Run the benchmarks
-        uses: CodSpeedHQ/action@93bbfdc546455345ae00c6f4e100a37838b37bcf # v4.14.0
-        with:
-          run: poetry run pytest ./python/benches/ --codspeed --codspeed-mode walltime
-          mode: walltime
-          working-directory: ./crates/voicevox_core_python_api
+          run: cargo codspeed run
+          mode: simulation

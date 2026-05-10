@@ -11,7 +11,12 @@ features = ["load-onnxruntime", "link-onnxruntime"]
 rustdoc-args = ["--cfg", "docsrs"]
 
 [[bench]]
-name = "benches"
+name = "simulation"
+harness = false
+required-features = ["load-onnxruntime"]
+
+[[bench]]
+name = "walltime"
 harness = false
 required-features = ["load-onnxruntime"]
 
