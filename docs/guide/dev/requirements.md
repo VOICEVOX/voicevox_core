@@ -13,11 +13,11 @@ VOICEVOX CORE の開発に必要なツールとライブラリの一覧です。
 | **Git** | [公式サイト](https://git-scm.com/downloads) |
 | **CMake** | [公式サイト](https://cmake.org/download/) |
 | **jq** | [公式サイト](https://stedolan.github.io/jq/download/) |
-| **ONNX Runtime** | [公式サイト](https://onnxruntime.ai/docs/install/) または `cargo run -p downloader` |
+| **ONNX Runtime** | ビルドスクリプトにより用意されます (`cargo run -p downloader`) |
 
 ### 言語別追加要件
 
-- **Python**: [Poetry](https://python-poetry.org/docs/#installation), `pip install maturin pyflakes`
+- **Python**: [Poetry](https://python-poetry.org/docs/#installation), `pip install pyflakes`
 - **Java**: [Adoptium (JDK 11/17)](https://adoptium.net/), [Gradle](https://gradle.org/install/) (またはリポジトリの `gradlew`)
 
 ## OS 別インストールコマンド例
