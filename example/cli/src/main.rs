@@ -17,15 +17,15 @@ const DEFAULT_DICT: &str = formatcp!("{VOICEXVOX_CORE_DIR}/dict/open_jtalk_dic_u
 struct Args {
     /// 合成するテキスト
     #[arg(long)]
-    tts: String,
+    text: String,
 
     /// 出力するWAVファイルのパス
     #[arg(long, default_value = "./output.wav")]
-    output: PathBuf,
+    out: PathBuf,
 
     /// 読み込むVVMファイルのパス
     #[arg(long, default_value = DEFAULT_MODEL)]
-    model: PathBuf,
+    vvm: PathBuf,
 
     /// ONNX Runtimeのライブラリのパス
     #[arg(long, default_value = DEFAULT_ONNXRUNTIME)]
@@ -33,7 +33,7 @@ struct Args {
 
     /// Open JTalkの辞書ディレクトリ
     #[arg(long, default_value = DEFAULT_DICT)]
-    dict: PathBuf,
+    dict_dir: PathBuf,
 
     /// 話者名
     #[arg(long, default_value = "ずんだもん")]
@@ -54,7 +54,7 @@ fn main() -> anyhow::Result<()> {
         .context("ONNX Runtimeのロードに失敗しました")?;
 
     // Synthesizerの構築
-    let ojt = OpenJtalk::new(Utf8PathBuf::try_from(args.dict)?)
+    let ojt = OpenJtalk::new(Utf8PathBuf::try_from(args.dict_dir)?)
         .context("Open JTalk辞書のロードに失敗しました")?;
     let synth = Synthesizer::builder(ort)
         .text_analyzer(ojt)
@@ -62,11 +62,11 @@ fn main() -> anyhow::Result<()> {
         .context("Synthesizerの構築に失敗しました")?;
 
     // モデルのロード
-    if !args.model.exists() {
-        anyhow::bail!("モデルファイルが見つかりません: {:?}", args.model);
+    if !args.vvm.exists() {
+        anyhow::bail!("モデルファイルが見つかりません: {:?}", args.vvm);
     }
 
-    let model = VoiceModelFile::open(args.model).context("音声モデルの読み込みに失敗しました")?;
+    let model = VoiceModelFile::open(args.vvm).context("音声モデルの読み込みに失敗しました")?;
     synth
         .load_voice_model(&model)
         .perform()
@@ -88,12 +88,12 @@ fn main() -> anyhow::Result<()> {
 
     eprintln!("合成中...");
     let wav = synth
-        .tts(&args.tts, style_id)
+        .tts(&args.text, style_id)
         .perform()
         .context("音声合成に失敗しました")?;
 
-    fs::write(&args.output, wav).context("出力ファイルの書き込みに失敗しました")?;
-    eprintln!("Saved to {:?}", args.output);
+    fs::write(&args.out, wav).context("出力ファイルの書き込みに失敗しました")?;
+    eprintln!("Saved to {:?}", args.out);
 
     Ok(())
 }
