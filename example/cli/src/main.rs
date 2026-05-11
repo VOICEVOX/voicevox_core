@@ -8,8 +8,10 @@ use voicevox_core::blocking::{Onnxruntime, OpenJtalk, Synthesizer, VoiceModelFil
 use const_format::formatcp;
 
 const VOICEXVOX_CORE_DIR: &str = "./voicevox_core";
-const DEFAULT_ONNXRUNTIME: &str =
-    formatcp!("{VOICEXVOX_CORE_DIR}/onnxruntime/lib/libvoicevox_onnxruntime.so.1.17.3");
+const DEFAULT_ONNXRUNTIME: &str = formatcp!(
+    "{VOICEXVOX_CORE_DIR}/onnxruntime/lib/{}",
+    Onnxruntime::LIB_VERSIONED_FILENAME,
+);
 const DEFAULT_MODEL: &str = formatcp!("{VOICEXVOX_CORE_DIR}/models/vvms/0.vvm");
 const DEFAULT_DICT: &str = formatcp!("{VOICEXVOX_CORE_DIR}/dict/open_jtalk_dic_utf_8-1.11");
 
