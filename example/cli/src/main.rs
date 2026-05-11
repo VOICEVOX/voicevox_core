@@ -1,4 +1,4 @@
-use std::{fs, path::PathBuf};
+use std::fs;
 
 use anyhow::Context as _;
 use camino::Utf8PathBuf;
@@ -21,19 +21,19 @@ struct Args {
 
     /// 出力するWAVファイルのパス
     #[arg(long, default_value = "./output.wav")]
-    out: PathBuf,
+    out: Utf8PathBuf,
 
     /// 読み込むVVMファイルのパス
     #[arg(long, default_value = DEFAULT_MODEL)]
-    vvm: PathBuf,
+    vvm: Utf8PathBuf,
 
     /// ONNX Runtimeのライブラリのパス
     #[arg(long, default_value = DEFAULT_ONNXRUNTIME)]
-    onnxruntime: PathBuf,
+    onnxruntime: Utf8PathBuf,
 
     /// Open JTalkの辞書ディレクトリ
     #[arg(long, default_value = DEFAULT_DICT)]
-    dict_dir: PathBuf,
+    dict_dir: Utf8PathBuf,
 
     /// 話者名
     #[arg(long, default_value = "ずんだもん")]
@@ -54,8 +54,7 @@ fn main() -> anyhow::Result<()> {
         .context("ONNX Runtimeのロードに失敗しました")?;
 
     // Synthesizerの構築
-    let ojt = OpenJtalk::new(Utf8PathBuf::try_from(args.dict_dir)?)
-        .context("Open JTalk辞書のロードに失敗しました")?;
+    let ojt = OpenJtalk::new(args.dict_dir).context("Open JTalk辞書のロードに失敗しました")?;
     let synth = Synthesizer::builder(ort)
         .text_analyzer(ojt)
         .build()
