@@ -65,11 +65,6 @@ fn main() -> anyhow::Result<()> {
         .build()
         .context("Synthesizerの構築に失敗しました")?;
 
-    // モデルのロード
-    if !args.vvm.exists() {
-        anyhow::bail!("モデルファイルが見つかりません: {:?}", args.vvm);
-    }
-
     let model = VoiceModelFile::open(args.vvm).context("音声モデルの読み込みに失敗しました")?;
     synth
         .load_voice_model(&model)
