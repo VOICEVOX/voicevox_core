@@ -15,6 +15,9 @@ const DEFAULT_ONNXRUNTIME: &str = formatcp!(
 const DEFAULT_MODEL: &str = formatcp!("{VOICEXVOX_CORE_DIR}/models/vvms/0.vvm");
 const DEFAULT_DICT: &str = formatcp!("{VOICEXVOX_CORE_DIR}/dict/open_jtalk_dic_utf_8-1.11");
 
+/// テキスト音声合成を行うサンプルコードです。
+///
+/// `cargo run -p downloader` でリソースをダウンロードしてから実行してください。
 #[derive(Parser)]
 struct Args {
     /// 合成するテキスト
