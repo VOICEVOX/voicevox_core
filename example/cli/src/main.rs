@@ -18,7 +18,10 @@ const DEFAULT_DICT: &str = formatcp!("{VOICEXVOX_CORE_DIR}/dict/open_jtalk_dic_u
 #[derive(Parser)]
 struct Args {
     /// 合成するテキスト
-    #[arg(long)]
+    #[arg(
+        long,
+        default_value = "この音声は、ボイスボックスを使用して、出力されています。"
+    )]
     text: String,
 
     /// 出力するWAVファイルのパス
