@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/*", "example/cli"]
+members = ["crates/*"]
 resolver = "2"
 
 [workspace.dependencies]
