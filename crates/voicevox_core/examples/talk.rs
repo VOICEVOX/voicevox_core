@@ -3,17 +3,16 @@ use std::fs;
 use anyhow::Context as _;
 use camino::Utf8PathBuf;
 use clap::Parser;
+use const_format::formatcp;
 use voicevox_core::blocking::{Onnxruntime, OpenJtalk, Synthesizer, VoiceModelFile};
 
-use const_format::formatcp;
-
-const VOICEXVOX_CORE_DIR: &str = "./voicevox_core";
+const VOICEVOX_CORE_DIR: &str = "./voicevox_core";
 const DEFAULT_ONNXRUNTIME: &str = formatcp!(
-    "{VOICEXVOX_CORE_DIR}/onnxruntime/lib/{}",
+    "{VOICEVOX_CORE_DIR}/onnxruntime/lib/{}",
     Onnxruntime::LIB_VERSIONED_FILENAME,
 );
-const DEFAULT_MODEL: &str = formatcp!("{VOICEXVOX_CORE_DIR}/models/vvms/0.vvm");
-const DEFAULT_DICT: &str = formatcp!("{VOICEXVOX_CORE_DIR}/dict/open_jtalk_dic_utf_8-1.11");
+const DEFAULT_MODEL: &str = formatcp!("{VOICEVOX_CORE_DIR}/models/vvms/0.vvm");
+const DEFAULT_DICT: &str = formatcp!("{VOICEVOX_CORE_DIR}/dict/open_jtalk_dic_utf_8-1.11");
 
 /// テキスト音声合成を行うサンプルコードです。
 ///
