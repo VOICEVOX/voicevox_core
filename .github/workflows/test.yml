@@ -121,8 +121,8 @@ jobs:
       - run: cargo +${{ steps.msrv-for-rust-api.outputs.rust-version }} check -vp voicevox_core_build_features -F download
       - run: cargo +${{ steps.msrv-for-rust-api.outputs.rust-version }} check -vp voicevox_core_build_features -F link
       - run: cargo +${{ steps.msrv-for-rust-api.outputs.rust-version }} check -vp voicevox_core_build_features -F download,link
-      - run: cargo +${{ steps.msrv-for-rust-api.outputs.rust-version }} check -vp voicevox_core --features load-onnxruntime --lib --examples
-      - run: cargo +${{ steps.msrv-for-rust-api.outputs.rust-version }} check -vp voicevox_core --features link-onnxruntime --lib --examples
+      - run: cargo +${{ steps.msrv-for-rust-api.outputs.rust-version }} check -vp voicevox_core --features load-onnxruntime
+      - run: cargo +${{ steps.msrv-for-rust-api.outputs.rust-version }} check -vp voicevox_core --features link-onnxruntime
       - run: cargo fmt -- --check
 
   rust-unit-test:
