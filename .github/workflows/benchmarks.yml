@@ -11,10 +11,15 @@ on:
       - Cargo.*
       - crates/voicevox_core/Cargo.toml
       - crates/voicevox_core/benches/simulation.rs
+      - crates/voicevox_core/build.rs
       - crates/voicevox_core/src/**
+      - crates/voicevox_core_build_features/Cargo.toml
+      - crates/voicevox_core_build_features/onnxruntime-libs.toml
+      - crates/voicevox_core_build_features/src/**
       - crates/voicevox_core_macros/Cargo.toml
       - crates/voicevox_core_macros/src/**
       - model/**
+      - onnxruntime-version.txt
       - rust-toolchain
   workflow_dispatch:
 

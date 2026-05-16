@@ -12,6 +12,7 @@ on:
       - crates/voicevox_core*/**
       - crates/xtask/**
       - docs/ghpages/**
+      - onnxruntime-version.txt
       - rust-toolchain
 defaults:
   run:
