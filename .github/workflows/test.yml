@@ -253,13 +253,13 @@ jobs:
         uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
         with:
           key: ${{ matrix.os }}
-      - name: Exampleを実行
+      - name: Run the example
         run: |
           # `./target/voicevox_core/downloads/onnxruntime` and `./crates/test_util/data` are created in the build time
           # shellcheck disable=SC2054
           target_and_features=(--example talk -F load-onnxruntime,buildtime-download-onnxruntime)
           cargo b "${target_and_features[@]}"
-          onnxruntime=$(find ../../target/voicevox_core/downloads/onnxruntime '(' -name onnxruntime.dll -o -name 'libonnxruntime.*' ')' -type f)
+          onnxruntime=$(find ./target/voicevox_core/downloads/onnxruntime '(' -name onnxruntime.dll -o -name 'libonnxruntime.*' ')' -type f)
           cargo r "${target_and_features[@]}" -- \
             --vvm ./crates/test_util/data/model/sample.vvm \
             --onnxruntime "$onnxruntime" \
