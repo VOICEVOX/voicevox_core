@@ -10,6 +10,10 @@ license.workspace = true
 features = ["load-onnxruntime", "link-onnxruntime"]
 rustdoc-args = ["--cfg", "docsrs"]
 
+[[example]]
+name = "talk"
+required-features = ["load-onnxruntime"] # TODO: 将来的には`link-onnxruntime`でも動くようにする
+
 [[bench]]
 name = "simulation"
 harness = false
@@ -77,6 +81,7 @@ uuid = { workspace = true, features = ["v4", "serde"] }
 voicevox_core_macros.workspace = true
 
 [dev-dependencies]
+clap = { workspace = true, features = ["derive"] }
 divan.workspace = true
 open.workspace = true
 pollster = { workspace = true, features = ["macro"] }

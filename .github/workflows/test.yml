@@ -113,9 +113,9 @@ jobs:
       - run: cargo clippy -vp voicevox_core_build_features -F download
       - run: cargo clippy -vp voicevox_core_build_features -F link
       - run: cargo clippy -vp voicevox_core_build_features -F download,link
-      - run: cargo clippy -v --features load-onnxruntime --tests -- -D clippy::all -D warnings --no-deps
+      - run: cargo clippy -v --features load-onnxruntime --all-targets -- -D clippy::all -D warnings --no-deps
       - run: cargo clippy -v --features load-onnxruntime -- -D clippy::all -D warnings --no-deps
-      - run: cargo clippy -v -p voicevox_core -p voicevox_core_c_api --features link-onnxruntime --tests -- -D clippy::all -D warnings --no-deps
+      - run: cargo clippy -v -p voicevox_core -p voicevox_core_c_api --features link-onnxruntime --all-targets -- -D clippy::all -D warnings --no-deps
       - run: cargo clippy -v -p voicevox_core -p voicevox_core_c_api --features link-onnxruntime -- -D clippy::all -D warnings --no-deps
       - run: cargo +${{ steps.msrv-for-rust-api.outputs.rust-version }} check -vp voicevox_core_build_features
       - run: cargo +${{ steps.msrv-for-rust-api.outputs.rust-version }} check -vp voicevox_core_build_features -F download
@@ -231,6 +231,41 @@ jobs:
         run: |
           cargo xtask update-c-header --verify
           git diff
+
+  build-and-test-rust-example:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+          - os: macos-latest
+          - os: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+      - name: Set up Rust
+        uses: ./.github/actions/rust-toolchain-from-file
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+        with:
+          key: ${{ matrix.os }}
+      - name: Run the example
+        run: |
+          # `./target/voicevox_core/downloads/onnxruntime` and `./crates/test_util/data` are created in the build time
+          # shellcheck disable=SC2054
+          target_and_features=(--example talk -F load-onnxruntime,buildtime-download-onnxruntime)
+          cargo b "${target_and_features[@]}"
+          onnxruntime=$(find ./target/voicevox_core/downloads/onnxruntime '(' -name onnxruntime.dll -o -name 'libonnxruntime.*' ')' -type f)
+          cargo r "${target_and_features[@]}" -- \
+            --vvm ./crates/test_util/data/model/sample.vvm \
+            --onnxruntime "$onnxruntime" \
+            --dict-dir ./crates/test_util/data/open_jtalk_dic_utf_8-1.11 \
+            --character dummy1 \
+            --style style1
 
   # TODO: "build-and-test-…"にする
   build-unix-cpp-example:
