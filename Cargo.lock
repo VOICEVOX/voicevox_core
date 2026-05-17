@@ -4967,6 +4967,7 @@ dependencies = [
  "blocking",
  "bytemuck",
  "camino",
+ "clap",
  "codspeed-divan-compat",
  "const_format",
  "derive-getters",
