@@ -82,6 +82,10 @@
 - \[C\] \[BREAKING\] `voicevox_synthesizer_load_voice_model`に引数`VoicevoxLoadVoiceModelOptions options`が追加されます ([#1337])。
 - \[Java\] \[BREAKING\] `Synthesizer#load_voice_model`がビルダースタイルになります ([#1337])。
 
+### Fixed
+
+- \[Python\] `Synthesizer.load_voice_model`のdocstringにおける"Parameters"の説明が誤っていたのが修正されます ([#1359])。
+
 ### Security
 
 - \[Rust,ダウンローダー\] 以下の脆弱性登録の影響を受けないようになります ([#1349], [#1350])。
@@ -1516,6 +1520,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1337]: https://github.com/VOICEVOX/voicevox_core/pull/1337
 [#1349]: https://github.com/VOICEVOX/voicevox_core/pull/1349
 [#1350]: https://github.com/VOICEVOX/voicevox_core/pull/1350
+[#1359]: https://github.com/VOICEVOX/voicevox_core/pull/1359
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
