@@ -27,6 +27,8 @@ async fn main() -> anyhow::Result<()> {
         ensure!(dic_dir.exists(), "`{dic_dir}` does not exist");
     }
 
+    locate_target_dir(out_dir)?;
+
     create_sample_voice_model_file(out_dir, dist)?;
 
     generate_example_data_json(dist.as_ref())?;
@@ -35,6 +37,17 @@ async fn main() -> anyhow::Result<()> {
     println!("cargo:rerun-if-changed=src/typing.rs");
 
     generate_c_api_rs_bindings(out_dir)
+}
+
+fn locate_target_dir(out_dir: &Utf8Path) -> anyhow::Result<()> {
+    let cargo_metadata::Metadata {
+        target_directory, ..
+    } = cargo_metadata::MetadataCommand::new()
+        .manifest_path(Path::new(env!("CARGO_MANIFEST_DIR")).join("Cargo.toml"))
+        .no_deps()
+        .exec()?;
+    fs_err::write(out_dir.join("target-dir"), target_directory.as_str())?;
+    Ok(())
 }
 
 fn create_sample_voice_model_file(out_dir: &Utf8Path, dist: &Utf8Path) -> anyhow::Result<()> {

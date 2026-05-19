@@ -36,19 +36,19 @@ pub const ONNXRUNTIME_DYLIB_PATH: &str = {
 
     cfg_select! {
         target_os = "windows" => concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/../../target/voicevox_core/downloads/onnxruntime/",
+            include_str!(concat!(env!("OUT_DIR"), "/target-dir")),
+            "/voicevox_core/downloads/onnxruntime/",
             "onnxruntime.dll",
         ),
         target_os = "linux" => concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/../../target/voicevox_core/downloads/onnxruntime/",
+            include_str!(concat!(env!("OUT_DIR"), "/target-dir")),
+            "/voicevox_core/downloads/onnxruntime/",
             "libonnxruntime.so.",
             version!(),
         ),
         target_os = "macos" => concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/../../target/voicevox_core/downloads/onnxruntime/",
+            include_str!(concat!(env!("OUT_DIR"), "/target-dir")),
+            "/voicevox_core/downloads/onnxruntime/",
             "libonnxruntime.",
             version!(),
             ".dylib",
