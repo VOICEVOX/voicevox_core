@@ -265,9 +265,9 @@ OnExistingVoiceModelId: TypeAlias = Literal["ERROR", "RELOAD", "SKIP"] | _Reserv
 ============= =============================================
 値            説明
 ``"ERROR"``   エラー。デフォルトのふるまい。
-``"RELOAD"``  再読み込みする。
-``"SKIP"``    スキップする。VOICEVOX
+``"RELOAD"``  再読み込みする。VOICEVOX
               COREでは、長文のテキストを一度に音声合成するとCPU/GPUメモリが大量に占有されたままになる。再読み込みを行うとメモリの使用量が元に戻る。
+``"SKIP"``    スキップする。
 ``_Reserved`` 将来のために予約されている値。この値が存在することは決してない。
               ``str`` のサブタイプであるため、 ``OnExistingVoiceModelId`` を ``str`` として
               扱うことは可能。
