@@ -17,7 +17,7 @@
 //!       "include-open-and-close-vvm": true,
 //!       "iterate-more": true
 //!     }' \
-//!   cargo bench -p voicevox_core --features load-onnxruntime --bench benches
+//!   cargo bench -p voicevox_core --features load-onnxruntime --bench walltime
 //! ```
 
 use std::{env, path::PathBuf, sync::LazyLock};

@@ -45,6 +45,8 @@ jobs:
   build-downloader:
     needs: config
     environment: ${{ inputs.code_signing && 'code_signing' || '' }} # コード署名用のenvironment
+    permissions:
+      contents: write
     strategy:
       matrix:
         include:
