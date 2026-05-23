@@ -13,6 +13,14 @@ if [ ! -v IOS_AARCH64_PATH ]; then # AARCH64用のモジュールのディレク
     echo "IOS_AARCH64_PATHが未定義です"
     exit 1
 fi
+if [ ! -v MACOS_ARM64_PATH ]; then # MACOS_ARM64用のモジュールのディレクトリ
+    echo "MACOS_ARM64_PATHが未定義です"
+    exit 1
+fi
+if [ ! -v MACOS_X64_PATH ]; then # MACOS_X64用のモジュールのディレクトリ
+    echo "MACOS_X64_PATHが未定義です"
+    exit 1
+fi
 if [ ! -v OUTPUT_ASSET_PATH ]; then # 出力するASSETのディレクトリ
     echo "OUTPUT_ASSET_PATHが未定義です"
     exit 1
@@ -37,43 +45,63 @@ fi
 echo "Original onnx dylib file name: $dylib_string"
 
 echo "* Copy Framework template"
-arches=("aarch64" "sim")
-artifacts=("${IOS_AARCH64_PATH}" "${IOS_AARCH64_SIM_PATH}")
-for i in "${!arches[@]}"; do
-    arch="${arches[$i]}"
+platforms=("ios" "sim" "macos")
+artifacts=("${IOS_AARCH64_PATH}" "${IOS_AARCH64_SIM_PATH}" "${MACOS_ARM64_PATH}")
+
+declare -a link_onnxruntime_platform=()
+# ONNXRUNTIMEのリンクが必要なプラットフォームを確認
+for i in "${!platforms[@]}"; do
+    platform="${platforms[$i]}"
     artifact="${artifacts[$i]}"
-    echo "* Copy Framework-${arch} template"
-    mkdir -p "Framework-${arch}/voicevox_core.framework/Headers"
-    cp -vr "crates/voicevox_core_c_api/xcframework/Frameworks/${arch}/" "Framework-${arch}/"
+    if grep -q -e '^#define VOICEVOX_LINK_ONNXRUNTIME$' -e '^//#define VOICEVOX_LOAD_ONNXRUNTIME$' "${artifact}/include/voicevox_core.h"; then
+        link_onnxruntime_platform+=("${platform}")
+    fi
+done
+
+for i in "${!platforms[@]}"; do
+    platform="${platforms[$i]}"
+    artifact="${artifacts[$i]}"
+    echo "* Copy Framework-${platform} template"
+    mkdir -p "Framework-${platform}/voicevox_core.framework/Headers"
+    cp -vr "crates/voicevox_core_c_api/xcframework/Frameworks/${platform}/" "Framework-${platform}/"
     cp -v "${artifact}/include/voicevox_core.h" \
-        "Framework-${arch}/voicevox_core.framework/Headers/voicevox_core.h"
+        "Framework-${platform}/voicevox_core.framework/Headers/voicevox_core.h"
 done
 
 echo "* Create dylib"
-# aarch64はdylibをコピー
+# iosはdylibをコピー
 cp -v "${IOS_AARCH64_PATH}/lib/libvoicevox_core.dylib" \
-    "Framework-aarch64/voicevox_core.framework/voicevox_core"
+    "Framework-ios/voicevox_core.framework/voicevox_core"
 
 # simはx86_64とarrch64を合わせてdylib作成
 lipo -create "${IOS_X86_64_PATH}/lib/libvoicevox_core.dylib" \
     "${IOS_AARCH64_SIM_PATH}/lib/libvoicevox_core.dylib" \
     -output "Framework-sim/voicevox_core.framework/voicevox_core"
 
-for arch in "${arches[@]}"; do
-    echo "* Change ${arch} @rpath"
+# macosはx64とarrch64を合わせてdylib作成
+lipo -create "${MACOS_X64_PATH}/lib/libvoicevox_core.dylib" \
+    "${MACOS_ARM64_PATH}/lib/libvoicevox_core.dylib" \
+    -output "Framework-macos/voicevox_core.framework/voicevox_core"
+
+for platform in "${platforms[@]}"; do
+    echo "* Change ${platform} @rpath"
     # 自身への@rpathを変更
     install_name_tool -id "@rpath/voicevox_core.framework/voicevox_core" \
-        "Framework-${arch}/voicevox_core.framework/voicevox_core"
+        "Framework-${platform}/voicevox_core.framework/voicevox_core"
+done
 
+for platform in "${link_onnxruntime_platform[@]}"; do
+    echo "* Change ${platform} onnxruntime @rpath"
     # onnxruntimeへの@rpathを、voicevox_onnxruntimeのXCFrameworkに変更
     install_name_tool -change "@rpath/$dylib_string" \
         "@rpath/voicevox_onnxruntime.framework/voicevox_onnxruntime" \
-        "Framework-${arch}/voicevox_core.framework/voicevox_core"
+        "Framework-${platform}/voicevox_core.framework/voicevox_core"
 done
 
 echo "* Create XCFramework"
 mkdir -p "${OUTPUT_ASSET_PATH}"
 xcodebuild -create-xcframework \
     -framework "Framework-sim/voicevox_core.framework" \
-    -framework "Framework-aarch64/voicevox_core.framework" \
+    -framework "Framework-ios/voicevox_core.framework" \
+    -framework "Framework-macos/voicevox_core.framework" \
     -output "${OUTPUT_ASSET_PATH}/voicevox_core.xcframework"
