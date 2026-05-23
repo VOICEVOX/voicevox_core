@@ -98,6 +98,23 @@ for platform in "${link_onnxruntime_platform[@]}"; do
         "Framework-${platform}/voicevox_core.framework/voicevox_core"
 done
 
+echo "* Restructure macOS Framework to versioned format"
+# macOSのFrameworkはxcodebuild -create-xcframeworkに渡す際にVersioned directory構造が必要
+framework_dir="Framework-macos/voicevox_core.framework"
+mkdir -p "${framework_dir}/Versions/A/Resources"
+mkdir -p "${framework_dir}/Versions/A/Headers"
+mkdir -p "${framework_dir}/Versions/A/Modules"
+mv "${framework_dir}/voicevox_core" "${framework_dir}/Versions/A/voicevox_core"
+mv "${framework_dir}/Headers/voicevox_core.h" "${framework_dir}/Versions/A/Headers/voicevox_core.h"
+mv "${framework_dir}/Info.plist" "${framework_dir}/Versions/A/Resources/Info.plist"
+mv "${framework_dir}/Modules/module.modulemap" "${framework_dir}/Versions/A/Modules/module.modulemap"
+rm -rf "${framework_dir}/Headers" "${framework_dir}/Modules"
+ln -sf A "${framework_dir}/Versions/Current"
+ln -sf Versions/Current/voicevox_core "${framework_dir}/voicevox_core"
+ln -sf Versions/Current/Resources "${framework_dir}/Resources"
+ln -sf Versions/Current/Headers "${framework_dir}/Headers"
+ln -sf Versions/Current/Modules "${framework_dir}/Modules"
+
 echo "* Create XCFramework"
 mkdir -p "${OUTPUT_ASSET_PATH}"
 xcodebuild -create-xcframework \
