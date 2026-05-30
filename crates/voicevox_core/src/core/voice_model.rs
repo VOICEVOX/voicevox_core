@@ -528,14 +528,8 @@ impl InferenceDomainMap<ManifestDomains> {
             frame_decode,
         } = self;
 
-        // `StyleType::Talk`は`TalkDomain`と`ExperimentalTalkDomain`の二つに対応する
-        assert_eq!(
-            TalkDomain::style_types(),
-            ExperimentalTalkDomain::style_types(),
-        );
-
-        return TalkDomain::contains(style_type)
-            .implies(|| talk.is_some() || experimental_talk.is_some())
+        return TalkDomain::contains(style_type).implies(|| talk.is_some())
+            && ExperimentalTalkDomain::contains(style_type).implies(|| experimental_talk.is_some())
             && SingingTeacherDomain::contains(style_type).implies(|| singing_teacher.is_some())
             && FrameDecodeDomain::contains(style_type).implies(|| frame_decode.is_some());
 
