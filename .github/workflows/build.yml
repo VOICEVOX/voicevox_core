@@ -394,13 +394,11 @@ jobs:
       MACOS_X64_PATH: artifact/voicevox_core-x86_64-apple-darwin
     strategy:
       matrix:
-        ASSET_NAME: ["voicevox_core-xcframework-cpu-${{ needs.config.outputs.version }}", "voicevox_core-ios-xcframework-cpu-${{ needs.config.outputs.version }}"]
-        OUTPUT_ASSET_PATH: ["artifact/voicevox_core-xcframework-cpu", "artifact/voicevox_core-ios-xcframework-cpu"]
-        exclude:
-          - ASSET_NAME: voicevox_core-xcframework-cpu-${{ needs.config.outputs.version }}
-            OUTPUT_ASSET_PATH: artifact/voicevox_core-ios-xcframework-cpu
-          - ASSET_NAME: voicevox_core-ios-xcframework-cpu-${{ needs.config.outputs.version }}
-            OUTPUT_ASSET_PATH: artifact/voicevox_core-xcframework-cpu
+        include:
+          - asset-name: "voicevox_core-xcframework-cpu-${{ needs.config.outputs.version }}"
+            output-asset-path: "artifact/voicevox_core-xcframework-cpu"
+          - asset-name: "voicevox_core-ios-xcframework-cpu-${{ needs.config.outputs.version }}"
+            output-asset-path: "artifact/voicevox_core-ios-xcframework-cpu"
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
       - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
@@ -426,23 +424,23 @@ jobs:
       - name: Create xcframework
         id: create-xcframework
         run: |
-          case ${{ matrix.ASSET_NAME }} in
+          case ${{ matrix.asset-name }} in
             voicevox_core-xcframework-cpu-*) build_util/make_xcframework.bash ;;
             voicevox_core-ios-xcframework-cpu-*) build_util/make_ios_xcframework.bash ;;
           esac
           echo "output_asset_path=${OUTPUT_ASSET_PATH}" >> "$GITHUB_OUTPUT"
         env:
-          OUTPUT_ASSET_PATH: ${{ matrix.OUTPUT_ASSET_PATH }}
+          OUTPUT_ASSET_PATH: ${{ matrix.output-asset-path }}
       - name: Archive artifact
         run: |
           cd ${{ steps.create-xcframework.outputs.output_asset_path }}
-          7z a "../../${{ matrix.ASSET_NAME }}.zip" "voicevox_core.xcframework"
+          7z a "../../${{ matrix.asset-name }}.zip" "voicevox_core.xcframework"
       - name: Upload to Release
         if: needs.config.outputs.mode == 'draft-release'
         uses: ./.github/actions/upload-gh-release-assets
         with:
           upload-url: ${{ fromJson(needs.create_draft_release.outputs.release).upload_url }}
-          files: ${{ matrix.ASSET_NAME }}.zip
+          files: ${{ matrix.asset-name }}.zip
 
   build_java_package:
     runs-on: ubuntu-latest
