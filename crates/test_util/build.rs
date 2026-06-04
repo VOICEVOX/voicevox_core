@@ -34,7 +34,10 @@ async fn main() -> anyhow::Result<()> {
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=src/typing.rs");
 
-    generate_c_api_rs_bindings(out_dir)
+    #[cfg(feature = "c-api")]
+    generate_c_api_rs_bindings(out_dir)?;
+
+    Ok(())
 }
 
 fn create_sample_voice_model_file(out_dir: &Utf8Path, dist: &Utf8Path) -> anyhow::Result<()> {
@@ -83,7 +86,9 @@ fn create_sample_voice_model_file(out_dir: &Utf8Path, dist: &Utf8Path) -> anyhow
         formatdoc! {"
             pub const SAMPLE_VOICE_MODEL_FILE_PATH: &::std::primitive::str = {output_file:?};
 
+            #[cfg(feature = \"c-api\")]
             const SAMPLE_VOICE_MODEL_FILE_C_PATH: &::std::ffi::CStr = c{output_file:?};
+            #[cfg(feature = \"c-api\")]
             const VV_MODELS_ROOT_DIR: &::std::primitive::str = {output_dir:?};
             ",
         },
@@ -209,6 +214,7 @@ fn generate_example_data_json(dist: &Path) -> anyhow::Result<()> {
     Ok(())
 }
 
+#[cfg(feature = "c-api")]
 fn generate_c_api_rs_bindings(out_dir: &Utf8Path) -> anyhow::Result<()> {
     static C_BINDINGS_PATH: &str = "../voicevox_core_c_api/include/voicevox_core.h";
     static ADDITIONAL_C_BINDINGS_PATH: &str = "./compatible_engine.h";
