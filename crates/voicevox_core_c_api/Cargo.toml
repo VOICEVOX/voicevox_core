@@ -61,7 +61,7 @@ regex.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_with.workspace = true
 tempfile.workspace = true
-test_util.workspace = true
+test_util = { workspace = true, features = ["c-api"] }
 toml.workspace = true
 typetag.workspace = true
 

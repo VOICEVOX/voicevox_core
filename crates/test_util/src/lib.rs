@@ -13,6 +13,7 @@ include!(concat!(env!("OUT_DIR"), "/sample_voice_model_file.rs"));
     reason = "bindgenが生成するコードのため。`#[expect]`ではなく`#[allow]`なのは、bindgenが生成\
               するコードがOSにより変わるため"
 )]
+#[cfg(feature = "c-api")]
 pub mod c_api {
     include!(concat!(env!("OUT_DIR"), "/c_api.rs"));
 
