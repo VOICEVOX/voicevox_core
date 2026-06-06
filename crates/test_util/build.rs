@@ -27,7 +27,9 @@ async fn main() -> anyhow::Result<()> {
         ensure!(dic_dir.exists(), "`{dic_dir}` does not exist");
     }
 
-    locate_target_dir(out_dir)?;
+    let target_directory = &locate_target_dir(out_dir)?;
+
+    copy_onnxruntime(target_directory, dist)?;
 
     create_sample_voice_model_file(out_dir, dist)?;
 
@@ -42,7 +44,8 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn locate_target_dir(out_dir: &Utf8Path) -> anyhow::Result<()> {
+/// `cargo metadata`から`target_directory`を得て、`$OUT_DIR`に書き込む。
+fn locate_target_dir(out_dir: &Utf8Path) -> anyhow::Result<Utf8PathBuf> {
     let cargo_metadata::Metadata {
         target_directory, ..
     } = cargo_metadata::MetadataCommand::new()
@@ -50,6 +53,30 @@ fn locate_target_dir(out_dir: &Utf8Path) -> anyhow::Result<()> {
         .no_deps()
         .exec()?;
     fs_err::write(out_dir.join("target-dir"), target_directory.as_str())?;
+    Ok(target_directory)
+}
+
+fn copy_onnxruntime(target_directory: &Utf8Path, dist: &Utf8Path) -> anyhow::Result<()> {
+    use std::env::consts::{DLL_PREFIX, DLL_SUFFIX};
+
+    const VERSION: &str = include_str!("../voicevox_core/onnxruntime-version.txt");
+    let filename = &if cfg!(target_os = "linux") {
+        format!("libonnxruntime.so.{VERSION}")
+    } else if cfg!(any(target_os = "macos", target_os = "ios")) {
+        format!("libonnxruntime.{VERSION}.dylib")
+    } else {
+        format!("{DLL_PREFIX}onnxruntime{DLL_SUFFIX}")
+    };
+    let src = &target_directory
+        .join("voicevox_core")
+        .join("downloads")
+        .join("onnxruntime")
+        .join(filename);
+    let dst_dir = &dist.join("lib");
+    let dst = &dst_dir.join(filename);
+    fs_err::create_dir_all(dst_dir)?;
+    fs_err::copy(src, dst)?;
+    println!("cargo:rerun-if-changed={src}");
     Ok(())
 }
 
