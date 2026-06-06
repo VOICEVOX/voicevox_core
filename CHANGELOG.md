@@ -5,26 +5,6 @@
 ## [Unreleased]
 
 <!--
-### macOSのXCFramework追加
-
-- \[C\] \[macOS\] :tada: GitHub ReleasesのXCFrameworkが、macOS向けのライブラリも同梱するようになります ([#1056] helped by [@nekomimimi])。
-
-    ```diff
-    -voicevox_core-ios-xcframework-cpu-{バージョン}.zip
-    +voicevox_core-xcframework-cpu-{バージョン}.zip
-     └── voicevox_core.xcframework
-         ├── Info.plist
-    +    ├── macos-arm64_x86_64/
-         ├── ios-arm64/
-         └── ios-arm64_x86_64-simulator/
-    ```
-
-    Changedの章で後述する通り、リリースの名前は変わります。
-
-- \[C\] \[macOS\] GitHub Releasesにおいてvoicevox\_core-**ios**-xcframework-cpu-{バージョン}.zipは、macOS版XCFrameworkの提供に伴ってvoicevox\_core-xcframework-cpu-{バージョン}.zipに改名されます ([#1056] helped by [@nekomimimi])。
-
-[#1056]: https://github.com/VOICEVOX/voicevox_core/pull/1056
-
 ### ストリーミングAPI
 
 - split decoder into spectrogram and vocoder without changing API ([#851])
@@ -56,6 +36,10 @@
 ### Added
 
 - `Synthesizer::load_voice_model`にオプション`on_existing`が追加されます ([#1331], [#1337])。
+- \[Rust\] \[Linux\] APIドキュメントが改善されます ([#1343])。
+    - muslターゲットでは`load-onnxruntime`が事実上利用不可であることが明記されます。
+- \[C\] \[macOS\] :tada: macOS向けのXCFrameworkがvoicevox\_core-xcframework-cpu-{バージョン}.zipという名前でリリースされるようになります ([#1056] helped by [@nekomimimi], [#1114], [#1362])。
+- \[C,ダウンローダー\] \[macOS\] リリースがコード署名されるようになります ([#1326])。
 - \[ダウンローダー\] `--os`オプションで`android`と`ios`を指定できるようになります。ただしiOSの`c-api`をダウンロードすることはできません ([#1313])。
 - \[ダウンローダー\] 環境変数`VV_DOWNLOADER_C_API_ALLOW_DRAFT`を設定することで、`c-api`のdraft releaseを`--c-api-version`で指定できるようになります。主な用途はこのvoicevox\_coreリポジトリでの内部利用です ([#1315])。
 
@@ -1426,6 +1410,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1048]: https://github.com/VOICEVOX/voicevox_core/pull/1048
 [#1049]: https://github.com/VOICEVOX/voicevox_core/pull/1049
 [#1055]: https://github.com/VOICEVOX/voicevox_core/pull/1055
+[#1056]: https://github.com/VOICEVOX/voicevox_core/pull/1056
 [#1057]: https://github.com/VOICEVOX/voicevox_core/pull/1057
 [#1058]: https://github.com/VOICEVOX/voicevox_core/pull/1058
 [#1060]: https://github.com/VOICEVOX/voicevox_core/pull/1060
@@ -1446,6 +1431,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1108]: https://github.com/VOICEVOX/voicevox_core/pull/1108
 [#1109]: https://github.com/VOICEVOX/voicevox_core/pull/1109
 [#1111]: https://github.com/VOICEVOX/voicevox_core/pull/1111
+[#1114]: https://github.com/VOICEVOX/voicevox_core/pull/1114
 [#1116]: https://github.com/VOICEVOX/voicevox_core/pull/1116
 [#1117]: https://github.com/VOICEVOX/voicevox_core/pull/1117
 [#1118]: https://github.com/VOICEVOX/voicevox_core/pull/1118
@@ -1516,11 +1502,14 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1313]: https://github.com/VOICEVOX/voicevox_core/pull/1313
 [#1315]: https://github.com/VOICEVOX/voicevox_core/pull/1315
 [#1323]: https://github.com/VOICEVOX/voicevox_core/pull/1323
+[#1326]: https://github.com/VOICEVOX/voicevox_core/pull/1326
 [#1331]: https://github.com/VOICEVOX/voicevox_core/pull/1331
 [#1337]: https://github.com/VOICEVOX/voicevox_core/pull/1337
+[#1343]: https://github.com/VOICEVOX/voicevox_core/pull/1343
 [#1349]: https://github.com/VOICEVOX/voicevox_core/pull/1349
 [#1350]: https://github.com/VOICEVOX/voicevox_core/pull/1350
 [#1359]: https://github.com/VOICEVOX/voicevox_core/pull/1359
+[#1362]: https://github.com/VOICEVOX/voicevox_core/pull/1362
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 

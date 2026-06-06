@@ -352,7 +352,7 @@ jobs:
           APPLE_P12_BASE64: ${{ secrets.APPLE_P12_BASE64 }}
           APPLE_P12_PASSWORD: ${{ secrets.APPLE_P12_PASSWORD }}
       - name: Upload artifact to build XCFramework
-        if: matrix.c_release_format == 'ios-xcframework'
+        if: matrix.artifact_name == 'osx-arm64' || matrix.artifact_name == 'osx-x64' || matrix.c_release_format == 'ios-xcframework'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: voicevox_core-${{ matrix.target }}
@@ -390,7 +390,15 @@ jobs:
       IOS_X86_64_PATH: artifact/voicevox_core-x86_64-apple-ios
       IOS_AARCH64_SIM_PATH: artifact/voicevox_core-aarch64-apple-ios-sim
       IOS_AARCH64_PATH: artifact/voicevox_core-aarch64-apple-ios
-      ASSET_NAME: voicevox_core-ios-xcframework-cpu-${{ needs.config.outputs.version }}
+      MACOS_ARM64_PATH: artifact/voicevox_core-aarch64-apple-darwin
+      MACOS_X64_PATH: artifact/voicevox_core-x86_64-apple-darwin
+    strategy:
+      matrix:
+        include:
+          - asset-name: "voicevox_core-xcframework-cpu-${{ needs.config.outputs.version }}"
+            output-asset-path: "artifact/voicevox_core-xcframework-cpu"
+          - asset-name: "voicevox_core-ios-xcframework-cpu-${{ needs.config.outputs.version }}"
+            output-asset-path: "artifact/voicevox_core-ios-xcframework-cpu"
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
       - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
@@ -405,23 +413,34 @@ jobs:
         with:
           name: voicevox_core-aarch64-apple-ios
           path: ${{ env.IOS_AARCH64_PATH }}
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        with:
+          name: voicevox_core-aarch64-apple-darwin
+          path: ${{ env.MACOS_ARM64_PATH }}
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        with:
+          name: voicevox_core-x86_64-apple-darwin
+          path: ${{ env.MACOS_X64_PATH }}
       - name: Create xcframework
         id: create-xcframework
         run: |
-          build_util/make_ios_xcframework.bash
+          case ${{ matrix.asset-name }} in
+            voicevox_core-xcframework-cpu-*) build_util/make_xcframework.bash ;;
+            voicevox_core-ios-xcframework-cpu-*) build_util/make_ios_xcframework.bash ;;
+          esac
           echo "output_asset_path=${OUTPUT_ASSET_PATH}" >> "$GITHUB_OUTPUT"
         env:
-          OUTPUT_ASSET_PATH: artifact/voicevox_core-ios-xcframework-cpu
+          OUTPUT_ASSET_PATH: ${{ matrix.output-asset-path }}
       - name: Archive artifact
         run: |
           cd ${{ steps.create-xcframework.outputs.output_asset_path }}
-          7z a "../../${{ env.ASSET_NAME }}.zip" "voicevox_core.xcframework"
+          7z a "../../${{ matrix.asset-name }}.zip" "voicevox_core.xcframework"
       - name: Upload to Release
         if: needs.config.outputs.mode == 'draft-release'
         uses: ./.github/actions/upload-gh-release-assets
         with:
           upload-url: ${{ fromJson(needs.create_draft_release.outputs.release).upload_url }}
-          files: ${{ env.ASSET_NAME }}.zip
+          files: ${{ matrix.asset-name }}.zip
 
   build_java_package:
     runs-on: ubuntu-latest

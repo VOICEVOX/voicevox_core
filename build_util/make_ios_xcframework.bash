@@ -37,7 +37,7 @@ fi
 echo "Original onnx dylib file name: $dylib_string"
 
 echo "* Copy Framework template"
-arches=("aarch64" "sim")
+arches=("ios" "sim")
 artifacts=("${IOS_AARCH64_PATH}" "${IOS_AARCH64_SIM_PATH}")
 for i in "${!arches[@]}"; do
     arch="${arches[$i]}"
@@ -50,9 +50,9 @@ for i in "${!arches[@]}"; do
 done
 
 echo "* Create dylib"
-# aarch64はdylibをコピー
+# iosはdylibをコピー
 cp -v "${IOS_AARCH64_PATH}/lib/libvoicevox_core.dylib" \
-    "Framework-aarch64/voicevox_core.framework/voicevox_core"
+    "Framework-ios/voicevox_core.framework/voicevox_core"
 
 # simはx86_64とarrch64を合わせてdylib作成
 lipo -create "${IOS_X86_64_PATH}/lib/libvoicevox_core.dylib" \
@@ -75,5 +75,5 @@ echo "* Create XCFramework"
 mkdir -p "${OUTPUT_ASSET_PATH}"
 xcodebuild -create-xcframework \
     -framework "Framework-sim/voicevox_core.framework" \
-    -framework "Framework-aarch64/voicevox_core.framework" \
+    -framework "Framework-ios/voicevox_core.framework" \
     -output "${OUTPUT_ASSET_PATH}/voicevox_core.xcframework"

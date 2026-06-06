@@ -4,6 +4,10 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 
+[features]
+default = []
+c-api = ["dep:bindgen"]
+
 [dependencies]
 libloading.workspace = true
 serde = { workspace = true, features = ["derive"] }
@@ -12,7 +16,7 @@ serde_json.workspace = true
 [build-dependencies]
 anyhow.workspace = true
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
-bindgen.workspace = true
+bindgen = { workspace = true, optional = true }
 camino.workspace = true
 flate2.workspace = true
 fs-err.workspace = true
