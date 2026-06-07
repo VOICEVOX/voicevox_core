@@ -26,6 +26,7 @@
     "styles": [
       {
         "name": "style3-1",
+        "type": "streaming_talk",
         "id": 302
       },
       {
