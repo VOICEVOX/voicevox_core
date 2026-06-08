@@ -70,7 +70,8 @@ x : UUID
 """
 
 StyleType: TypeAlias = (
-    Literal["talk", "singing_teacher", "frame_decode", "sing"] | _Reserved
+    Literal["talk", "singing_teacher", "frame_decode", "sing", "streaming_talk"]
+    | _Reserved
 )
 """
 
@@ -85,6 +86,8 @@ StyleType: TypeAlias = (
 ``"singing_teacher"`` 歌唱音声合成用のクエリの作成が可能。
 ``"frame_decode"``    歌唱音声合成が可能。
 ``"sing"``            歌唱音声合成用のクエリの作成と歌唱音声合成が可能。
+``"streaming_talk"``  音声合成クエリの作成と通常ないしストリーミングでの音声合成が可能。
+                      ``"talk"`` スタイルの機能を包含する。
 ``_Reserved``         将来のために予約されている値。この値が存在することは決してない。
                       ``str`` のサブタイプであるため、 ``StyleType`` を ``str`` として
                       扱うことは可能。
@@ -104,6 +107,8 @@ StyleType: TypeAlias = (
                 return 2
             case "sing":
                 return 3
+            case "streaming_talk":
+                return 4
 
 .. code-block:: text
 
