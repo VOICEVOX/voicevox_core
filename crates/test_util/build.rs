@@ -27,6 +27,8 @@ async fn main() -> anyhow::Result<()> {
         ensure!(dic_dir.exists(), "`{dic_dir}` does not exist");
     }
 
+    build_features::download::download(false)?;
+
     create_sample_voice_model_file(out_dir, dist)?;
 
     generate_example_data_json(dist.as_ref())?;
