@@ -4394,6 +4394,7 @@ dependencies = [
  "serde_json",
  "tar",
  "tokio",
+ "voicevox_core_build_features",
  "zip",
 ]
 
@@ -5045,7 +5046,6 @@ dependencies = [
  "typed_floats",
  "typeshare",
  "uuid",
- "voicevox_core",
  "voicevox_core_build_features",
  "voicevox_core_macros",
  "windows",

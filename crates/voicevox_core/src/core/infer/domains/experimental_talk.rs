@@ -18,7 +18,7 @@ impl InferenceDomain for ExperimentalTalkDomain {
 
     fn style_types() -> &'static BTreeSet<StyleType> {
         static STYLE_TYPES: LazyLock<BTreeSet<StyleType>> =
-            LazyLock::new(|| [StyleType::Talk].into());
+            LazyLock::new(|| [StyleType::StreamingTalk].into());
         &STYLE_TYPES
     }
 }

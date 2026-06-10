@@ -14,12 +14,16 @@
 - feat!: `render`の引数の範囲指定部分を各言語の慣習に合わせる ([#879])
 - feat!: decode.onnxを復活させる ([#918])
 - [#1319]
+- [#1363]
+- [#1364]
 
 [#854]: https://github.com/VOICEVOX/voicevox_core/pull/854
 [#864]: https://github.com/VOICEVOX/voicevox_core/pull/864
 [#867]: https://github.com/VOICEVOX/voicevox_core/pull/867
 [#879]: https://github.com/VOICEVOX/voicevox_core/pull/879
 [#1319]: https://github.com/VOICEVOX/voicevox_core/pull/1319
+[#1363]: https://github.com/VOICEVOX/voicevox_core/pull/1363
+[#1364]: https://github.com/VOICEVOX/voicevox_core/pull/1364
 
 ### もし`TextAnalyzer`機能を充実させた場合
 

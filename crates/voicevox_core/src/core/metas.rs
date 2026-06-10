@@ -229,6 +229,16 @@ pub enum StyleType {
     ///
     /// [Serde]: serde
     Sing,
+
+    /// 音声合成クエリの作成と通常ないしストリーミングでの音声合成が可能。
+    /// Talkスタイルの機能を包含する。
+    ///
+    /// # Serde
+    ///
+    /// [Serde]においては`"streaming_talk"`という値で表される。
+    ///
+    /// [Serde]: serde
+    StreamingTalk,
 }
 
 #[cfg(test)]

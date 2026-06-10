@@ -652,7 +652,7 @@ mod tests {
             manifest: serde_json::from_str(&format!(
                 r#"
                 {{
-                  "vvm_format_version": 1,
+                  "vvm_format_version": 2,
                   "id": "{model_id}",
                   "metas_filename": "metas.json",
                   "talk": {{

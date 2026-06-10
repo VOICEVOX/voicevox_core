@@ -314,13 +314,9 @@ jobs:
           (cd crates/voicevox_core_python_api && poetry install --with dev)
           maturin build --manifest-path ./crates/voicevox_core_python_api/Cargo.toml --target ${{ matrix.target }} --release
           echo "whl=$(find ./target/wheels -type f)" >> "$GITHUB_OUTPUT"
-        env:
-          VVCORE_BUILD_DOWNLOAD_AND_COPY_ORT: '0'
       - name: build voicevox_core_java_api
         if: ${{ matrix.java }}
         run: cargo build -p voicevox_core_java_api -vv --target ${{ matrix.target }} --release
-        env:
-          VVCORE_BUILD_DOWNLOAD_AND_COPY_ORT: '0'
       - name: Organize artifact
         run: |
           mkdir -p artifact/${{ env.ASSET_NAME }}/{include,lib}

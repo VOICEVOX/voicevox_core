@@ -16,8 +16,15 @@ mod typing;
 
 const DIC_DIR_NAME: &str = "open_jtalk_dic_utf_8-1.11";
 
+fn main() -> anyhow::Result<()> {
+    // Tokio内で`reqwest::blocking`を使ったらどうやら駄目らしいので、これだけTokioの外で実行
+    build_features::download::download(false)?;
+
+    run()
+}
+
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
+async fn run() -> anyhow::Result<()> {
     let out_dir = &Utf8PathBuf::from(env::var("OUT_DIR").unwrap());
     let dist = &Utf8Path::new(env!("CARGO_MANIFEST_DIR")).join("data");
 
@@ -157,21 +164,15 @@ async fn download_open_jtalk_dict(dist: &Path) -> anyhow::Result<()> {
 /// テストデータのJSONを生成する。
 fn generate_example_data_json(dist: &Path) -> anyhow::Result<()> {
     let test_data = typing::ExampleData {
-        speaker_id: 0,
+        speaker_id: 302,
 
         duration: typing::DurationExampleData {
             length: 8,
             // 「t e s u t o」
             phoneme_vector: vec![0, 37, 14, 35, 6, 37, 30, 0],
             result: vec![
-                0.9537022,
-                0.046877652,
-                0.11338878,
-                0.06429571,
-                0.07507616,
-                0.08266081,
-                0.1571679,
-                0.64980185,
+                1.0721042, 0.05080147, 0.08940573, 0.06695838, 0.07986893, 0.08634156, 0.1639113,
+                1.33015,
             ],
         },
         intonation: typing::IntonationExampleData {

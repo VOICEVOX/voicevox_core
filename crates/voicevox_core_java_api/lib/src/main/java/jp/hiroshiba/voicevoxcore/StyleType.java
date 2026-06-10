@@ -23,6 +23,9 @@ public class StyleType {
   /** 歌唱音声合成用のクエリの作成と歌唱音声合成が可能。 */
   public static final StyleType SING = new StyleType("sing");
 
+  /** 音声合成クエリの作成と通常ないしストリーミングでの音声合成が可能。{@link StyleType#TALK}スタイルの機能を包含する。 */
+  public static final StyleType STREAMING_TALK = new StyleType("streaming_talk");
+
   public static final class Serializer implements JsonSerializer<StyleType> {
     @Override
     public JsonElement serialize(StyleType src, Type typeOfSrc, JsonSerializationContext context) {
@@ -44,11 +47,13 @@ public class StyleType {
           return FRAME_DECODE;
         case "sing":
           return SING;
+        case "streaming_talk":
+          return STREAMING_TALK;
         default:
           throw new JsonParseException(
               String.format(
                   "Invalid variant: `%s`, expected one of "
-                      + "`talk`, `singing_teacher`, `frame_decode`, `sing`",
+                      + "`talk`, `singing_teacher`, `frame_decode`, `sing`, `streaming_talk`",
                   value));
       }
     }

@@ -19,9 +19,9 @@ use super::infer::{
 };
 
 #[derive(Clone, Debug)]
-struct FormatVersionV1;
+struct FormatVersionV2;
 
-impl<'de> Deserialize<'de> for FormatVersionV1 {
+impl<'de> Deserialize<'de> for FormatVersionV2 {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -31,7 +31,7 @@ impl<'de> Deserialize<'de> for FormatVersionV1 {
         struct Visitor;
 
         impl de::Visitor<'_> for Visitor {
-            type Value = FormatVersionV1;
+            type Value = FormatVersionV2;
 
             fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
                 formatter.write_str("an unsigned integer")
@@ -42,7 +42,11 @@ impl<'de> Deserialize<'de> for FormatVersionV1 {
                 E: de::Error,
             {
                 match v {
-                    1 => Ok(FormatVersionV1),
+                    1 => Err(E::custom(
+                        "廃止された形式です（`vvm_format_version=1`）。古いバージョンのVOICEVOX \
+                        COREであれば対応しているかもしれません",
+                    )),
+                    2 => Ok(FormatVersionV2),
                     v => Err(E::custom(format!(
                         "未知の形式です（`vvm_format_version={v}`）。新しいバージョンのVOICEVOX \
                          COREであれば対応しているかもしれません",
@@ -74,7 +78,7 @@ impl Display for InnerVoiceId {
 #[derive(Debug, Deserialize, Getters)]
 pub struct Manifest {
     #[expect(dead_code, reason = "現状はバリデーションのためだけに存在")]
-    vvm_format_version: FormatVersionV1,
+    vvm_format_version: FormatVersionV2,
     pub(super) id: VoiceModelId,
     metas_filename: String,
     #[serde(flatten)]
@@ -133,17 +137,17 @@ mod tests {
     use rstest::rstest;
     use serde::Deserialize;
 
-    use super::FormatVersionV1;
+    use super::FormatVersionV2;
 
     #[rstest]
-    #[case("{\"vvm_format_version\":1}", Ok(()))]
     #[case(
-        "{\"vvm_format_version\":2}",
+        "{\"vvm_format_version\":1}",
         Err(
-            "未知の形式です（`vvm_format_version=2`）。新しいバージョンのVOICEVOX COREであれば対応\
-             しているかもしれません at line 1 column 23",
+            "廃止された形式です（`vvm_format_version=1`）。古いバージョンのVOICEVOX \
+             COREであれば対応しているかもしれません at line 1 column 23",
         )
     )]
+    #[case("{\"vvm_format_version\":2}", Ok(()))]
     fn vvm_format_version_works(
         #[case] input: &str,
         #[case] expected: Result<(), &str>,
@@ -156,7 +160,7 @@ mod tests {
         #[derive(Deserialize)]
         struct ManifestPart {
             #[expect(dead_code, reason = "バリデーションのためだけに存在")]
-            vvm_format_version: FormatVersionV1,
+            vvm_format_version: FormatVersionV2,
         }
     }
 }
