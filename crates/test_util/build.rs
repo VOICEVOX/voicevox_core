@@ -18,13 +18,13 @@ const DIC_DIR_NAME: &str = "open_jtalk_dic_utf_8-1.11";
 
 fn main() -> anyhow::Result<()> {
     // Tokio内で`reqwest::blocking`を使ったらどうやら駄目らしいので、これだけTokioの外で実行
-    build_features::download::download(false)?;
+    let onnxruntime_path = &build_features::download::download(false)?;
 
-    run()
+    run(onnxruntime_path)
 }
 
 #[tokio::main]
-async fn run() -> anyhow::Result<()> {
+async fn run(onnxruntime_path: &Utf8Path) -> anyhow::Result<()> {
     let out_dir = &Utf8PathBuf::from(env::var("OUT_DIR").unwrap());
     let dist = &Utf8Path::new(env!("CARGO_MANIFEST_DIR")).join("data");
 
@@ -33,6 +33,8 @@ async fn run() -> anyhow::Result<()> {
         download_open_jtalk_dict(dist.as_ref()).await?;
         ensure!(dic_dir.exists(), "`{dic_dir}` does not exist");
     }
+
+    copy_onnxruntime(onnxruntime_path, out_dir.as_ref(), dist)?;
 
     create_sample_voice_model_file(out_dir, dist)?;
 
@@ -45,6 +47,14 @@ async fn run() -> anyhow::Result<()> {
     generate_c_api_rs_bindings(out_dir)?;
 
     Ok(())
+}
+
+fn copy_onnxruntime(src: &Utf8Path, out_dir: &Path, dist: &Utf8Path) -> io::Result<()> {
+    let dst_dir = &dist.join("lib");
+    let dst = &dst_dir.join(src.file_name().expect("should exist"));
+    fs_err::create_dir_all(dst_dir)?;
+    fs_err::copy(src, dst)?;
+    fs_err::write(out_dir.join("onnxruntime-dylib-path.txt"), dst.as_str())
 }
 
 fn create_sample_voice_model_file(out_dir: &Utf8Path, dist: &Utf8Path) -> anyhow::Result<()> {
