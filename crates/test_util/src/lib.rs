@@ -26,36 +26,8 @@ use std::sync::LazyLock;
 pub use self::typing::{
     DecodeExampleData, DurationExampleData, ExampleData, IntonationExampleData,
 };
-
-pub const ONNXRUNTIME_DYLIB_PATH: &str = {
-    #[cfg(any(target_os = "linux", target_os = "macos"))]
-    macro_rules! version {
-        () => {
-            include_str!("../../../onnxruntime-version.txt")
-        };
-    }
-
-    cfg_select! {
-        target_os = "windows" => concat!(
-            include_str!(concat!(env!("OUT_DIR"), "/target-dir")),
-            "/voicevox_core/downloads/onnxruntime/",
-            "onnxruntime.dll",
-        ),
-        target_os = "linux" => concat!(
-            include_str!(concat!(env!("OUT_DIR"), "/target-dir")),
-            "/voicevox_core/downloads/onnxruntime/",
-            "libonnxruntime.so.",
-            version!(),
-        ),
-        target_os = "macos" => concat!(
-            include_str!(concat!(env!("OUT_DIR"), "/target-dir")),
-            "/voicevox_core/downloads/onnxruntime/",
-            "libonnxruntime.",
-            version!(),
-            ".dylib",
-        ),
-    }
-};
+pub const ONNXRUNTIME_DYLIB_PATH: &str =
+    include_str!(concat!(env!("OUT_DIR"), "/onnxruntime-dylib-path.txt"));
 
 pub const OPEN_JTALK_DIC_DIR: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),

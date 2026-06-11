@@ -18,13 +18,13 @@ const DIC_DIR_NAME: &str = "open_jtalk_dic_utf_8-1.11";
 
 fn main() -> anyhow::Result<()> {
     // Tokio内で`reqwest::blocking`を使ったらどうやら駄目らしいので、これだけTokioの外で実行
-    build_features::download::download(false)?;
+    let onnxruntime_path = &build_features::download::download(false)?;
 
-    run()
+    run(onnxruntime_path)
 }
 
 #[tokio::main]
-async fn run() -> anyhow::Result<()> {
+async fn run(onnxruntime_path: &Utf8Path) -> anyhow::Result<()> {
     let out_dir = &Utf8PathBuf::from(env::var("OUT_DIR").unwrap());
     let dist = &Utf8Path::new(env!("CARGO_MANIFEST_DIR")).join("data");
 
@@ -34,9 +34,7 @@ async fn run() -> anyhow::Result<()> {
         ensure!(dic_dir.exists(), "`{dic_dir}` does not exist");
     }
 
-    let target_directory = &locate_target_dir(out_dir)?;
-
-    copy_onnxruntime(target_directory, dist)?;
+    copy_onnxruntime(onnxruntime_path, out_dir.as_ref(), dist)?;
 
     create_sample_voice_model_file(out_dir, dist)?;
 
@@ -51,40 +49,12 @@ async fn run() -> anyhow::Result<()> {
     Ok(())
 }
 
-/// `cargo metadata`から`target_directory`を得て、`$OUT_DIR`に書き込む。
-fn locate_target_dir(out_dir: &Utf8Path) -> anyhow::Result<Utf8PathBuf> {
-    let cargo_metadata::Metadata {
-        target_directory, ..
-    } = cargo_metadata::MetadataCommand::new()
-        .manifest_path(Path::new(env!("CARGO_MANIFEST_DIR")).join("Cargo.toml"))
-        .no_deps()
-        .exec()?;
-    fs_err::write(out_dir.join("target-dir"), target_directory.as_str())?;
-    Ok(target_directory)
-}
-
-fn copy_onnxruntime(target_directory: &Utf8Path, dist: &Utf8Path) -> anyhow::Result<()> {
-    use std::env::consts::{DLL_PREFIX, DLL_SUFFIX};
-
-    const VERSION: &str = include_str!("../voicevox_core/onnxruntime-version.txt");
-    let filename = &if cfg!(target_os = "linux") {
-        format!("libonnxruntime.so.{VERSION}")
-    } else if cfg!(any(target_os = "macos", target_os = "ios")) {
-        format!("libonnxruntime.{VERSION}.dylib")
-    } else {
-        format!("{DLL_PREFIX}onnxruntime{DLL_SUFFIX}")
-    };
-    let src = &target_directory
-        .join("voicevox_core")
-        .join("downloads")
-        .join("onnxruntime")
-        .join(filename);
+fn copy_onnxruntime(src: &Utf8Path, out_dir: &Path, dist: &Utf8Path) -> io::Result<()> {
     let dst_dir = &dist.join("lib");
-    let dst = &dst_dir.join(filename);
+    let dst = &dst_dir.join(src.file_name().expect("should exist"));
     fs_err::create_dir_all(dst_dir)?;
     fs_err::copy(src, dst)?;
-    println!("cargo:rerun-if-changed={src}");
-    Ok(())
+    fs_err::write(out_dir.join("onnxruntime-dylib-path.txt"), dst.as_str())
 }
 
 fn create_sample_voice_model_file(out_dir: &Utf8Path, dist: &Utf8Path) -> anyhow::Result<()> {
