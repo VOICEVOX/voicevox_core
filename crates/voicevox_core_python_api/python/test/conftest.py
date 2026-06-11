@@ -9,7 +9,7 @@ import voicevox_core
 root_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
 onnxruntime_filename = str(
-    Path(__file__).parent.parent.parent.parent
+    root_dir.parent.parent.parent
     / "test_util"
     / "data"
     / "lib"
