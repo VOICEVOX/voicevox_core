@@ -9,7 +9,6 @@ cbindgen.workspace = true
 clap = { workspace = true, features = ["derive"] }
 color-eyre.workspace = true
 eyre.workspace = true
-fs-err.workspace = true
 
 [lints.rust]
 unsafe_code = "forbid"
