@@ -46,6 +46,7 @@ voicevox_core.workspace = true
 [dev-dependencies]
 anyhow.workspace = true
 assert_cmd = { workspace = true, features = ["color-auto"] }
+cargo_metadata.workspace = true
 clap = { workspace = true, features = ["derive"] }
 duct.workspace = true
 easy-ext.workspace = true
