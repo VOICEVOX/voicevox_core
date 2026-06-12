@@ -52,8 +52,16 @@ async fn run(onnxruntime_path: &Utf8Path) -> anyhow::Result<()> {
 fn copy_onnxruntime(src: &Utf8Path, out_dir: &Path, dist: &Utf8Path) -> io::Result<()> {
     let dst_dir = &dist.join("lib");
     let dst = &dst_dir.join(src.file_name().expect("should exist"));
-    fs_err::create_dir_all(dst_dir)?;
-    fs_err::copy(src, dst)?;
+    let stale = match fs_err::metadata(dst) {
+        Ok(md) => md.modified()? < fs_err::metadata(src)?.modified()?,
+        Err(e) if e.kind() == io::ErrorKind::NotFound => true,
+        Err(e) => return Err(e),
+    };
+    if stale {
+        fs_err::create_dir_all(dst_dir)?;
+        fs_err::copy(src, dst)?;
+    }
+    println!("cargo:rerun-if-changed={dst}");
     fs_err::write(out_dir.join("onnxruntime-dylib-path.txt"), dst.as_str())
 }
 
