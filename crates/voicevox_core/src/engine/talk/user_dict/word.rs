@@ -1,4 +1,4 @@
-use std::{ops::RangeToInclusive, sync::LazyLock};
+use std::sync::LazyLock;
 
 use regex::Regex;
 use serde::{Deserialize, Serialize, Serializer, de::Error as _};
@@ -171,7 +171,7 @@ pub(crate) enum InvalidWordError {
         "{}: 誤ったアクセント型です({1:?}の範囲から外れています): {_0}",
         Self::BASE_MSG
     )]
-    InvalidAccentType(usize, RangeToInclusive<usize>),
+    InvalidAccentType(usize, std::ops::RangeToInclusive<usize>),
 }
 
 impl InvalidWordError {

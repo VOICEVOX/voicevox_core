@@ -11,7 +11,6 @@ use itertools::{Itertools as _, chain};
 use std::{
     fmt::{self, Debug},
     marker::PhantomData,
-    ops::Range,
     sync::Arc,
 };
 use tracing::info;
@@ -190,7 +189,10 @@ const PADDING_FRAME_LENGTH: usize = 38; // (0.4秒 * 24000Hz / 256.0).round()
 /// モデルの受容野から計算される
 pub const MARGIN: usize = 14;
 /// 指定した音声区間に対応する特徴量を両端にマージンを追加した上で切り出す
-fn crop_with_margin(audio: &AudioFeature, range: Range<usize>) -> ndarray::ArrayView2<'_, f32> {
+fn crop_with_margin(
+    audio: &AudioFeature,
+    range: std::ops::Range<usize>,
+) -> ndarray::ArrayView2<'_, f32> {
     if range.start > audio.frame_length || range.end > audio.frame_length {
         panic!(
             "{range:?} is out of range for audio feature of length {frame_length}",
@@ -471,7 +473,7 @@ trait AsInner {
         })
     }
 
-    async fn render(&self, audio: &AudioFeature, range: Range<usize>) -> Result<Vec<u8>> {
+    async fn render(&self, audio: &AudioFeature, range: std::ops::Range<usize>) -> Result<Vec<u8>> {
         // TODO: 44.1kHzなどの対応
         if range.is_empty() {
             // FIXME: `start>end`に対してパニックせずに正常に空を返してしまうのでは？
@@ -1639,10 +1641,7 @@ impl From<Vec<AccentPhrase>> for AudioQuery {
               形を考えると、ここの引数を構造体にまとめたりしても可読性に寄与しない"
 )]
 pub(crate) mod blocking {
-    use std::{
-        fmt::{self, Debug},
-        ops::Range,
-    };
+    use std::fmt::{self, Debug};
 
     use easy_ext::ext;
     use typed_floats::{NonNaNFinite, PositiveFinite};
@@ -1781,9 +1780,9 @@ pub(crate) mod blocking {
         pub fn __render(
             &self,
             audio: &AudioFeature,
-            range: Range<usize>,
+            range: impl Into<std::ops::Range<usize>>,
         ) -> crate::Result<Vec<u8>> {
-            self.0.render(audio, range).block_on()
+            self.0.render(audio, range.into()).block_on()
         }
 
         /// AudioQueryから直接WAVフォーマットで音声波形を生成する。

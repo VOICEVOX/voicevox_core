@@ -383,6 +383,7 @@ mod tests {
             &frame_audio_query([frame_phoneme("pau"), frame_phoneme("i")]),
         )
         .unwrap_err();
+        // TODO: MSRVが1.96.0になったら`assert_matches!`を使う
         assert!(matches!(
             err,
             crate::Error(ErrorRepr::IncompatibleQueries(_)),
@@ -393,6 +394,7 @@ mod tests {
             &frame_audio_query([frame_phoneme("pau")]),
         )
         .unwrap_err();
+        // TODO: MSRVが1.96.0になったら`assert_matches!`を使う
         assert!(matches!(
             err,
             crate::Error(ErrorRepr::InvalidQuery(InvalidQueryError {

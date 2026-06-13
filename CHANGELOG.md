@@ -16,6 +16,7 @@
 - [#1319]
 - [#1363]
 - [#1364]
+- [#1376]
 
 [#854]: https://github.com/VOICEVOX/voicevox_core/pull/854
 [#864]: https://github.com/VOICEVOX/voicevox_core/pull/864
@@ -24,6 +25,7 @@
 [#1319]: https://github.com/VOICEVOX/voicevox_core/pull/1319
 [#1363]: https://github.com/VOICEVOX/voicevox_core/pull/1363
 [#1364]: https://github.com/VOICEVOX/voicevox_core/pull/1364
+[#1376]: https://github.com/VOICEVOX/voicevox_core/pull/1376
 
 ### もし`TextAnalyzer`機能を充実させた場合
 
