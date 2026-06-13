@@ -35,7 +35,7 @@ metas = '''
       {
         "id": 302,
         "name": "style3-1",
-        "type": "talk",
+        "type": "streaming_talk",
         "order": null
       },
       {
@@ -213,7 +213,7 @@ metas = '''
       {
         "id": 302,
         "name": "style3-1",
-        "type": "talk",
+        "type": "streaming_talk",
         "order": null
       },
       {

@@ -37,7 +37,7 @@ pub(crate) fn exec<C: TestContext>() -> anyhow::Result<()> {
         let exec_c_api_e2e_test = serde_json::from_str::<Box<dyn TestCase>>(&exec_c_api_e2e_test)?;
 
         return unsafe {
-            let lib = Library::new(C::cdylib_path())?;
+            let lib = Library::new(C::cdylib_path()?)?;
             exec_c_api_e2e_test.exec(lib)
         };
     }
@@ -57,10 +57,11 @@ pub(crate) fn exec<C: TestContext>() -> anyhow::Result<()> {
         )
         .run()?;
 
+        let cdylib_path = C::cdylib_path()?;
         ensure!(
-            C::cdylib_path().exists(),
+            cdylib_path.exists(),
             "{} should exist",
-            C::cdylib_path().display(),
+            cdylib_path.display(),
         );
     }
 
@@ -78,10 +79,16 @@ pub(crate) fn exec<C: TestContext>() -> anyhow::Result<()> {
 
     #[ext]
     impl<C: TestContext> C {
-        fn cdylib_path() -> PathBuf {
-            Path::new(Self::TARGET_DIR)
+        fn cdylib_path() -> anyhow::Result<PathBuf> {
+            let cargo_metadata::Metadata {
+                target_directory, ..
+            } = cargo_metadata::MetadataCommand::new()
+                .manifest_path(Path::new(env!("CARGO_MANIFEST_DIR")).join("Cargo.toml"))
+                .no_deps()
+                .exec()?;
+            Ok(PathBuf::from(target_directory)
                 .join("release")
-                .join(libloading::library_filename(Self::CDYLIB_NAME))
+                .join(libloading::library_filename(Self::CDYLIB_NAME)))
         }
 
         fn build_test(testcase: Box<dyn TestCase>) -> anyhow::Result<Trial> {
@@ -106,7 +113,6 @@ pub(crate) fn exec<C: TestContext>() -> anyhow::Result<()> {
 
 pub(crate) trait TestContext {
     const FEATURES: &'static [&'static str];
-    const TARGET_DIR: &'static str;
     const CDYLIB_NAME: &'static str;
     const RUNTIME_ENVS: &'static [(&'static str, &'static str)];
 }

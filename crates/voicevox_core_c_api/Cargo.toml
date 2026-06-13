@@ -46,6 +46,7 @@ voicevox_core.workspace = true
 [dev-dependencies]
 anyhow.workspace = true
 assert_cmd = { workspace = true, features = ["color-auto"] }
+cargo_metadata.workspace = true
 clap = { workspace = true, features = ["derive"] }
 duct.workspace = true
 easy-ext.workspace = true
@@ -61,7 +62,7 @@ regex.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_with.workspace = true
 tempfile.workspace = true
-test_util.workspace = true
+test_util = { workspace = true, features = ["c-api"] }
 toml.workspace = true
 typetag.workspace = true
 

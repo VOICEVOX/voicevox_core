@@ -16,8 +16,15 @@ mod typing;
 
 const DIC_DIR_NAME: &str = "open_jtalk_dic_utf_8-1.11";
 
+fn main() -> anyhow::Result<()> {
+    // Tokio内で`reqwest::blocking`を使ったらどうやら駄目らしいので、これだけTokioの外で実行
+    let onnxruntime_path = &build_features::download::download(false)?;
+
+    run(onnxruntime_path)
+}
+
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
+async fn run(onnxruntime_path: &Utf8Path) -> anyhow::Result<()> {
     let out_dir = &Utf8PathBuf::from(env::var("OUT_DIR").unwrap());
     let dist = &Utf8Path::new(env!("CARGO_MANIFEST_DIR")).join("data");
 
@@ -27,6 +34,8 @@ async fn main() -> anyhow::Result<()> {
         ensure!(dic_dir.exists(), "`{dic_dir}` does not exist");
     }
 
+    copy_onnxruntime(onnxruntime_path, out_dir.as_ref(), dist)?;
+
     create_sample_voice_model_file(out_dir, dist)?;
 
     generate_example_data_json(dist.as_ref())?;
@@ -34,7 +43,26 @@ async fn main() -> anyhow::Result<()> {
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=src/typing.rs");
 
-    generate_c_api_rs_bindings(out_dir)
+    #[cfg(feature = "c-api")]
+    generate_c_api_rs_bindings(out_dir)?;
+
+    Ok(())
+}
+
+fn copy_onnxruntime(src: &Utf8Path, out_dir: &Path, dist: &Utf8Path) -> io::Result<()> {
+    let dst_dir = &dist.join("lib");
+    let dst = &dst_dir.join(src.file_name().expect("should exist"));
+    let stale = match fs_err::metadata(dst) {
+        Ok(md) => md.modified()? < fs_err::metadata(src)?.modified()?,
+        Err(e) if e.kind() == io::ErrorKind::NotFound => true,
+        Err(e) => return Err(e),
+    };
+    if stale {
+        fs_err::create_dir_all(dst_dir)?;
+        fs_err::copy(src, dst)?;
+    }
+    println!("cargo:rerun-if-changed={dst}");
+    fs_err::write(out_dir.join("onnxruntime-dylib-path.txt"), dst.as_str())
 }
 
 fn create_sample_voice_model_file(out_dir: &Utf8Path, dist: &Utf8Path) -> anyhow::Result<()> {
@@ -83,7 +111,9 @@ fn create_sample_voice_model_file(out_dir: &Utf8Path, dist: &Utf8Path) -> anyhow
         formatdoc! {"
             pub const SAMPLE_VOICE_MODEL_FILE_PATH: &::std::primitive::str = {output_file:?};
 
+            #[cfg(feature = \"c-api\")]
             const SAMPLE_VOICE_MODEL_FILE_C_PATH: &::std::ffi::CStr = c{output_file:?};
+            #[cfg(feature = \"c-api\")]
             const VV_MODELS_ROOT_DIR: &::std::primitive::str = {output_dir:?};
             ",
         },
@@ -112,21 +142,15 @@ async fn download_open_jtalk_dict(dist: &Path) -> anyhow::Result<()> {
 /// テストデータのJSONを生成する。
 fn generate_example_data_json(dist: &Path) -> anyhow::Result<()> {
     let test_data = typing::ExampleData {
-        speaker_id: 0,
+        speaker_id: 302,
 
         duration: typing::DurationExampleData {
             length: 8,
             // 「t e s u t o」
             phoneme_vector: vec![0, 37, 14, 35, 6, 37, 30, 0],
             result: vec![
-                0.9537022,
-                0.046877652,
-                0.11338878,
-                0.06429571,
-                0.07507616,
-                0.08266081,
-                0.1571679,
-                0.64980185,
+                1.0721042, 0.05080147, 0.08940573, 0.06695838, 0.07986893, 0.08634156, 0.1639113,
+                1.33015,
             ],
         },
         intonation: typing::IntonationExampleData {
@@ -209,6 +233,7 @@ fn generate_example_data_json(dist: &Path) -> anyhow::Result<()> {
     Ok(())
 }
 
+#[cfg(feature = "c-api")]
 fn generate_c_api_rs_bindings(out_dir: &Utf8Path) -> anyhow::Result<()> {
     static C_BINDINGS_PATH: &str = "../voicevox_core_c_api/include/voicevox_core.h";
     static ADDITIONAL_C_BINDINGS_PATH: &str = "./compatible_engine.h";
