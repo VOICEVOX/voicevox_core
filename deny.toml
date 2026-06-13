@@ -187,12 +187,7 @@ allow = [
     "Zlib",
 ]
 clarify = [
-<<<<<<< HEAD
     { name = "ring", version = "0.17", expression = "MIT AND ISC AND OpenSSL", license-files = [{ path = "LICENSE", hash = 0x0d99693a }] },
     { name = "cfg-elif", version = "0.6.6", expression = "Unlicense", license-files = [{ path = "UNLICENSE", hash = 0x5ac143a6 }] },
-||||||| a7600b38
-    { name = "ring", version = "0.17", expression = "MIT AND ISC AND OpenSSL", license-files = [{ path = "LICENSE", hash = 0xbd0eed23 }] },
-=======
     { name = "ring", version = "0.17", expression = "MIT AND ISC AND OpenSSL", license-files = [{ path = "LICENSE", hash = 0x0d99693a }] },
->>>>>>> main
 ]
