@@ -11,6 +11,7 @@ pub struct AnalyzeTextOptions<'a> {
     #[educe(Default(expression = "DEFAULT_ENABLE_KATAKANA_ENGLISH"))]
     pub enable_katakana_english: bool,
 
+    #[doc(hidden)]
     pub _marker: PhantomData<&'a ()>,
 }
 
