@@ -4,6 +4,7 @@ use educe::Educe;
 
 pub const DEFAULT_ENABLE_KATAKANA_ENGLISH: bool = true;
 
+#[cfg_attr(doc, doc(alias = "VoicevoxAnalyzeTextOptions"))]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Educe)]
 #[educe(Default)]
 #[non_exhaustive]

@@ -151,6 +151,7 @@ impl assert_cdylib::TestCase for TestCase {
                 synthesizer,
                 c"this_word_should_not_exist_in_default_dictionary".as_ptr(),
                 STYLE_ID,
+                lib.voicevox_make_default_create_audio_query_options(),
                 &mut audio_query_without_dict,
             )
         });
@@ -172,6 +173,7 @@ impl assert_cdylib::TestCase for TestCase {
                 synthesizer,
                 c"this_word_should_not_exist_in_default_dictionary".as_ptr(),
                 STYLE_ID,
+                lib.voicevox_make_default_create_audio_query_options(),
                 &mut audio_query_with_dict,
             )
         });
