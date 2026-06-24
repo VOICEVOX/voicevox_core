@@ -27,7 +27,7 @@ use ort::{
     environment::Environment,
     ep::{
         CPUExecutionProvider, CUDAExecutionProvider, DirectMLExecutionProvider,
-        ExecutionProvider as _, cuda::ConvAlgorithmSearch,
+        ExecutionProvider as _, OpenVINOExecutionProvider, cuda::ConvAlgorithmSearch,
     },
     session::{RunOptions, builder::GraphOptimizationLevel},
     value::{PrimitiveTensorElementType, TensorElementType, ValueType},
@@ -254,6 +254,7 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
             let cpu = CPUExecutionProvider::default().is_available()?;
             let cuda = CUDAExecutionProvider::default().is_available()?;
             let dml = DirectMLExecutionProvider::default().is_available()?;
+            let openvino = OpenVINOExecutionProvider::default().is_available()?;
 
             ensure!(cpu, "missing `CPUExecutionProvider`");
 
@@ -261,6 +262,7 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
                 cpu: true,
                 cuda,
                 dml,
+                openvino,
             })
         })()
         .map_err(ErrorRepr::GetSupportedDevices)
@@ -273,6 +275,7 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
             GpuSpec::Cuda => CUDAExecutionProvider::default()
                 .with_conv_algorithm_search(ConvAlgorithmSearch::Default)
                 .register(sess_builder),
+            GpuSpec::OpenVino => openvino_gpu_execution_provider().register(sess_builder),
             GpuSpec::Dml => DirectMLExecutionProvider::default().register(sess_builder),
         }
         .map_err(Into::into)
@@ -302,6 +305,9 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
                 CUDAExecutionProvider::default()
                     .with_conv_algorithm_search(ConvAlgorithmSearch::Default)
                     .register(&mut builder)?;
+            }
+            DeviceSpec::Gpu(GpuSpec::OpenVino) => {
+                openvino_gpu_execution_provider().register(&mut builder)?;
             }
             DeviceSpec::Gpu(GpuSpec::Dml) => {
                 builder = builder
@@ -477,6 +483,30 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
             ::blocking::unblock(move || extract_outputs(&sess.lock_blocking().run(inputs)?)).await
         }
     }
+}
+
+fn openvino_gpu_execution_provider() -> OpenVINOExecutionProvider {
+    // Defaults tuned for Intel Arc (Xe / Battlemage), all overridable by env var:
+    // - `AUTO:GPU,CPU` serves the first inferences on CPU while the GPU graph
+    //   compiles in the background, then moves to the GPU — this hides OpenVINO's
+    //   multi-second GPU compile instead of blocking the first synthesis on it.
+    // - `FP16` engages the Xe matrix engines (XMX) for a large decode speedup.
+    // - `cache_dir` persists the compiled GPU blob across process restarts.
+    let device_type =
+        std::env::var("VV_OPENVINO_DEVICE_TYPE").unwrap_or_else(|_| "AUTO:GPU,CPU".to_owned());
+    let precision = std::env::var("VV_OPENVINO_PRECISION").unwrap_or_else(|_| "FP16".to_owned());
+    let cache_dir = std::env::var("VV_OPENVINO_CACHE_DIR").unwrap_or_else(|_| {
+        std::env::temp_dir()
+            .join("voicevox-openvino-cache")
+            .to_string_lossy()
+            .into_owned()
+    });
+    let _ = std::fs::create_dir_all(&cache_dir);
+
+    OpenVINOExecutionProvider::default()
+        .with_device_type(device_type)
+        .with_precision(precision)
+        .with_cache_dir(cache_dir)
 }
 
 pub(crate) struct OnnxruntimeRunContext {

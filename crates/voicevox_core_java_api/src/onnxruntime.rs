@@ -68,14 +68,19 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Onnxruntime_rs
         let devices = this.supported_devices()?;
 
         assert!(match devices.to_json_value() {
-            serde_json::Value::Object(o) => o.len() == 3, // `cpu`, `cuda`, `dml`
+            serde_json::Value::Object(o) => o.len() == 4, // `cpu`, `cuda`, `dml`, `openvino`
             _ => false,
         });
 
         let devices = env.new_object(
             object!("SupportedDevices"),
-            "(ZZZ)V",
-            &[devices.cpu.into(), devices.cuda.into(), devices.dml.into()],
+            "(ZZZZ)V",
+            &[
+                devices.cpu.into(),
+                devices.cuda.into(),
+                devices.dml.into(),
+                devices.openvino.into(),
+            ],
         )?;
         Ok(devices.into_raw())
     })
