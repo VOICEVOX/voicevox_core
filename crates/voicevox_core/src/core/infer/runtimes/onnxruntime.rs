@@ -27,7 +27,7 @@ use ort::{
     environment::Environment,
     ep::{
         CPUExecutionProvider, CUDAExecutionProvider, DirectMLExecutionProvider,
-        ExecutionProvider as _, cuda::ConvAlgorithmSearch,
+        ExecutionProvider as _, WebGPU as WebGPUExecutionProvider, cuda::ConvAlgorithmSearch,
     },
     session::{RunOptions, builder::GraphOptimizationLevel},
     value::{PrimitiveTensorElementType, TensorElementType, ValueType},
@@ -254,6 +254,7 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
             let cpu = CPUExecutionProvider::default().is_available()?;
             let cuda = CUDAExecutionProvider::default().is_available()?;
             let dml = DirectMLExecutionProvider::default().is_available()?;
+            let webgpu = WebGPUExecutionProvider::default().is_available()?;
 
             ensure!(cpu, "missing `CPUExecutionProvider`");
 
@@ -261,6 +262,7 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
                 cpu: true,
                 cuda,
                 dml,
+                webgpu,
             })
         })()
         .map_err(ErrorRepr::GetSupportedDevices)
@@ -274,6 +276,7 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
                 .with_conv_algorithm_search(ConvAlgorithmSearch::Default)
                 .register(sess_builder),
             GpuSpec::Dml => DirectMLExecutionProvider::default().register(sess_builder),
+            GpuSpec::WebGpu => WebGPUExecutionProvider::default().register(sess_builder),
         }
         .map_err(Into::into)
     }
@@ -310,6 +313,14 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
                     .with_memory_pattern(false)
                     .map_err(ort::Error::<()>::from)?;
                 DirectMLExecutionProvider::default().register(&mut builder)?;
+            }
+            DeviceSpec::Gpu(GpuSpec::WebGpu) => {
+                builder = builder
+                    .with_parallel_execution(false)
+                    .map_err(ort::Error::<()>::from)?
+                    .with_memory_pattern(false)
+                    .map_err(ort::Error::<()>::from)?;
+                WebGPUExecutionProvider::default().register(&mut builder)?;
             }
         };
 
