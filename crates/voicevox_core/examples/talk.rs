@@ -69,6 +69,12 @@ fn main() -> anyhow::Result<()> {
     let synth = Synthesizer::builder(ort)
         .text_analyzer(ojt)
         .acceleration_mode(if args.acceleration {
+            eprintln!(
+                "ハードウェアアクセラレーションを有効化します：{:?}",
+                ort.supported_devices()
+                    .context("ONNX Runtimeがサポートするデバイスの取得に失敗しました")?
+            );
+
             voicevox_core::AccelerationMode::Auto
         } else {
             voicevox_core::AccelerationMode::Cpu
