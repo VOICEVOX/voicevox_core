@@ -379,6 +379,7 @@ enum Device {
     Cpu,
     Cuda,
     Directml,
+    Webgpu,
 }
 
 #[derive(ValueEnum, Display, IntoStaticStr, Clone, Copy, PartialEq)]
@@ -641,7 +642,7 @@ async fn main() -> anyhow::Result<()> {
 
     let additional_libraries = devices
         .iter()
-        .filter(|&&device| device != Device::Cpu)
+        .filter(|&&device| device != Device::Cpu && device != Device::Webgpu)
         .map(|&device| {
             find_gh_asset(
                 octocrab,
@@ -651,7 +652,7 @@ async fn main() -> anyhow::Result<()> {
                 move |_, _| {
                     Ok({
                         let device = match device {
-                            Device::Cpu => unreachable!(),
+                            Device::Cpu | Device::Webgpu => unreachable!(),
                             Device::Cuda => "CUDA",
                             Device::Directml => "DirectML",
                         };
@@ -906,6 +907,7 @@ fn find_onnxruntime(
                                 Device::Cpu => "CPU",
                                 Device::Cuda => "CUDA",
                                 Device::Directml => "DirectML",
+                                Device::Webgpu => "WebGPU",
                             }
                     })
                 })
