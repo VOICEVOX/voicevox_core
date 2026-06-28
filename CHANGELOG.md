@@ -42,8 +42,9 @@
 ### Added
 
 - `Synthesizer::load_voice_model`にオプション`on_existing`が追加されます ([#1331], [#1337])。
-- \[Rust\] \[Linux\] APIドキュメントが改善されます ([#1343])。
-    - muslターゲットでは`load-onnxruntime`が事実上利用不可であることが明記されます。
+- \[Rust\] APIドキュメントが改善されます ([#1343], [#1381])。
+    - トップページのコード例で`tracing_subscriber::fmt().init();`が行われるようになります。
+    - \[Linux\] muslターゲットでは`load-onnxruntime`が事実上利用不可であることが明記されます。
 - \[C\] \[macOS\] :tada: macOS向けのXCFrameworkがvoicevox\_core-xcframework-cpu-{バージョン}.zipという名前でリリースされるようになります ([#1056] helped by [@nekomimimi], [#1114], [#1362])。
 - \[C,ダウンローダー\] \[macOS\] リリースがコード署名されるようになります ([#1326])。
 - \[ダウンローダー\] `--os`オプションで`android`と`ios`を指定できるようになります。ただしiOSの`c-api`をダウンロードすることはできません ([#1313])。
@@ -1516,6 +1517,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1350]: https://github.com/VOICEVOX/voicevox_core/pull/1350
 [#1359]: https://github.com/VOICEVOX/voicevox_core/pull/1359
 [#1362]: https://github.com/VOICEVOX/voicevox_core/pull/1362
+[#1381]: https://github.com/VOICEVOX/voicevox_core/pull/1381
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 

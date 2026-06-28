@@ -52,6 +52,9 @@ struct Args {
 }
 
 fn main() -> anyhow::Result<()> {
+    #[cfg(false)]
+    tracing_subscriber::fmt().init();
+
     let args = Args::parse();
 
     // ONNX Runtimeのロード

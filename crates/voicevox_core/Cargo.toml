@@ -90,6 +90,7 @@ rstest.workspace = true
 rstest_reuse.workspace = true
 test_util.workspace = true
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
+tracing-subscriber.workspace = true
 
 [build-dependencies]
 voicevox_core_build_features.workspace = true
