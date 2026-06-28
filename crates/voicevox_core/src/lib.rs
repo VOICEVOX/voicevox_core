@@ -71,7 +71,7 @@
 //! const TEXT: &str = "こんにちは";
 //!
 //! # #[cfg(false)]
-//! tracing_subscriber::fmt().init(); // `voicevox_core`や(VOICEVOX) ONNX Runtimeが出すログを標準出力に出力する。
+//! tracing_subscriber::fmt().init(); // `voicevox_core`や(VOICEVOX) ONNX Runtimeの情報表示や警告は、`tracing`に出力される。
 //!
 //! let synth = {
 //!     let ort = Onnxruntime::load_once().filename(VVORT).perform()?;
@@ -158,7 +158,7 @@
 //! # const SINGER_STYLE_NAME: &str = "style4-1";
 //!
 //! # #[cfg(false)]
-//! tracing_subscriber::fmt().init(); // `voicevox_core`や(VOICEVOX) ONNX Runtimeが出すログを標準出力に出力する。
+//! tracing_subscriber::fmt().init(); // `voicevox_core`や(VOICEVOX) ONNX Runtimeの情報表示や警告は、`tracing`に出力される。
 //!
 //! let synth = {
 //!     let ort = Onnxruntime::load_once().filename(VVORT).perform()?;

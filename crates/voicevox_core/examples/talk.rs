@@ -52,7 +52,7 @@ struct Args {
 }
 
 fn main() -> anyhow::Result<()> {
-    tracing_subscriber::fmt().init(); // `voicevox_core`や(VOICEVOX) ONNX Runtimeが出すログを標準出力に出力する。
+    tracing_subscriber::fmt().init(); // `voicevox_core`や(VOICEVOX) ONNX Runtimeの情報表示や警告は、`tracing`に出力される。
 
     let args = Args::parse();
 
