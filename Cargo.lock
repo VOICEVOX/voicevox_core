@@ -5042,6 +5042,7 @@ dependencies = [
  "thiserror 1.0.64",
  "tokio",
  "tracing",
+ "tracing-subscriber",
  "typed_floats",
  "typeshare",
  "uuid",
