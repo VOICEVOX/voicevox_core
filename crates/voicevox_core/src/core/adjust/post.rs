@@ -20,11 +20,8 @@ pub(crate) fn ensure_non_nan_finite(
         .map_err(|_| {
             let invalid = &chain!(
                 xs.iter().copied().any(f32::is_nan).then_some("NaN"),
-                xs.iter().copied().any(f32::is_infinite).then_some("inf"),
-                xs.iter()
-                    .copied()
-                    .any(f32::is_sign_negative)
-                    .then_some("-inf"),
+                xs.contains(&f32::INFINITY).then_some("+inf"),
+                xs.contains(&-f32::INFINITY).then_some("-inf"),
             )
             .join(", ");
             assert!(!invalid.is_empty());

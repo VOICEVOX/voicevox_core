@@ -565,15 +565,6 @@ trait AsInner {
         let phoneme_list_s = bytemuck::must_cast_slice(&phoneme_data_list);
         let phoneme_length = self.predict_duration(phoneme_list_s, style_id).await?;
 
-        let phoneme_length = phoneme_length
-            .into_iter()
-            .map(TryInto::try_into)
-            .collect::<std::result::Result<Vec<_>, _>>()
-            .map_err(|_| ErrorRepr::RunModel {
-                note: None,
-                source: anyhow!("`predict_duration` returned an array that contains: "),
-            })?;
-
         let mut index = 0;
         let new_accent_phrases = accent_phrases
             .iter()
