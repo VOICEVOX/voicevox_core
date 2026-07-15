@@ -772,7 +772,6 @@ VoicevoxResultCode voicevox_audio_query_create_from_accent_phrases(const char *a
  *
  * - [Rust APIの`AudioQuery`型]としてデシリアライズ不可、もしくはJSONとして不正。
  * - `accent_phrases`の要素のうちいずれかが、 ::voicevox_accent_phrase_validate でエラーになる。
- * - `outputSamplingRate`が`24000`の倍数ではない、もしくは`0` (将来的に解消予定。cf. [#762])。
  *
  * [Rust APIの`AudioQuery`型]: ../rust_api/voicevox_core/struct.AudioQuery.html
  * [#762]: https://github.com/VOICEVOX/voicevox_core/issues/762
@@ -780,11 +779,7 @@ VoicevoxResultCode voicevox_audio_query_create_from_accent_phrases(const char *a
  * 次の状態に対しては警告のログを出す。将来的にはエラーになる予定。
  *
  * - `accent_phrases`の要素のうちいずれかが警告が出る状態。
- * - `speedScale`が負。
- * - `volumeScale`が負。
- * - `prePhonemeLength`が負。
- * - `postPhonemeLength`が負。
- * - `outputSamplingRate`が`24000`以外の値（エラーと同様将来的に解消予定）。
+ * - `outputSamplingRate`が`24000`以外の値（将来的に解消予定。cf. [#762]）。
  *
  * @param [in] audio_query_json `AudioQuery`型のJSON
  *
