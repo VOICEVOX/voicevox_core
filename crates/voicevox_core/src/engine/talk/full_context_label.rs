@@ -2,10 +2,14 @@ use std::str::FromStr;
 
 use jlabel::Label;
 use smallvec::SmallVec;
+use typed_floats::tf32;
 
 use crate::AccentPhrase;
 
-use super::{super::mora_mappings::MORA_PHONEMES_TO_MORA_KANA, open_jtalk::FullcontextExtractor};
+use super::{
+    super::{acoustic_feature_extractor::NonConsonant, mora_mappings::MORA_PHONEMES_TO_MORA_KANA},
+    open_jtalk::FullcontextExtractor,
+};
 
 #[derive(thiserror::Error, Debug)]
 #[error("入力テキストからのフルコンテキストラベル抽出に失敗しました: {context}")]
@@ -22,6 +26,15 @@ enum ErrorKind {
 
     #[display("jlabelでラベルを解釈することができませんでした")]
     Jlabel,
+
+    #[display("VOICEVOXの`vowel`として不正、もしくは未知の音素が発生しました: {_0}")]
+    InvalidNonConsonant(String),
+
+    #[display("VOICEVOXの`consonant`として不正、もしくは未知の音素が発生しました: {_0}")]
+    InvalidConsonant(String),
+
+    #[display("accent is zero")]
+    AccentIsZero,
 
     #[display("too long mora")]
     TooLongMora,
@@ -91,9 +104,9 @@ fn generate_accent_phrases(
                 text: "、".into(),
                 consonant: None,
                 consonant_length: None,
-                vowel: "pau".into(),
-                vowel_length: 0.,
-                pitch: 0.,
+                vowel: NonConsonant::MorablePau,
+                vowel_length: tf32::ZERO,
+                pitch: tf32::ZERO.into(),
             })
         } else {
             None
@@ -101,6 +114,8 @@ fn generate_accent_phrases(
 
         // workaround for VOICEVOX/voicevox_engine#55
         let accent = usize::from(ap_curr.accent_position).min(moras.len());
+
+        let accent = accent.try_into().map_err(|_| ErrorKind::AccentIsZero)?;
 
         accent_phrases.push(AccentPhrase {
             moras,
@@ -121,11 +136,11 @@ fn generate_moras(accent_phrase: &[Label]) -> std::result::Result<Vec<crate::Mor
             labels.iter().filter(|label| label.mora.is_some()).collect();
         match labels[..] {
             [consonant, vowel] => {
-                let mora = generate_mora(Some(consonant), vowel);
+                let mora = generate_mora(Some(consonant), vowel)?;
                 moras.push(mora);
             }
             [vowel] => {
-                let mora = generate_mora(None, vowel);
+                let mora = generate_mora(None, vowel)?;
                 moras.push(mora);
             }
             // silやpau以外の音素がないモーラは含めない
@@ -153,17 +168,28 @@ fn generate_moras(accent_phrase: &[Label]) -> std::result::Result<Vec<crate::Mor
     Ok(moras)
 }
 
-fn generate_mora(consonant: Option<&Label>, vowel: &Label) -> crate::Mora {
-    let consonant_phoneme = consonant.and_then(|c| c.phoneme.c.to_owned());
-    let vowel = vowel.phoneme.c.clone().unwrap();
-    crate::Mora {
-        text: mora_to_text(consonant_phoneme.as_deref(), &vowel),
-        consonant: consonant_phoneme,
-        consonant_length: consonant.and(Some(0.0)),
-        vowel,
-        vowel_length: 0.0,
-        pitch: 0.0,
-    }
+fn generate_mora(
+    consonant: Option<&Label>,
+    vowel: &Label,
+) -> std::result::Result<crate::Mora, ErrorKind> {
+    let consonant = consonant.and_then(|c| c.phoneme.c.as_deref());
+    let vowel = vowel.phoneme.c.as_deref().unwrap();
+    Ok(crate::Mora {
+        text: mora_to_text(consonant, vowel),
+        consonant: consonant
+            .map(|consonant| {
+                consonant
+                    .parse()
+                    .map_err(|_| ErrorKind::InvalidConsonant(consonant.to_owned()))
+            })
+            .transpose()?,
+        consonant_length: consonant.and(Some(tf32::ZERO)),
+        vowel: vowel
+            .parse()
+            .map_err(|_| ErrorKind::InvalidNonConsonant(vowel.to_owned()))?,
+        vowel_length: tf32::ZERO,
+        pitch: tf32::ZERO.into(),
+    })
 }
 
 pub fn mora_to_text(consonant: Option<&str>, vowel: &str) -> String {
@@ -195,8 +221,9 @@ mod tests {
     use pretty_assertions::assert_eq;
     use rstest::rstest;
     use rstest_reuse::*;
+    use typed_floats::tf32;
 
-    use crate::AccentPhrase;
+    use crate::{AccentPhrase, numerics::non_zero};
 
     use super::super::{
         Mora,
@@ -207,11 +234,11 @@ mod tests {
     fn mora(text: &str, consonant: Option<&str>, vowel: &str) -> Mora {
         Mora {
             text: text.into(),
-            consonant: consonant.map(|c| c.into()),
-            consonant_length: consonant.and(Some(0.0)),
-            vowel: vowel.into(),
-            vowel_length: 0.0,
-            pitch: 0.0,
+            consonant: consonant.map(|c| c.parse().unwrap()),
+            consonant_length: consonant.and(Some(tf32::ZERO)),
+            vowel: vowel.parse().unwrap(),
+            vowel_length: tf32::ZERO,
+            pitch: tf32::ZERO.into(),
         }
     }
 
@@ -228,7 +255,7 @@ mod tests {
         &[
             AccentPhrase {
                 moras: vec![mora("イェ", Some("y"), "e")],
-                accent: 1,
+                accent: non_zero!(1: usize),
                 pause_mora: None,
                 is_interrogative: false,
             }
@@ -250,7 +277,7 @@ mod tests {
                     mora("ン", None, "N"),
                     mora("ッ", None, "cl"),
                 ],
-                accent: 3,
+                accent: non_zero!(3: usize),
                 pause_mora: None,
                 is_interrogative: false,
             },
@@ -285,7 +312,7 @@ mod tests {
                     mora("レ", Some("r"), "e"),
                     mora("ワ", Some("w"), "a"),
                 ],
-                accent: 3,
+                accent: non_zero!(3: usize),
                 pause_mora: None,
                 is_interrogative: false,
             },
@@ -297,7 +324,7 @@ mod tests {
                     mora("デ", Some("d"), "e"),
                     mora("ス", Some("s"), "U"),
                 ],
-                accent: 1,
+                accent: non_zero!(1: usize),
                 pause_mora: None,
                 is_interrogative: false,
             },
@@ -337,7 +364,7 @@ mod tests {
                     mora("イ", None, "i"),
                     mora("チ", Some("ch"), "i"),
                 ],
-                accent: 2,
+                accent: non_zero!(2: usize),
                 pause_mora: Some(mora("、", None, "pau")),
                 is_interrogative: false,
             },
@@ -346,7 +373,7 @@ mod tests {
                     mora("セ", Some("s"), "e"),
                     mora("ン", None, "N"),
                 ],
-                accent: 1,
+                accent: non_zero!(1: usize),
                 pause_mora: Some(mora("、", None, "pau")),
                 is_interrogative: false,
             },
@@ -357,7 +384,7 @@ mod tests {
                     mora("マ", Some("m"), "a"),
                     mora("ン", None, "N"),
                 ],
-                accent: 3,
+                accent: non_zero!(3: usize),
                 pause_mora: Some(mora("、", None, "pau")),
                 is_interrogative: false,
             },
@@ -368,7 +395,7 @@ mod tests {
                     mora("オ", None, "o"),
                     mora("ク", Some("k"), "u"),
                 ],
-                accent: 2,
+                accent: non_zero!(2: usize),
                 pause_mora: None,
                 is_interrogative: true,
             },
@@ -402,7 +429,7 @@ mod tests {
                     mora("ッ", None, "cl"),
                     mora("ト", Some("t"), "o"),
                 ],
-                accent: 3,
+                accent: non_zero!(3: usize),
                 pause_mora: Some(mora("、", None, "pau")),
                 is_interrogative: false,
             },
@@ -411,13 +438,13 @@ mod tests {
                     mora("ア", None, "a"),
                     mora("ア", None, "a"),
                 ],
-                accent: 1,
+                accent: non_zero!(1: usize),
                 pause_mora: None,
                 is_interrogative: false,
             },
             AccentPhrase {
                 moras: vec![mora("ア", None, "a")],
-                accent: 1,
+                accent: non_zero!(1: usize),
                 pause_mora: None,
                 is_interrogative: false,
             },

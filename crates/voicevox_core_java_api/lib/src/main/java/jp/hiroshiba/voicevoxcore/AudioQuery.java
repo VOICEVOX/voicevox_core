@@ -96,10 +96,6 @@ public class AudioQuery {
    *
    * <ul>
    *   <li>{@link #accentPhrases}の要素のうちいずれかが警告が出る状態。
-   *   <li>{@link #speedScale}が負。
-   *   <li>{@link #volumeScale}が負。
-   *   <li>{@link #prePhonemeLength}が負。
-   *   <li>{@link #postPhonemeLength}が負。
    *   <li>{@link #outputSamplingRate}が{@code 24000}以外の値（エラーと同様将来的に解消予定）。
    * </ul>
    *
@@ -107,12 +103,12 @@ public class AudioQuery {
    *     <ul>
    *       <li>JSONへのシリアライズが不可。
    *           <ul>
-   *             <li>{@link #speedScale}がNaNもしくは±infinity。
+   *             <li>{@link #speedScale}がNaN、infinity、もしくは負。
    *             <li>{@link #pitchScale}がNaNもしくは±infinity。
    *             <li>{@link #intonationScale}がNaNもしくは±infinity。
-   *             <li>{@link #volumeScale}がNaNもしくは±infinity。
-   *             <li>{@link #prePhonemeLength}がNaNもしくは±infinity。
-   *             <li>{@link #postPhonemeLength}がNaNもしくは±infinity。
+   *             <li>{@link #volumeScale}がNaN、infinity、もしくは負。
+   *             <li>{@link #prePhonemeLength}がNaN、infinity、もしくは負。
+   *             <li>{@link #postPhonemeLength}がNaN、infinity、もしくは負。
    *           </ul>
    *       <li><a
    *           href="https://voicevox.github.io/voicevox_core/apis/rust_api/voicevox_core/struct.AudioQuery.html">Rust

@@ -91,9 +91,14 @@ public class Mora implements Cloneable {
    *             <li>{@link #vowelLength}がNaN、infinity、もしくは負。
    *             <li>{@link #pitch}がNaNもしくは±infinity。
    *           </ul>
+   *       <li><a
+   *           href="https://voicevox.github.io/voicevox_core/apis/rust_api/voicevox_core/struct.Mora.html">Rust
+   *           APIの{@code Mora}型</a>としてデシリアライズ不可。
+   *           <ul>
+   *             <li>{@link #consonant}が子音以外の音素であるか、もしくは音素として不正。
+   *             <li>{@link #vowel}が子音であるか、もしくは音素として不正。
+   *           </ul>
    *       <li>{@link #consonant}と{@link #consonantLength}の有無が不一致。
-   *       <li>{@link #consonant}が子音以外の音素であるか、もしくは音素として不正。
-   *       <li>{@link #vowel}が子音であるか、もしくは音素として不正。
    *     </ul>
    */
   public void validate() {

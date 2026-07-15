@@ -476,7 +476,7 @@ pub use self::{
         voice_model::VoiceModelId,
     },
     engine::{
-        Phoneme, SamplingRate, Sil,
+        Consonant, NonConsonant, Phoneme, SamplingRate, Sil,
         song::{
             queries::{FrameAudioQuery, FramePhoneme, Key, Note, NoteId, OptionalLyric, Score},
             validate::ensure_compatible,

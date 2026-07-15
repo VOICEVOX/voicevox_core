@@ -839,8 +839,6 @@ VoicevoxResultCode voicevox_accent_phrase_validate(const char *accent_phrase_jso
  *
  * - [Rust APIの`Mora`型]としてデシリアライズ不可、もしくはJSONとして不正。
  * - `consonant`と`consonant_length`の有無が不一致。
- * - `consonant`が子音以外の音素であるか、もしくは音素として不正。
- * - `vowel`が子音であるか、もしくは音素として不正。
  *
  * [Rust APIの`Mora`型]: ../rust_api/voicevox_core/struct.Mora.html
  *

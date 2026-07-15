@@ -2,19 +2,87 @@
 
 use anyhow::anyhow;
 use easy_ext::ext;
+use itertools::{Itertools as _, chain};
 use ndarray::{Array, Array1, Dim, Ix, RemoveAxis};
+use typed_floats::{NonNaNFinite, PositiveFinite};
 
-use crate::error::ErrorRepr;
+use crate::{error::ErrorRepr, numerics::non_nan_finite_f32};
 
-pub(crate) fn ensure_minimum_phoneme_length(mut output: Vec<f32>) -> Vec<f32> {
-    const PHONEME_LENGTH_MINIMAL: f32 = 0.01;
+// TODO: typed_floatsにissueかPRを出しに行き、スライス変換かbytemuck対応を入れてもらう
+pub(crate) fn ensure_non_nan_finite(
+    xs: &[f32],
+    error: fn(&str) -> anyhow::Error,
+) -> crate::Result<Vec<NonNaNFinite<f32>>> {
+    xs.iter()
+        .copied()
+        .map(TryInto::try_into)
+        .collect::<std::result::Result<_, _>>()
+        .map_err(|_| {
+            let invalid = &chain!(
+                xs.iter().copied().any(f32::is_nan).then_some("NaN"),
+                xs.iter().copied().any(f32::is_infinite).then_some("inf"),
+                xs.iter()
+                    .copied()
+                    .any(f32::is_sign_negative)
+                    .then_some("-inf"),
+            )
+            .join(", ");
+            assert!(!invalid.is_empty());
+            ErrorRepr::RunModel {
+                note: None,
+                source: error(invalid),
+            }
+            .into()
+        })
+}
+
+// TODO: typed_floatsにissueかPRを出しに行き、スライス変換かbytemuck対応を入れてもらう
+pub(crate) fn ensure_positive_finite(
+    xs: &[f32],
+    error: fn(&str) -> anyhow::Error,
+) -> crate::Result<Vec<PositiveFinite<f32>>> {
+    xs.iter()
+        .copied()
+        .map(TryInto::try_into)
+        .collect::<std::result::Result<_, _>>()
+        .map_err(|_| {
+            // FIXME: これ、`NonNaNFinite`に対するものでは？
+            let invalid = &chain!(
+                xs.iter().copied().any(f32::is_nan).then_some("NaN"),
+                xs.iter().copied().any(f32::is_infinite).then_some("inf"),
+                xs.iter()
+                    .copied()
+                    .any(f32::is_sign_negative)
+                    .then_some("-inf"),
+            )
+            .join(", ");
+            assert!(!invalid.is_empty());
+            ErrorRepr::RunModel {
+                note: None,
+                source: error(invalid),
+            }
+            .into()
+        })
+}
+
+pub(crate) fn ensure_minimum_phoneme_length(
+    mut output: Vec<NonNaNFinite<f32>>,
+) -> Vec<PositiveFinite<f32>> {
+    const PHONEME_LENGTH_MINIMAL: NonNaNFinite<f32> = non_nan_finite_f32!(0.01);
 
     for output_item in output.iter_mut() {
         if *output_item < PHONEME_LENGTH_MINIMAL {
             *output_item = PHONEME_LENGTH_MINIMAL;
         }
     }
+
+    const _: () = assert!(PHONEME_LENGTH_MINIMAL.is_sign_positive());
+    // TODO: typed_floatsにissueかPRを出しに行き、スライス変換かbytemuck対応を入れてもらう
     output
+        .into_iter()
+        .map(TryInto::try_into)
+        .collect::<Result<_, _>>()
+        .expect("should be positive")
 }
 
 #[ext(Array1ExtForPostProcess)]

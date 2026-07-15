@@ -268,9 +268,6 @@ pub(crate) enum InvalidQueryErrorSource {
     #[error("\"sil\"を含む文字列である必要があります")]
     MustContainSil,
 
-    #[error("`0`にすることはできません")]
-    IsZero,
-
     #[error("0より大きい{DEFAULT_SAMPLING_RATE}の倍数でなければなりません")]
     IsNotMultipleOfBaseSamplingRate,
 

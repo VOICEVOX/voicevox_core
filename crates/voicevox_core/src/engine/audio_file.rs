@@ -48,7 +48,7 @@ impl HasPcmOptions for ValidatedAudioQuery<'_> {
         } = *self;
 
         PcmOptions {
-            volume_scale,
+            volume_scale: volume_scale.into(),
             output_sampling_rate,
             output_stereo,
         }

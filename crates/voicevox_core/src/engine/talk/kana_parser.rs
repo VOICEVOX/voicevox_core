@@ -1,4 +1,6 @@
-use std::{collections::HashMap, sync::LazyLock};
+use std::{collections::HashMap, num::NonZero, sync::LazyLock};
+
+use typed_floats::tf32;
 
 use super::{
     super::{
@@ -33,7 +35,7 @@ static TEXT2MORA_WITH_UNVOICE: LazyLock<HashMap<String, ValidatedMora<'static>>>
                     text: text.into(),
                     consonant: consonant.clone(),
                     vowel: NonConsonant::from(vowel).into(),
-                    pitch: 0.,
+                    pitch: tf32::ZERO.into(),
                 };
                 text2mora_with_unvoice.insert(UNVOICE_SYMBOL.to_string() + text, unvoice_mora);
             }
@@ -42,7 +44,7 @@ static TEXT2MORA_WITH_UNVOICE: LazyLock<HashMap<String, ValidatedMora<'static>>>
                 text: text.into(),
                 consonant,
                 vowel: NonConsonant::from(vowel).into(),
-                pitch: 0.,
+                pitch: tf32::ZERO.into(),
             };
             text2mora_with_unvoice.insert(text.to_string(), mora);
         }
@@ -51,7 +53,7 @@ static TEXT2MORA_WITH_UNVOICE: LazyLock<HashMap<String, ValidatedMora<'static>>>
 
 fn text_to_accent_phrase(phrase: &str) -> KanaParseResult<AccentPhrase> {
     let phrase_vec: Vec<char> = phrase.chars().collect();
-    let mut accent_index: Option<usize> = None;
+    let mut accent_index: Option<NonZero<usize>> = None;
     let mut moras: Vec<Mora> = Vec::new();
     let mut stack = String::new();
     let mut matched_text: Option<String> = None;
@@ -72,7 +74,9 @@ fn text_to_accent_phrase(phrase: &str) -> KanaParseResult<AccentPhrase> {
                     "second accent cannot be set at an accent phrase: {phrase}"
                 )));
             }
-            accent_index = Some(moras.len());
+            accent_index = Some(
+                NonZero::new(moras.len()).expect("`index != 0`, so at least one mora should exist"),
+            );
             index += 1;
             continue;
         }
@@ -146,9 +150,9 @@ pub(crate) fn parse_kana(text: &str) -> KanaParseResult<Vec<AccentPhrase>> {
                         text: PAUSE_DELIMITER.to_string(),
                         consonant: None,
                         consonant_length: None,
-                        vowel: "pau".to_string(),
-                        vowel_length: 0.,
-                        pitch: 0.,
+                        vowel: NonConsonant::MorablePau,
+                        vowel_length: tf32::ZERO,
+                        pitch: tf32::ZERO.into(),
                     }));
                 }
                 accent_phrase.set_is_interrogative(is_interrogative);
@@ -167,11 +171,18 @@ pub(crate) fn create_kana(accent_phrases: &[AccentPhrase]) -> String {
     let mut text = String::new();
     for phrase in accent_phrases {
         for (index, mora) in phrase.moras.iter().enumerate() {
-            if ["A", "E", "I", "O", "U"].contains(&&*mora.vowel) {
+            if matches!(
+                mora.vowel,
+                NonConsonant::UnvoicedVowelA
+                    | NonConsonant::UnvoicedVowelE
+                    | NonConsonant::UnvoicedVowelI
+                    | NonConsonant::UnvoicedVowelO
+                    | NonConsonant::UnvoicedVowelU
+            ) {
                 text.push(UNVOICE_SYMBOL);
             }
             text.push_str(&mora.text);
-            if index + 1 == phrase.accent {
+            if index + 1 == phrase.accent.get() {
                 text.push(ACCENT_SYMBOL);
             }
         }
