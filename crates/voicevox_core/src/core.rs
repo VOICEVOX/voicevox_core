@@ -10,5 +10,5 @@ pub(crate) mod voice_model;
 
 pub(crate) use self::adjust::{
     Array1ExtForPostProcess, Array1ExtForPreProcess, ArrayExt, ensure_minimum_phoneme_length,
-    pad_decoder_feature,
+    ensure_non_nan_finite, ensure_positive_finite, pad_decoder_feature,
 };
