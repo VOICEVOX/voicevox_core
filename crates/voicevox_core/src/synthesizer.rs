@@ -7,7 +7,6 @@ use easy_ext::ext;
 use educe::Educe;
 use enum_map::enum_map;
 use futures_util::TryFutureExt as _;
-use itertools::{Itertools as _, chain};
 use std::{
     fmt::{self, Debug},
     marker::PhantomData,
@@ -24,7 +23,7 @@ use crate::{
     core::{
         Array1ExtForPostProcess as _, Array1ExtForPreProcess as _, ArrayExt as _,
         devices::{self, DeviceSpec, GpuSpec},
-        ensure_minimum_phoneme_length,
+        ensure_minimum_phoneme_length, ensure_non_nan_finite, ensure_positive_finite,
         infer::{
             self, InferenceRuntime, InferenceSessionOptions,
             domains::{
@@ -918,27 +917,9 @@ trait AsInner {
             .predict_sing_f0::<Self::Async>(phonemes_by_frame, keys_by_frame, style_id)
             .await?;
 
-        f0s.iter()
-            .copied()
-            .map(TryInto::try_into)
-            .collect::<std::result::Result<_, _>>()
-            .map_err(|_| {
-                let invalid = chain!(
-                    f0s.iter().copied().any(f32::is_nan).then_some("NaN"),
-                    f0s.iter().copied().any(f32::is_infinite).then_some("inf"),
-                    f0s.iter()
-                        .copied()
-                        .any(f32::is_sign_negative)
-                        .then_some("-inf"),
-                )
-                .join(", ");
-                assert!(!invalid.is_empty());
-                ErrorRepr::RunModel {
-                    note: None,
-                    source: anyhow!("`predict_sing_f0` returned an array that contains: {invalid}"),
-                }
-                .into()
-            })
+        ensure_positive_finite(&f0s.into_vec(), |invalid| {
+            anyhow!("`predict_sing_f0` returned an array that contains: {invalid}")
+        })
     }
 
     async fn create_sing_frame_volume(
@@ -991,28 +972,14 @@ trait AsInner {
 
         let f0s = f0s.iter().copied().map(Into::into).collect();
 
-        self.status()
+        let volumes = self
+            .status()
             .predict_sing_volume::<Self::Async>(phonemes_by_frame, keys_by_frame, f0s, style_id)
-            .await?
-            .into_iter()
-            .map(|volume| volume.try_into().map_err(|_| volume))
-            .collect::<std::result::Result<_, _>>()
-            .map_err(|volume| {
-                ErrorRepr::RunModel {
-                    note: None,
-                    source: if volume.is_nan() {
-                        anyhow!("`predict_sing_volume` returned NaN")
-                    } else {
-                        assert!(volume.is_infinite());
-                        if volume.is_sign_positive() {
-                            anyhow!("`predict_sing_volume` returned `inf`")
-                        } else {
-                            anyhow!("`predict_sing_volume` returned `-inf`")
-                        }
-                    },
-                }
-                .into()
-            })
+            .await?;
+
+        ensure_non_nan_finite(&volumes.into_vec(), |invalid| {
+            anyhow!("`predict_sing_volume` returned an array that contains: {invalid}")
+        })
     }
 
     async fn frame_synthesis(
