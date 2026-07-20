@@ -972,28 +972,14 @@ trait AsInner {
 
         let f0s = f0s.iter().copied().map(Into::into).collect();
 
-        self.status()
+        let volumes = self
+            .status()
             .predict_sing_volume::<Self::Async>(phonemes_by_frame, keys_by_frame, f0s, style_id)
-            .await?
-            .into_iter()
-            .map(|volume| volume.try_into().map_err(|_| volume))
-            .collect::<std::result::Result<_, _>>()
-            .map_err(|volume| {
-                ErrorRepr::RunModel {
-                    note: None,
-                    source: if volume.is_nan() {
-                        anyhow!("`predict_sing_volume` returned NaN")
-                    } else {
-                        assert!(volume.is_infinite());
-                        if volume.is_sign_positive() {
-                            anyhow!("`predict_sing_volume` returned `inf`")
-                        } else {
-                            anyhow!("`predict_sing_volume` returned `-inf`")
-                        }
-                    },
-                }
-                .into()
-            })
+            .await?;
+
+        ensure_non_nan_finite(&volumes.into_vec(), |invalid| {
+            anyhow!("`predict_sing_volume` returned an array that contains: {invalid}")
+        })
     }
 
     async fn frame_synthesis(

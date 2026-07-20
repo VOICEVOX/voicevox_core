@@ -75,6 +75,7 @@
 
 ### Fixed
 
+- 一部のケースにおける`RunModel`エラーのメッセージが改善されます ([#1385])。
 - \[Python\] `Synthesizer.load_voice_model`のdocstringにおける"Parameters"の説明が誤っていたのが修正されます ([#1359])。
 
 ### Security
@@ -1518,6 +1519,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1359]: https://github.com/VOICEVOX/voicevox_core/pull/1359
 [#1362]: https://github.com/VOICEVOX/voicevox_core/pull/1362
 [#1381]: https://github.com/VOICEVOX/voicevox_core/pull/1381
+[#1385]: https://github.com/VOICEVOX/voicevox_core/pull/1385
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
