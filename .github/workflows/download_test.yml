@@ -90,7 +90,7 @@ jobs:
               dict/
           - name: DirectML option確認
             os: windows-latest
-            additional_opts: --devices directml
+            additional_opts: --devices directml --additional-libraries-version 0.3.0
             download_dir: voicevox_core
             check_items: |
               c_api/lib/voicevox_core.dll
@@ -120,7 +120,7 @@ jobs:
               dict/
           - name: cuda option確認
             os: windows-latest
-            additional_opts: --devices cuda
+            additional_opts: --devices cuda --additional-libraries-version 0.3.0
             download_dir: voicevox_core
             check_items: |
               c_api/lib/voicevox_core.dll
@@ -189,7 +189,6 @@ jobs:
             --c-api-version "$VERSION"
             --c-api-repo "$GITHUB_REPOSITORY"
             --onnxruntime-version voicevox_onnxruntime-1.23.2
-            --additional-libraries-version 0.3.0
             --models-version 0.16.0
           )
           opts+=(${{ matrix.additional_opts }})
