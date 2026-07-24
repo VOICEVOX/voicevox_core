@@ -89,7 +89,7 @@ class Onnxruntime:
     LIB_NAME: str = "voicevox_onnxruntime"
     """ONNX Runtimeのライブラリ名。"""
 
-    LIB_VERSION: str = "1.17.3"
+    LIB_VERSION: str = "1.23.2"
     """推奨されるONNX Runtimeのバージョン。"""
 
     LIB_VERSIONED_FILENAME: str

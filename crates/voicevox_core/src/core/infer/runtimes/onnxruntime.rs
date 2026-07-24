@@ -12,7 +12,6 @@
 // ```
 
 use std::{
-    cmp,
     ffi::CStr,
     fmt::{Debug, Display},
     mem,
@@ -135,6 +134,7 @@ fn setup(
     lib_info: TargetLibOnnxruntimeInfo<'_>,
 ) -> anyhow::Result<()> {
     const EXPECTED_MAJOR_VERSION: u64 = 1;
+    const LATEST_SUPPORTED_MINOR_VERSION: u32 = 23;
 
     const _: () = assert!(ort::sys::ORT_API_VERSION == 17);
 
@@ -151,7 +151,7 @@ fn setup(
             let major_version = version_string.next()?.parse::<u64>().ok()?;
             let minor_version = version_string
                 .next()
-                .and_then(|s| s.parse().ok())
+                .and_then(|s| s.parse::<u32>().ok())
                 .unwrap_or(0);
             Some((major_version, minor_version))
         })
@@ -162,22 +162,22 @@ fn setup(
         "invalid major version",
     );
 
-    match minor_version.cmp(&u64::from(ort::sys::ORT_API_VERSION)) {
-        cmp::Ordering::Less => bail!(
+    match minor_version {
+        ..ort::sys::ORT_API_VERSION => bail!(
             "{message_for_version}。\
-             ONNX Runtimeはバージョン1.{ORT_API_VERSION}でなくてはなりません",
+             ONNX Runtimeはバージョン1.{ORT_API_VERSION}以上でなくてはなりません",
             message_for_version = lib_info.message_for_version(version_string.to_string_lossy()),
             ORT_API_VERSION = ort::sys::ORT_API_VERSION,
         ),
+        ort::sys::ORT_API_VERSION..=LATEST_SUPPORTED_MINOR_VERSION => {}
         // TODO: 問題ないとわかっている既知のものであれば警告無しで許容しつつ、未来のものは拒否する。
-        cmp::Ordering::Greater => warn!(
+        _ => warn!(
             "{message_for_version}。\
-             対応しているONNX Runtimeのバージョンは1.{ORT_API_VERSION}なので、\
+             対応しているONNX Runtimeの最新バージョンは1.{LATEST_SUPPORTED_MINOR_VERSION}なので、\
              互換性の問題があるかもしれません",
             message_for_version = lib_info.message_for_version(version_string.to_string_lossy()),
-            ORT_API_VERSION = ort::sys::ORT_API_VERSION,
+            LATEST_SUPPORTED_MINOR_VERSION = LATEST_SUPPORTED_MINOR_VERSION,
         ),
-        cmp::Ordering::Equal => {}
     };
 
     // SAFETY: `GetApi` should require no preconditions, and should return a valid `OrtApi`.

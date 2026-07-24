@@ -66,7 +66,7 @@ optional arguments:
 
 ```console
 ❯ python ./talk.py ./models/vvms/0.vvm
-[INFO] __main__: Loading ONNX Runtime (args.onnxruntime='./onnxruntime/lib/libvoicevox_onnxruntime.so.1.17.3')
+[INFO] __main__: Loading ONNX Runtime (args.onnxruntime='./onnxruntime/lib/libvoicevox_onnxruntime.so.1.23.2')
 [DEBUG] __main__: onnxruntime.supported_devices()=SupportedDevices(cpu=True, cuda=True, dml=False)
 [INFO] __main__: Initializing (args.mode=<AccelerationMode.AUTO: 'AUTO'>, args.dict_dir=PosixPath('dict/open_jtalk_dic_utf_8-1.11'))
 [INFO] voicevox_core.synthesizer: GPUをテストします:
@@ -114,7 +114,7 @@ options:
 
 ```console
 ❯ python ./song.py ./models/vvms/s0.vvm --singer 3002
-[INFO] __main__: Loading ONNX Runtime (args.onnxruntime='./onnxruntime/lib/libvoicevox_onnxruntime.so.1.17.3')
+[INFO] __main__: Loading ONNX Runtime (args.onnxruntime='./onnxruntime/lib/libvoicevox_onnxruntime.so.1.23.2')
 [DEBUG] __main__: onnxruntime.supported_devices()=SupportedDevices(cpu=True, cuda=True, dml=False)
 [INFO] __main__: Initializing (args.mode='AUTO', args.dict_dir=PosixPath('dict/open_jtalk_dic_utf_8-1.11'))
 [INFO] voicevox_core.synthesizer: GPUをテストします:
