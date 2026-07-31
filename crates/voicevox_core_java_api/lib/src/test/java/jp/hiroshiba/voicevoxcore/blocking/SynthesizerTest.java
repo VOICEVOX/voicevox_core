@@ -7,6 +7,7 @@ package jp.hiroshiba.voicevoxcore.blocking;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
@@ -36,6 +37,34 @@ class SynthesizerTest extends TestUtils {
     Synthesizer synthesizer =
         Synthesizer.builder(onnxruntime, openJtalk).accelerationMode(AccelerationMode.CPU).build();
     assertFalse(synthesizer.isGpuMode());
+  }
+
+  @Test
+  void checkCpuNumThreadsAcceptsUint16() {
+    Onnxruntime onnxruntime = loadOnnxruntime();
+    OpenJtalk openJtalk = loadOpenJtalk();
+    for (int cpuNumThreads : Arrays.asList(0, 1, 2, 4, 0xffff)) {
+      Synthesizer.builder(onnxruntime, openJtalk)
+          .accelerationMode(AccelerationMode.CPU)
+          .cpuNumThreads(cpuNumThreads)
+          .build();
+    }
+  }
+
+  @Test
+  void checkCpuNumThreadsDeniesNonUint16() {
+    Onnxruntime onnxruntime = loadOnnxruntime();
+    OpenJtalk openJtalk = loadOpenJtalk();
+    IllegalArgumentException e =
+        assertThrowsExactly(
+            IllegalArgumentException.class,
+            () -> {
+              Synthesizer.builder(onnxruntime, openJtalk)
+                  .accelerationMode(AccelerationMode.CPU)
+                  .cpuNumThreads(0x10000)
+                  .build();
+            });
+    assertEquals("cpuNumThreads", e.getMessage());
   }
 
   boolean checkAllMoras(
