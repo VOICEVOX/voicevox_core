@@ -204,6 +204,12 @@ mod tests {
     #[case(Some("gA"), "_ガ")]
     #[case(Some("byO"), "_ビョ")]
     #[case(Some("O"), "_オ")]
+    #[case(Some("ryi"), "リィ")]
+    #[case(Some("kwu"), "クゥ")]
+    #[case(Some("byo"), "ヴョ")]
+    #[case(Some("ke"), "ヶ")]
+    #[case(Some("ryI"), "_リィ")]
+    #[case(Some("byO"), "_ヴョ")]
     #[case(None, "fail")]
     fn test_text2mora_with_unvoice(#[case] mora: Option<&str>, #[case] text: &str) {
         let text2mora = &super::TEXT2MORA_WITH_UNVOICE;
@@ -224,6 +230,9 @@ mod tests {
     #[case("ア_シタ'ワ", true)]
     #[case("ユウヒガ'", true)]
     #[case("_キ'レイ", true)]
+    #[case("ァ'", true)]
+    #[case("_キィ'グォ", true)]
+    #[case("ヴョ'_ヶ", true)]
     #[case("アクセントナシ", false)]
     #[case("アクセ'ント'タクサン'", false)]
     #[case("'アクセントハジマリ", false)]
@@ -242,10 +251,11 @@ mod tests {
         assert_eq!(result.is_ok(), result_is_ok_expected, "{:?}", result);
     }
     #[rstest]
-    fn test_create_kana() {
-        let text = "アンドロ'イドワ、デンキ'/ヒ'_ツジノ/ユメ'オ/ミ'ルカ？";
+    #[case("アンドロ'イドワ、デンキ'/ヒ'_ツジノ/ユメ'オ/ミ'ルカ？")]
+    #[case("ァ'/_リィ'グォ/ヴョ'_ヶ")]
+    fn test_create_kana(#[case] text: &str) {
         let phrases = super::parse_kana(text).unwrap();
         let text_created = super::create_kana(&phrases);
-        assert_eq!(text, &text_created);
+        assert_eq!(text, text_created);
     }
 }
