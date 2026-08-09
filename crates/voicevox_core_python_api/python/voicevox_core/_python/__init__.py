@@ -469,7 +469,7 @@ class AudioQuery:
             - :attr:`volume_scale` がNaN、infinity、もしくは負。
             - :attr:`pre_phoneme_length` がNaN、infinity、もしくは負。
             - :attr:`post_phoneme_length` がNaN、infinity、もしくは負。
-            - :attr:`output_sampling_rate` 以下の値をとる。
+            - :attr:`output_sampling_rate` が以下の値をとる。
                 - ``0`` 以下の値。
                 - :math:`2^{32}-1` を超過する値。
                 - ``24000`` の倍数以外 (将来的に解消予定。cf. |audio-query-validate-issue762|_)。
