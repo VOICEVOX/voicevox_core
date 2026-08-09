@@ -325,24 +325,18 @@ class Mora:
 
         - |mora-rust-ty|_ としてデシリアライズ不可。
             - :attr:`consonant` が子音以外の音素であるか、もしくは音素として不正。
+            - :attr:`consonant_length` がNaN、infinity、もしくは負。
             - :attr:`vowel` が子音であるか、もしくは音素として不正。
+            - :attr:`vowel_length` がNaN、infinity、もしくは負。
+            - :attr:`pitch` がNaNもしくは±infinity。
         - :attr:`consonant` と :attr:`consonant_length` の有無が不一致。
 
         送出するエラーは |mora-validate-invalid-query-error|_  。
-
-        また次の状態に対しては |mora-validate-logging-warning|_
-        レベルのログを出す。将来的にはエラーになる予定。
-
-        - :attr:`consonant_length` がNaN、infinity、もしくは負。
-        - :attr:`vowel_length` がNaN、infinity、もしくは負。
-        - :attr:`pitch` がNaNもしくは±infinity。
 
         .. |mora-rust-ty| replace:: Rust APIの ``Mora`` 型
         .. _mora-rust-ty: ../../../rust_api/voicevox_core/struct.Mora.html
         .. |mora-validate-invalid-query-error| replace:: ``InvalidQueryError``
         .. _mora-validate-invalid-query-error: #voicevox_core.InvalidQueryError
-        .. |mora-validate-logging-warning| replace:: ``WARNING``
-        .. _mora-validate-logging-warning: https://docs.python.org/3/library/logging.html#logging.WARNING
         """
         _validate_mora(self)
 
@@ -381,16 +375,14 @@ class AccentPhrase:
         不正であるとは、以下のいずれかの条件を満たすことである。
 
         - |accent-phrase-rust-ty|_ としてデシリアライズ不可。
-            - :attr:`accent` が負であるか、もしくは :math:`2^{64}-1` (32ビットプラットフォームの場合 :math:`2^{32}-1`)を超過する。
+            - :attr:`accent` が ``0`` 以下であるか、もしくは :math:`2^{64}-1` (32ビットプラットフォームの場合 :math:`2^{32}-1`)を超過する。
         - :attr:`moras` もしくは :attr:`pause_mora` の要素のうちいずれかが |accent-phrase-validate-mora-validate|_ 。
-        - :attr:`accent` が ``0`` 。
 
         送出するエラーは |accent-phrase-validate-invalid-query-error|_ 。
 
         また次の状態に対しては |accent-phrase-validate-logging-warning|_
         レベルのログを出す。将来的にはエラーになる予定。
 
-        - :attr:`moras` もしくは :attr:`pause_mora` の要素のうちいずれかが、警告が出る状態。
         - :attr:`accent` が :attr:`moras` の数を超過している。
 
         .. |accent-phrase-validate-invalid-query-error| replace:: ``InvalidQueryError``
@@ -477,7 +469,10 @@ class AudioQuery:
             - :attr:`volume_scale` がNaN、infinity、もしくは負。
             - :attr:`pre_phoneme_length` がNaN、infinity、もしくは負。
             - :attr:`post_phoneme_length` がNaN、infinity、もしくは負。
-            - :attr:`output_sampling_rate` が ``24000`` の倍数ではない、もしくは ``0``、あるいは負であるか、もしくは :math:`2^{32}-1` を超過する (将来的に解消予定。cf. |audio-query-validate-issue762|_)。
+            - :attr:`output_sampling_rate` 以下の値をとる。
+                - ``0`` 以下の値。
+                - :math:`2^{32}-1` を超過する値。
+                - ``24000`` の倍数以外 (将来的に解消予定。cf. |audio-query-validate-issue762|_)。
         - :attr:`accent_phrases` の要素のうちいずれかが |audio-query-validate-accent-phrase-validate|_ 。
 
         送出するエラーは |audio-query-validate-invalid-query-error|_ 。
