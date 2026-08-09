@@ -121,7 +121,6 @@ public class AudioQuery {
    *             <li>{@link #outputSamplingRate}が以下の値を取る。
    *                 <ul>
    *                   <li>{@code 0}以下の値。
-   *                   <li>2<sup>32</sup>-1を超過する値。
    *                   <li>{@code 24000}の倍数以外（将来的に解消予定。cf. <a
    *                       href="https://github.com/VOICEVOX/voicevox_core/issues/762">#762</a>）。
    *                 </ul>
