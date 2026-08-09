@@ -33,9 +33,6 @@ enum ErrorKind {
     #[display("VOICEVOXの`consonant`として不正、もしくは未知の音素が発生しました: {_0}")]
     InvalidConsonant(String),
 
-    #[display("accent is zero")]
-    AccentIsZero,
-
     #[display("too long mora")]
     TooLongMora,
 }
@@ -115,7 +112,9 @@ fn generate_accent_phrases(
         // workaround for VOICEVOX/voicevox_engine#55
         let accent = usize::from(ap_curr.accent_position).min(moras.len());
 
-        let accent = accent.try_into().map_err(|_| ErrorKind::AccentIsZero)?;
+        let accent = accent
+            .try_into()
+            .expect("Open JTalk is not considered to emit `0` as of v1.11");
 
         accent_phrases.push(AccentPhrase {
             moras,
