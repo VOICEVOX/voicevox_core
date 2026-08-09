@@ -803,13 +803,11 @@ VoicevoxResultCode voicevox_audio_query_validate(const char *audio_query_json);
  *
  * - [Rust APIの`AccentPhrase`型]としてデシリアライズ不可、もしくはJSONとして不正。
  * - `moras`もしくは`pause_mora`の要素のうちいずれかが、 ::voicevox_mora_validate でエラーになる。
- * - `accent`が`0`。
  *
  * [Rust APIの`AccentPhrase`型]: ../rust_api/voicevox_core/struct.AccentPhrase.html
  *
  * 次の状態に対しては警告のログを出す。将来的にはエラーになる予定。
  *
- * - `moras`もしくは`pause_mora`の要素のうちいずれかが、警告が出る状態。
  * - `accent`が`moras`の数を超過している。
  *
  * @param [in] accent_phrase_json `AccentPhrase`型のJSON
@@ -836,11 +834,6 @@ VoicevoxResultCode voicevox_accent_phrase_validate(const char *accent_phrase_jso
  * - `consonant`と`consonant_length`の有無が不一致。
  *
  * [Rust APIの`Mora`型]: ../rust_api/voicevox_core/struct.Mora.html
- *
- * 次の状態に対しては警告のログを出す。将来的にはエラーになる予定。
- *
- * - `consonant_length`が負。
- * - `vowel_length`が負。
  *
  * @param [in] mora_json `Mora`型のJSON
  *
