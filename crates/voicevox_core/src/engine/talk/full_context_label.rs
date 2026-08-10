@@ -27,9 +27,6 @@ enum ErrorKind {
     #[display("jlabelでラベルを解釈することができませんでした")]
     Jlabel,
 
-    #[display("VOICEVOXの`vowel`として不正、もしくは未知の音素が発生しました: {_0}")]
-    InvalidNonConsonant(String),
-
     #[display("VOICEVOXの`consonant`として不正、もしくは未知の音素が発生しました: {_0}")]
     InvalidConsonant(String),
 
@@ -39,6 +36,12 @@ enum ErrorKind {
 
 type Result<T> = std::result::Result<T, FullContextLabelError>;
 
+/// # Panics
+///
+/// 解析結果が次の場合にパニックする。
+///
+/// - アクセント位置として`0`が存在する。
+/// - [`generate_moras`]のパニック条件を満たす。
 pub(crate) fn extract_full_context_label(
     open_jtalk: &impl FullcontextExtractor,
     text: impl AsRef<str>,
@@ -65,6 +68,10 @@ pub(crate) fn extract_full_context_label(
     })
 }
 
+/// # Panics
+///
+/// - アクセント位置として`0`が存在する。
+/// - [`generate_moras`]のパニック条件を満たす。
 fn generate_accent_phrases(
     utterance: &[Label],
 ) -> std::result::Result<Vec<AccentPhrase>, ErrorKind> {
@@ -126,6 +133,9 @@ fn generate_accent_phrases(
     Ok(accent_phrases)
 }
 
+/// # Panics
+///
+/// 母音にあたる[`Label`]の[`jlabel::Phoneme::c`]が`None`か、あるいは[`NonConsonant`]にあてはまらなければパニックする。
 fn generate_moras(accent_phrase: &[Label]) -> std::result::Result<Vec<crate::Mora>, ErrorKind> {
     let mut moras = Vec::with_capacity(accent_phrase.len());
 
@@ -167,6 +177,9 @@ fn generate_moras(accent_phrase: &[Label]) -> std::result::Result<Vec<crate::Mor
     Ok(moras)
 }
 
+/// # Panics
+///
+/// `vowel.phoneme.c`が`None`か、あるいは[`NonConsonant`]にあてはまらなければパニックする。
 fn generate_mora(
     consonant: Option<&Label>,
     vowel: &Label,
@@ -177,15 +190,18 @@ fn generate_mora(
         text: mora_to_text(consonant, vowel),
         consonant: consonant
             .map(|consonant| {
-                consonant
-                    .parse()
-                    .map_err(|_| ErrorKind::InvalidConsonant(consonant.to_owned()))
+                consonant.parse().map_err(|_| {
+                    // VOICEVOX/voicevox_engine#57 への対策が無いため、
+                    // 例えば`"ア".repeat(99)`を入力すると溢れた`a`が子音として入ってきてしまうらしい。
+                    // FIXME: さらに調査した上 VOICEVOX/voicevox_engine#58 と同じ方向で、アクセント位置の`49`の壁の対策をする。
+                    ErrorKind::InvalidConsonant(consonant.to_owned())
+                })
             })
             .transpose()?,
         consonant_length: consonant.and(Some(tf32::ZERO)),
         vowel: vowel
             .parse()
-            .map_err(|_| ErrorKind::InvalidNonConsonant(vowel.to_owned()))?,
+            .expect("Open JTalk is not considered to emit consonants here as of v1.11"),
         vowel_length: tf32::ZERO,
         pitch: tf32::ZERO.into(),
     })

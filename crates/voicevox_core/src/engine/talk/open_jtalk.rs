@@ -21,6 +21,12 @@ pub(crate) struct OpenjtalkFunctionError {
     source: Option<Text2MecabError>,
 }
 
+/// # Panics
+///
+/// 出力結果が次の場合にパニックする。
+///
+/// - アクセント位置として`0`が存在する。
+/// - 母音部分に母音以外の音素が置かれている。
 pub(crate) trait FullcontextExtractor {
     fn extract_fullcontext(&self, text: &str) -> anyhow::Result<Vec<String>>;
 }
