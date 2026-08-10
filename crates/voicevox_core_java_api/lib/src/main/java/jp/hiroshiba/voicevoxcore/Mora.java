@@ -76,24 +76,24 @@ public class Mora implements Cloneable {
    *
    * <p>不正であるとは、{@code @throws}で示す条件を満たすことである。
    *
-   * <p>また次の状態に対してはログで警告を出す。将来的にはエラーになる予定。
-   *
-   * <ul>
-   *   <li>{@link #consonantLength}が負。
-   *   <li>{@link #vowelLength}が負。
-   * </ul>
-   *
    * @throws InvalidQueryException 次のうちどれかを満たす場合
    *     <ul>
    *       <li>JSONへのシリアライズが不可。
    *           <ul>
-   *             <li>{@link #consonantLength}がNaN、infinity、もしくは負。
-   *             <li>{@link #vowelLength}がNaN、infinity、もしくは負。
+   *             <li>{@link #consonantLength}がNaNもしくは±infinity。
+   *             <li>{@link #vowelLength}がNaNもしくは±infinity。
    *             <li>{@link #pitch}がNaNもしくは±infinity。
    *           </ul>
+   *       <li><a
+   *           href="https://voicevox.github.io/voicevox_core/apis/rust_api/voicevox_core/struct.Mora.html">Rust
+   *           APIの{@code Mora}型</a>としてデシリアライズ不可。
+   *           <ul>
+   *             <li>{@link #consonant}が子音以外の音素であるか、もしくは音素として不正。
+   *             <li>{@link #consonantLength}が負。
+   *             <li>{@link #vowel}が子音であるか、もしくは音素として不正。
+   *             <li>{@link #vowelLength}が負。
+   *           </ul>
    *       <li>{@link #consonant}と{@link #consonantLength}の有無が不一致。
-   *       <li>{@link #consonant}が子音以外の音素であるか、もしくは音素として不正。
-   *       <li>{@link #vowel}が子音であるか、もしくは音素として不正。
    *     </ul>
    */
   public void validate() {

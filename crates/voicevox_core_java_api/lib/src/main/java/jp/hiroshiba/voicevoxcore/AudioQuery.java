@@ -95,11 +95,6 @@ public class AudioQuery {
    * <p>また次の状態に対してはログで警告を出す。将来的にはエラーになる予定。
    *
    * <ul>
-   *   <li>{@link #accentPhrases}の要素のうちいずれかが警告が出る状態。
-   *   <li>{@link #speedScale}が負。
-   *   <li>{@link #volumeScale}が負。
-   *   <li>{@link #prePhonemeLength}が負。
-   *   <li>{@link #postPhonemeLength}が負。
    *   <li>{@link #outputSamplingRate}が{@code 24000}以外の値（エラーと同様将来的に解消予定）。
    * </ul>
    *
@@ -118,11 +113,18 @@ public class AudioQuery {
    *           href="https://voicevox.github.io/voicevox_core/apis/rust_api/voicevox_core/struct.AudioQuery.html">Rust
    *           APIの{@code AudioQuery}型</a>としてデシリアライズ不可。
    *           <ul>
-   *             <li>{@link #outputSamplingRate}が負であるか、もしくは2<sup>32</sup>-1を超過する。
+   *             <li>{@link #speedScale}が負。
+   *             <li>{@link #volumeScale}が負。
+   *             <li>{@link #prePhonemeLength}が負。
+   *             <li>{@link #postPhonemeLength}が負。
+   *             <li>{@link #outputSamplingRate}が以下の値を取る。
+   *                 <ul>
+   *                   <li>{@code 0}以下の値。
+   *                   <li>{@code 24000}の倍数以外（将来的に解消予定。cf. <a
+   *                       href="https://github.com/VOICEVOX/voicevox_core/issues/762">#762</a>）。
+   *                 </ul>
    *           </ul>
    *       <li>{@link #accentPhrases}の要素のうちいずれかが不正。
-   *       <li>{@link #outputSamplingRate}が{@code 24000}の倍数ではない、もしくは{@code 0} (将来的に解消予定。cf. <a
-   *           href="https://github.com/VOICEVOX/voicevox_core/issues/762">#762</a>)
    *     </ul>
    */
   public void validate() {

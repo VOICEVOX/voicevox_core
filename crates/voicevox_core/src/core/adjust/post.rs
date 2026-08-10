@@ -6,7 +6,7 @@ use itertools::{Itertools as _, chain};
 use ndarray::{Array, Array1, Dim, Ix, RemoveAxis};
 use typed_floats::{NonNaNFinite, PositiveFinite};
 
-use crate::error::ErrorRepr;
+use crate::{error::ErrorRepr, numerics::non_nan_finite_f32};
 
 // TODO: typed_floatsにissueかPRを出しに行き、スライス変換かbytemuck対応を入れてもらう
 /// 推論結果の`[f32]`を`[NonNaNFinite<f32>]`として解釈する。
@@ -72,15 +72,24 @@ pub(crate) fn ensure_positive_finite(
         })
 }
 
-pub(crate) fn ensure_minimum_phoneme_length(mut output: Vec<f32>) -> Vec<f32> {
-    const PHONEME_LENGTH_MINIMAL: f32 = 0.01;
+pub(crate) fn ensure_minimum_phoneme_length(
+    mut output: Vec<NonNaNFinite<f32>>,
+) -> Vec<PositiveFinite<f32>> {
+    const PHONEME_LENGTH_MINIMAL: NonNaNFinite<f32> = non_nan_finite_f32!(0.01);
 
     for output_item in output.iter_mut() {
         if *output_item < PHONEME_LENGTH_MINIMAL {
             *output_item = PHONEME_LENGTH_MINIMAL;
         }
     }
+
+    const _: () = assert!(PHONEME_LENGTH_MINIMAL.is_sign_positive());
+    // TODO: typed_floatsにissueかPRを出しに行き、スライス変換かbytemuck対応を入れてもらう
     output
+        .into_iter()
+        .map(TryInto::try_into)
+        .collect::<Result<_, _>>()
+        .expect("should be positive")
 }
 
 #[ext(Array1ExtForPostProcess)]
