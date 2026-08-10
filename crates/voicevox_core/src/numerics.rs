@@ -3,9 +3,9 @@ use typeshare::U53;
 
 #[cfg(test)]
 macro_rules! non_zero {
-    ($value:literal : $ty:ty) => {{
-        const VALUE: std::num::NonZero<$ty> =
-            if let Some(value) = std::num::NonZero::<$ty>::new($value) {
+    ($value:literal $(,)?) => {{
+        const VALUE: std::num::NonZero<::macros::int_type!($value)> =
+            if let Some(value) = std::num::NonZero::new($value) {
                 value
             } else {
                 panic!("invalid")

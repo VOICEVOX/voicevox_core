@@ -3788,7 +3788,7 @@ mod tests {
     const TEXT_CONSONANT_VOWEL_DATA1: &TextConsonantVowelData = &[
         (
             &[("コ", "k", "o"), ("レ", "r", "e"), ("ワ", "w", "a")],
-            non_zero!(3: usize),
+            non_zero!(3usize),
         ),
         (
             &[
@@ -3798,14 +3798,14 @@ mod tests {
                 ("デ", "d", "e"),
                 ("ス", "s", "U"),
             ],
-            non_zero!(1: usize),
+            non_zero!(1usize),
         ),
     ];
 
     const TEXT_CONSONANT_VOWEL_DATA2: &TextConsonantVowelData = &[
         (
             &[("コ", "k", "o"), ("レ", "r", "e"), ("ワ", "w", "a")],
-            non_zero!(1: usize),
+            non_zero!(1usize),
         ),
         (
             &[
@@ -3815,7 +3815,7 @@ mod tests {
                 ("デ", "d", "e"),
                 ("ス", "s", "U"),
             ],
-            non_zero!(3: usize),
+            non_zero!(3usize),
         ),
     ];
 
