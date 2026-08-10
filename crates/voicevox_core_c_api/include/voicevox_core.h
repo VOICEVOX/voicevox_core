@@ -778,7 +778,6 @@ VoicevoxResultCode voicevox_audio_query_create_from_accent_phrases(const char *a
  *
  * 次の状態に対しては警告のログを出す。将来的にはエラーになる予定。
  *
- * - `accent_phrases`の要素のうちいずれかが警告が出る状態。
  * - `outputSamplingRate`が`24000`以外の値（将来的に解消予定。cf. [#762]）。
  *
  * @param [in] audio_query_json `AudioQuery`型のJSON
@@ -803,12 +802,9 @@ VoicevoxResultCode voicevox_audio_query_validate(const char *audio_query_json);
  *
  * - [Rust APIの`AccentPhrase`型]としてデシリアライズ不可、もしくはJSONとして不正。
  * - `moras`もしくは`pause_mora`の要素のうちいずれかが、 ::voicevox_mora_validate でエラーになる。
+ * - `accent`が`moras`の数を超過している。
  *
  * [Rust APIの`AccentPhrase`型]: ../rust_api/voicevox_core/struct.AccentPhrase.html
- *
- * 次の状態に対しては警告のログを出す。将来的にはエラーになる予定。
- *
- * - `accent`が`moras`の数を超過している。
  *
  * @param [in] accent_phrase_json `AccentPhrase`型のJSON
  *
