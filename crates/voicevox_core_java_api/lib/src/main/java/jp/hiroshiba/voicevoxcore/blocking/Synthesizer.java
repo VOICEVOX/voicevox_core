@@ -544,7 +544,7 @@ public class Synthesizer {
      * @return ビルダー。
      */
     public Builder cpuNumThreads(int cpuNumThreads) {
-      if (Utils.isU16(cpuNumThreads)) {
+      if (!Utils.isU16(cpuNumThreads)) {
         throw new IllegalArgumentException("cpuNumThreads");
       }
       this.cpuNumThreads = cpuNumThreads;

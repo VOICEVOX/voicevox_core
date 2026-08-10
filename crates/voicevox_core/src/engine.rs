@@ -14,7 +14,7 @@ pub(crate) use self::{
     sampling_rate::DEFAULT_SAMPLING_RATE,
 };
 pub use self::{
-    acoustic_feature_extractor::{Phoneme, Sil},
+    acoustic_feature_extractor::{Consonant, NonConsonant, Phoneme, Sil},
     audio_file::wav_from_s16le,
     sampling_rate::SamplingRate,
 };
