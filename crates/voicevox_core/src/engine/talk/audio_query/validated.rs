@@ -1,7 +1,4 @@
-use std::{
-    borrow::Cow,
-    num::{FpCategory, NonZero},
-};
+use std::{borrow::Cow, num::NonZero};
 
 use tracing::warn;
 use typed_floats::{NonNaNFinite, PositiveFinite, tf32};
@@ -103,29 +100,6 @@ impl AudioQuery {
     pub(crate) fn to_validated(&self) -> crate::Result<ValidatedAudioQuery<'_>> {
         ValidatedAudioQuery::new(self).map_err(Into::into)
     }
-}
-
-macro_rules! warn_for_non_finite {
-    ($v:ident $(,)?) => {
-        match $v.classify() {
-            FpCategory::Nan => warn!("`{}` should not be NaN", stringify!($v)),
-            FpCategory::Infinite => warn!("`{}` should not be infinite", stringify!($v)),
-            FpCategory::Zero | FpCategory::Subnormal | FpCategory::Normal => {}
-        }
-    };
-}
-
-macro_rules! warn_for_non_positive_finite {
-    ($v:ident $(,)?) => {
-        match $v.classify() {
-            FpCategory::Nan | FpCategory::Infinite => warn_for_non_finite!($v),
-            FpCategory::Zero | FpCategory::Subnormal | FpCategory::Normal => {
-                if $v.is_sign_negative() {
-                    warn!("`{}` should not be negative", stringify!($v));
-                }
-            }
-        }
-    };
 }
 
 #[derive(Clone, PartialEq, Debug)]
@@ -382,12 +356,6 @@ impl<'original> ValidatedAudioQuery<'original> {
         let output_sampling_rate = *output_sampling_rate;
         let output_stereo = *output_stereo;
 
-        warn_for_non_positive_finite!(speed_scale);
-        warn_for_non_finite!(pitch_scale);
-        warn_for_non_finite!(intonation_scale);
-        warn_for_non_positive_finite!(volume_scale);
-        warn_for_non_positive_finite!(pre_phoneme_length);
-        warn_for_non_positive_finite!(post_phoneme_length);
         if output_sampling_rate != SamplingRate::default() {
             warn!("`output_sampling_rate` should be `DEFAULT_SAMPLING_RATE`"); // FIXME: `{}`を忘れてる
         }
