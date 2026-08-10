@@ -29,13 +29,13 @@ itertools.workspace = true
 minus = { workspace = true, features = ["static_output"] }
 octocrab = { workspace = true, features = ["stream"] }
 parse-display.workspace = true
-rayon.workspace = true
 rprompt.workspace = true
 scraper.workspace = true
 semver.workspace = true
 strum = { workspace = true, features = ["derive"] }
 tar.workspace = true
-tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread", "sync"] }
+tempfile.workspace = true
+tokio = { workspace = true, features = ["io-util", "macros", "rt", "rt-multi-thread", "sync"] }
 tracing.workspace = true
 tracing-subscriber = { workspace = true, features = ["env-filter"] }
 unicode-width.workspace = true
