@@ -377,13 +377,9 @@ class AccentPhrase:
         - |accent-phrase-rust-ty|_ としてデシリアライズ不可。
             - :attr:`accent` が ``0`` 以下であるか、もしくは :math:`2^{64}-1` (32ビットプラットフォームの場合 :math:`2^{32}-1`)を超過する。
         - :attr:`moras` もしくは :attr:`pause_mora` の要素のうちいずれかが |accent-phrase-validate-mora-validate|_ 。
+        - :attr:`accent` が :attr:`moras` の数を超過している。
 
         送出するエラーは |accent-phrase-validate-invalid-query-error|_ 。
-
-        また次の状態に対しては |accent-phrase-validate-logging-warning|_
-        レベルのログを出す。将来的にはエラーになる予定。
-
-        - :attr:`accent` が :attr:`moras` の数を超過している。
 
         .. |accent-phrase-validate-invalid-query-error| replace:: ``InvalidQueryError``
         .. _accent-phrase-validate-invalid-query-error: #voicevox_core.InvalidQueryError
@@ -391,8 +387,6 @@ class AccentPhrase:
         .. _accent-phrase-rust-ty: ../../../rust_api/voicevox_core/struct.AccentPhrase.html
         .. |accent-phrase-validate-mora-validate| replace:: 不正
         .. _accent-phrase-validate-mora-validate: #voicevox_core.Mora.validate
-        .. |accent-phrase-validate-logging-warning| replace:: ``WARNING``
-        .. _accent-phrase-validate-logging-warning: https://docs.python.org/3/library/logging.html#logging.WARNING
         """
         _validate_accent_phrase(self)
 
@@ -480,7 +474,6 @@ class AudioQuery:
         また次の状態に対しては |audio-query-validate-logging-warning|_
         レベルのログを出す。将来的にはエラーになる予定。
 
-        - :attr:`accent_phrases` の要素のうちいずれかが警告が出る状態。
         - :attr:`output_sampling_rate` が ``24000`` 以外の値（エラーと同様将来的に解消予定）。
 
         .. |audio-query-validate-invalid-query-error| replace:: ``InvalidQueryError``

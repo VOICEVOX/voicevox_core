@@ -268,6 +268,9 @@ pub(crate) enum InvalidQueryErrorSource {
     #[error("\"sil\"を含む文字列である必要があります")]
     MustContainSil,
 
+    #[error("アクセント位置はモーラ数を超過してはいけません")]
+    TooLargeAccent,
+
     #[error("0より大きい{DEFAULT_SAMPLING_RATE}の倍数でなければなりません")]
     IsNotMultipleOfBaseSamplingRate,
 

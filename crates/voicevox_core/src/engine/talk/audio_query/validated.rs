@@ -42,18 +42,12 @@ impl AccentPhrase {
     ///
     /// # Errors
     ///
-    /// この構造体が不正であるとき[`ErrorKind::InvalidQuery`]を表わすエラーを返す。不正であるとは、以下の条件を満たすことである。
+    /// この構造体が不正であるとき[`ErrorKind::InvalidQuery`]を表わすエラーを返す。不正であるとは、以下のいずれかの条件を満たすことである。
     ///
     /// - [`moras`]もしくは[`pause_mora`]の要素のうちいずれかが[不正]。
-    ///
-    /// # Warnings
-    ///
-    /// 次の状態に対しては[`WARN`]レベルのログを出す。将来的にはエラーになる予定。
-    ///
     /// - [`accent`]が[`moras`]の数を超過している。
     ///
     /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
-    /// [`WARN`]: tracing::Level::WARN
     /// [`moras`]: Self::moras
     /// [`pause_mora`]: Self::pause_mora
     /// [`accent`]: Self::accent
@@ -82,7 +76,6 @@ impl AudioQuery {
     ///
     /// 次の状態に対しては[`WARN`]レベルのログを出す。将来的にはエラーになる予定。
     ///
-    /// - [`accent_phrases`]の要素のうちいずれかが警告が出る状態。
     /// - [`output_sampling_rate`]が`24000`以外の値（将来的に解消予定。cf. [#762]）。
     ///
     /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
@@ -240,7 +233,15 @@ impl<'original> ValidatedAccentPhrase<'original> {
         let is_interrogative = *is_interrogative;
 
         if accent.get() > moras.len() {
-            warn!("`accent` should not exceed the number of `moras`");
+            return Err(error(InvalidQueryErrorSource::InvalidFields {
+                fields: "`moras`と`accent`".to_owned(),
+                source: InvalidQueryError {
+                    what: "組み合わせ",
+                    value: None,
+                    source: InvalidQueryErrorSource::TooLargeAccent.into(),
+                }
+                .into(),
+            }));
         }
 
         let moras = moras

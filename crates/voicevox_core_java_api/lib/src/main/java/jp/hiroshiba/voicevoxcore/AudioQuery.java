@@ -95,7 +95,6 @@ public class AudioQuery {
    * <p>また次の状態に対してはログで警告を出す。将来的にはエラーになる予定。
    *
    * <ul>
-   *   <li>{@link #accentPhrases}の要素のうちいずれかが警告が出る状態。
    *   <li>{@link #outputSamplingRate}が{@code 24000}以外の値（エラーと同様将来的に解消予定）。
    * </ul>
    *
