@@ -63,23 +63,16 @@ public class AccentPhrase {
    *
    * <p>不正であるとは、{@code @throws}で示す条件を満たすことである。
    *
-   * <p>また次の状態に対してはログで警告を出す。将来的にはエラーになる予定。
-   *
-   * <ul>
-   *   <li>{@link #moras}もしくは{@link #pauseMora}の要素のいずれかが、警告が出る状態。
-   *   <li>{@link #accent}が{@link #moras}の数を超過している。
-   * </ul>
-   *
    * @throws InvalidQueryException 次のうちどれかを満たす場合
    *     <ul>
    *       <li><a
    *           href="https://voicevox.github.io/voicevox_core/apis/rust_api/voicevox_core/struct.AccentPhrase.html">Rust
    *           APIの{@code AccentPhrase}型</a>としてデシリアライズ不可。
    *           <ul>
-   *             <li>{@link #accent}が負であるか、もしくは32ビットプラットフォームの場合2<sup>32</sup>-1を超過する。
+   *             <li>{@link #accent}が{@code 0}以下であるか、もしくは32ビットプラットフォームの場合2<sup>32</sup>-1を超過する。
    *           </ul>
    *       <li>{@link #moras}もしくは{@link #pauseMora}の要素のいずれかが不正。
-   *       <li>{@link #accent}が{@code 0}。
+   *       <li>{@link #accent}が{@link #moras}の数を超過している。
    *     </ul>
    */
   public void validate() {

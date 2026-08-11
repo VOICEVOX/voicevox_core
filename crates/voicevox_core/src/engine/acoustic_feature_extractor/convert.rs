@@ -213,7 +213,13 @@ impl FromStr for Phoneme {
     }
 }
 
-impl<'de> Deserialize<'de> for Phoneme {
+#[duplicate_item(
+    T WHAT;
+    [ Phoneme ] [ "a phoneme" ];
+    [ Consonant ] [ "a consonant" ];
+    [ NonConsonant ] [ "a non-consonant phoneme" ];
+)]
+impl<'de> Deserialize<'de> for T {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -223,10 +229,10 @@ impl<'de> Deserialize<'de> for Phoneme {
         struct Visitor;
 
         impl de::Visitor<'_> for Visitor {
-            type Value = Phoneme;
+            type Value = T;
 
             fn expecting(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-                write!(fmt, "a string that represents a phoneme")
+                write!(fmt, "a string that represents {}", WHAT)
             }
 
             fn visit_str<E>(self, s: &str) -> Result<Self::Value, E>

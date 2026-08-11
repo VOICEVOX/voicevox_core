@@ -45,13 +45,14 @@
 - \[Rust\] APIドキュメントが改善されます ([#1343], [#1381])。
     - トップページのコード例で`tracing_subscriber::fmt().init();`が行われるようになります。
     - \[Linux\] muslターゲットでは`load-onnxruntime`が事実上利用不可であることが明記されます。
-- \[C\] \[macOS\] :tada: macOS向けのXCFrameworkがvoicevox\_core-xcframework-cpu-{バージョン}.zipという名前でリリースされるようになります ([#1056] helped by [@nekomimimi], [#1114], [#1362])。
+- \[C\] \[macOS\] :tada: リリースされるXCFrameworkにmacOS用の内容が入るようになります ([#1056] helped by [@nekomimimi], [#1114], [#1362], [#1399])。
 - \[C,ダウンローダー\] \[macOS\] リリースがコード署名されるようになります ([#1326])。
 - \[ダウンローダー\] `--os`オプションで`android`と`ios`を指定できるようになります。ただしiOSの`c-api`をダウンロードすることはできません ([#1313])。
 - \[ダウンローダー\] 環境変数`VV_DOWNLOADER_C_API_ALLOW_DRAFT`を設定することで、`c-api`のdraft releaseを`--c-api-version`で指定できるようになります。主な用途はこのvoicevox\_coreリポジトリでの内部利用です ([#1315])。
 
 ### Changed
 
+- \[BREAKING\] `AudioQuery`/`AccentPhrase`/`Mora`の警告が、`output_sampling_rate`のものを除きエラーになります。また入力するテキストにより`AccentPhrase`作成時点でエラーになるケースがあります。Rust APIにおいては、制約が強くなる形で各フィールドの型が変わります ([#1384])。
 - \[Rust\] \[BREAKING\] `Synthesizer::load_voice_model`がビルダースタイルになります ([#1331])。
 - \[Rust\] \[BREAKING\] MSRVが1.89.0になります ([#1323])。
 - \[Rust\] \[BREAKING\] `load-onnxruntime`フィーチャと`link-onnxruntime`フィーチャの両方において、ビルド時のダウンロードおよびリンカーフラグの設定が[pykeio/ort](https://github.com/pykeio/ort)由来の処理に依存しなくなります。それにより、ビルド時の挙動が以下の点で変わります。なお以下で言及する"ONNX Runtime"はVOICEVOX ONNX Runtimeとは異なることに注意してください [#1278]。
@@ -70,6 +71,7 @@
     - \[追加\]: `ndarray@0.17`
     - \[追加\]: `git+https://github.com/pykeio/ort.git?rev=94417081c47f47f5a7d6a92ce94bb38fda10019f#ort@2.0.0-rc.12`
     - \[変更\]: `indexmap@2`: `^2.6.0` → `^2.13.0`
+- \[C\] \[iOS\] リリースされるXCFrameworkのファイル名がvoicevox\_core-xcframework-{バージョン}.zipという形になります ([#1399])。
 - \[C\] \[BREAKING\] `voicevox_synthesizer_load_voice_model`に引数`VoicevoxLoadVoiceModelOptions options`が追加されます ([#1337])。
 - \[Java\] \[BREAKING\] `Synthesizer#load_voice_model`がビルダースタイルになります ([#1337])。
 
@@ -77,6 +79,7 @@
 
 - 一部のケースにおける`RunModel`エラーのメッセージが改善されます ([#1385])。
 - \[Python\] `Synthesizer.load_voice_model`のdocstringにおける"Parameters"の説明が誤っていたのが修正されます ([#1359])。
+- \[Java\] Java APIの実装当初から事実上利用不可だった`Synthesizer.Builder#cpuNumThreads`が利用可能になります ([#1394])。
 
 ### Security
 
@@ -1519,7 +1522,10 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1359]: https://github.com/VOICEVOX/voicevox_core/pull/1359
 [#1362]: https://github.com/VOICEVOX/voicevox_core/pull/1362
 [#1381]: https://github.com/VOICEVOX/voicevox_core/pull/1381
+[#1384]: https://github.com/VOICEVOX/voicevox_core/pull/1384
 [#1385]: https://github.com/VOICEVOX/voicevox_core/pull/1385
+[#1394]: https://github.com/VOICEVOX/voicevox_core/pull/1394
+[#1399]: https://github.com/VOICEVOX/voicevox_core/pull/1399
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 

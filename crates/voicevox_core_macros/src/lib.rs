@@ -8,6 +8,7 @@ mod extract;
 mod inference_domain;
 mod inference_domains;
 mod mora_mappings;
+mod numerics;
 mod python_api;
 
 use syn::parse_macro_input;
@@ -133,6 +134,12 @@ pub fn substitute_type(input: proc_macro::TokenStream) -> proc_macro::TokenStrea
 pub fn derive_mora_mappings(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = &parse_macro_input!(input);
     from_syn(mora_mappings::derive_mora_mappings(input))
+}
+
+#[proc_macro]
+pub fn int_type(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let input = &parse_macro_input!(input);
+    from_syn(numerics::int_type(input))
 }
 
 #[proc_macro]

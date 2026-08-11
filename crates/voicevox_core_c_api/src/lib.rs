@@ -538,19 +538,13 @@ pub unsafe extern "C" fn voicevox_audio_query_create_from_accent_phrases(
 ///
 /// - [Rust APIの`AudioQuery`型]としてデシリアライズ不可、もしくはJSONとして不正。
 /// - `accent_phrases`の要素のうちいずれかが、 ::voicevox_accent_phrase_validate でエラーになる。
-/// - `outputSamplingRate`が`24000`の倍数ではない、もしくは`0` (将来的に解消予定。cf. [#762])。
 ///
 /// [Rust APIの`AudioQuery`型]: ../rust_api/voicevox_core/struct.AudioQuery.html
 /// [#762]: https://github.com/VOICEVOX/voicevox_core/issues/762
 ///
 /// 次の状態に対しては警告のログを出す。将来的にはエラーになる予定。
 ///
-/// - `accent_phrases`の要素のうちいずれかが警告が出る状態。
-/// - `speedScale`が負。
-/// - `volumeScale`が負。
-/// - `prePhonemeLength`が負。
-/// - `postPhonemeLength`が負。
-/// - `outputSamplingRate`が`24000`以外の値（エラーと同様将来的に解消予定）。
+/// - `outputSamplingRate`が`24000`以外の値（将来的に解消予定。cf. [#762]）。
 ///
 /// @param [in] audio_query_json `AudioQuery`型のJSON
 ///
@@ -578,14 +572,9 @@ pub unsafe extern "C" fn voicevox_audio_query_validate(
 ///
 /// - [Rust APIの`AccentPhrase`型]としてデシリアライズ不可、もしくはJSONとして不正。
 /// - `moras`もしくは`pause_mora`の要素のうちいずれかが、 ::voicevox_mora_validate でエラーになる。
-/// - `accent`が`0`。
+/// - `accent`が`moras`の数を超過している。
 ///
 /// [Rust APIの`AccentPhrase`型]: ../rust_api/voicevox_core/struct.AccentPhrase.html
-///
-/// 次の状態に対しては警告のログを出す。将来的にはエラーになる予定。
-///
-/// - `moras`もしくは`pause_mora`の要素のうちいずれかが、警告が出る状態。
-/// - `accent`が`moras`の数を超過している。
 ///
 /// @param [in] accent_phrase_json `AccentPhrase`型のJSON
 ///
@@ -613,15 +602,8 @@ pub unsafe extern "C" fn voicevox_accent_phrase_validate(
 ///
 /// - [Rust APIの`Mora`型]としてデシリアライズ不可、もしくはJSONとして不正。
 /// - `consonant`と`consonant_length`の有無が不一致。
-/// - `consonant`が子音以外の音素であるか、もしくは音素として不正。
-/// - `vowel`が子音であるか、もしくは音素として不正。
 ///
 /// [Rust APIの`Mora`型]: ../rust_api/voicevox_core/struct.Mora.html
-///
-/// 次の状態に対しては警告のログを出す。将来的にはエラーになる予定。
-///
-/// - `consonant_length`が負。
-/// - `vowel_length`が負。
 ///
 /// @param [in] mora_json `Mora`型のJSON
 ///
