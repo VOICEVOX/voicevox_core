@@ -203,6 +203,11 @@ mod tests {
         \"id\": \"a1a2a3a4-b1b2-c1c2-d1d2-d3d4d5d6d7d8\",
         \"metas_filename\": \"metas.json\"
     }", Ok(()))]
+    #[case("{
+        \"vvm_format_version\": 3,
+        \"id\": \"a1a2a3a4-b1b2-c1c2-d1d2-d3d4d5d6d7d8\",
+        \"metas_filename\": \"metas.json\"
+    }", Err("未知の形式です（`vvm_format_version=3`）。新しいバージョンのVOICEVOX COREであれば対応しているかもしれません at line 5 column 5"))]
     fn vvm_format_version_works(
         #[case] input: &str,
         #[case] expected: Result<(), &str>,
