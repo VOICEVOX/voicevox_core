@@ -18,10 +18,9 @@ use super::infer::{
     domains::{InferenceDomainMap, inference_domain_map_values},
 };
 
-#[derive(Clone, Debug)]
-struct FormatVersionV2;
 
-impl<'de> Deserialize<'de> for FormatVersionV2 {
+// vvm_format_versionの値に応じたスキーマでパースし現行のManifestに詰めなおす
+impl<'de> Deserialize<'de> for Manifest {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -30,24 +29,39 @@ impl<'de> Deserialize<'de> for FormatVersionV2 {
 
         struct Visitor;
 
-        impl de::Visitor<'_> for Visitor {
-            type Value = FormatVersionV2;
+        impl<'de> de::Visitor<'de> for Visitor {
+            type Value = Manifest;
 
             fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-                formatter.write_str("an unsigned integer")
+                formatter.write_str("an unsigned integer 'vvm_format_version' field")
             }
 
-            fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
+            fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
             where
-                E: de::Error,
+                A: de::MapAccess<'de>,
             {
-                match v {
-                    1 => Err(E::custom(
-                        "廃止された形式です（`vvm_format_version=1`）。古いバージョンのVOICEVOX \
-                        COREであれば対応しているかもしれません",
-                    )),
-                    2 => Ok(FormatVersionV2),
-                    v => Err(E::custom(format!(
+                let mut root = serde_json::Map::new();
+                while let Some((key, value)) = map.next_entry::<String, serde_json::Value>()? {
+                    root.insert(key, value);
+                }
+                let vvm_format_version = root
+                    .get("vvm_format_version")
+                    .and_then(serde_json::Value::as_u64)
+                    .ok_or_else(|| de::Error::missing_field("vvm_format_version"))?;
+                let content_value = serde_json::Value::Object(root);
+
+                match vvm_format_version {
+                    1 => {
+                        let data = ManifestSchemaV1::deserialize(content_value)
+                            .map_err(de::Error::custom)?;
+                        Ok(data.into())
+                    },
+                    2 => {
+                        let data = ManifestSchemaV2::deserialize(content_value)
+                            .map_err(de::Error::custom)?;
+                        Ok(data.into())
+                    },
+                    v => Err(de::Error::custom(format!(
                         "未知の形式です（`vvm_format_version={v}`）。新しいバージョンのVOICEVOX \
                          COREであれば対応しているかもしれません",
                     ))),
@@ -75,14 +89,54 @@ impl Display for InnerVoiceId {
     }
 }
 
-#[derive(Debug, Deserialize, Getters)]
+/// voicevox_coreで使われているManifest
+#[derive(Debug, Getters)]
 pub struct Manifest {
-    #[expect(dead_code, reason = "現状はバリデーションのためだけに存在")]
-    vvm_format_version: FormatVersionV2,
+    vvm_format_version: u64,  // この値は固定ではない。バージョンに応じてmetasの構造やバリデーションが変化する。
+    pub(super) id: VoiceModelId,
+    metas_filename: String,
+    domains: InferenceDomainMap<ManifestDomains>,
+}
+
+/// 現行（vvm_format_version=2）のManifestスキーマ
+#[derive(Debug, Deserialize, Getters)]
+pub struct ManifestSchemaV2 {
+    vvm_format_version: u64,
+    pub(super) id: VoiceModelId,
+    metas_filename: String,
+    domains: InferenceDomainMap<ManifestDomains>,
+}
+
+impl From<ManifestSchemaV2> for Manifest {
+    fn from(schema: ManifestSchemaV2) -> Self {
+        Self {
+            vvm_format_version: schema.vvm_format_version,
+            id: schema.id,
+            metas_filename: schema.metas_filename,
+            domains: schema.domains,
+        }
+    }
+}
+
+/// 互換性維持のために残している旧式（vvm_format_version=1）のManifestスキーマ
+#[derive(Debug, Deserialize, Getters)]
+pub struct ManifestSchemaV1 {
+    vvm_format_version: u64,
     pub(super) id: VoiceModelId,
     metas_filename: String,
     #[serde(flatten)]
     domains: InferenceDomainMap<ManifestDomains>,
+}
+
+impl From<ManifestSchemaV1> for Manifest {
+    fn from(schema: ManifestSchemaV1) -> Self {
+        Self {
+            vvm_format_version: schema.vvm_format_version,
+            id: schema.id,
+            metas_filename: schema.metas_filename,
+            domains: schema.domains,
+        }
+    }
 }
 
 pub(super) type ManifestDomains = inference_domain_map_values!(for<D> Option<ManifestDomain<D>>);

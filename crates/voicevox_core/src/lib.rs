@@ -471,7 +471,7 @@ use rstest_reuse;
 pub use self::{
     core::{
         devices::SupportedDevices,
-        metas::{CharacterMeta, CharacterVersion, StyleId, StyleMeta, StyleType, VoiceModelMeta},
+        metas::{CharacterMeta, CharacterVersion, StyleId, StyleMeta, StyleType, VoiceModelMeta, VoiceModelMetaSchemaV1, VoiceModelMetaSchemaV2},
         status::OnExistingVoiceModelId,
         voice_model::VoiceModelId,
     },

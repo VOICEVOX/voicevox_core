@@ -241,6 +241,173 @@ pub enum StyleType {
     StreamingTalk,
 }
 
+/// 音声モデルのメタ情報スキーマ（vvm_format_version=2形式）
+pub type VoiceModelMetaSchemaV2 = Vec<CharacterMetaSchemaV2>;
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+#[non_exhaustive]
+pub struct CharacterMetaSchemaV2 {
+    pub name: String,
+    pub styles: Vec<StyleMetaSchemaV2>,
+    pub version: CharacterVersion,
+    pub speaker_uuid: String,
+    pub order: Option<u32>,
+}
+#[derive(Deserialize, Serialize, Clone, PartialEq, Debug)]
+#[non_exhaustive]
+pub struct StyleMetaSchemaV2 {
+    pub id: StyleId,
+    pub name: String,
+    #[serde(default)]
+    pub r#type: StyleTypeSchemaV2,
+    pub order: Option<u32>,
+}
+
+#[derive(
+    Default,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Debug,
+    strum::Display,
+    Deserialize,
+    Serialize,
+)]
+#[strum(serialize_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
+#[non_exhaustive]
+pub enum StyleTypeSchemaV2 {
+    #[default]
+    Talk,
+    SingingTeacher,
+    FrameDecode,
+    Sing,
+    StreamingTalk,
+}
+
+impl From<StyleTypeSchemaV2> for StyleType {
+    fn from(value: StyleTypeSchemaV2) -> Self {
+        match value {
+            StyleTypeSchemaV2::Talk => Self::Talk,
+            StyleTypeSchemaV2::SingingTeacher => Self::SingingTeacher,
+            StyleTypeSchemaV2::FrameDecode => Self::FrameDecode,
+            StyleTypeSchemaV2::Sing => Self::Sing,
+            StyleTypeSchemaV2::StreamingTalk => Self::StreamingTalk,
+        }
+    }
+}
+
+impl From<StyleMetaSchemaV2> for StyleMeta {
+    fn from(value: StyleMetaSchemaV2) -> Self {
+        Self {
+            id: value.id,
+            name: value.name,
+            r#type: value.r#type.into(),
+            order: value.order,
+        }
+    }
+}
+
+impl From<CharacterMetaSchemaV2> for CharacterMeta {
+    fn from(value: CharacterMetaSchemaV2) -> Self {
+        Self {
+            name: value.name,
+            styles: value.styles.into_iter().map(Into::into).collect(),
+            version: value.version,
+            speaker_uuid: value.speaker_uuid,
+            order: value.order,
+        }
+    }
+}
+
+
+/// 音声モデルのメタ情報スキーマ（vvm_format_version=1形式）
+pub type VoiceModelMetaSchemaV1 = Vec<CharacterMetaSchemaV1>;
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+#[non_exhaustive]
+pub struct CharacterMetaSchemaV1 {
+    pub name: String,
+    pub styles: Vec<StyleMetaSchemaV1>,
+    pub version: CharacterVersion,
+    pub speaker_uuid: String,
+    pub order: Option<u32>,
+}
+
+#[derive(Deserialize, Serialize, Clone, PartialEq, Debug)]
+#[non_exhaustive]
+pub struct StyleMetaSchemaV1 {
+    pub id: StyleId,
+    pub name: String,
+    #[serde(default)]
+    pub r#type: StyleTypeSchemaV1,
+    pub order: Option<u32>,
+}
+
+#[derive(
+    Default,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Debug,
+    strum::Display,
+    Deserialize,
+    Serialize,
+)]
+#[strum(serialize_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
+#[non_exhaustive]
+pub enum StyleTypeSchemaV1 {
+    #[default]
+    Talk,
+    SingingTeacher,
+    FrameDecode,
+    Sing,
+}
+
+impl From<StyleTypeSchemaV1> for StyleType {
+    fn from(value: StyleTypeSchemaV1) -> Self {
+        match value {
+            StyleTypeSchemaV1::Talk => Self::Talk,
+            StyleTypeSchemaV1::SingingTeacher => Self::SingingTeacher,
+            StyleTypeSchemaV1::FrameDecode => Self::FrameDecode,
+            StyleTypeSchemaV1::Sing => Self::Sing,
+        }
+    }
+}
+
+impl From<StyleMetaSchemaV1> for StyleMeta {
+    fn from(value: StyleMetaSchemaV1) -> Self {
+        Self {
+            id: value.id,
+            name: value.name,
+            r#type: value.r#type.into(),
+            order: value.order,
+        }
+    }
+}
+
+impl From<CharacterMetaSchemaV1> for CharacterMeta {
+    fn from(value: CharacterMetaSchemaV1) -> Self {
+        Self {
+            name: value.name,
+            styles: value.styles.into_iter().map(Into::into).collect(),
+            version: value.version,
+            speaker_uuid: value.speaker_uuid,
+            order: value.order,
+        }
+    }
+}
+
+
 #[cfg(test)]
 mod tests {
     use std::sync::LazyLock;

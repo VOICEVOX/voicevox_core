@@ -21,7 +21,7 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::{
-    CharacterMeta, StyleMeta, StyleType, VoiceModelMeta,
+    CharacterMeta, StyleMeta, StyleType, VoiceModelMeta, VoiceModelMetaSchemaV1, VoiceModelMetaSchemaV2,
     asyncs::{Async, Mutex as _},
     error::{LoadModelError, LoadModelErrorKind, LoadModelResult},
 };
@@ -455,13 +455,31 @@ impl VoiceModelHeader {
             source: Some(source),
         };
 
-        let metas = serde_json::from_slice::<VoiceModelMeta>(metas).map_err(|source| {
-            error(
-                LoadModelErrorKind::InvalidModelFormat,
-                anyhow::Error::from(source)
-                    .context(format!("{}が不正です", manifest.metas_filename())),
-            )
-        })?;
+        let metas = match manifest.vvm_format_version() {
+            1 => {
+                let data = serde_json::from_slice::<VoiceModelMetaSchemaV1>(metas).map_err(|source| {
+                    error(
+                        LoadModelErrorKind::InvalidModelFormat,
+                        anyhow::Error::from(source)
+                            .context(format!("{}が不正です", manifest.metas_filename())),
+                    )
+                })?;
+                VoiceModelMeta::from_iter(data.into_iter().map(Into::into))
+            },
+            2 => {
+                let data = serde_json::from_slice::<VoiceModelMetaSchemaV2>(metas).map_err(|source| {
+                    error(
+                        LoadModelErrorKind::InvalidModelFormat,
+                        anyhow::Error::from(source)
+                            .context(format!("{}が不正です", manifest.metas_filename())),
+                    )
+                })?;
+                VoiceModelMeta::from_iter(data.into_iter().map(Into::into))
+            },
+            v => {
+                panic!("異常な形式です（`vvm_format_version={v}`）。Manifestのバリデーションで弾かれるべきです。");
+            },
+        };
 
         manifest
             .domains()
