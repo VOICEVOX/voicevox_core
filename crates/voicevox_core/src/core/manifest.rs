@@ -190,32 +190,26 @@ mod tests {
     use std::ops::Deref;
 
     use rstest::rstest;
-    use serde::Deserialize;
-
-    use super::FormatVersionV2;
+    use crate::core::manifest::Manifest;
 
     #[rstest]
-    #[case(
-        "{\"vvm_format_version\":1}",
-        Err(
-            "廃止された形式です（`vvm_format_version=1`）。古いバージョンのVOICEVOX \
-             COREであれば対応しているかもしれません at line 1 column 23",
-        )
-    )]
-    #[case("{\"vvm_format_version\":2}", Ok(()))]
+    #[case("{
+        \"vvm_format_version\": 1,
+        \"id\": \"a1a2a3a4-b1b2-c1c2-d1d2-d3d4d5d6d7d8\",
+        \"metas_filename\": \"metas.json\"
+    }", Ok(()))]
+    #[case("{
+        \"vvm_format_version\": 2,
+        \"id\": \"a1a2a3a4-b1b2-c1c2-d1d2-d3d4d5d6d7d8\",
+        \"metas_filename\": \"metas.json\"
+    }", Ok(()))]
     fn vvm_format_version_works(
         #[case] input: &str,
         #[case] expected: Result<(), &str>,
     ) -> anyhow::Result<()> {
-        let actual = serde_json::from_str::<ManifestPart>(input).map_err(|e| e.to_string());
+        let actual = serde_json::from_str::<Manifest>(input).map_err(|e| e.to_string());
         let actual = actual.as_ref().map(|_| ()).map_err(Deref::deref);
         assert_eq!(expected, actual);
         return Ok(());
-
-        #[derive(Deserialize)]
-        struct ManifestPart {
-            #[expect(dead_code, reason = "バリデーションのためだけに存在")]
-            vvm_format_version: FormatVersionV2,
-        }
     }
 }
