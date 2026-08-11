@@ -27,14 +27,14 @@ use crate::{
         infer::{
             self, InferenceRuntime, InferenceSessionOptions,
             domains::{
-                DecodeInput, DecodeOutput, ExperimentalTalkDomain, ExperimentalTalkOperation,
-                FrameDecodeDomain, FrameDecodeOperation, GenerateFullIntermediateInput,
-                GenerateFullIntermediateOutput, InferenceDomainMap,
+                DecodeInput, DecodeOutput, FrameDecodeDomain, FrameDecodeOperation,
+                GenerateFullIntermediateInput, GenerateFullIntermediateOutput, InferenceDomainMap,
                 PredictSingConsonantLengthInput, PredictSingConsonantLengthOutput,
                 PredictSingF0Input, PredictSingF0Output, PredictSingVolumeInput,
                 PredictSingVolumeOutput, RenderAudioSegmentInput, RenderAudioSegmentOutput,
                 SfDecodeInput, SfDecodeOutput, SingingTeacherDomain, SingingTeacherOperation,
-                TalkDomain, TalkOperation, experimental_talk, talk,
+                StreamingTalkDomain, StreamingTalkOperation, TalkDomain, TalkOperation,
+                streaming_talk, talk,
             },
         },
         pad_decoder_feature,
@@ -335,11 +335,11 @@ impl<T, A: AsyncExt> Inner<T, A> {
                     }
                     TalkOperation::Decode => heavy_session_options,
                 },
-                experimental_talk: enum_map! {
-                    ExperimentalTalkOperation::PredictDuration
-                    | ExperimentalTalkOperation::PredictIntonation
-                    | ExperimentalTalkOperation::GenerateFullIntermediate => light_session_options,
-                    ExperimentalTalkOperation::RenderAudioSegment => heavy_session_options,
+                streaming_talk: enum_map! {
+                    StreamingTalkOperation::PredictDuration
+                    | StreamingTalkOperation::PredictIntonation
+                    | StreamingTalkOperation::GenerateFullIntermediate => light_session_options,
+                    StreamingTalkOperation::RenderAudioSegment => heavy_session_options,
                 },
                 singing_teacher: enum_map! {
                     SingingTeacherOperation::PredictSingConsonantLength
@@ -1185,7 +1185,7 @@ impl<R: InferenceRuntime> Status<R> {
         phoneme_vector: ndarray::Array1<i64>,
         style_id: StyleId,
     ) -> Result<Vec<PositiveFinite<f32>>> {
-        // `TalkDomain`と`ExperimentalTalkDomain`の両方がある場合、`TalkDomain`を優先
+        // `TalkDomain`と`StreamingTalkDomain`の両方がある場合、`TalkDomain`を優先
         if self.contains_domain::<TalkDomain>(style_id) {
             let (model_id, inner_voice_id) = self.ids_for::<TalkDomain>(style_id)?;
             let talk::PredictDurationOutput {
@@ -1205,14 +1205,14 @@ impl<R: InferenceRuntime> Status<R> {
             })?;
             return Ok(ensure_minimum_phoneme_length(output));
         }
-        let (model_id, inner_voice_id) = self.ids_for::<ExperimentalTalkDomain>(style_id)?;
+        let (model_id, inner_voice_id) = self.ids_for::<StreamingTalkDomain>(style_id)?;
 
-        let experimental_talk::PredictDurationOutput {
+        let streaming_talk::PredictDurationOutput {
             phoneme_length: output,
         } = self
             .run_session::<A, _>(
                 model_id,
-                experimental_talk::PredictDurationInput {
+                streaming_talk::PredictDurationInput {
                     phoneme_list: phoneme_vector,
                     speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
                 },
@@ -1241,7 +1241,7 @@ impl<R: InferenceRuntime> Status<R> {
         end_accent_phrase_vector: ndarray::Array1<i64>,
         style_id: StyleId,
     ) -> Result<Vec<NonNaNFinite<f32>>> {
-        // `TalkDomain`と`ExperimentalTalkDomain`の両方がある場合、`TalkDomain`を優先
+        // `TalkDomain`と`StreamingTalkDomain`の両方がある場合、`TalkDomain`を優先
         if self.contains_domain::<TalkDomain>(style_id) {
             let (model_id, inner_voice_id) = self.ids_for::<TalkDomain>(style_id)?;
             let talk::PredictIntonationOutput { f0_list: output } = self
@@ -1264,12 +1264,12 @@ impl<R: InferenceRuntime> Status<R> {
                 anyhow!("`predict_intonation` returned an array that contains: {invalid}")
             });
         }
-        let (model_id, inner_voice_id) = self.ids_for::<ExperimentalTalkDomain>(style_id)?;
+        let (model_id, inner_voice_id) = self.ids_for::<StreamingTalkDomain>(style_id)?;
 
-        let experimental_talk::PredictIntonationOutput { f0_list: output } = self
+        let streaming_talk::PredictIntonationOutput { f0_list: output } = self
             .run_session::<A, _>(
                 model_id,
-                experimental_talk::PredictIntonationInput {
+                streaming_talk::PredictIntonationInput {
                     length: ndarray::arr0(length as i64),
                     vowel_phoneme_list: vowel_phoneme_vector,
                     consonant_phoneme_list: consonant_phoneme_vector,
@@ -1299,7 +1299,7 @@ impl<R: InferenceRuntime> Status<R> {
         phoneme_vector: ndarray::Array1<f32>,
         style_id: StyleId,
     ) -> Result<ndarray::Array2<f32>> {
-        let (model_id, inner_voice_id) = self.ids_for::<ExperimentalTalkDomain>(style_id)?;
+        let (model_id, inner_voice_id) = self.ids_for::<StreamingTalkDomain>(style_id)?;
 
         let (length_with_padding, f0_with_padding, phoneme_with_padding) =
             pad_decoder_feature::<PADDING_FRAME_LENGTH>(
@@ -1348,7 +1348,7 @@ impl<R: InferenceRuntime> Status<R> {
         spec: ndarray::Array2<f32>,
         style_id: StyleId,
     ) -> Result<ndarray::Array1<f32>> {
-        let (model_id, _inner_voice_id) = self.ids_for::<ExperimentalTalkDomain>(style_id)?;
+        let (model_id, _inner_voice_id) = self.ids_for::<StreamingTalkDomain>(style_id)?;
         let RenderAudioSegmentOutput { wave } = self
             .run_session::<A, _>(
                 model_id,
@@ -1368,7 +1368,7 @@ impl<R: InferenceRuntime> Status<R> {
         style_id: StyleId,
         cancellable: A::Cancellable,
     ) -> Result<Vec<f32>> {
-        // `TalkDomain`と`ExperimentalTalkDomain`の両方がある場合、`TalkDomain`を優先
+        // `TalkDomain`と`StreamingTalkDomain`の両方がある場合、`TalkDomain`を優先
         if self.contains_domain::<TalkDomain>(style_id) {
             let (model_id, inner_voice_id) = self.ids_for::<TalkDomain>(style_id)?;
             let (length_with_padding, f0_with_padding, phoneme_with_padding) =

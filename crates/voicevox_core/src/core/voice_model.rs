@@ -30,7 +30,7 @@ use super::{
     infer::{
         InferenceDomain,
         domains::{
-            ExperimentalTalkDomain, FrameDecodeDomain, InferenceDomainMap, SingingTeacherDomain,
+            FrameDecodeDomain, InferenceDomainMap, SingingTeacherDomain, StreamingTalkDomain,
             TalkDomain, inference_domain_map, inference_domain_map_values,
         },
     },
@@ -247,7 +247,7 @@ impl<A: Async> Inner<A> {
 
         let InferenceDomainMap {
             talk,
-            experimental_talk,
+            streaming_talk,
             singing_teacher,
             frame_decode,
         } = self.with_inference_model_entries(|inference_model_entries| {
@@ -270,7 +270,7 @@ impl<A: Async> Inner<A> {
         .await
         .transpose()?;
 
-        let experimental_talk = OptionFuture::from(experimental_talk.map(
+        let streaming_talk = OptionFuture::from(streaming_talk.map(
             async |(entries, style_id_to_inner_voice_id)| {
                 let [
                     predict_duration,
@@ -337,7 +337,7 @@ impl<A: Async> Inner<A> {
 
         Ok(InferenceDomainMap {
             talk,
-            experimental_talk,
+            streaming_talk,
             singing_teacher,
             frame_decode,
         })
@@ -523,14 +523,13 @@ impl InferenceDomainMap<ManifestDomains> {
     fn accepts(&self, style_type: StyleType) -> bool {
         let Self {
             talk,
-            experimental_talk,
+            streaming_talk,
             singing_teacher,
             frame_decode,
         } = self;
 
         return TalkDomain::contains(style_type).implies(|| talk.is_some())
-            && ExperimentalTalkDomain::contains(style_type)
-                .implies(|| experimental_talk.is_some())
+            && StreamingTalkDomain::contains(style_type).implies(|| streaming_talk.is_some())
             && SingingTeacherDomain::contains(style_type).implies(|| singing_teacher.is_some())
             && FrameDecodeDomain::contains(style_type).implies(|| frame_decode.is_some());
 
