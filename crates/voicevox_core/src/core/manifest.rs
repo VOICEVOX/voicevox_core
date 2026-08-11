@@ -104,6 +104,7 @@ pub struct ManifestSchemaV2 {
     vvm_format_version: u64,
     pub(super) id: VoiceModelId,
     metas_filename: String,
+    #[serde(flatten)]
     domains: InferenceDomainMap<ManifestDomains>,
 }
 
