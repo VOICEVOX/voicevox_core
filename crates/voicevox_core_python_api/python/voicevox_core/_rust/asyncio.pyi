@@ -86,21 +86,27 @@ class Onnxruntime:
 
     # ここの定数値が本物と合致するかどうかは、test_type_stub_consts.pyで担保する。
 
-    LIB_NAME: str = "voicevox_onnxruntime"
-    """ONNX Runtimeのライブラリ名。"""
+    LIB_MIN_REQUIRED_VERSION: int = 17
+    """必要なONNX Runtime 1.xの最小マイナーバージョン。"""
 
-    LIB_VERSION: str = "1.17.3"
+    LIB_MAX_SUPPORTED_VERSION: int = 17
+    """サポートされるONNX Runtime 1.xの最大マイナーバージョン。"""
+
+    LIB_RECOMMENDED_NAME: str = "voicevox_onnxruntime"
+    """推奨されるONNX Runtimeのライブラリ名。"""
+
+    LIB_RECOMMENDED_VERSION: str = "1.17.3"
     """推奨されるONNX Runtimeのバージョン。"""
 
-    LIB_VERSIONED_FILENAME: str
+    LIB_RECOMMENDED_VERSIONED_FILENAME: str
     """
-    :attr:`LIB_NAME` と :attr:`LIB_VERSION` からなる動的ライブラリのファイル名。
+    :attr:`LIB_RECOMMENDED_NAME` と :attr:`LIB_RECOMMENDED_VERSION` からなる動的ライブラリのファイル名。
 
-    WindowsとAndroidでは :attr:`LIB_UNVERSIONED_FILENAME` と同じ。
+    WindowsとAndroidでは :attr:`LIB_RECOMMENDED_UNVERSIONED_FILENAME` と同じ。
     """
 
-    LIB_UNVERSIONED_FILENAME: str
-    """:attr:`LIB_NAME` からなる動的ライブラリのファイル名。"""
+    LIB_RECOMMENDED_UNVERSIONED_FILENAME: str
+    """:attr:`LIB_RECOMMENDED_NAME` からなる動的ライブラリのファイル名。"""
 
     def __new__(cls, *args: object, **kwargs: object) -> NoReturn: ...
     @staticmethod
@@ -112,9 +118,15 @@ class Onnxruntime:
         """
         ...
     @staticmethod
-    async def load_once(*, filename: str = LIB_VERSIONED_FILENAME) -> "Onnxruntime":
+    async def load_once(
+        *, filename: str = LIB_RECOMMENDED_VERSIONED_FILENAME
+    ) -> "Onnxruntime":
         """
         ONNX Runtimeをロードして初期化する。
+
+        対象のONNX Runtimeのマイナーバージョンは :attr:`LIB_MIN_REQUIRED_VERSION`
+        よりも大きくなくてはならない。 :attr:`LIB_MAX_SUPPORTED_VERSION`
+        より大きい場合は警告を出す。
 
         一度成功したら、以後は引数を無視して同じインスタンスを返す。
 

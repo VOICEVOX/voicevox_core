@@ -24,13 +24,19 @@ use crate::{
 // 欠いている
 
 impl VoicevoxOnnxruntime {
-    #[cfg(feature = "load-onnxruntime")]
-    pub(crate) const LIB_VERSIONED_FILENAME: &'static std::ffi::CStr =
-        to_cstr!(voicevox_core::blocking::Onnxruntime::LIB_VERSIONED_FILENAME);
+    pub(crate) const LIB_MIN_REQUIRED_VERSION: u32 =
+        voicevox_core::blocking::Onnxruntime::LIB_MIN_REQUIRED_VERSION;
+
+    pub(crate) const LIB_MAX_SUPPORTED_VERSION: u32 =
+        voicevox_core::blocking::Onnxruntime::LIB_MAX_SUPPORTED_VERSION;
 
     #[cfg(feature = "load-onnxruntime")]
-    pub(crate) const LIB_UNVERSIONED_FILENAME: &'static std::ffi::CStr =
-        to_cstr!(voicevox_core::blocking::Onnxruntime::LIB_UNVERSIONED_FILENAME);
+    pub(crate) const LIB_RECOMMENDED_VERSIONED_FILENAME: &'static std::ffi::CStr =
+        to_cstr!(voicevox_core::blocking::Onnxruntime::LIB_RECOMMENDED_VERSIONED_FILENAME);
+
+    #[cfg(feature = "load-onnxruntime")]
+    pub(crate) const LIB_RECOMMENDED_UNVERSIONED_FILENAME: &'static std::ffi::CStr =
+        to_cstr!(voicevox_core::blocking::Onnxruntime::LIB_RECOMMENDED_UNVERSIONED_FILENAME);
 
     #[ref_cast_custom]
     fn new(rust: &voicevox_core::blocking::Onnxruntime) -> &Self;

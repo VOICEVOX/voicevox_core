@@ -498,18 +498,28 @@ mod blocking {
     #[pymethods]
     impl Onnxruntime {
         #[classattr]
-        const LIB_NAME: &'static str = voicevox_core::blocking::Onnxruntime::LIB_NAME;
+        const LIB_MIN_REQUIRED_VERSION: u32 =
+            voicevox_core::blocking::Onnxruntime::LIB_MIN_REQUIRED_VERSION;
 
         #[classattr]
-        const LIB_VERSION: &'static str = voicevox_core::blocking::Onnxruntime::LIB_VERSION;
+        const LIB_MAX_SUPPORTED_VERSION: u32 =
+            voicevox_core::blocking::Onnxruntime::LIB_MAX_SUPPORTED_VERSION;
 
         #[classattr]
-        const LIB_VERSIONED_FILENAME: &'static str =
-            voicevox_core::blocking::Onnxruntime::LIB_VERSIONED_FILENAME;
+        const LIB_RECOMMENDED_NAME: &'static str =
+            voicevox_core::blocking::Onnxruntime::LIB_RECOMMENDED_NAME;
 
         #[classattr]
-        const LIB_UNVERSIONED_FILENAME: &'static str =
-            voicevox_core::blocking::Onnxruntime::LIB_UNVERSIONED_FILENAME;
+        const LIB_RECOMMENDED_VERSION: &'static str =
+            voicevox_core::blocking::Onnxruntime::LIB_RECOMMENDED_VERSION;
+
+        #[classattr]
+        const LIB_RECOMMENDED_VERSIONED_FILENAME: &'static str =
+            voicevox_core::blocking::Onnxruntime::LIB_RECOMMENDED_VERSIONED_FILENAME;
+
+        #[classattr]
+        const LIB_RECOMMENDED_UNVERSIONED_FILENAME: &'static str =
+            voicevox_core::blocking::Onnxruntime::LIB_RECOMMENDED_UNVERSIONED_FILENAME;
 
         #[new]
         #[classmethod]
@@ -547,7 +557,7 @@ mod blocking {
         }
 
         #[staticmethod]
-        #[pyo3(signature = (*, filename = Self::LIB_VERSIONED_FILENAME.into()))]
+        #[pyo3(signature = (*, filename = Self::LIB_RECOMMENDED_VERSIONED_FILENAME.into()))]
         fn load_once(filename: OsString, py: Python<'_>) -> PyResult<Py<Self>> {
             ONNXRUNTIME
                 .get_or_try_init(py, || {
@@ -1269,18 +1279,28 @@ mod asyncio {
     #[pymethods]
     impl Onnxruntime {
         #[classattr]
-        const LIB_NAME: &'static str = voicevox_core::nonblocking::Onnxruntime::LIB_NAME;
+        const LIB_MIN_REQUIRED_VERSION: u32 =
+            voicevox_core::nonblocking::Onnxruntime::LIB_MIN_REQUIRED_VERSION;
 
         #[classattr]
-        const LIB_VERSION: &'static str = voicevox_core::nonblocking::Onnxruntime::LIB_VERSION;
+        const LIB_MAX_SUPPORTED_VERSION: u32 =
+            voicevox_core::nonblocking::Onnxruntime::LIB_MAX_SUPPORTED_VERSION;
 
         #[classattr]
-        const LIB_VERSIONED_FILENAME: &'static str =
-            voicevox_core::nonblocking::Onnxruntime::LIB_VERSIONED_FILENAME;
+        const LIB_RECOMMENDED_NAME: &'static str =
+            voicevox_core::nonblocking::Onnxruntime::LIB_RECOMMENDED_NAME;
 
         #[classattr]
-        const LIB_UNVERSIONED_FILENAME: &'static str =
-            voicevox_core::nonblocking::Onnxruntime::LIB_UNVERSIONED_FILENAME;
+        const LIB_RECOMMENDED_VERSION: &'static str =
+            voicevox_core::nonblocking::Onnxruntime::LIB_RECOMMENDED_VERSION;
+
+        #[classattr]
+        const LIB_RECOMMENDED_VERSIONED_FILENAME: &'static str =
+            voicevox_core::nonblocking::Onnxruntime::LIB_RECOMMENDED_VERSIONED_FILENAME;
+
+        #[classattr]
+        const LIB_RECOMMENDED_UNVERSIONED_FILENAME: &'static str =
+            voicevox_core::nonblocking::Onnxruntime::LIB_RECOMMENDED_UNVERSIONED_FILENAME;
 
         #[new]
         #[classmethod]
@@ -1314,7 +1334,7 @@ mod asyncio {
         }
 
         #[staticmethod]
-        #[pyo3(signature = (*, filename = Self::LIB_VERSIONED_FILENAME.into()))]
+        #[pyo3(signature = (*, filename = Self::LIB_RECOMMENDED_VERSIONED_FILENAME.into()))]
         async fn load_once(filename: OsString) -> PyResult<&'static Py<Onnxruntime>> {
             let inner = voicevox_core::nonblocking::Onnxruntime::load_once()
                 .filename(filename)
