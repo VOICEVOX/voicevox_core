@@ -583,11 +583,11 @@ pub(crate) mod blocking {
     pub struct Onnxruntime(Inner);
 
     impl Onnxruntime {
-        /// 必要なONNX Runtimeの最小マイナーバージョン。
+        /// 必要なONNX Runtime 1.xの最小マイナーバージョン。
         #[cfg_attr(doc, doc(alias = "voicevox_get_onnxruntime_lib_min_required_version"))]
         pub const LIB_MIN_REQUIRED_VERSION: u32 = 17;
 
-        /// サポートされるONNX Runtimeの最大マイナーバージョン。
+        /// サポートされるONNX Runtime 1.xの最大マイナーバージョン。
         #[cfg_attr(doc, doc(alias = "voicevox_get_onnxruntime_lib_max_supported_version"))]
         pub const LIB_MAX_SUPPORTED_VERSION: u32 = 17;
 
@@ -797,10 +797,10 @@ pub(crate) mod nonblocking {
     pub struct Onnxruntime(pub(crate) super::blocking::Onnxruntime);
 
     impl Onnxruntime {
-        /// 必要なONNX Runtimeの最小マイナーバージョン。
+        /// 必要なONNX Runtime 1.xの最小マイナーバージョン。
         pub const LIB_MIN_REQUIRED_VERSION: u32 = 17;
 
-        /// サポートされるONNX Runtimeの最大マイナーバージョン。
+        /// サポートされるONNX Runtime 1.xの最大マイナーバージョン。
         pub const LIB_MAX_SUPPORTED_VERSION: u32 = 17;
 
         /// 推奨されるONNX Runtimeのライブラリ名。
