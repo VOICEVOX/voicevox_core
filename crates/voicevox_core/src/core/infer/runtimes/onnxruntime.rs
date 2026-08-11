@@ -271,7 +271,7 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
         let sess_builder = &mut ort::session::builder::SessionBuilder::new()?;
         match gpu {
             GpuSpec::Cuda => CUDAExecutionProvider::default()
-                .with_conv_algorithm_search(ConvAlgorithmSearch::Default)
+                .with_conv_algorithm_search(ConvAlgorithmSearch::Heuristic)
                 .register(sess_builder),
             GpuSpec::Dml => DirectMLExecutionProvider::default().register(sess_builder),
         }
@@ -300,7 +300,7 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
             DeviceSpec::Cpu => {}
             DeviceSpec::Gpu(GpuSpec::Cuda) => {
                 CUDAExecutionProvider::default()
-                    .with_conv_algorithm_search(ConvAlgorithmSearch::Default)
+                    .with_conv_algorithm_search(ConvAlgorithmSearch::Heuristic)
                     .register(&mut builder)?;
             }
             DeviceSpec::Gpu(GpuSpec::Dml) => {
