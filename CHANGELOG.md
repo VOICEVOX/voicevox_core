@@ -53,6 +53,7 @@
 ### Changed
 
 - \[BREAKING\] `AudioQuery`/`AccentPhrase`/`Mora`の警告が、`output_sampling_rate`のものを除きエラーになります。また入力するテキストにより`AccentPhrase`作成時点でエラーになるケースがあります。Rust APIにおいては、制約が強くなる形で各フィールドの型が変わります ([#1384])。
+- \[Windows,Linux\] CUDA利用時における[`cudnn_conv_algo_search`](https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html#cudnn_conv_algo_search)の値が`DEFAULT`から`HEURISTIC`に変わります。これにより、新しいONNX RuntimeのCUDAでも[それなりの動作速度を保ちます](https://github.com/VOICEVOX/voicevox_core/issues/1391#issuecomment-5121934874) ([#1392])。
 - \[Rust\] \[BREAKING\] `Synthesizer::load_voice_model`がビルダースタイルになります ([#1331])。
 - \[Rust\] \[BREAKING\] MSRVが1.89.0になります ([#1323])。
 - \[Rust\] \[BREAKING\] `load-onnxruntime`フィーチャと`link-onnxruntime`フィーチャの両方において、ビルド時のダウンロードおよびリンカーフラグの設定が[pykeio/ort](https://github.com/pykeio/ort)由来の処理に依存しなくなります。それにより、ビルド時の挙動が以下の点で変わります。なお以下で言及する"ONNX Runtime"はVOICEVOX ONNX Runtimeとは異なることに注意してください [#1278]。
@@ -1524,6 +1525,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1381]: https://github.com/VOICEVOX/voicevox_core/pull/1381
 [#1384]: https://github.com/VOICEVOX/voicevox_core/pull/1384
 [#1385]: https://github.com/VOICEVOX/voicevox_core/pull/1385
+[#1392]: https://github.com/VOICEVOX/voicevox_core/pull/1392
 [#1394]: https://github.com/VOICEVOX/voicevox_core/pull/1394
 [#1399]: https://github.com/VOICEVOX/voicevox_core/pull/1399
 
