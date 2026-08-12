@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
   const VoicevoxOnnxruntime* onnxruntime;
   auto load_ort_options = voicevox_make_default_load_onnxruntime_options();
   std::string ort_filename = "./voicevox_core/onnxruntime/lib/";
-  ort_filename += voicevox_get_onnxruntime_lib_versioned_filename();
+  ort_filename += voicevox_get_onnxruntime_lib_recommended_versioned_filename();
   load_ort_options.filename = ort_filename.c_str();
   auto result = voicevox_onnxruntime_load_once(load_ort_options, &onnxruntime);
   if (result != VOICEVOX_RESULT_OK){

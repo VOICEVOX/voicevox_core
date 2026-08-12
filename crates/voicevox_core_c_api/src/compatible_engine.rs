@@ -30,9 +30,9 @@ macro_rules! ensure_initialized {
 static ERROR_MESSAGE: LazyLock<Mutex<String>> = LazyLock::new(|| Mutex::new(String::new()));
 
 static ONNXRUNTIME: LazyLock<&'static voicevox_core::blocking::Onnxruntime> = LazyLock::new(|| {
-    let alt_onnxruntime_filename = voicevox_core::blocking::Onnxruntime::LIB_VERSIONED_FILENAME
-        .replace(
-            voicevox_core::blocking::Onnxruntime::LIB_NAME,
+    let alt_onnxruntime_filename =
+        voicevox_core::blocking::Onnxruntime::LIB_RECOMMENDED_VERSIONED_FILENAME.replace(
+            voicevox_core::blocking::Onnxruntime::LIB_RECOMMENDED_NAME,
             "onnxruntime",
         );
     voicevox_core::blocking::Onnxruntime::load_once()

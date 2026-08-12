@@ -13,7 +13,7 @@ onnxruntime_filename = str(
     / "test_util"
     / "data"
     / "lib"
-    / voicevox_core.blocking.Onnxruntime.LIB_VERSIONED_FILENAME.replace(
+    / voicevox_core.blocking.Onnxruntime.LIB_RECOMMENDED_VERSIONED_FILENAME.replace(
         "voicevox_onnxruntime", "onnxruntime"
     )
 )

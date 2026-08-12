@@ -19,7 +19,7 @@ fun main(args: Array<String>) {
   val onnxruntime by
       parser
           .option(ArgType.String, description = "ONNX Runtimeのファイル名（モジュール名）もしくはファイルパス")
-          .default(Onnxruntime.LIB_VERSIONED_FILENAME)
+          .default(Onnxruntime.LIB_RECOMMENDED_VERSIONED_FILENAME)
   val dictDir by
       parser
           .option(ArgType.String, description = "Open JTalkの辞書ディレクトリ")
