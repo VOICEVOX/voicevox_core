@@ -21,7 +21,7 @@ public class TestUtils {
   protected Onnxruntime loadOnnxruntime() {
     final String FILENAME =
         "../../test_util/data/lib/"
-            + Onnxruntime.LIB_RECOMMENDED_VERSIONED_FILENAME.replace(
+            + Onnxruntime.LIB_RECOMMENDED_UNVERSIONED_FILENAME.replace(
                 "voicevox_onnxruntime", "onnxruntime");
 
     try {

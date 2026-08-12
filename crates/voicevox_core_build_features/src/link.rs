@@ -11,7 +11,7 @@ static HOST: LazyLock<String> = LazyLock::new(|| env::var("HOST").unwrap());
 
 pub fn link(attempt_pkg_config: bool) -> anyhow::Result<()> {
     if *HOST == *TARGET && attempt_pkg_config {
-        let mut version = include_str!("../onnxruntime-version.txt").split('.');
+        let mut version = include_str!("../onnxruntime-version-for-test.txt").split('.');
         let major_ver = version
             .next()
             .and_then(|s| s.parse::<u64>().ok())
