@@ -228,7 +228,7 @@ pub extern "C" fn voicevox_onnxruntime_get() -> Option<&'static VoicevoxOnnxrunt
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// ONNX Runtimeをロードして初期化する。
 ///
-/// 対象のONNX Runtimeのマイナーバージョンは ::voicevox_get_onnxruntime_lib_min_required_minor_version よりも大きくなければならない。 ::voicevox_get_onnxruntime_lib_max_supported_minor_version よりも大きい場合は警告を出す。
+/// 対象のONNX Runtimeのマイナーバージョンは ::voicevox_get_onnxruntime_lib_min_required_minor_version 以上でなければならない。 ::voicevox_get_onnxruntime_lib_max_supported_minor_version よりも大きい場合は警告を出す。
 ///
 /// 一度成功したら、以後は引数を無視して同じ参照を返す。
 ///

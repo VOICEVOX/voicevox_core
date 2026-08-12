@@ -125,7 +125,7 @@ class Onnxruntime:
         ONNX Runtimeをロードして初期化する。
 
         対象のONNX Runtimeのマイナーバージョンは :attr:`LIB_MIN_REQUIRED_MINOR_VERSION`
-        よりも大きくなくてはならない。 :attr:`LIB_MAX_SUPPORTED_MINOR_VERSION`
+        以上でなくてはならない。 :attr:`LIB_MAX_SUPPORTED_MINOR_VERSION`
         より大きい場合は警告を出す。
 
         一度成功したら、以後は引数を無視して同じインスタンスを返す。
