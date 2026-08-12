@@ -547,7 +547,9 @@ impl InferenceDomainMap<ManifestDomains> {
             frame_decode,
         } = self;
 
-        return TalkDomain::contains(style_type).implies(|| talk.is_some())
+        // `streaming_talk`は`talk`の機能を包含するため、TalkDomainにも対応できる
+        return TalkDomain::contains(style_type)
+            .implies(|| talk.is_some() || streaming_talk.is_some())
             && StreamingTalkDomain::contains(style_type).implies(|| streaming_talk.is_some())
             && SingingTeacherDomain::contains(style_type).implies(|| singing_teacher.is_some())
             && FrameDecodeDomain::contains(style_type).implies(|| frame_decode.is_some());
