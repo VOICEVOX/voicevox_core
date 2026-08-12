@@ -26,13 +26,13 @@ public class Onnxruntime {
   public static final int LIB_MIN_REQUIRED_MINOR_VERSION = 17;
 
   /** サポートされるONNX Runtime 1.xの最大マイナーバージョン。 */
-  public static final int LIB_MAX_SUPPORTED_MINOR_VERSION = 17;
+  public static final int LIB_MAX_SUPPORTED_MINOR_VERSION = 29;
 
   /** 推奨されるONNX Runtimeのライブラリ名。 */
   public static final String LIB_RECOMMENDED_NAME = "voicevox_onnxruntime";
 
   /** 推奨されるONNX Runtimeのバージョン。 */
-  public static final String LIB_RECOMMENDED_VERSION = "1.17.3";
+  public static final String LIB_RECOMMENDED_VERSION = "1.23.2";
 
   /**
    * {@link LIB_RECOMMENDED_NAME}と{@link LIB_RECOMMENDED_VERSION}からなる動的ライブラリのファイル名。

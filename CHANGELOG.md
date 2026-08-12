@@ -44,7 +44,7 @@
 ### Added
 
 - `Synthesizer::load_voice_model`にオプション`on_existing`が追加されます ([#1331], [#1337])。
-- `Onnxruntime`の関連定数として`LIB_MIN_REQUIRED_MINOR_VERSION`と`LIB_MAX_SUPPORTED_MINOR_VERSION`が追加されます ([#1402])。
+- ONNX Runtimeのサポート範囲が1.29まで拡大されます（ただし現時点でリリースされている最新のVOICEVOX ONNX Runtimeは1.23.2です） ([#1402], [#1404])。
 - \[Rust\] APIドキュメントが改善されます ([#1343], [#1381])。
     - トップページのコード例で`tracing_subscriber::fmt().init();`が行われるようになります。
     - \[Linux\] muslターゲットでは`load-onnxruntime`が事実上利用不可であることが明記されます。
@@ -55,7 +55,10 @@
 
 ### Changed
 
-- \[BREAKING\] `Onnxruntime`の関連定数４つが`LIB_RECOMMENDED_…`という形に改名されます ([#1402])。
+- \[BREAKING\] ONNX Runtimeの推奨バージョンが1.23.2になり、`Onnxruntime::load_once`がデフォルトで読みに行く動的ライブラリも1.23.2のものになります ([#1402], [#1404])。
+- \[BREAKING\] `Onnxruntime`の関連定数で示されるONNX Runtimeのバージョンが、最小要求バージョンと推奨バージョンと最大サポートバージョンの３つに分けられます ([#1402], [#1404])。
+    - それぞれ1.17、1.23.2、1.29となります。
+    - 既存の関連定数４つは`LIB_RECOMMENDED_…`という形に改名されます。
 - \[BREAKING\] `AudioQuery`/`AccentPhrase`/`Mora`の警告が、`output_sampling_rate`のものを除きエラーになります。また入力するテキストにより`AccentPhrase`作成時点でエラーになるケースがあります。Rust APIにおいては、制約が強くなる形で各フィールドの型が変わります ([#1384])。
 - \[Windows,Linux\] CUDA利用時における[`cudnn_conv_algo_search`](https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html#cudnn_conv_algo_search)の値が`DEFAULT`から`HEURISTIC`に変わります。これにより、新しいONNX RuntimeのCUDAでも[それなりの動作速度を保ちます](https://github.com/VOICEVOX/voicevox_core/issues/1391#issuecomment-5121934874) ([#1392])。
 - \[Rust\] \[BREAKING\] `Synthesizer::load_voice_model`がビルダースタイルになります ([#1331])。
@@ -1533,6 +1536,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1394]: https://github.com/VOICEVOX/voicevox_core/pull/1394
 [#1399]: https://github.com/VOICEVOX/voicevox_core/pull/1399
 [#1402]: https://github.com/VOICEVOX/voicevox_core/pull/1402
+[#1404]: https://github.com/VOICEVOX/voicevox_core/pull/1404
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 

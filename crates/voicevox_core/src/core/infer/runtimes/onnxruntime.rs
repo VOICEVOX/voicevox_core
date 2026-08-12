@@ -45,7 +45,7 @@ use super::super::{
 };
 
 const LIB_MIN_REQUIRED_MINOR_VERSION: u32 = ort::sys::ORT_API_VERSION;
-const LIB_MAX_SUPPORTED_MINOR_VERSION: u32 = ort::sys::ORT_API_VERSION;
+const LIB_MAX_SUPPORTED_MINOR_VERSION: u32 = 29;
 
 static SINGLETON: once_cell::sync::OnceCell<Inner> = once_cell::sync::OnceCell::new();
 
@@ -595,7 +595,7 @@ pub(crate) mod blocking {
             doc,
             doc(alias = "voicevox_get_onnxruntime_lib_max_supported_minor_version")
         )]
-        pub const LIB_MAX_SUPPORTED_MINOR_VERSION: u32 = 17;
+        pub const LIB_MAX_SUPPORTED_MINOR_VERSION: u32 = 29;
 
         /// 推奨されるONNX Runtimeのライブラリ名。
         #[cfg(feature = "load-onnxruntime")]
@@ -606,7 +606,7 @@ pub(crate) mod blocking {
         #[cfg(feature = "load-onnxruntime")]
         #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
         pub const LIB_RECOMMENDED_VERSION: &'static str =
-            include_str!("../../../../onnxruntime-version.txt");
+            include_str!("../../../../onnxruntime-recommended-version.txt");
 
         /// [`LIB_RECOMMENDED_NAME`]と[`LIB_RECOMMENDED_VERSION`]からなる動的ライブラリのファイル名。
         ///
@@ -808,7 +808,7 @@ pub(crate) mod nonblocking {
         pub const LIB_MIN_REQUIRED_MINOR_VERSION: u32 = 17;
 
         /// サポートされるONNX Runtime 1.xの最大マイナーバージョン。
-        pub const LIB_MAX_SUPPORTED_MINOR_VERSION: u32 = 17;
+        pub const LIB_MAX_SUPPORTED_MINOR_VERSION: u32 = 29;
 
         /// 推奨されるONNX Runtimeのライブラリ名。
         #[cfg(feature = "load-onnxruntime")]
@@ -821,7 +821,7 @@ pub(crate) mod nonblocking {
         #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
         // ブロッキング版と等しいことはテストで担保
         pub const LIB_RECOMMENDED_VERSION: &'static str =
-            include_str!("../../../../onnxruntime-version.txt");
+            include_str!("../../../../onnxruntime-recommended-version.txt");
 
         /// [`LIB_RECOMMENDED_NAME`]と[`LIB_RECOMMENDED_VERSION`]からなる動的ライブラリのファイル名。
         ///

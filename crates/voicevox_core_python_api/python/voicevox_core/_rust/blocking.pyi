@@ -89,13 +89,13 @@ class Onnxruntime:
     LIB_MIN_REQUIRED_MINOR_VERSION: int = 17
     """必要なONNX Runtime 1.xの最小マイナーバージョン。"""
 
-    LIB_MAX_SUPPORTED_MINOR_VERSION: int = 17
+    LIB_MAX_SUPPORTED_MINOR_VERSION: int = 29
     """サポートされるONNX Runtime 1.xの最大マイナーバージョン。"""
 
     LIB_RECOMMENDED_NAME: str = "voicevox_onnxruntime"
     """推奨されるONNX Runtimeのライブラリ名。"""
 
-    LIB_RECOMMENDED_VERSION: str = "1.17.3"
+    LIB_RECOMMENDED_VERSION: str = "1.23.2"
     """推奨されるONNX Runtimeのバージョン。"""
 
     LIB_RECOMMENDED_VERSIONED_FILENAME: str
