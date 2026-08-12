@@ -18,7 +18,6 @@ use super::infer::{
     domains::{InferenceDomainMap, inference_domain_map_values},
 };
 
-
 // vvm_format_versionの値に応じたスキーマでパースし現行のManifestに詰めなおす
 impl<'de> Deserialize<'de> for Manifest {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -46,10 +45,8 @@ impl<'de> Deserialize<'de> for Manifest {
                 while let Some(key) = map.next_key::<String>()? {
                     if key == "vvm_format_version" {
                         let value = map.next_value::<serde_json::Value>()?;
-                        vvm_format_version = Some(
-                            FormatVersion::deserialize(&value)
-                                .map_err(de::Error::custom)?
-                        );
+                        vvm_format_version =
+                            Some(FormatVersion::deserialize(&value).map_err(de::Error::custom)?);
                         root.insert(key, value);
                     } else {
                         let value = map.next_value::<serde_json::Value>()?;
@@ -65,12 +62,12 @@ impl<'de> Deserialize<'de> for Manifest {
                         let data = ManifestSchemaV1::deserialize(content_value)
                             .map_err(de::Error::custom)?;
                         Ok(data.into())
-                    },
+                    }
                     FormatVersion::V2 => {
                         let data = ManifestSchemaV2::deserialize(content_value)
                             .map_err(de::Error::custom)?;
                         Ok(data.into())
-                    },
+                    }
                 }
             }
         }
@@ -95,10 +92,12 @@ impl Display for InnerVoiceId {
     }
 }
 
-
 /// 現在有効なManifestのバージョン
 #[derive(Clone, Debug)]
-pub enum FormatVersion { V1, V2 }
+pub enum FormatVersion {
+    V1,
+    V2,
+}
 
 impl<'de> Deserialize<'de> for FormatVersion {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -120,7 +119,7 @@ impl<'de> Deserialize<'de> for FormatVersion {
 /// voicevox_coreで使われているManifest
 #[derive(Debug, Getters)]
 pub struct Manifest {
-    vvm_format_version: FormatVersion,  // この値は固定ではない。バージョンに応じてmetasの構造やバリデーションが変化する。
+    vvm_format_version: FormatVersion, // この値は固定ではない。バージョンに応じてmetasの構造やバリデーションが変化する。
     pub(super) id: VoiceModelId,
     metas_filename: String,
     domains: InferenceDomainMap<ManifestDomains>,
@@ -217,8 +216,8 @@ pub(crate) struct StyleIdToInnerVoiceId(
 mod tests {
     use std::ops::Deref;
 
-    use rstest::rstest;
     use crate::core::manifest::Manifest;
+    use rstest::rstest;
 
     #[rstest]
     #[case("{\"vvm_format_version\": 1,
@@ -229,10 +228,14 @@ mod tests {
         \"id\": \"a1a2a3a4-b1b2-c1c2-d1d2-d3d4d5d6d7d8\",
         \"metas_filename\": \"metas.json\"}",
         Ok(()))]
-    #[case("{\"vvm_format_version\": 3,
+    #[case(
+        "{\"vvm_format_version\": 3,
         \"id\": \"a1a2a3a4-b1b2-c1c2-d1d2-d3d4d5d6d7d8\",
         \"metas_filename\": \"metas.json\"}",
-        Err("未知の形式です（`vvm_format_version=3`）。新しいバージョンのVOICEVOX COREであれば対応しているかもしれません at line 1 column 24"))]
+        Err(
+            "未知の形式です（`vvm_format_version=3`）。新しいバージョンのVOICEVOX COREであれば対応しているかもしれません at line 1 column 24"
+        )
+    )]
     fn vvm_format_version_works(
         #[case] input: &str,
         #[case] expected: Result<(), &str>,

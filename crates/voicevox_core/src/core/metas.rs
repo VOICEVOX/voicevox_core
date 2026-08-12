@@ -324,7 +324,6 @@ impl From<CharacterMetaSchemaV2> for CharacterMeta {
     }
 }
 
-
 /// 音声モデルのメタ情報スキーマ（vvm_format_version=1形式）
 pub type VoiceModelMetaSchemaV1 = Vec<CharacterMetaSchemaV1>;
 
@@ -406,7 +405,6 @@ impl From<CharacterMetaSchemaV1> for CharacterMeta {
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {
