@@ -30,24 +30,33 @@ macro_rules! ensure_initialized {
 static ERROR_MESSAGE: LazyLock<Mutex<String>> = LazyLock::new(|| Mutex::new(String::new()));
 
 static ONNXRUNTIME: LazyLock<&'static voicevox_core::blocking::Onnxruntime> = LazyLock::new(|| {
-    let alt_onnxruntime_filename =
+    let first_result = voicevox_core::blocking::Onnxruntime::load_once().perform();
+
+    [
+        voicevox_core::blocking::Onnxruntime::LIB_RECOMMENDED_UNVERSIONED_FILENAME.to_owned(),
         voicevox_core::blocking::Onnxruntime::LIB_RECOMMENDED_VERSIONED_FILENAME.replace(
             voicevox_core::blocking::Onnxruntime::LIB_RECOMMENDED_NAME,
             "onnxruntime",
-        );
-    voicevox_core::blocking::Onnxruntime::load_once()
-        .perform()
-        .or_else(|err| {
+        ),
+        voicevox_core::blocking::Onnxruntime::LIB_RECOMMENDED_UNVERSIONED_FILENAME.replace(
+            voicevox_core::blocking::Onnxruntime::LIB_RECOMMENDED_NAME,
+            "onnxruntime",
+        ),
+    ]
+    .into_iter()
+    .fold(first_result, |result, alt_onnxruntime_filename| {
+        result.or_else(|err| {
             warn!("{err}");
             warn!("falling back to `{alt_onnxruntime_filename}`");
             voicevox_core::blocking::Onnxruntime::load_once()
                 .filename(alt_onnxruntime_filename)
                 .perform()
         })
-        .unwrap_or_else(|err| {
-            display_error(&err);
-            panic!("ONNX Runtimeをロードもしくは初期化ができなかったため、クラッシュします");
-        })
+    })
+    .unwrap_or_else(|err| {
+        display_error(&err);
+        panic!("ONNX Runtimeをロードもしくは初期化ができなかったため、クラッシュします");
+    })
 });
 
 struct VoiceModelSet {

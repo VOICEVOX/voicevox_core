@@ -50,8 +50,9 @@ async fn run(onnxruntime_path: &Utf8Path) -> anyhow::Result<()> {
 }
 
 fn copy_onnxruntime(src: &Utf8Path, out_dir: &Path, dist: &Utf8Path) -> io::Result<()> {
+    let file_name = src.file_name().expect("should exist");
     let dst_dir = &dist.join("lib");
-    let dst = &dst_dir.join(src.file_name().expect("should exist"));
+    let dst = &dst_dir.join(file_name);
     let stale = match fs_err::metadata(dst) {
         Ok(md) => md.modified()? < fs_err::metadata(src)?.modified()?,
         Err(e) if e.kind() == io::ErrorKind::NotFound => true,
@@ -62,7 +63,27 @@ fn copy_onnxruntime(src: &Utf8Path, out_dir: &Path, dist: &Utf8Path) -> io::Resu
         fs_err::copy(src, dst)?;
     }
     println!("cargo:rerun-if-changed={dst}");
-    fs_err::write(out_dir.join("onnxruntime-dylib-path.txt"), dst.as_str())
+    fs_err::write(out_dir.join("onnxruntime-dylib-path.txt"), dst.as_str())?;
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    {
+        use std::env::consts::{DLL_PREFIX, DLL_SUFFIX};
+
+        match fs_err::metadata(dst) {
+            Ok(md) => {
+                if md.modified()? < fs_err::metadata(src)?.modified()? {
+                    fs_err::remove_file(dst)?;
+                } else {
+                    return Ok(());
+                }
+            }
+            Err(e) if e.kind() == io::ErrorKind::NotFound => {}
+            Err(e) => return Err(e),
+        }
+        let dst = &dst_dir.join(format!("{DLL_PREFIX}onnxruntime{DLL_SUFFIX}"));
+        fs_err::os::unix::fs::symlink(format!("./{file_name}"), dst)?;
+        println!("cargo:rerun-if-changed={dst}");
+    }
+    Ok(())
 }
 
 fn create_sample_voice_model_file(out_dir: &Utf8Path, dist: &Utf8Path) -> anyhow::Result<()> {

@@ -24,8 +24,24 @@ impl Utf8Output {
 
     pub(crate) fn mask_onnxruntime_filename(self) -> Self {
         const ONNXRUNTIME_VERSION: &str =
-            include_str!("../../../voicevox_core_build_features/onnxruntime-version-for-test.txt");
+            include_str!("../../../voicevox_core/onnxruntime-recommended-version.txt");
         self.mask_stderr(
+            static_regex!(regex::escape(
+                const {
+                    if cfg!(windows) {
+                        "voicevox_onnxruntime.dll"
+                    } else if cfg!(target_os = "linux") {
+                        "libvoicevox_onnxruntime.so"
+                    } else if cfg!(target_os = "macos") {
+                        "libvoicevox_onnxruntime.dylib"
+                    } else {
+                        panic!("unsupported")
+                    }
+                }
+            )),
+            "{voicevox_onnxruntime_unversioned_filename}",
+        )
+        .mask_stderr(
             static_regex!(regex::escape(
                 const {
                     if cfg!(windows) {
@@ -39,7 +55,23 @@ impl Utf8Output {
                     }
                 }
             )),
-            "{onnxruntime_filename}",
+            "{onnxruntime_versioned_filename}",
+        )
+        .mask_stderr(
+            static_regex!(regex::escape(
+                const {
+                    if cfg!(windows) {
+                        "onnxruntime.dll"
+                    } else if cfg!(target_os = "linux") {
+                        "libonnxruntime.so"
+                    } else if cfg!(target_os = "macos") {
+                        "libonnxruntime.dylib"
+                    } else {
+                        panic!("unsupported")
+                    }
+                }
+            )),
+            "{onnxruntime_unversioned_filename}",
         )
     }
 
