@@ -49,6 +49,10 @@ struct Args {
     /// スタイル名
     #[arg(long, default_value = "ノーマル")]
     style: String,
+
+    /// ハードウェアアクセラレーションの有効化
+    #[arg(long, default_value_t = false)]
+    acceleration: bool,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -66,6 +70,17 @@ fn main() -> anyhow::Result<()> {
     let ojt = OpenJtalk::new(args.dict_dir).context("Open JTalk辞書のロードに失敗しました")?;
     let synth = Synthesizer::builder(ort)
         .text_analyzer(ojt)
+        .acceleration_mode(if args.acceleration {
+            eprintln!(
+                "ハードウェアアクセラレーションを有効化します：{:?}",
+                ort.supported_devices()
+                    .context("ONNX Runtimeがサポートするデバイスの取得に失敗しました")?
+            );
+
+            voicevox_core::AccelerationMode::Auto
+        } else {
+            voicevox_core::AccelerationMode::Cpu
+        })
         .build()
         .context("Synthesizerの構築に失敗しました")?;
 
@@ -90,13 +105,14 @@ fn main() -> anyhow::Result<()> {
         })?;
 
     eprintln!("合成中...");
+    let current = std::time::Instant::now();
     let wav = synth
         .tts(&args.text, style_id)
         .perform()
         .context("音声合成に失敗しました")?;
 
     fs::write(&args.out, wav).context("出力ファイルの書き込みに失敗しました")?;
-    eprintln!("Saved to {:?}", args.out);
+    eprintln!("合成完了: {} ({:?})", args.out, current.elapsed());
 
     Ok(())
 }

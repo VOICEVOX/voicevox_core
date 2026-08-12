@@ -379,6 +379,7 @@ enum Device {
     Cpu,
     Cuda,
     Directml,
+    Webgpu,
 }
 
 #[derive(ValueEnum, Display, IntoStaticStr, Clone, Copy, PartialEq)]
@@ -641,23 +642,21 @@ async fn main() -> anyhow::Result<()> {
 
     let additional_libraries = devices
         .iter()
-        .filter(|&&device| device != Device::Cpu)
-        .map(|&device| {
+        .filter_map(|&device| match device {
+            Device::Cpu => None,
+            // NOTE: Windows WebGPUではDirectX関連のdllが必要
+            Device::Webgpu if os == Os::Windows => Some("WebGPU"),
+            Device::Webgpu => None,
+            Device::Cuda => Some("CUDA"),
+            Device::Directml => Some("DirectML"),
+        })
+        .map(|device| {
             find_gh_asset(
                 octocrab,
                 &additional_libraries_repo,
                 &additional_libraries_version,
                 None,
-                move |_, _| {
-                    Ok({
-                        let device = match device {
-                            Device::Cpu => unreachable!(),
-                            Device::Cuda => "CUDA",
-                            Device::Directml => "DirectML",
-                        };
-                        format!("{device}-{os}-{cpu_arch}.zip")
-                    })
-                },
+                move |_, _| Ok(format!("{device}-{os}-{cpu_arch}.zip")),
             )
         })
         .collect::<FuturesOrdered<_>>()
@@ -906,6 +905,7 @@ fn find_onnxruntime(
                                 Device::Cpu => "CPU",
                                 Device::Cuda => "CUDA",
                                 Device::Directml => "DirectML",
+                                Device::Webgpu => "WebGPU",
                             }
                     })
                 })
