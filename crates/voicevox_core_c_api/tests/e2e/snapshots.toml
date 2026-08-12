@@ -72,11 +72,7 @@ metas = '''
 ]'''
 stderr.windows = '''
 {timestamp}  WARN voicevox_core::compatible_engine: ONNX Runtimeのロードまたは初期化ができませんでした
-{timestamp}  WARN voicevox_core::compatible_engine: falling back to `{voicevox_onnxruntime_unversioned_filename}`
-{timestamp}  WARN voicevox_core::compatible_engine: ONNX Runtimeのロードまたは初期化ができませんでした
-{timestamp}  WARN voicevox_core::compatible_engine: falling back to `{onnxruntime_versioned_filename}`
-{timestamp}  WARN voicevox_core::compatible_engine: ONNX Runtimeのロードまたは初期化ができませんでした
-{timestamp}  WARN voicevox_core::compatible_engine: falling back to `{onnxruntime_unversioned_filename}`
+{timestamp}  WARN voicevox_core::compatible_engine: falling back to `onnxruntime.dll`
 {windows-video-cards}
 {timestamp}  INFO voicevox_core::synthesizer: CPUを利用します
 '''

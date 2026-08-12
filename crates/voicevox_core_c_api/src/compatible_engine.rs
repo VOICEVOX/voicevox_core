@@ -32,17 +32,26 @@ static ERROR_MESSAGE: LazyLock<Mutex<String>> = LazyLock::new(|| Mutex::new(Stri
 static ONNXRUNTIME: LazyLock<&'static voicevox_core::blocking::Onnxruntime> = LazyLock::new(|| {
     let first_result = voicevox_core::blocking::Onnxruntime::load_once().perform();
 
-    [
-        voicevox_core::blocking::Onnxruntime::LIB_RECOMMENDED_UNVERSIONED_FILENAME.to_owned(),
-        voicevox_core::blocking::Onnxruntime::LIB_RECOMMENDED_VERSIONED_FILENAME.replace(
-            voicevox_core::blocking::Onnxruntime::LIB_RECOMMENDED_NAME,
-            "onnxruntime",
-        ),
-        voicevox_core::blocking::Onnxruntime::LIB_RECOMMENDED_UNVERSIONED_FILENAME.replace(
-            voicevox_core::blocking::Onnxruntime::LIB_RECOMMENDED_NAME,
-            "onnxruntime",
-        ),
-    ]
+    if cfg!(windows) {
+        Vec::from([
+            voicevox_core::blocking::Onnxruntime::LIB_RECOMMENDED_UNVERSIONED_FILENAME.replace(
+                voicevox_core::blocking::Onnxruntime::LIB_RECOMMENDED_NAME,
+                "onnxruntime",
+            ),
+        ])
+    } else {
+        Vec::from([
+            voicevox_core::blocking::Onnxruntime::LIB_RECOMMENDED_UNVERSIONED_FILENAME.to_owned(),
+            voicevox_core::blocking::Onnxruntime::LIB_RECOMMENDED_VERSIONED_FILENAME.replace(
+                voicevox_core::blocking::Onnxruntime::LIB_RECOMMENDED_NAME,
+                "onnxruntime",
+            ),
+            voicevox_core::blocking::Onnxruntime::LIB_RECOMMENDED_UNVERSIONED_FILENAME.replace(
+                voicevox_core::blocking::Onnxruntime::LIB_RECOMMENDED_NAME,
+                "onnxruntime",
+            ),
+        ])
+    }
     .into_iter()
     .fold(first_result, |result, alt_onnxruntime_filename| {
         result.or_else(|err| {
