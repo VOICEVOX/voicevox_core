@@ -68,6 +68,7 @@ fn copy_onnxruntime(src: &Utf8Path, out_dir: &Path, dist: &Utf8Path) -> io::Resu
     {
         use std::env::consts::{DLL_PREFIX, DLL_SUFFIX};
 
+        let dst = &dst_dir.join(format!("{DLL_PREFIX}onnxruntime{DLL_SUFFIX}"));
         match fs_err::metadata(dst) {
             Ok(md) => {
                 if md.modified()? < fs_err::metadata(src)?.modified()? {
@@ -79,7 +80,6 @@ fn copy_onnxruntime(src: &Utf8Path, out_dir: &Path, dist: &Utf8Path) -> io::Resu
             Err(e) if e.kind() == io::ErrorKind::NotFound => {}
             Err(e) => return Err(e),
         }
-        let dst = &dst_dir.join(format!("{DLL_PREFIX}onnxruntime{DLL_SUFFIX}"));
         fs_err::os::unix::fs::symlink(format!("./{file_name}"), dst)?;
         println!("cargo:rerun-if-changed={dst}");
     }
