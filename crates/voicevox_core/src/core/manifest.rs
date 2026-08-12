@@ -41,30 +41,36 @@ impl<'de> Deserialize<'de> for Manifest {
                 A: de::MapAccess<'de>,
             {
                 let mut root = serde_json::Map::new();
-                while let Some((key, value)) = map.next_entry::<String, serde_json::Value>()? {
-                    root.insert(key, value);
+                let mut vvm_format_version = None;
+
+                while let Some(key) = map.next_key::<String>()? {
+                    if key == "vvm_format_version" {
+                        let value = map.next_value::<serde_json::Value>()?;
+                        vvm_format_version = Some(
+                            FormatVersion::deserialize(&value)
+                                .map_err(de::Error::custom)?
+                        );
+                        root.insert(key, value);
+                    } else {
+                        let value = map.next_value::<serde_json::Value>()?;
+                        root.insert(key, value);
+                    }
                 }
-                let vvm_format_version = root
-                    .get("vvm_format_version")
-                    .and_then(serde_json::Value::as_u64)
+                let vvm_format_version = vvm_format_version
                     .ok_or_else(|| de::Error::missing_field("vvm_format_version"))?;
                 let content_value = serde_json::Value::Object(root);
 
                 match vvm_format_version {
-                    1 => {
+                    FormatVersion::V1 => {
                         let data = ManifestSchemaV1::deserialize(content_value)
                             .map_err(de::Error::custom)?;
                         Ok(data.into())
                     },
-                    2 => {
+                    FormatVersion::V2 => {
                         let data = ManifestSchemaV2::deserialize(content_value)
                             .map_err(de::Error::custom)?;
                         Ok(data.into())
                     },
-                    v => Err(de::Error::custom(format!(
-                        "未知の形式です（`vvm_format_version={v}`）。新しいバージョンのVOICEVOX \
-                         COREであれば対応しているかもしれません",
-                    ))),
                 }
             }
         }
@@ -89,10 +95,32 @@ impl Display for InnerVoiceId {
     }
 }
 
+
+/// 現在有効なManifestのバージョン
+#[derive(Clone, Debug)]
+pub enum FormatVersion { V1, V2 }
+
+impl<'de> Deserialize<'de> for FormatVersion {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let v = u64::deserialize(deserializer)?;
+        match v {
+            1 => Ok(FormatVersion::V1),
+            2 => Ok(FormatVersion::V2),
+            _ => Err(de::Error::custom(format!(
+                "未知の形式です（`vvm_format_version={v}`）。新しいバージョンのVOICEVOX \
+                 COREであれば対応しているかもしれません",
+            ))),
+        }
+    }
+}
+
 /// voicevox_coreで使われているManifest
 #[derive(Debug, Getters)]
 pub struct Manifest {
-    vvm_format_version: u64,  // この値は固定ではない。バージョンに応じてmetasの構造やバリデーションが変化する。
+    vvm_format_version: FormatVersion,  // この値は固定ではない。バージョンに応じてmetasの構造やバリデーションが変化する。
     pub(super) id: VoiceModelId,
     metas_filename: String,
     domains: InferenceDomainMap<ManifestDomains>,
@@ -101,7 +129,7 @@ pub struct Manifest {
 /// 現行（vvm_format_version=2）のManifestスキーマ
 #[derive(Debug, Deserialize, Getters)]
 pub struct ManifestSchemaV2 {
-    vvm_format_version: u64,
+    vvm_format_version: FormatVersion,
     pub(super) id: VoiceModelId,
     metas_filename: String,
     #[serde(flatten)]
@@ -122,7 +150,7 @@ impl From<ManifestSchemaV2> for Manifest {
 /// 互換性維持のために残している旧式（vvm_format_version=1）のManifestスキーマ
 #[derive(Debug, Deserialize, Getters)]
 pub struct ManifestSchemaV1 {
-    vvm_format_version: u64,
+    vvm_format_version: FormatVersion,
     pub(super) id: VoiceModelId,
     metas_filename: String,
     #[serde(flatten)]
@@ -193,21 +221,18 @@ mod tests {
     use crate::core::manifest::Manifest;
 
     #[rstest]
-    #[case("{
-        \"vvm_format_version\": 1,
+    #[case("{\"vvm_format_version\": 1,
         \"id\": \"a1a2a3a4-b1b2-c1c2-d1d2-d3d4d5d6d7d8\",
-        \"metas_filename\": \"metas.json\"
-    }", Ok(()))]
-    #[case("{
-        \"vvm_format_version\": 2,
+        \"metas_filename\": \"metas.json\"}",
+        Ok(()))]
+    #[case("{\"vvm_format_version\": 2,
         \"id\": \"a1a2a3a4-b1b2-c1c2-d1d2-d3d4d5d6d7d8\",
-        \"metas_filename\": \"metas.json\"
-    }", Ok(()))]
-    #[case("{
-        \"vvm_format_version\": 3,
+        \"metas_filename\": \"metas.json\"}",
+        Ok(()))]
+    #[case("{\"vvm_format_version\": 3,
         \"id\": \"a1a2a3a4-b1b2-c1c2-d1d2-d3d4d5d6d7d8\",
-        \"metas_filename\": \"metas.json\"
-    }", Err("未知の形式です（`vvm_format_version=3`）。新しいバージョンのVOICEVOX COREであれば対応しているかもしれません at line 5 column 5"))]
+        \"metas_filename\": \"metas.json\"}",
+        Err("未知の形式です（`vvm_format_version=3`）。新しいバージョンのVOICEVOX COREであれば対応しているかもしれません at line 1 column 24"))]
     fn vvm_format_version_works(
         #[case] input: &str,
         #[case] expected: Result<(), &str>,
