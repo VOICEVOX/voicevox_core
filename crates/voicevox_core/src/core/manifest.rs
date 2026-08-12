@@ -243,6 +243,6 @@ mod tests {
         let actual = serde_json::from_str::<Manifest>(input).map_err(|e| e.to_string());
         let actual = actual.as_ref().map(|_| ()).map_err(Deref::deref);
         assert_eq!(expected, actual);
-        return Ok(());
+        Ok(())
     }
 }
