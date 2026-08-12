@@ -9,14 +9,14 @@ import voicevox_core
 
 def test() -> None:
     REAL_BLOCKING = (
-        voicevox_core.blocking.Onnxruntime.LIB_MIN_REQUIRED_VERSION,
-        voicevox_core.blocking.Onnxruntime.LIB_MAX_SUPPORTED_VERSION,
+        voicevox_core.blocking.Onnxruntime.LIB_MIN_REQUIRED_MINOR_VERSION,
+        voicevox_core.blocking.Onnxruntime.LIB_MAX_SUPPORTED_MINOR_VERSION,
         voicevox_core.blocking.Onnxruntime.LIB_RECOMMENDED_NAME,
         voicevox_core.blocking.Onnxruntime.LIB_RECOMMENDED_VERSION,
     )
     REAL_ASYNCIO = (
-        voicevox_core.asyncio.Onnxruntime.LIB_MIN_REQUIRED_VERSION,
-        voicevox_core.asyncio.Onnxruntime.LIB_MAX_SUPPORTED_VERSION,
+        voicevox_core.asyncio.Onnxruntime.LIB_MIN_REQUIRED_MINOR_VERSION,
+        voicevox_core.asyncio.Onnxruntime.LIB_MAX_SUPPORTED_MINOR_VERSION,
         voicevox_core.asyncio.Onnxruntime.LIB_RECOMMENDED_NAME,
         voicevox_core.asyncio.Onnxruntime.LIB_RECOMMENDED_VERSION,
     )
@@ -32,21 +32,21 @@ def extract(pyi: Path) -> tuple[int, int, str, str]:
         for stmt in module.body
         if isinstance(stmt, ClassDef) and stmt.name == "Onnxruntime"
     )
-    lib_min_required_version_value = next(
+    lib_min_required_minor_version_value = next(
         stmt.value.value
         for stmt in class_def.body
         if isinstance(stmt, AnnAssign)
         and isinstance(stmt.target, Name)
-        and stmt.target.id == "LIB_MIN_REQUIRED_VERSION"
+        and stmt.target.id == "LIB_MIN_REQUIRED_MINOR_VERSION"
         and isinstance(stmt.value, Constant)
         and isinstance(stmt.value.value, int)
     )
-    lib_max_supported_version_value = next(
+    lib_max_supported_minor_version_value = next(
         stmt.value.value
         for stmt in class_def.body
         if isinstance(stmt, AnnAssign)
         and isinstance(stmt.target, Name)
-        and stmt.target.id == "LIB_MAX_SUPPORTED_VERSION"
+        and stmt.target.id == "LIB_MAX_SUPPORTED_MINOR_VERSION"
         and isinstance(stmt.value, Constant)
         and isinstance(stmt.value.value, int)
     )
@@ -69,8 +69,8 @@ def extract(pyi: Path) -> tuple[int, int, str, str]:
         and isinstance(stmt.value.value, str)
     )
     return (
-        lib_min_required_version_value,
-        lib_max_supported_version_value,
+        lib_min_required_minor_version_value,
+        lib_max_supported_minor_version_value,
         lib_recommended_name_value,
         lib_recommended_version_value,
     )

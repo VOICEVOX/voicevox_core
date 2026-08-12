@@ -13,8 +13,8 @@ use crate::{common::throw_if_err, object};
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[duplicate_item(
     f CONST;
-    [ Java_jp_hiroshiba_voicevoxcore_blocking_Onnxruntime_rsLibMinRequiredVersion ] [ LIB_MIN_REQUIRED_VERSION ];
-    [ Java_jp_hiroshiba_voicevoxcore_blocking_Onnxruntime_rsLibMaxSupportedVersion ] [ LIB_MAX_SUPPORTED_VERSION ];
+    [ Java_jp_hiroshiba_voicevoxcore_blocking_Onnxruntime_rsLibMinRequiredMinorVersion ] [ LIB_MIN_REQUIRED_MINOR_VERSION ];
+    [ Java_jp_hiroshiba_voicevoxcore_blocking_Onnxruntime_rsLibMaxSupportedMinorVersion ] [ LIB_MAX_SUPPORTED_MINOR_VERSION ];
 )]
 #[unsafe(no_mangle)]
 extern "system" fn f(_: JNIEnv<'_>) -> jint {

@@ -498,12 +498,12 @@ mod blocking {
     #[pymethods]
     impl Onnxruntime {
         #[classattr]
-        const LIB_MIN_REQUIRED_VERSION: u32 =
-            voicevox_core::blocking::Onnxruntime::LIB_MIN_REQUIRED_VERSION;
+        const LIB_MIN_REQUIRED_MINOR_VERSION: u32 =
+            voicevox_core::blocking::Onnxruntime::LIB_MIN_REQUIRED_MINOR_VERSION;
 
         #[classattr]
-        const LIB_MAX_SUPPORTED_VERSION: u32 =
-            voicevox_core::blocking::Onnxruntime::LIB_MAX_SUPPORTED_VERSION;
+        const LIB_MAX_SUPPORTED_MINOR_VERSION: u32 =
+            voicevox_core::blocking::Onnxruntime::LIB_MAX_SUPPORTED_MINOR_VERSION;
 
         #[classattr]
         const LIB_RECOMMENDED_NAME: &'static str =
@@ -1279,12 +1279,12 @@ mod asyncio {
     #[pymethods]
     impl Onnxruntime {
         #[classattr]
-        const LIB_MIN_REQUIRED_VERSION: u32 =
-            voicevox_core::nonblocking::Onnxruntime::LIB_MIN_REQUIRED_VERSION;
+        const LIB_MIN_REQUIRED_MINOR_VERSION: u32 =
+            voicevox_core::nonblocking::Onnxruntime::LIB_MIN_REQUIRED_MINOR_VERSION;
 
         #[classattr]
-        const LIB_MAX_SUPPORTED_VERSION: u32 =
-            voicevox_core::nonblocking::Onnxruntime::LIB_MAX_SUPPORTED_VERSION;
+        const LIB_MAX_SUPPORTED_MINOR_VERSION: u32 =
+            voicevox_core::nonblocking::Onnxruntime::LIB_MAX_SUPPORTED_MINOR_VERSION;
 
         #[classattr]
         const LIB_RECOMMENDED_NAME: &'static str =

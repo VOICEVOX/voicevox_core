@@ -86,10 +86,10 @@ class Onnxruntime:
 
     # ここの定数値が本物と合致するかどうかは、test_type_stub_consts.pyで担保する。
 
-    LIB_MIN_REQUIRED_VERSION: int = 17
+    LIB_MIN_REQUIRED_MINOR_VERSION: int = 17
     """必要なONNX Runtime 1.xの最小マイナーバージョン。"""
 
-    LIB_MAX_SUPPORTED_VERSION: int = 17
+    LIB_MAX_SUPPORTED_MINOR_VERSION: int = 17
     """サポートされるONNX Runtime 1.xの最大マイナーバージョン。"""
 
     LIB_RECOMMENDED_NAME: str = "voicevox_onnxruntime"
@@ -124,8 +124,8 @@ class Onnxruntime:
         """
         ONNX Runtimeをロードして初期化する。
 
-        対象のONNX Runtimeのマイナーバージョンは :attr:`LIB_MIN_REQUIRED_VERSION`
-        よりも大きくなくてはならない。 :attr:`LIB_MAX_SUPPORTED_VERSION`
+        対象のONNX Runtimeのマイナーバージョンは :attr:`LIB_MIN_REQUIRED_MINOR_VERSION`
+        よりも大きくなくてはならない。 :attr:`LIB_MAX_SUPPORTED_MINOR_VERSION`
         より大きい場合は警告を出す。
 
         一度成功したら、以後は引数を無視して同じインスタンスを返す。

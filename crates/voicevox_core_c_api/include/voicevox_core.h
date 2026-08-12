@@ -520,24 +520,24 @@ extern "C" {
  *
  * @return 必要な最小マイナーバージョン
  *
- * \orig-impl{voicevox_get_onnxruntime_lib_min_required_version}
+ * \orig-impl{voicevox_get_onnxruntime_lib_min_required_minor_version}
  */
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-uint32_t voicevox_get_onnxruntime_lib_min_required_version(void);
+uint32_t voicevox_get_onnxruntime_lib_min_required_minor_version(void);
 
 /**
  * サポートされるONNX Runtime 1.xの最大マイナーバージョンを取得する。
  *
  * @return サポートされる最大マイナーバージョン
  *
- * \orig-impl{voicevox_get_onnxruntime_lib_max_supported_version}
+ * \orig-impl{voicevox_get_onnxruntime_lib_max_supported_minor_version}
  */
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-uint32_t voicevox_get_onnxruntime_lib_max_supported_version(void);
+uint32_t voicevox_get_onnxruntime_lib_max_supported_minor_version(void);
 
 #if defined(VOICEVOX_LOAD_ONNXRUNTIME)
 /**
@@ -609,7 +609,7 @@ const struct VoicevoxOnnxruntime *voicevox_onnxruntime_get(void);
 /**
  * ONNX Runtimeをロードして初期化する。
  *
- * 対象のONNX Runtimeのマイナーバージョンは ::voicevox_get_onnxruntime_lib_min_required_version よりも大きくなければならない。 ::voicevox_get_onnxruntime_lib_max_supported_version よりも大きい場合は警告を出す。
+ * 対象のONNX Runtimeのマイナーバージョンは ::voicevox_get_onnxruntime_lib_min_required_minor_version よりも大きくなければならない。 ::voicevox_get_onnxruntime_lib_max_supported_minor_version よりも大きい場合は警告を出す。
  *
  * 一度成功したら、以後は引数を無視して同じ参照を返す。
  *
@@ -640,7 +640,7 @@ VoicevoxResultCode voicevox_onnxruntime_load_once(struct VoicevoxLoadOnnxruntime
 /**
  * ONNX Runtimeを初期化する。
  *
- * リンクされているONNX Runtimeのマイナーバージョンが ::voicevox_get_onnxruntime_lib_min_required_version よりも小さい場合失敗する。 ::voicevox_get_onnxruntime_lib_max_supported_version よりも大きい場合は警告を出す。
+ * リンクされているONNX Runtimeのマイナーバージョンが ::voicevox_get_onnxruntime_lib_min_required_minor_version よりも小さい場合失敗する。 ::voicevox_get_onnxruntime_lib_max_supported_minor_version よりも大きい場合は警告を出す。
  *
  * 一度成功したら以後は同じ参照を返す。
  *

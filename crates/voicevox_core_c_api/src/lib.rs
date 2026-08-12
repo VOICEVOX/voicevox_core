@@ -101,11 +101,11 @@ fn init_logger_once() {
 ///
 /// @return 必要な最小マイナーバージョン
 ///
-/// \orig-impl{voicevox_get_onnxruntime_lib_min_required_version}
+/// \orig-impl{voicevox_get_onnxruntime_lib_min_required_minor_version}
 #[unsafe(no_mangle)]
-pub extern "C" fn voicevox_get_onnxruntime_lib_min_required_version() -> u32 {
+pub extern "C" fn voicevox_get_onnxruntime_lib_min_required_minor_version() -> u32 {
     init_logger_once();
-    VoicevoxOnnxruntime::LIB_MIN_REQUIRED_VERSION
+    VoicevoxOnnxruntime::LIB_MIN_REQUIRED_MINOR_VERSION
 }
 
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
@@ -113,11 +113,11 @@ pub extern "C" fn voicevox_get_onnxruntime_lib_min_required_version() -> u32 {
 ///
 /// @return サポートされる最大マイナーバージョン
 ///
-/// \orig-impl{voicevox_get_onnxruntime_lib_max_supported_version}
+/// \orig-impl{voicevox_get_onnxruntime_lib_max_supported_minor_version}
 #[unsafe(no_mangle)]
-pub extern "C" fn voicevox_get_onnxruntime_lib_max_supported_version() -> u32 {
+pub extern "C" fn voicevox_get_onnxruntime_lib_max_supported_minor_version() -> u32 {
     init_logger_once();
-    VoicevoxOnnxruntime::LIB_MAX_SUPPORTED_VERSION
+    VoicevoxOnnxruntime::LIB_MAX_SUPPORTED_MINOR_VERSION
 }
 
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
@@ -228,7 +228,7 @@ pub extern "C" fn voicevox_onnxruntime_get() -> Option<&'static VoicevoxOnnxrunt
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// ONNX Runtimeをロードして初期化する。
 ///
-/// 対象のONNX Runtimeのマイナーバージョンは ::voicevox_get_onnxruntime_lib_min_required_version よりも大きくなければならない。 ::voicevox_get_onnxruntime_lib_max_supported_version よりも大きい場合は警告を出す。
+/// 対象のONNX Runtimeのマイナーバージョンは ::voicevox_get_onnxruntime_lib_min_required_minor_version よりも大きくなければならない。 ::voicevox_get_onnxruntime_lib_max_supported_minor_version よりも大きい場合は警告を出す。
 ///
 /// 一度成功したら、以後は引数を無視して同じ参照を返す。
 ///
@@ -271,7 +271,7 @@ pub unsafe extern "C" fn voicevox_onnxruntime_load_once(
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// ONNX Runtimeを初期化する。
 ///
-/// リンクされているONNX Runtimeのマイナーバージョンが ::voicevox_get_onnxruntime_lib_min_required_version よりも小さい場合失敗する。 ::voicevox_get_onnxruntime_lib_max_supported_version よりも大きい場合は警告を出す。
+/// リンクされているONNX Runtimeのマイナーバージョンが ::voicevox_get_onnxruntime_lib_min_required_minor_version よりも小さい場合失敗する。 ::voicevox_get_onnxruntime_lib_max_supported_minor_version よりも大きい場合は警告を出す。
 ///
 /// 一度成功したら以後は同じ参照を返す。
 ///

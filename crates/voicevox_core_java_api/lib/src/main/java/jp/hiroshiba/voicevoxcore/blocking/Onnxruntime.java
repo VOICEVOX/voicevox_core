@@ -23,10 +23,10 @@ public class Onnxruntime {
   }
 
   /** 必要なONNX Runtime 1.xの最小マイナーバージョン。 */
-  public static final int LIB_MIN_REQUIRED_VERSION = 17;
+  public static final int LIB_MIN_REQUIRED_MINOR_VERSION = 17;
 
   /** サポートされるONNX Runtime 1.xの最大マイナーバージョン。 */
-  public static final int LIB_MAX_SUPPORTED_VERSION = 17;
+  public static final int LIB_MAX_SUPPORTED_MINOR_VERSION = 17;
 
   /** 推奨されるONNX Runtimeのライブラリ名。 */
   public static final String LIB_RECOMMENDED_NAME = "voicevox_onnxruntime";
@@ -59,23 +59,26 @@ public class Onnxruntime {
     }
   }
 
+  // spotless:off
   /**
    * ONNX Runtimeをロードして初期化する。
    *
-   * <p>対象のONNX Runtimeはバージョン<code>1.{@link #LIB_MIN_REQUIRED_VERSION}</code>以降のものでなければならない。バージョン
-   * <code>1.{@link #LIB_MAX_SUPPORTED_VERSION}</code>よりも新しいONNX Runtimeに対しては警告を出す。
+   * <p>対象のONNX
+   * Runtimeはバージョン<code>1.{@link #LIB_MIN_REQUIRED_MINOR_VERSION}</code>以降のものでなければならない。バージョン<code>1.{@link #LIB_MAX_SUPPORTED_MINOR_VERSION}</code>よりも新しいONNX
+   * Runtimeに対しては警告を出す。
    *
    * <p>一度成功したら、以後は引数を無視して同じインスタンスを返す。
    *
    * @return {@link LoadOnce}。
    */
+  // spotless:on
   public static LoadOnce loadOnce() {
     return new LoadOnce();
   }
 
-  private static native int rsLibMinRequiredVersion();
+  private static native int rsLibMinRequiredMinorVersion();
 
-  private static native int rsLibMaxSupportedVersion();
+  private static native int rsLibMaxSupportedMinorVersion();
 
   private static native String rsLibRecommendedName();
 
@@ -86,8 +89,8 @@ public class Onnxruntime {
   private static native String rsLibRecommendedUnversionedFilename();
 
   static {
-    assert LIB_MIN_REQUIRED_VERSION == rsLibMinRequiredVersion()
-        && LIB_MAX_SUPPORTED_VERSION == rsLibMaxSupportedVersion()
+    assert LIB_MIN_REQUIRED_MINOR_VERSION == rsLibMinRequiredMinorVersion()
+        && LIB_MAX_SUPPORTED_MINOR_VERSION == rsLibMaxSupportedMinorVersion()
         && LIB_RECOMMENDED_NAME.equals(rsLibRecommendedName())
         && LIB_RECOMMENDED_VERSION.equals(rsLibRecommendedVersion());
   }

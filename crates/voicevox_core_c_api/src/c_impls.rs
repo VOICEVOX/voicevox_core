@@ -24,11 +24,11 @@ use crate::{
 // 欠いている
 
 impl VoicevoxOnnxruntime {
-    pub(crate) const LIB_MIN_REQUIRED_VERSION: u32 =
-        voicevox_core::blocking::Onnxruntime::LIB_MIN_REQUIRED_VERSION;
+    pub(crate) const LIB_MIN_REQUIRED_MINOR_VERSION: u32 =
+        voicevox_core::blocking::Onnxruntime::LIB_MIN_REQUIRED_MINOR_VERSION;
 
-    pub(crate) const LIB_MAX_SUPPORTED_VERSION: u32 =
-        voicevox_core::blocking::Onnxruntime::LIB_MAX_SUPPORTED_VERSION;
+    pub(crate) const LIB_MAX_SUPPORTED_MINOR_VERSION: u32 =
+        voicevox_core::blocking::Onnxruntime::LIB_MAX_SUPPORTED_MINOR_VERSION;
 
     #[cfg(feature = "load-onnxruntime")]
     pub(crate) const LIB_RECOMMENDED_VERSIONED_FILENAME: &'static std::ffi::CStr =
