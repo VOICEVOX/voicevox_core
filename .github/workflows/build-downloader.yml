@@ -111,15 +111,6 @@ jobs:
           esac
           mv $"target/${{ matrix.target }}/release/download$exe_suffix" ./${{ matrix.name }}
 
-      - name: Code signing (Windows)
-        if: startsWith(matrix.os, 'windows') && inputs.code_signing
-        run: |
-          bash build_util/codesign_windows.bash ./${{ matrix.name }}
-        env:
-          ESIGNERCKA_USERNAME: ${{ secrets.ESIGNERCKA_USERNAME }}
-          ESIGNERCKA_PASSWORD: ${{ secrets.ESIGNERCKA_PASSWORD }}
-          ESIGNERCKA_TOTP_SECRET: ${{ secrets.ESIGNERCKA_TOTP_SECRET }}
-
       - name: Code signing (macOS)
         if: startsWith(matrix.os, 'macos') && inputs.code_signing
         run: bash build_util/codesign_macos.bash ./${{ matrix.name }}
