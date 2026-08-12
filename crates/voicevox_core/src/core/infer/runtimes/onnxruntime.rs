@@ -721,15 +721,12 @@ pub(crate) mod blocking {
         }
     }
 
-    #[cfg(feature = "load-onnxruntime")]
-    const _: () = {
-        assert!(
-            Onnxruntime::LIB_MIN_REQUIRED_MINOR_VERSION == super::LIB_MIN_REQUIRED_MINOR_VERSION
-        );
-        assert!(
-            Onnxruntime::LIB_MAX_SUPPORTED_MINOR_VERSION == super::LIB_MAX_SUPPORTED_MINOR_VERSION
-        );
-    };
+    const _: () = assert!(
+        Onnxruntime::LIB_MIN_REQUIRED_MINOR_VERSION == super::LIB_MIN_REQUIRED_MINOR_VERSION,
+    );
+    const _: () = assert!(
+        Onnxruntime::LIB_MAX_SUPPORTED_MINOR_VERSION == super::LIB_MAX_SUPPORTED_MINOR_VERSION,
+    );
 
     /// [`Onnxruntime::load_once`]のビルダー。
     #[cfg(feature = "load-onnxruntime")]
@@ -900,15 +897,12 @@ pub(crate) mod nonblocking {
         }
     }
 
-    #[cfg(feature = "load-onnxruntime")]
-    const _: () = {
-        assert!(
-            Onnxruntime::LIB_MIN_REQUIRED_MINOR_VERSION == super::LIB_MIN_REQUIRED_MINOR_VERSION
-        );
-        assert!(
-            Onnxruntime::LIB_MAX_SUPPORTED_MINOR_VERSION == super::LIB_MAX_SUPPORTED_MINOR_VERSION
-        );
-    };
+    const _: () = assert!(
+        Onnxruntime::LIB_MIN_REQUIRED_MINOR_VERSION == super::LIB_MIN_REQUIRED_MINOR_VERSION,
+    );
+    const _: () = assert!(
+        Onnxruntime::LIB_MAX_SUPPORTED_MINOR_VERSION == super::LIB_MAX_SUPPORTED_MINOR_VERSION,
+    );
 
     /// [`Onnxruntime::load_once`]のビルダー。
     #[cfg(feature = "load-onnxruntime")]
