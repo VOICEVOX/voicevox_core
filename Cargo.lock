@@ -2626,9 +2626,9 @@ dependencies = [
 
 [[package]]
 name = "num-bigint"
-version = "0.4.3"
+version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f93ab6289c7b344a8a9f60f88d80aa20032336fe78da341afc91c8a2341fc75f"
+checksum = "608e7659b5c3d7cba262d894801b9ec9d00de989e8a82bd4bef91d08da45cdc0"
 dependencies = [
  "autocfg",
  "num-integer",
@@ -2662,9 +2662,9 @@ dependencies = [
 
 [[package]]
 name = "num-traits"
-version = "0.2.15"
+version = "0.2.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "578ede34cf02f8924ab9447f50c28075b4d3e5b269972345e7e0372b38c6cdcd"
+checksum = "071dfc062690e90b734c0b2273ce72ad0ffa95f0c74596bc250dcfd960262841"
 dependencies = [
  "autocfg",
 ]
@@ -3199,6 +3199,8 @@ dependencies = [
  "indoc",
  "libc",
  "memoffset 0.9.0",
+ "num-bigint",
+ "num-traits",
  "once_cell",
  "portable-atomic",
  "pyo3-build-config",
@@ -5018,6 +5020,7 @@ dependencies = [
  "jlabel",
  "libloading 0.7.3",
  "ndarray",
+ "num-bigint",
  "num-traits",
  "once_cell",
  "open",
@@ -5167,6 +5170,7 @@ dependencies = [
  "futures-lite",
  "heck 0.5.0",
  "log",
+ "num-bigint",
  "pyo3",
  "pyo3-log",
  "ref-cast",

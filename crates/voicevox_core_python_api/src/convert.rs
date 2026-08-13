@@ -4,6 +4,7 @@ use camino::Utf8PathBuf;
 use derive_more::From;
 use easy_ext::ext;
 use heck::{ToLowerCamelCase as _, ToSnakeCase as _};
+use num_bigint::BigInt;
 use pyo3::{
     Bound, FromPyObject, IntoPyObject, PyAny, PyErr, PyResult, Python,
     exceptions::{PyException, PyValueError},
@@ -16,9 +17,9 @@ use ref_cast::RefCast;
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::json;
 use voicevox_core::{
-    __internal::interop::{ToJsonValue as _, Validate},
+    __internal::interop::{self, ToJsonValue as _, Validate},
     AccelerationMode, AccentPhrase, AudioQuery, FrameAudioQuery, OnExistingVoiceModelId,
-    SupportedDevices, UserDictWord, VoiceModelMeta,
+    SupportedDevices, UserDictWord, UserDictWordPriority, VoiceModelMeta,
 };
 
 use crate::{
@@ -334,9 +335,21 @@ fn to_dataclass_via_serde<'py>(
 pub(crate) fn to_rust_user_dict_word(
     ob: &Bound<'_, PyAny>,
 ) -> PyResult<voicevox_core::UserDictWord> {
+    let priority = ob.getattr("priority")?.extract::<BigInt>()?;
+    let priority = (&priority)
+        .try_into()
+        .ok()
+        .and_then(|priority| UserDictWordPriority::new(priority).ok())
+        .ok_or(interop::InvalidWordError::PriorityOutOfBounds {
+            is_validation_of_whole_word: true,
+            actual: priority,
+        })
+        .map_err(voicevox_core::Error::from)
+        .into_py_result(ob.py())?;
+
     voicevox_core::UserDictWord::builder()
         .word_type(from_literal_choice(ob.getattr("word_type")?.extract()?)?)
-        .priority(ob.getattr("priority")?.extract()?)
+        .priority(priority)
         .build(
             ob.getattr("surface")?.extract()?,
             ob.getattr("pronunciation")?.extract()?,
@@ -364,7 +377,7 @@ fn to_py_user_dict_word<'py>(
                     .as_str()
                     .expect("should be a string"),
             )?;
-            kwargs.set_item("priority", word.priority())?;
+            kwargs.set_item("priority", word.priority().get())?;
             kwargs
         }),
     )

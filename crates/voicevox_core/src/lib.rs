@@ -483,7 +483,9 @@ pub use self::{
         },
         talk::{
             AccentPhrase, AudioQuery, Mora,
-            user_dict::{UserDictWord, UserDictWordBuilder, UserDictWordType},
+            user_dict::{
+                UserDictWord, UserDictWordBuilder, UserDictWordPriority, UserDictWordType,
+            },
         },
     },
     error::{Error, ErrorKind},
