@@ -71,7 +71,7 @@ static SUPPORTED_ONNXRUNTIME_VERSIONS: LazyLock<VersionReq> =
 static SUPPORTED_ADDITIONAL_LIBRARIES_VERSIONS: LazyLock<VersionReq> =
     LazyLock::new(|| ">=0.2.1,<0.4".parse().unwrap());
 static SUPPORTED_MODELS_VERSIONS: LazyLock<VersionReq> =
-    LazyLock::new(|| ">=0.16,<0.17".parse().unwrap());
+    LazyLock::new(|| ">=0.16,<0.18".parse().unwrap());
 
 const MODELS_README_FILENAME: &str = "README.txt";
 const MODELS_DIR_NAME: &str = "vvms";
