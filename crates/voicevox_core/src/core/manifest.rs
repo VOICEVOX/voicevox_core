@@ -97,7 +97,7 @@ impl Display for InnerVoiceId {
 
 /// 現在有効なManifestのバージョン
 #[derive(Clone, Debug)]
-pub enum FormatVersion {
+pub(super) enum FormatVersion {
     V1,
     V2,
 }
@@ -129,10 +129,10 @@ pub struct Manifest {
 }
 
 /// 現行（vvm_format_version=2）のManifestスキーマ
-#[derive(Debug, Deserialize, Getters)]
-pub struct ManifestSchemaV2 {
+#[derive(Debug, Deserialize)]
+struct ManifestSchemaV2 {
     vvm_format_version: FormatVersion,
-    pub(super) id: VoiceModelId,
+    id: VoiceModelId,
     metas_filename: String,
     #[serde(flatten)]
     domains: InferenceDomainMap<ManifestDomains>,
@@ -150,10 +150,10 @@ impl From<ManifestSchemaV2> for Manifest {
 }
 
 /// 互換性維持のために残している旧式（vvm_format_version=1）のManifestスキーマ
-#[derive(Debug, Deserialize, Getters)]
-pub struct ManifestSchemaV1 {
+#[derive(Debug, Deserialize)]
+struct ManifestSchemaV1 {
     vvm_format_version: FormatVersion,
-    pub(super) id: VoiceModelId,
+    id: VoiceModelId,
     metas_filename: String,
     talk: Option<ManifestDomain<TalkDomain>>,
     singing_teacher: Option<ManifestDomain<SingingTeacherDomain>>,

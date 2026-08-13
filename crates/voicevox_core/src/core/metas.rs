@@ -242,25 +242,23 @@ pub enum StyleType {
 }
 
 /// 音声モデルのメタ情報スキーマ（vvm_format_version=2形式）
-pub type VoiceModelMetaSchemaV2 = Vec<CharacterMetaSchemaV2>;
+pub(super) type VoiceModelMetaSchemaV2 = Vec<CharacterMetaSchemaV2>;
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
-#[non_exhaustive]
-pub struct CharacterMetaSchemaV2 {
-    pub name: String,
-    pub styles: Vec<StyleMetaSchemaV2>,
-    pub version: CharacterVersion,
-    pub speaker_uuid: String,
-    pub order: Option<u32>,
+pub(super) struct CharacterMetaSchemaV2 {
+    name: String,
+    styles: Vec<StyleMetaSchemaV2>,
+    version: CharacterVersion,
+    speaker_uuid: String,
+    order: Option<u32>,
 }
 #[derive(Deserialize, Serialize, Clone, PartialEq, Debug)]
-#[non_exhaustive]
-pub struct StyleMetaSchemaV2 {
-    pub id: StyleId,
-    pub name: String,
+pub(super) struct StyleMetaSchemaV2 {
+    id: StyleId,
+    name: String,
     #[serde(default)]
-    pub r#type: StyleTypeSchemaV2,
-    pub order: Option<u32>,
+    r#type: StyleTypeSchemaV2,
+    order: Option<u32>,
 }
 
 #[derive(
@@ -279,8 +277,7 @@ pub struct StyleMetaSchemaV2 {
 )]
 #[strum(serialize_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
-#[non_exhaustive]
-pub enum StyleTypeSchemaV2 {
+enum StyleTypeSchemaV2 {
     #[default]
     Talk,
     SingingTeacher,
@@ -325,26 +322,24 @@ impl From<CharacterMetaSchemaV2> for CharacterMeta {
 }
 
 /// 音声モデルのメタ情報スキーマ（vvm_format_version=1形式）
-pub type VoiceModelMetaSchemaV1 = Vec<CharacterMetaSchemaV1>;
+pub(super) type VoiceModelMetaSchemaV1 = Vec<CharacterMetaSchemaV1>;
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
-#[non_exhaustive]
-pub struct CharacterMetaSchemaV1 {
-    pub name: String,
-    pub styles: Vec<StyleMetaSchemaV1>,
-    pub version: CharacterVersion,
-    pub speaker_uuid: String,
-    pub order: Option<u32>,
+pub(super) struct CharacterMetaSchemaV1 {
+    name: String,
+    styles: Vec<StyleMetaSchemaV1>,
+    version: CharacterVersion,
+    speaker_uuid: String,
+    order: Option<u32>,
 }
 
 #[derive(Deserialize, Serialize, Clone, PartialEq, Debug)]
-#[non_exhaustive]
-pub struct StyleMetaSchemaV1 {
-    pub id: StyleId,
-    pub name: String,
+struct StyleMetaSchemaV1 {
+    id: StyleId,
+    name: String,
     #[serde(default)]
-    pub r#type: StyleTypeSchemaV1,
-    pub order: Option<u32>,
+    r#type: StyleTypeSchemaV1,
+    order: Option<u32>,
 }
 
 #[derive(
@@ -363,8 +358,7 @@ pub struct StyleMetaSchemaV1 {
 )]
 #[strum(serialize_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
-#[non_exhaustive]
-pub enum StyleTypeSchemaV1 {
+enum StyleTypeSchemaV1 {
     #[default]
     Talk,
     SingingTeacher,

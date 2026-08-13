@@ -21,8 +21,7 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::{
-    CharacterMeta, StyleMeta, StyleType, VoiceModelMeta, VoiceModelMetaSchemaV1,
-    VoiceModelMetaSchemaV2,
+    CharacterMeta, StyleMeta, StyleType, VoiceModelMeta,
     asyncs::{Async, Mutex as _},
     error::{LoadModelError, LoadModelErrorKind, LoadModelResult},
 };
@@ -39,6 +38,7 @@ use super::{
         FormatVersion, Manifest, ManifestDomain, ManifestDomains, ModelFile, ModelFileType,
         StyleIdToInnerVoiceId,
     },
+    metas::{VoiceModelMetaSchemaV1, VoiceModelMetaSchemaV2},
 };
 
 pub(super) type ModelBytesWithInnerVoiceIdsByDomain = inference_domain_map_values!(
