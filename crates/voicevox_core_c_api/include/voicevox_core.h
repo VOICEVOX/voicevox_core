@@ -217,7 +217,7 @@ enum VoicevoxResultCode
   /**
    * モデルの形式が不正
    */
-  VOICEVOX_RESULT_INVALID_MODEL_HEADER_ERROR = 28,
+  VOICEVOX_RESULT_INVALID_MODEL_FORMAT_ERROR = 28,
   /**
    * すでに読み込まれている音声モデルを読み込もうとした
    */
