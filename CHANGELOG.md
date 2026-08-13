@@ -85,6 +85,7 @@
     - \[変更\]: `num-traits@0.2`: `^0.2.15` → `^0.2.19`
 - \[C\] \[iOS\] リリースされるXCFrameworkのファイル名がvoicevox\_core-xcframework-{バージョン}.zipという形になります ([#1399])。
 - \[C\] \[BREAKING\] `voicevox_synthesizer_load_voice_model`に引数`VoicevoxLoadVoiceModelOptions options`が追加されます ([#1337])。
+- \[C\] \[BREAKING\] `VoicevoxUserDictWord.priority`が`uint32_t`から`uint8_t`になります ([#1408])。
 - \[Java\] \[BREAKING\] `Synthesizer#load_voice_model`がビルダースタイルになります ([#1337])。
 
 ### Fixed
