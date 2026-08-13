@@ -175,6 +175,7 @@ impl Serialize for UserDictWord {
     Binary,
     Serialize,
 )]
+#[serde(transparent)]
 pub struct UserDictWordPriority(u8);
 
 impl UserDictWordPriority {
