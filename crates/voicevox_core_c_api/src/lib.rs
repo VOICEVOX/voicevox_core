@@ -40,7 +40,7 @@ use tracing_subscriber::EnvFilter;
 use tracing_subscriber::fmt::format::Writer;
 use uuid::Uuid;
 use voicevox_core::__internal::interop::{
-    BlockingTextAnalyzerExt as _, DEFAULT_PRIORITY, DEFAULT_WORD_TYPE, ToJsonValue as _,
+    BlockingTextAnalyzerExt as _, DEFAULT_WORD_TYPE, ToJsonValue as _,
 };
 use voicevox_core::{
     AccentPhrase, AudioQuery, FrameAudioQuery, FramePhoneme, Mora, Note, Score, StyleId,
@@ -2084,7 +2084,7 @@ pub struct VoicevoxUserDictWord {
     /// 単語の種類
     word_type: VoicevoxUserDictWordType,
     /// 優先度
-    priority: u32,
+    priority: u8,
 }
 
 /// ユーザー辞書の単語の種類。
@@ -2130,7 +2130,7 @@ pub extern "C" fn voicevox_user_dict_word_make(
         pronunciation,
         accent_type,
         word_type: DEFAULT_WORD_TYPE.into(),
-        priority: DEFAULT_PRIORITY,
+        priority: voicevox_core::UserDictWordPriority::default().get(),
     }
 }
 

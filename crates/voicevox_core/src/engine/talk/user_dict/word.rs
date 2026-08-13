@@ -1,15 +1,15 @@
 use std::sync::LazyLock;
 
+use derive_more::{Binary, Into, LowerHex, Octal, UpperHex};
+use duplicate::duplicate_item;
 use regex::Regex;
-use serde::{Deserialize, Serialize, Serializer, de::Error as _};
+use serde::{Deserialize, Deserializer, Serialize, Serializer, de::Error as _};
 
 use crate::{error::ErrorRepr, result::Result};
 
 use super::{
     super::text::{hankaku_zenkaku, katakana},
-    part_of_speech_data::{
-        MAX_PRIORITY, MIN_PRIORITY, PART_OF_SPEECH_DETAIL, PartOfSpeechDetail, priority2cost,
-    },
+    part_of_speech_data::{PART_OF_SPEECH_DETAIL, PartOfSpeechDetail, priority2cost},
 };
 
 /// ユーザー辞書の単語。
@@ -34,7 +34,7 @@ pub struct UserDictWord {
     /// 単語の種類。
     word_type: UserDictWordType,
     /// 単語の優先度。
-    priority: u32,
+    priority: UserDictWordPriority,
 
     /// モーラ数。
     mora_count: usize,
@@ -150,23 +150,176 @@ impl Serialize for UserDictWord {
     }
 }
 
+/// ユーザー辞書における単語の優先度。
+///
+/// 取り得る値は`0`以上`10`以下。
+#[derive(
+    PartialEq,
+    Eq,
+    Clone,
+    Copy,
+    Ord,
+    Hash,
+    PartialOrd,
+    Into,
+    Serialize,
+    Debug,
+    derive_more::Display,
+    UpperHex,
+    LowerHex,
+    Octal,
+    Binary,
+)]
+pub struct UserDictWordPriority(u8);
+
+impl UserDictWordPriority {
+    /// 最小値。`0`。
+    pub const MIN: Self = Self(0);
+
+    /// 最大値。`10`。
+    pub const MAX: Self = Self(10);
+
+    /// [`u8`]から`UserDictWordPriority`をコンストラクトする。
+    ///
+    /// # Errors
+    ///
+    /// 与えられた値が`10`を超過する場合[`ErrorKind::InvalidWord`]を表すエラーを返す。
+    ///
+    /// [`ErrorKind::InvalidWord`]: crate::ErrorKind::InvalidWord
+    pub fn new(value: u8) -> Result<Self> {
+        Self::__new(value).ok_or_else(|| {
+            ErrorRepr::InvalidWord(InvalidWordError::InvalidPriority {
+                is_validation_of_whole_word: false,
+                actual_int: value.into(),
+            })
+            .into()
+        })
+    }
+
+    #[doc(hidden)]
+    pub const fn __new(value: u8) -> Option<Self> {
+        const _: () = assert!(UserDictWordPriority::MIN.0 == 0);
+        if value <= Self::MAX.0 {
+            Some(Self(value))
+        } else {
+            None
+        }
+    }
+
+    pub const fn get(self) -> u8 {
+        self.0
+    }
+
+    pub(super) const fn to_index(self) -> usize {
+        (Self::MAX.0 - self.0) as _
+    }
+}
+
+impl Default for UserDictWordPriority {
+    fn default() -> Self {
+        const _: () = assert!(UserDictWordPriority::MIN.0 == 0 && UserDictWordPriority::MAX.0 >= 5);
+        Self(5)
+    }
+}
+
+impl TryFrom<u8> for UserDictWordPriority {
+    type Error = crate::Error;
+
+    fn try_from(value: u8) -> std::result::Result<Self, Self::Error> {
+        Self::new(value)
+    }
+}
+
+// `{i,u}128`をやるのはちょっとだけ面倒そう
+#[duplicate_item(
+    T;
+    [ u16 ];
+    [ u32 ];
+    [ u64 ];
+    [ usize ];
+    [ i8 ];
+    [ i16 ];
+    [ i32 ];
+    [ i64 ];
+    [ isize ];
+)]
+impl TryFrom<T> for UserDictWordPriority {
+    type Error = crate::Error;
+
+    fn try_from(value: T) -> std::result::Result<Self, Self::Error> {
+        let value = value
+            .try_into()
+            .map_err(|_| InvalidWordError::InvalidPriority {
+                is_validation_of_whole_word: false,
+                actual_int: value.into(),
+            })?;
+        Self::new(value)
+    }
+}
+
+impl<'de> Deserialize<'de> for UserDictWordPriority {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let value = u8::deserialize(deserializer)?;
+        Self::new(value).map_err(D::Error::custom)
+    }
+}
+
+/// 定数から[`UserDictWordPriority`]をコンストラクトする。
+///
+/// ```
+/// use voicevox_core::{UserDictWordPriority, user_dict_word_priority};
+///
+/// const _: UserDictWordPriority = user_dict_word_priority!(0);
+/// const _: UserDictWordPriority = user_dict_word_priority!(5);
+/// const _: UserDictWordPriority = user_dict_word_priority!(10);
+/// ```
+///
+/// ```compile_fail
+/// # use voicevox_core::{UserDictWordPriority, user_dict_word_priority};
+/// #
+/// const _: UserDictWordPriority = user_dict_word_priority!(11);
+/// ```
+#[macro_export]
+macro_rules! user_dict_word_priority {
+    ($value:expr $(,)?) => {{
+        const PRIORITY: $crate::UserDictWordPriority =
+            $crate::UserDictWordPriority::__new($value).expect("must equal or be less than 10");
+        PRIORITY
+    }};
+}
+
 /// [`UserDictWord`]のビルダー。
 #[derive(Debug)]
 pub struct UserDictWordBuilder {
     word_type: UserDictWordType,
-    priority: u32,
+    priority: UserDictWordPriority,
 }
 
-#[expect(clippy::enum_variant_names, reason = "特に理由はないので正されるべき")] // FIXME
+// FIXME: `clippy::enum_variant_names`にならって"Invalid"という接頭語を省く。
 #[derive(thiserror::Error, Debug, PartialEq)]
-pub(crate) enum InvalidWordError {
+pub enum InvalidWordError {
     #[error("{}: 無効な発音です({_1}): {_0:?}", Self::BASE_MSG)]
     InvalidPronunciation(String, &'static str),
     #[error(
-        "{}: 優先度は{MIN_PRIORITY}以上{MAX_PRIORITY}以下である必要があります: {_0}",
-        Self::BASE_MSG
+        "{prefix}優先度は{MIN}以上{MAX}以下である必要があります: {actual_int}",
+        prefix = if *is_validation_of_whole_word {
+            format!("{}: ", Self::BASE_MSG)
+        } else {
+            "".to_owned()
+        },
+        MIN = UserDictWordPriority::MIN,
+        MAX = UserDictWordPriority::MAX
     )]
-    InvalidPriority(u32),
+    InvalidPriority {
+        // FIXME: あまりよい形には思えないのでよりよい形を考える。
+        /// `UserDictWordPriority`型を形成しない他言語ラッパーでは`true`にする想定。
+        is_validation_of_whole_word: bool,
+        /// 実際に与えられた整数。
+        actual_int: serde_json::Number,
+    },
     #[error(
         "{}: 誤ったアクセント型です({1:?}の範囲から外れています): {_0}",
         Self::BASE_MSG
@@ -181,7 +334,6 @@ impl InvalidWordError {
 type InvalidWordResult<T> = std::result::Result<T, InvalidWordError>;
 
 pub const DEFAULT_WORD_TYPE: UserDictWordType = UserDictWordType::CommonNoun;
-pub const DEFAULT_PRIORITY: u32 = 5;
 
 static PRONUNCIATION_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^[ァ-ヴー]+$").unwrap());
@@ -197,11 +349,8 @@ impl UserDictWord {
         pronunciation: String,
         accent_type: usize,
         word_type: UserDictWordType,
-        priority: u32,
+        priority: UserDictWordPriority,
     ) -> Result<Self> {
-        if MIN_PRIORITY > priority || priority > MAX_PRIORITY {
-            return Err(ErrorRepr::InvalidWord(InvalidWordError::InvalidPriority(priority)).into());
-        }
         validate_pronunciation(&pronunciation)?;
         let mora_count = calculate_mora_count(&pronunciation, accent_type)?;
         Ok(Self {
@@ -235,7 +384,7 @@ impl UserDictWord {
     }
 
     /// 単語の優先度。
-    pub fn priority(&self) -> u32 {
+    pub fn priority(&self) -> UserDictWordPriority {
         self.priority
     }
 }
@@ -303,7 +452,7 @@ impl UserDictWordBuilder {
     }
 
     /// 単語の優先度。
-    pub fn priority(self, priority: u32) -> Self {
+    pub fn priority(self, priority: UserDictWordPriority) -> Self {
         Self { priority, ..self }
     }
 
@@ -328,7 +477,7 @@ impl Default for UserDictWordBuilder {
     fn default() -> Self {
         Self {
             word_type: DEFAULT_WORD_TYPE,
-            priority: DEFAULT_PRIORITY,
+            priority: Default::default(),
         }
     }
 }
@@ -421,7 +570,7 @@ impl UserDictWord {
 #[derive(Deserialize, Serialize)]
 struct SerdeRepr<S> {
     surface: S,
-    priority: u32,
+    priority: UserDictWordPriority,
     #[serde(default = "default_context_id")]
     context_id: i32,
     part_of_speech: S,
@@ -447,7 +596,7 @@ mod tests {
     use rstest::{fixture, rstest};
     use serde_json::json;
 
-    use super::{InvalidWordError, UserDictWord, UserDictWordType};
+    use super::{InvalidWordError, UserDictWord, UserDictWordPriority, UserDictWordType};
 
     #[rstest]
     fn to_mecab_format_works() {
@@ -457,7 +606,7 @@ mod tests {
             "ヨミ".to_string(),
             0,
             UserDictWordType::ProperNoun,
-            5,
+            user_dict_word_priority!(5),
         )
         .unwrap();
         assert_eq!(
@@ -490,6 +639,16 @@ mod tests {
             }
         } else {
             assert!(result.is_ok());
+        }
+    }
+
+    #[test]
+    fn priority_validation_works() {
+        for n in 0i64..=10 {
+            UserDictWordPriority::try_from(n).unwrap();
+        }
+        for n in [-10000i64, -1, 11, 255, 256, 10000] {
+            UserDictWordPriority::try_from(n).unwrap_err();
         }
     }
 
@@ -545,7 +704,7 @@ mod tests {
             "ヨミ".to_owned(),
             0,
             UserDictWordType::CommonNoun,
-            5,
+            user_dict_word_priority!(5),
         )
         .unwrap()
     }

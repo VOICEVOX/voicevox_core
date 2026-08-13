@@ -508,7 +508,7 @@ typedef struct VoicevoxUserDictWord {
   /**
    * 優先度
    */
-  uint32_t priority;
+  uint8_t priority;
 } VoicevoxUserDictWord;
 
 #ifdef __cplusplus
