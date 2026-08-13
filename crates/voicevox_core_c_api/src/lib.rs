@@ -387,6 +387,27 @@ pub extern "C" fn voicevox_open_jtalk_rc_use_user_dict(
     })())
 }
 
+/// ::voicevox_open_jtalk_rc_analyze のオプション。
+///
+/// \orig-impl{VoicevoxAnalyzeTextOptions}
+#[repr(C)]
+pub struct VoicevoxAnalyzeTextOptions {
+    /// テキスト中の読みが不明な英単語をカタカナ読みにする。
+    enable_katakana_english: bool,
+}
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// デフォルトの ::voicevox_open_jtalk_rc_analyze のオプションを生成する
+///
+/// @return デフォルト値が設定された ::voicevox_open_jtalk_rc_analyze のオプション
+///
+/// \no-orig-impl{voicevox_make_default_analyze_text_options}
+#[unsafe(no_mangle)]
+pub extern "C" fn voicevox_make_default_analyze_text_options() -> VoicevoxAnalyzeTextOptions {
+    init_logger_once();
+    Default::default()
+}
+
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// 日本語のテキストを解析する。
 ///
@@ -394,6 +415,7 @@ pub extern "C" fn voicevox_open_jtalk_rc_use_user_dict(
 ///
 /// @param [in] open_jtalk Open JTalkのオブジェクト
 /// @param [in] text UTF-8の日本語テキスト
+/// @param [in] options オプション
 /// @param [out] output_accent_phrases_json 生成先
 ///
 /// \orig-impl{voicevox_open_jtalk_rc_use_user_dict}
@@ -401,6 +423,7 @@ pub extern "C" fn voicevox_open_jtalk_rc_use_user_dict(
 pub unsafe extern "C" fn voicevox_open_jtalk_rc_analyze(
     open_jtalk: *const OpenJtalkRc,
     text: *const c_char,
+    options: VoicevoxAnalyzeTextOptions,
     output_accent_phrases_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
     init_logger_once();
@@ -409,7 +432,9 @@ pub unsafe extern "C" fn voicevox_open_jtalk_rc_analyze(
         CStr::from_ptr(text)
     };
     into_result_code_with_error((|| {
-        let accent_phrases = &open_jtalk.body().analyze_(ensure_utf8(text)?)?;
+        let accent_phrases = &open_jtalk
+            .body()
+            .analyze_(ensure_utf8(text)?, options.into())?;
         let accent_phrases = serde_json::to_string(accent_phrases).expect("should not fail");
         let accent_phrases = CString::new(accent_phrases).expect("should not contain '\\0'");
         unsafe {
@@ -1219,6 +1244,24 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query_from_kana(
     })())
 }
 
+/// ::voicevox_synthesizer_create_audio_query のオプション。
+///
+/// \no-orig-impl{VoicevoxCreateAudioQueryOptions}
+pub type VoicevoxCreateAudioQueryOptions = VoicevoxAnalyzeTextOptions;
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// デフォルトの ::voicevox_synthesizer_create_audio_query のオプションを生成する
+///
+/// @return デフォルト値が設定された ::voicevox_synthesizer_create_audio_query のオプション
+///
+/// \no-orig-impl{voicevox_make_default_create_audio_query_options}
+#[unsafe(no_mangle)]
+pub extern "C" fn voicevox_make_default_create_audio_query_options()
+-> VoicevoxCreateAudioQueryOptions {
+    init_logger_once();
+    Default::default()
+}
+
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// 日本語テキストから、AudioQueryをJSONとして生成する。
 ///
@@ -1230,6 +1273,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query_from_kana(
 /// @param [in] synthesizer 音声シンセサイザ
 /// @param [in] text UTF-8の日本語テキスト
 /// @param [in] style_id スタイルID
+/// @param [in] options オプション
 /// @param [out] output_audio_query_json 生成先
 ///
 /// @returns 結果コード
@@ -1256,6 +1300,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query(
     synthesizer: *const VoicevoxSynthesizer,
     text: *const c_char,
     style_id: VoicevoxStyleId,
+    options: VoicevoxCreateAudioQueryOptions,
     output_audio_query_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
     init_logger_once();
@@ -1264,9 +1309,15 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query(
         let text = unsafe { CStr::from_ptr(text) };
         let text = ensure_utf8(text)?;
 
+        let VoicevoxCreateAudioQueryOptions {
+            enable_katakana_english,
+        } = options;
+
         let audio_query = synthesizer
             .body()
-            .create_audio_query(text, StyleId::new(style_id))?;
+            .create_audio_query(text, StyleId::new(style_id))
+            .enable_katakana_english(enable_katakana_english)
+            .perform()?;
         let audio_query = CString::new(audio_query_model_to_json(&audio_query))
             .expect("should not contain '\\0'");
         unsafe {
@@ -1331,6 +1382,24 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases_from_kana(
     })())
 }
 
+/// ::voicevox_synthesizer_create_accent_phrases のオプション。
+///
+/// \no-orig-impl{VoicevoxCreateAccentPhrasesOptions}
+pub type VoicevoxCreateAccentPhrasesOptions = VoicevoxAnalyzeTextOptions;
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// デフォルトの ::voicevox_synthesizer_create_accent_phrases のオプションを生成する
+///
+/// @return デフォルト値が設定された ::voicevox_synthesizer_create_accent_phrases のオプション
+///
+/// \no-orig-impl{voicevox_make_default_create_accent_phrases_options}
+#[unsafe(no_mangle)]
+pub extern "C" fn voicevox_make_default_create_accent_phrases_options()
+-> VoicevoxCreateAccentPhrasesOptions {
+    init_logger_once();
+    Default::default()
+}
+
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// 日本語テキストから、AccentPhrase (アクセント句)の配列をJSON形式で生成する。
 ///
@@ -1342,6 +1411,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases_from_kana(
 /// @param [in] synthesizer 音声シンセサイザ
 /// @param [in] text UTF-8の日本語テキスト
 /// @param [in] style_id スタイルID
+/// @param [in] options オプション
 /// @param [out] output_accent_phrases_json 生成先
 ///
 /// @returns 結果コード
@@ -1368,15 +1438,21 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases(
     synthesizer: *const VoicevoxSynthesizer,
     text: *const c_char,
     style_id: VoicevoxStyleId,
+    options: VoicevoxCreateAccentPhrasesOptions,
     output_accent_phrases_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error((|| {
         // SAFETY: The safety contract must be upheld by the caller.
         let text = ensure_utf8(unsafe { CStr::from_ptr(text) })?;
+        let VoicevoxCreateAccentPhrasesOptions {
+            enable_katakana_english,
+        } = options;
         let accent_phrases = synthesizer
             .body()
-            .create_accent_phrases(text, StyleId::new(style_id))?;
+            .create_accent_phrases(text, StyleId::new(style_id))
+            .enable_katakana_english(enable_katakana_english)
+            .perform()?;
         let accent_phrases = CString::new(accent_phrases_to_json(&accent_phrases))
             .expect("should not contain '\\0'");
         unsafe {
@@ -1594,11 +1670,30 @@ pub unsafe extern "C" fn voicevox_synthesizer_synthesis(
     })())
 }
 
+/// ::voicevox_synthesizer_tts_from_kana のオプション。
+///
+/// \no-orig-impl{VoicevoxTtsFromKanaOptions}
+pub type VoicevoxTtsFromKanaOptions = VoicevoxSynthesisOptions;
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// デフォルトの ::voicevox_synthesizer_tts_from_kana のオプションを生成する
+///
+/// @return デフォルト値が設定された ::voicevox_synthesizer_tts_from_kana のオプション
+///
+/// \no-orig-impl{voicevox_make_default_tts_from_kana_options}
+#[unsafe(no_mangle)]
+pub extern "C" fn voicevox_make_default_tts_from_kana_options() -> VoicevoxTtsFromKanaOptions {
+    init_logger_once();
+    Default::default()
+}
+
 /// ::voicevox_synthesizer_tts のオプション。
 ///
 /// \no-orig-impl{VoicevoxTtsOptions}
 #[repr(C)]
 pub struct VoicevoxTtsOptions {
+    /// テキスト中の読みが不明な英単語をカタカナ読みにする。
+    enable_katakana_english: bool,
     /// 疑問文の調整を有効にする
     enable_interrogative_upspeak: bool,
 }
@@ -1640,7 +1735,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts_from_kana(
     synthesizer: *const VoicevoxSynthesizer,
     kana: *const c_char,
     style_id: VoicevoxStyleId,
-    options: VoicevoxTtsOptions,
+    options: VoicevoxTtsFromKanaOptions,
     output_wav_length: NonNull<usize>,
     output_wav: NonNull<NonNull<u8>>,
 ) -> VoicevoxResultCode {
@@ -1648,7 +1743,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts_from_kana(
     into_result_code_with_error((|| {
         // SAFETY: The safety contract must be upheld by the caller.
         let kana = ensure_utf8(unsafe { CStr::from_ptr(kana) })?;
-        let VoicevoxTtsOptions {
+        let VoicevoxTtsFromKanaOptions {
             enable_interrogative_upspeak,
         } = options;
         let output = synthesizer
@@ -1702,11 +1797,13 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
         // SAFETY: The safety contract must be upheld by the caller.
         let text = ensure_utf8(unsafe { CStr::from_ptr(text) })?;
         let VoicevoxTtsOptions {
+            enable_katakana_english,
             enable_interrogative_upspeak,
         } = options;
         let output = synthesizer
             .body()
             .tts(text, StyleId::new(style_id))
+            .enable_katakana_english(enable_katakana_english)
             .enable_interrogative_upspeak(enable_interrogative_upspeak)
             .perform()?;
         // SAFETY: The safety contract must be upheld by the caller.

@@ -403,6 +403,18 @@ typedef struct VoicevoxLoadOnnxruntimeOptions {
 #endif
 
 /**
+ * ::voicevox_open_jtalk_rc_analyze のオプション。
+ *
+ * \orig-impl{VoicevoxAnalyzeTextOptions}
+ */
+typedef struct VoicevoxAnalyzeTextOptions {
+  /**
+   * テキスト中の読みが不明な英単語をカタカナ読みにする。
+   */
+  bool enable_katakana_english;
+} VoicevoxAnalyzeTextOptions;
+
+/**
  * ::voicevox_synthesizer_new のオプション。
  *
  * \no-orig-impl{VoicevoxInitializeOptions}
@@ -460,6 +472,20 @@ typedef const uint8_t (*VoicevoxVoiceModelId)[16];
 typedef uint32_t VoicevoxStyleId;
 
 /**
+ * ::voicevox_synthesizer_create_audio_query のオプション。
+ *
+ * \no-orig-impl{VoicevoxCreateAudioQueryOptions}
+ */
+typedef struct VoicevoxAnalyzeTextOptions VoicevoxCreateAudioQueryOptions;
+
+/**
+ * ::voicevox_synthesizer_create_accent_phrases のオプション。
+ *
+ * \no-orig-impl{VoicevoxCreateAccentPhrasesOptions}
+ */
+typedef struct VoicevoxAnalyzeTextOptions VoicevoxCreateAccentPhrasesOptions;
+
+/**
  * ::voicevox_synthesizer_synthesis のオプション。
  *
  * \no-orig-impl{VoicevoxSynthesisOptions}
@@ -472,11 +498,22 @@ typedef struct VoicevoxSynthesisOptions {
 } VoicevoxSynthesisOptions;
 
 /**
+ * ::voicevox_synthesizer_tts_from_kana のオプション。
+ *
+ * \no-orig-impl{VoicevoxTtsFromKanaOptions}
+ */
+typedef struct VoicevoxSynthesisOptions VoicevoxTtsFromKanaOptions;
+
+/**
  * ::voicevox_synthesizer_tts のオプション。
  *
  * \no-orig-impl{VoicevoxTtsOptions}
  */
 typedef struct VoicevoxTtsOptions {
+  /**
+   * テキスト中の読みが不明な英単語をカタカナ読みにする。
+   */
+  bool enable_katakana_english;
   /**
    * 疑問文の調整を有効にする
    */
@@ -711,12 +748,25 @@ VoicevoxResultCode voicevox_open_jtalk_rc_use_user_dict(const struct OpenJtalkRc
                                                         const struct VoicevoxUserDict *user_dict);
 
 /**
+ * デフォルトの ::voicevox_open_jtalk_rc_analyze のオプションを生成する
+ *
+ * @return デフォルト値が設定された ::voicevox_open_jtalk_rc_analyze のオプション
+ *
+ * \no-orig-impl{voicevox_make_default_analyze_text_options}
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+struct VoicevoxAnalyzeTextOptions voicevox_make_default_analyze_text_options(void);
+
+/**
  * 日本語のテキストを解析する。
  *
  * 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
  *
  * @param [in] open_jtalk Open JTalkのオブジェクト
  * @param [in] text UTF-8の日本語テキスト
+ * @param [in] options オプション
  * @param [out] output_accent_phrases_json 生成先
  *
  * \orig-impl{voicevox_open_jtalk_rc_use_user_dict}
@@ -726,6 +776,7 @@ __declspec(dllimport)
 #endif
 VoicevoxResultCode voicevox_open_jtalk_rc_analyze(const struct OpenJtalkRc *open_jtalk,
                                                   const char *text,
+                                                  struct VoicevoxAnalyzeTextOptions options,
                                                   char **output_accent_phrases_json);
 
 /**
@@ -1297,6 +1348,18 @@ VoicevoxResultCode voicevox_synthesizer_create_audio_query_from_kana(const struc
                                                                      char **output_audio_query_json);
 
 /**
+ * デフォルトの ::voicevox_synthesizer_create_audio_query のオプションを生成する
+ *
+ * @return デフォルト値が設定された ::voicevox_synthesizer_create_audio_query のオプション
+ *
+ * \no-orig-impl{voicevox_make_default_create_audio_query_options}
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxCreateAudioQueryOptions voicevox_make_default_create_audio_query_options(void);
+
+/**
  * 日本語テキストから、AudioQueryをJSONとして生成する。
  *
  * 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
@@ -1307,6 +1370,7 @@ VoicevoxResultCode voicevox_synthesizer_create_audio_query_from_kana(const struc
  * @param [in] synthesizer 音声シンセサイザ
  * @param [in] text UTF-8の日本語テキスト
  * @param [in] style_id スタイルID
+ * @param [in] options オプション
  * @param [out] output_audio_query_json 生成先
  *
  * @returns 結果コード
@@ -1335,6 +1399,7 @@ __declspec(dllimport)
 VoicevoxResultCode voicevox_synthesizer_create_audio_query(const struct VoicevoxSynthesizer *synthesizer,
                                                            const char *text,
                                                            VoicevoxStyleId style_id,
+                                                           VoicevoxCreateAudioQueryOptions options,
                                                            char **output_audio_query_json);
 
 /**
@@ -1375,6 +1440,18 @@ VoicevoxResultCode voicevox_synthesizer_create_accent_phrases_from_kana(const st
                                                                         char **output_accent_phrases_json);
 
 /**
+ * デフォルトの ::voicevox_synthesizer_create_accent_phrases のオプションを生成する
+ *
+ * @return デフォルト値が設定された ::voicevox_synthesizer_create_accent_phrases のオプション
+ *
+ * \no-orig-impl{voicevox_make_default_create_accent_phrases_options}
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxCreateAccentPhrasesOptions voicevox_make_default_create_accent_phrases_options(void);
+
+/**
  * 日本語テキストから、AccentPhrase (アクセント句)の配列をJSON形式で生成する。
  *
  * 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
@@ -1385,6 +1462,7 @@ VoicevoxResultCode voicevox_synthesizer_create_accent_phrases_from_kana(const st
  * @param [in] synthesizer 音声シンセサイザ
  * @param [in] text UTF-8の日本語テキスト
  * @param [in] style_id スタイルID
+ * @param [in] options オプション
  * @param [out] output_accent_phrases_json 生成先
  *
  * @returns 結果コード
@@ -1413,6 +1491,7 @@ __declspec(dllimport)
 VoicevoxResultCode voicevox_synthesizer_create_accent_phrases(const struct VoicevoxSynthesizer *synthesizer,
                                                               const char *text,
                                                               VoicevoxStyleId style_id,
+                                                              VoicevoxCreateAccentPhrasesOptions options,
                                                               char **output_accent_phrases_json);
 
 /**
@@ -1545,6 +1624,18 @@ VoicevoxResultCode voicevox_synthesizer_synthesis(const struct VoicevoxSynthesiz
                                                   uint8_t **output_wav);
 
 /**
+ * デフォルトの ::voicevox_synthesizer_tts_from_kana のオプションを生成する
+ *
+ * @return デフォルト値が設定された ::voicevox_synthesizer_tts_from_kana のオプション
+ *
+ * \no-orig-impl{voicevox_make_default_tts_from_kana_options}
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxTtsFromKanaOptions voicevox_make_default_tts_from_kana_options(void);
+
+/**
  * デフォルトのテキスト音声合成オプションを生成する
  * @return テキスト音声合成オプション
  *
@@ -1583,7 +1674,7 @@ __declspec(dllimport)
 VoicevoxResultCode voicevox_synthesizer_tts_from_kana(const struct VoicevoxSynthesizer *synthesizer,
                                                       const char *kana,
                                                       VoicevoxStyleId style_id,
-                                                      struct VoicevoxTtsOptions options,
+                                                      VoicevoxTtsFromKanaOptions options,
                                                       uintptr_t *output_wav_length,
                                                       uint8_t **output_wav);
 

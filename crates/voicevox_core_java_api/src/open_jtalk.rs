@@ -82,7 +82,7 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_OpenJtalk_rsAn
             env.get_rust_field::<_, _, voicevox_core::blocking::OpenJtalk>(&this, "handle")
         }?
         .clone();
-        let accent_phrases = &internal.analyze_(text)?;
+        let accent_phrases = &internal.analyze_(text, Default::default())?;
         let accent_phrases = serde_json::to_string(accent_phrases).expect("should not fail");
         let accent_phrases = env.new_string(accent_phrases)?;
         Ok(accent_phrases.into_raw())

@@ -244,7 +244,7 @@ mod blocking {
     )]
     fn analyze_text(bencher: Bencher<'_, '_>, input: InputText) {
         let ojt = FIXTURE.0.text_analyzer();
-        let run = || ojt.analyze(input.value).unwrap();
+        let run = || ojt.analyze(input.value, Default::default()).unwrap();
         for _ in 0..CONFIG.iterations_for_light_operations().warmups {
             run();
         }
@@ -291,7 +291,10 @@ mod blocking {
     fn replace_mora_pitch(bencher: Bencher<'_, '_>, input: InputText) {
         let (synth, _) = &*FIXTURE;
 
-        let input = &synth.text_analyzer().analyze(input.value).unwrap();
+        let input = &synth
+            .text_analyzer()
+            .analyze(input.value, Default::default())
+            .unwrap();
 
         let run = || synth.replace_mora_pitch(input, CONFIG.style_id).unwrap();
         for _ in 0..CONFIG.iterations_for_light_operations().warmups {
@@ -308,7 +311,10 @@ mod blocking {
     fn replace_phoneme_length(bencher: Bencher<'_, '_>, input: InputText) {
         let (synth, _) = &*FIXTURE;
 
-        let input = &synth.text_analyzer().analyze(input.value).unwrap();
+        let input = &synth
+            .text_analyzer()
+            .analyze(input.value, Default::default())
+            .unwrap();
 
         let run = || {
             synth
@@ -331,6 +337,7 @@ mod blocking {
 
         let query = &synth
             .create_audio_query(input.value, CONFIG.style_id)
+            .perform()
             .unwrap();
 
         let run = || synth.synthesis(query, CONFIG.style_id).perform().unwrap();
@@ -391,7 +398,7 @@ mod nonblocking {
     #[pollster::main]
     async fn analyze_text(bencher: Bencher<'_, '_>, input: InputText) {
         let ojt = FIXTURE.0.text_analyzer();
-        let run = || pollster::block_on(ojt.analyze(input.value)).unwrap();
+        let run = || pollster::block_on(ojt.analyze(input.value, Default::default())).unwrap();
         for _ in 0..CONFIG.iterations_for_light_operations().warmups {
             run();
         }
@@ -440,7 +447,11 @@ mod nonblocking {
     async fn replace_mora_pitch(bencher: Bencher<'_, '_>, input: InputText) {
         let (synth, _) = &*FIXTURE;
 
-        let input = &synth.text_analyzer().analyze(input.value).await.unwrap();
+        let input = &synth
+            .text_analyzer()
+            .analyze(input.value, Default::default())
+            .await
+            .unwrap();
 
         let run = || pollster::block_on(synth.replace_mora_pitch(input, CONFIG.style_id)).unwrap();
         for _ in 0..CONFIG.iterations_for_light_operations().warmups {
@@ -458,7 +469,11 @@ mod nonblocking {
     async fn replace_phoneme_length(bencher: Bencher<'_, '_>, input: InputText) {
         let (synth, _) = &*FIXTURE;
 
-        let input = &synth.text_analyzer().analyze(input.value).await.unwrap();
+        let input = &synth
+            .text_analyzer()
+            .analyze(input.value, Default::default())
+            .await
+            .unwrap();
 
         let run =
             || pollster::block_on(synth.replace_phoneme_length(input, CONFIG.style_id)).unwrap();
@@ -479,6 +494,7 @@ mod nonblocking {
 
         let query = &synth
             .create_audio_query(input.value, CONFIG.style_id)
+            .perform()
             .await
             .unwrap();
 

@@ -8,8 +8,8 @@ use std::{
 use typed_floats::{NonNaNFinite, PositiveFinite};
 use uuid::Uuid;
 use voicevox_core::{
-    __internal::interop::Validate, AccelerationMode, AccentPhrase, AudioQuery, FrameAudioQuery,
-    FramePhoneme, Mora, Note, Score, UserDictWord, VoiceModelId,
+    __internal::interop::Validate, AccelerationMode, AccentPhrase, AnalyzeTextOptions, AudioQuery,
+    FrameAudioQuery, FramePhoneme, Mora, Note, Score, UserDictWord, VoiceModelId,
 };
 
 use duplicate::duplicate_item;
@@ -18,9 +18,10 @@ use thiserror::Error;
 use tracing::error;
 
 use crate::{
-    VoicevoxAccelerationMode, VoicevoxInitializeOptions, VoicevoxLoadVoiceModelOptions,
-    VoicevoxOnExistingVoiceModelId, VoicevoxSynthesisOptions, VoicevoxTtsOptions,
-    VoicevoxUserDictWord, VoicevoxUserDictWordType, result_code::VoicevoxResultCode,
+    VoicevoxAccelerationMode, VoicevoxAnalyzeTextOptions, VoicevoxInitializeOptions,
+    VoicevoxLoadVoiceModelOptions, VoicevoxOnExistingVoiceModelId, VoicevoxSynthesisOptions,
+    VoicevoxTtsOptions, VoicevoxUserDictWord, VoicevoxUserDictWordType,
+    result_code::VoicevoxResultCode,
 };
 
 pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxResultCode {
@@ -240,6 +241,21 @@ impl From<voicevox_core::OnExistingVoiceModelId> for VoicevoxOnExistingVoiceMode
     }
 }
 
+impl Default for VoicevoxAnalyzeTextOptions {
+    fn default() -> Self {
+        Self {
+            enable_katakana_english:
+                voicevox_core::__internal::interop::DEFAULT_ENABLE_KATAKANA_ENGLISH,
+        }
+    }
+}
+
+impl From<VoicevoxAnalyzeTextOptions> for AnalyzeTextOptions<'_> {
+    fn from(options: VoicevoxAnalyzeTextOptions) -> Self {
+        AnalyzeTextOptions::default().enable_katakana_english(options.enable_katakana_english)
+    }
+}
+
 impl Default for VoicevoxLoadVoiceModelOptions {
     fn default() -> Self {
         Self {
@@ -269,6 +285,8 @@ impl Default for VoicevoxSynthesisOptions {
 impl Default for VoicevoxTtsOptions {
     fn default() -> Self {
         Self {
+            enable_katakana_english:
+                voicevox_core::__internal::interop::DEFAULT_ENABLE_KATAKANA_ENGLISH,
             enable_interrogative_upspeak:
                 voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
         }

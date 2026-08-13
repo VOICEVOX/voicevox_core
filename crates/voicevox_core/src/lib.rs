@@ -266,25 +266,25 @@
 //!     let wav1 = synth.tts(TEXT, STYLE_ID).perform()?;
 //!
 //!     let wav2 = {
-//!         let query = synth.create_audio_query(TEXT, STYLE_ID)?;
+//!         let query = synth.create_audio_query(TEXT, STYLE_ID).perform()?;
 //!         synth.synthesis(&query, STYLE_ID).perform()?
 //!     };
 //!
 //!     let wav3 = {
-//!         let phrases = synth.create_accent_phrases(TEXT, STYLE_ID)?;
+//!         let phrases = synth.create_accent_phrases(TEXT, STYLE_ID).perform()?;
 //!         let query = AudioQuery::from(phrases);
 //!         synth.synthesis(&query, STYLE_ID).perform()?
 //!     };
 //!
 //!     let wav4 = {
-//!         let phrases = synth.text_analyzer().analyze(TEXT)?;
+//!         let phrases = synth.text_analyzer().analyze(TEXT, Default::default())?;
 //!         let phrases = synth.replace_mora_data(&phrases, STYLE_ID)?;
 //!         let query = AudioQuery::from(phrases);
 //!         synth.synthesis(&query, STYLE_ID).perform()?
 //!     };
 //!
 //!     let wav5 = {
-//!         let phrases = synth.text_analyzer().analyze(TEXT)?;
+//!         let phrases = synth.text_analyzer().analyze(TEXT, Default::default())?;
 //!         let phrases = synth.replace_phoneme_length(&phrases, STYLE_ID)?;
 //!         let phrases = synth.replace_mora_pitch(&phrases, STYLE_ID)?;
 //!         let query = AudioQuery::from(phrases);
@@ -342,13 +342,20 @@ pub mod __doc {
     /// | :- | :- |
     /// | `VoicevoxLoadOnnxruntimeOptions` | ビルダースタイルであるため |
     /// | `VoicevoxInitializeOptions` | 〃 |
+    /// | `VoicevoxCreateAudioQueryOptions` | 〃 |
+    /// ! `VoicevoxCreateAccentPhrasesOptions` | 〃 |
+    /// | `VoicevoxTtsFromKanaOptions` | 〃 |
     /// | `VoicevoxSynthesisOptions` | 〃 |
     /// | `VoicevoxTtsOptions` | 〃 |
     /// | `voicevox_make_default_load_onnxruntime_options` | 〃 |
     /// | `voicevox_make_default_initialize_options` | 〃 |
+    /// | `voicevox_make_default_create_audio_query_options` | 〃 |
+    /// | `voicevox_make_default_create_accent_phrases_options` | 〃 |
+    /// | `voicevox_make_default_tts_from_kana_options` | 〃 |
     /// | `voicevox_make_default_load_voice_model_options` | 〃 |
     /// | `voicevox_make_default_synthesis_options` | 〃 |
     /// | `voicevox_make_default_tts_options` | 〃 |
+    /// | `voicevox_make_default_analyze_text_options` | [`std::default::Default`]があるため |
     /// | `voicevox_json_free` | [Rustのデストラクタ機構]があるため |
     /// | `voicevox_wav_free` | 〃 |
     /// | `voicevox_open_jtalk_rc_delete` | 〃 |
@@ -363,12 +370,19 @@ pub mod __doc {
     #[doc(alias(
         "VoicevoxLoadOnnxruntimeOptions",
         "VoicevoxInitializeOptions",
+        "VoicevoxCreateAudioQueryOptions",
+        "VoicevoxCreateAccentPhrasesOptions",
+        "VoicevoxTtsFromKanaOptions",
         "VoicevoxSynthesisOptions",
         "VoicevoxTtsOptions",
         "voicevox_make_default_load_onnxruntime_options",
         "voicevox_make_default_initialize_options",
+        "voicevox_make_default_create_audio_query_options",
+        "voicevox_make_default_create_accent_phrases_options",
+        "voicevox_make_default_tts_from_kana_options",
         "voicevox_make_default_synthesis_options",
         "voicevox_make_default_tts_options",
+        "voicevox_make_default_analyze_text_options",
         "voicevox_json_free",
         "voicevox_wav_free",
         "voicevox_open_jtalk_rc_delete",
@@ -483,6 +497,7 @@ pub use self::{
         },
         talk::{
             AccentPhrase, AudioQuery, Mora,
+            text_analyzer::AnalyzeTextOptions,
             user_dict::{UserDictWord, UserDictWordBuilder, UserDictWordType},
         },
     },

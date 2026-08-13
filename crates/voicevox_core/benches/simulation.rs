@@ -68,14 +68,17 @@ mod blocking {
     #[divan::bench(args = InputText::ALL, sample_count = 300, sample_size = 10)]
     fn analyze_text(bencher: Bencher<'_, '_>, input: InputText) {
         let ojt = FIXTURE.0.text_analyzer();
-        bencher.bench_local(|| ojt.analyze(input.value).unwrap());
+        bencher.bench_local(|| ojt.analyze(input.value, Default::default()).unwrap());
     }
 
     #[divan::bench(args = InputText::ALL, sample_count = 300, sample_size = 10)]
     fn replace_mora_pitch(bencher: Bencher<'_, '_>, input: InputText) {
         let (synth, _) = &*FIXTURE;
 
-        let input = &synth.text_analyzer().analyze(input.value).unwrap();
+        let input = &synth
+            .text_analyzer()
+            .analyze(input.value, Default::default())
+            .unwrap();
 
         bencher.bench_local(|| synth.replace_mora_pitch(input, STYLE_ID).unwrap());
     }
@@ -84,7 +87,10 @@ mod blocking {
     fn replace_phoneme_length(bencher: Bencher<'_, '_>, input: InputText) {
         let (synth, _) = &*FIXTURE;
 
-        let input = &synth.text_analyzer().analyze(input.value).unwrap();
+        let input = &synth
+            .text_analyzer()
+            .analyze(input.value, Default::default())
+            .unwrap();
 
         bencher.bench_local(|| synth.replace_phoneme_length(input, STYLE_ID).unwrap());
     }

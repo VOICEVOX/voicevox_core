@@ -165,6 +165,7 @@ impl assert_cdylib::TestCase for TestCase {
                         synthesizer,
                         text.as_ptr(),
                         STYLE_ID,
+                        lib.voicevox_make_default_create_audio_query_options(),
                         audio_query.as_mut_ptr(),
                     )
                 });
@@ -216,6 +217,7 @@ impl assert_cdylib::TestCase for TestCase {
                         synthesizer,
                         text.as_ptr(),
                         STYLE_ID,
+                        lib.voicevox_make_default_create_accent_phrases_options(),
                         accent_phrases.as_mut_ptr(),
                     )
                 });
@@ -283,6 +285,7 @@ impl assert_cdylib::TestCase for TestCase {
                     lib.voicevox_open_jtalk_rc_analyze(
                         openjtalk,
                         text.as_ptr(),
+                        lib.voicevox_make_default_analyze_text_options(),
                         accent_phrases.as_mut_ptr(),
                     )
                 });
@@ -370,6 +373,7 @@ impl assert_cdylib::TestCase for TestCase {
                     lib.voicevox_open_jtalk_rc_analyze(
                         openjtalk,
                         text.as_ptr(),
+                        lib.voicevox_make_default_analyze_text_options(),
                         accent_phrases.as_mut_ptr(),
                     )
                 });

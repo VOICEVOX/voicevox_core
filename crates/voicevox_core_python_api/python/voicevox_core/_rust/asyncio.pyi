@@ -295,6 +295,7 @@ class Synthesizer:
         self,
         text: str,
         style_id: StyleId | int,
+        enable_katakana_english: bool = True,
     ) -> AudioQuery:
         """
         日本語のテキストから :class:`AudioQuery` を生成する。
@@ -313,6 +314,8 @@ class Synthesizer:
             UTF-8の日本語テキスト。
         style_id
             スタイルID。
+        enable_katakana_english
+            テキスト中の読みが不明な英単語をカタカナ読みにする。デフォルトは ``True``。
 
         Returns
         -------
@@ -343,6 +346,7 @@ class Synthesizer:
         self,
         text: str,
         style_id: StyleId | int,
+        enable_katakana_english: bool = True,
     ) -> list[AccentPhrase]:
         """
         日本語のテキストからAccentPhrase（アクセント句）の配列を生成する。
@@ -358,6 +362,8 @@ class Synthesizer:
             UTF-8の日本語テキスト。
         style_id
             スタイルID。
+        enable_katakana_english
+            テキスト中の読みが不明な英単語をカタカナ読みにする。デフォルトは ``True``。
 
         Returns
         -------
@@ -490,6 +496,7 @@ class Synthesizer:
         text: str,
         style_id: StyleId | int,
         *,
+        enable_katakana_english: bool = True,
         enable_interrogative_upspeak: bool = True,
         cancellable: bool = False,
     ) -> bytes:
@@ -510,6 +517,8 @@ class Synthesizer:
             UTF-8の日本語テキスト。
         style_id
             スタイルID。
+        enable_katakana_english
+            テキスト中の読みが不明な英単語をカタカナ読みにする。デフォルトは ``True``。
         enable_interrogative_upspeak
             疑問文の調整を有効にするかどうか。
         cancellable
