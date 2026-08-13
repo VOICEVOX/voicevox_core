@@ -1,6 +1,5 @@
 use std::sync::LazyLock;
 
-use const_format::concatcp;
 use regex::{Regex, Replacer};
 
 use crate::assert_cdylib::Utf8Output;
@@ -29,6 +28,8 @@ impl Utf8Output {
 
     #[cfg(unix)]
     pub(crate) fn mask_unix_onnxruntime_filename(self) -> Self {
+        use const_format::concatcp;
+
         const ONNXRUNTIME_VERSION: &str =
             include_str!("../../../voicevox_core/onnxruntime-recommended-version.txt");
         self.mask_stderr(
