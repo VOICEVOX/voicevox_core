@@ -15,7 +15,10 @@ use crate::{StyleId, VoiceModelId};
 
 use super::infer::{
     InferenceDomain,
-    domains::{InferenceDomainMap, inference_domain_map_values},
+    domains::{
+        FrameDecodeDomain, InferenceDomainMap, SingingTeacherDomain, TalkDomain,
+        inference_domain_map_values,
+    },
 };
 
 // vvm_format_versionの値に応じたスキーマでパースし現行のManifestに詰めなおす
@@ -152,8 +155,9 @@ pub struct ManifestSchemaV1 {
     vvm_format_version: FormatVersion,
     pub(super) id: VoiceModelId,
     metas_filename: String,
-    #[serde(flatten)]
-    domains: InferenceDomainMap<ManifestDomains>,
+    talk: Option<ManifestDomain<TalkDomain>>,
+    singing_teacher: Option<ManifestDomain<SingingTeacherDomain>>,
+    frame_decode: Option<ManifestDomain<FrameDecodeDomain>>,
 }
 
 impl From<ManifestSchemaV1> for Manifest {
@@ -162,7 +166,12 @@ impl From<ManifestSchemaV1> for Manifest {
             vvm_format_version: schema.vvm_format_version,
             id: schema.id,
             metas_filename: schema.metas_filename,
-            domains: schema.domains,
+            domains: InferenceDomainMap {
+                talk: schema.talk,
+                streaming_talk: None,
+                singing_teacher: schema.singing_teacher,
+                frame_decode: schema.frame_decode,
+            },
         }
     }
 }
