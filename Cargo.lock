@@ -1276,6 +1276,7 @@ dependencies = [
  "color-print",
  "comrak",
  "easy-ext",
+ "either",
  "flate2",
  "fs-err",
  "futures-core",
