@@ -11,7 +11,7 @@ import jakarta.annotation.Nullable;
  * <p>現在この型はGSONに対応しているが、将来的には <a href="https://github.com/VOICEVOX/voicevox_core/issues/984"
  * target="_blank">Jacksonに切り替わる予定</a> 。
  */
-public class StyleMeta implements Cloneable {
+public final class StyleMeta implements Cloneable {
   /** スタイル名。 */
   @SerializedName("name")
   @Expose

@@ -3,7 +3,7 @@ package jp.hiroshiba.voicevoxcore.internal;
 import com.google.gson.Gson;
 import jp.hiroshiba.voicevoxcore.exceptions.InvalidQueryException;
 
-public class Convert {
+public final class Convert {
   private Convert() {}
 
   public static String jsonFromQueryLike(Object object, String description) {

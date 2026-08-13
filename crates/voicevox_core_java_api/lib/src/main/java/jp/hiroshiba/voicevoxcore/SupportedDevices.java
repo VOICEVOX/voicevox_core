@@ -15,7 +15,7 @@ import jakarta.annotation.Nonnull;
  *
  * <p>{@code Gson#fromJson} でJSONから変換することはできない。その試みは {@link UnsupportedOperationException} となる。
  */
-public class SupportedDevices implements Cloneable {
+public final class SupportedDevices implements Cloneable {
   /**
    * CPUが利用可能。
    *
