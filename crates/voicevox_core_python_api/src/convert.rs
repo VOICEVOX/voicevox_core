@@ -340,7 +340,7 @@ pub(crate) fn to_rust_user_dict_word(
         .try_into()
         .ok()
         .and_then(|priority| UserDictWordPriority::new(priority).ok())
-        .ok_or( interop::InvalidWordError::PriorityOutOfBounds {
+        .ok_or(interop::InvalidWordError::PriorityOutOfBounds {
             is_validation_of_whole_word: true,
             actual: priority,
         })

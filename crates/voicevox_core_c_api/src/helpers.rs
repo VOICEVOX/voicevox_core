@@ -301,14 +301,12 @@ impl VoicevoxUserDictWord {
 
         UserDictWord::builder()
             .word_type(self.word_type.into())
-            .priority(
-                self.priority
-                    .try_into()
-                    .map_err(|_| InvalidWordError::PriorityOutOfBounds {
-                        is_validation_of_whole_word: true,
-                        actual: self.priority.into(),
-                    })?,
-            )
+            .priority(self.priority.try_into().map_err(|_| {
+                InvalidWordError::PriorityOutOfBounds {
+                    is_validation_of_whole_word: true,
+                    actual: self.priority.into(),
+                }
+            })?)
             .build(
                 ensure_utf8(surface)?,
                 ensure_utf8(pronunciation)?.to_string(),
