@@ -1,9 +1,14 @@
-use std::sync::LazyLock;
+use std::{fmt, str::FromStr, sync::LazyLock};
 
 use derive_more::{Binary, Into, LowerHex, Octal, UpperHex};
 use duplicate::duplicate_item;
+use num_bigint::{BigInt, ParseBigIntError};
+use pastey::paste;
 use regex::Regex;
-use serde::{Deserialize, Deserializer, Serialize, Serializer, de::Error as _};
+use serde::{
+    Deserialize, Deserializer, Serialize, Serializer,
+    de::{self, Error as _, Unexpected},
+};
 
 use crate::{error::ErrorRepr, result::Result};
 
@@ -154,21 +159,21 @@ impl Serialize for UserDictWord {
 ///
 /// 取り得る値は`0`以上`10`以下。
 #[derive(
-    PartialEq,
-    Eq,
     Clone,
     Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
     Ord,
     Hash,
-    PartialOrd,
-    Into,
-    Serialize,
     Debug,
+    Into,
     derive_more::Display,
     UpperHex,
     LowerHex,
     Octal,
     Binary,
+    Serialize,
 )]
 pub struct UserDictWordPriority(u8);
 
@@ -188,9 +193,9 @@ impl UserDictWordPriority {
     /// [`ErrorKind::InvalidWord`]: crate::ErrorKind::InvalidWord
     pub fn new(value: u8) -> Result<Self> {
         Self::__new(value).ok_or_else(|| {
-            ErrorRepr::InvalidWord(InvalidWordError::InvalidPriority {
+            ErrorRepr::InvalidWord(InvalidWordError::PriorityOutOfBounds {
                 is_validation_of_whole_word: false,
-                actual_int: value.into(),
+                actual: value.into(),
             })
             .into()
         })
@@ -222,6 +227,27 @@ impl Default for UserDictWordPriority {
     }
 }
 
+impl FromStr for UserDictWordPriority {
+    type Err = crate::Error;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        s.parse()
+            .ok()
+            .and_then(Self::__new)
+            .ok_or_else(|| match s.parse::<BigInt>() {
+                Ok(actual) => InvalidWordError::PriorityOutOfBounds {
+                    is_validation_of_whole_word: false,
+                    actual,
+                },
+                Err(source) => InvalidWordError::PriorityIsNotInteger {
+                    actual: s.to_owned(),
+                    source,
+                },
+            })
+            .map_err(Into::into)
+    }
+}
+
 impl TryFrom<u8> for UserDictWordPriority {
     type Error = crate::Error;
 
@@ -230,17 +256,18 @@ impl TryFrom<u8> for UserDictWordPriority {
     }
 }
 
-// `{i,u}128`をやるのはちょっとだけ面倒そう
 #[duplicate_item(
     T;
     [ u16 ];
     [ u32 ];
     [ u64 ];
+    [ u128 ];
     [ usize ];
     [ i8 ];
     [ i16 ];
     [ i32 ];
     [ i64 ];
+    [ i128 ];
     [ isize ];
 )]
 impl TryFrom<T> for UserDictWordPriority {
@@ -249,9 +276,9 @@ impl TryFrom<T> for UserDictWordPriority {
     fn try_from(value: T) -> std::result::Result<Self, Self::Error> {
         let value = value
             .try_into()
-            .map_err(|_| InvalidWordError::InvalidPriority {
+            .map_err(|_| InvalidWordError::PriorityOutOfBounds {
                 is_validation_of_whole_word: false,
-                actual_int: value.into(),
+                actual: value.into(),
             })?;
         Self::new(value)
     }
@@ -262,8 +289,44 @@ impl<'de> Deserialize<'de> for UserDictWordPriority {
     where
         D: Deserializer<'de>,
     {
-        let value = u8::deserialize(deserializer)?;
-        Self::new(value).map_err(D::Error::custom)
+        return deserializer.deserialize_u8(Visitor);
+
+        struct Visitor;
+
+        impl de::Visitor<'_> for Visitor {
+            type Value = UserDictWordPriority;
+
+            fn expecting(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+                write!(
+                    fmt,
+                    "a integer between {MIN} and {MAX} (inclusive)",
+                    MIN = UserDictWordPriority::MIN,
+                    MAX = UserDictWordPriority::MAX,
+                )
+            }
+
+            #[duplicate_item(
+                T to_u8 unexpected ;
+                [ u8 ] [ Some] [ |v| Unexpected::Unsigned(u64::from(v)) ];
+                [ u16 ] [ |v| u8::try_from(v).ok() ] [ |v| Unexpected::Unsigned(u64::from(v)) ];
+                [ u32 ] [ |v| u8::try_from(v).ok() ] [ |v| Unexpected::Unsigned(u64::from(v)) ];
+                [ u64 ] [ |v| u8::try_from(v).ok() ] [ |v| Unexpected::Unsigned(u64::from(v)) ];
+                [ i8 ] [ |v| u8::try_from(v).ok() ] [ |v| Unexpected::Signed(i64::from(v)) ];
+                [ i16 ] [ |v| u8::try_from(v).ok() ] [ |v| Unexpected::Signed(i64::from(v)) ];
+                [ i32 ] [ |v| u8::try_from(v).ok() ] [ |v| Unexpected::Signed(i64::from(v)) ];
+                [ i64 ] [ |v| u8::try_from(v).ok() ] [ |v| Unexpected::Signed(i64::from(v)) ];
+            )]
+            paste! {
+                fn [<visit_ T>] <E>(self, v: T) -> std::result::Result<Self::Value, E>
+                where
+                    E: de::Error,
+                {
+                    (to_u8)(v)
+                        .and_then(UserDictWordPriority::__new)
+                        .ok_or_else(|| de::Error::invalid_value((unexpected)(v), &self))
+                }
+            }
+        }
     }
 }
 
@@ -304,7 +367,7 @@ pub enum InvalidWordError {
     #[error("{}: 無効な発音です({_1}): {_0:?}", Self::BASE_MSG)]
     InvalidPronunciation(String, &'static str),
     #[error(
-        "{prefix}優先度は{MIN}以上{MAX}以下である必要があります: {actual_int}",
+        "{prefix}優先度は{MIN}以上{MAX}以下である必要があります: {actual}",
         prefix = if *is_validation_of_whole_word {
             format!("{}: ", Self::BASE_MSG)
         } else {
@@ -313,12 +376,17 @@ pub enum InvalidWordError {
         MIN = UserDictWordPriority::MIN,
         MAX = UserDictWordPriority::MAX
     )]
-    InvalidPriority {
+    PriorityOutOfBounds {
         // FIXME: あまりよい形には思えないのでよりよい形を考える。
         /// `UserDictWordPriority`型を形成しない他言語ラッパーでは`true`にする想定。
         is_validation_of_whole_word: bool,
-        /// 実際に与えられた整数。
-        actual_int: serde_json::Number,
+        actual: BigInt,
+    },
+    #[error("整数ではありません: {actual:?}")]
+    PriorityIsNotInteger {
+        actual: String,
+        #[source]
+        source: ParseBigIntError,
     },
     #[error(
         "{}: 誤ったアクセント型です({1:?}の範囲から外れています): {_0}",
@@ -593,7 +661,10 @@ const fn default_context_id() -> i32 {
 
 #[cfg(test)]
 mod tests {
+    use std::ops::Deref;
+
     use rstest::{fixture, rstest};
+    use serde::Deserialize;
     use serde_json::json;
 
     use super::{InvalidWordError, UserDictWord, UserDictWordPriority, UserDictWordType};
@@ -707,5 +778,46 @@ mod tests {
             user_dict_word_priority!(5),
         )
         .unwrap()
+    }
+
+    #[rstest]
+    #[case("{ \"priority\": 5 }", Ok(5))]
+    #[case(
+        "{ \"priority\": -1 }",
+        Err(
+            "invalid value: integer `-1`, \
+             expected a integer between 0 and 10 (inclusive) at line 1 column 16",
+        )
+    )]
+    #[case(
+        "{ \"priority\": 11 }",
+        Err(
+            "invalid value: integer `11`, \
+             expected a integer between 0 and 10 (inclusive) at line 1 column 16",
+        )
+    )]
+    #[case(
+        "{ \"priority\": 18446744073709551615 }",
+        Err(
+            "invalid value: integer `18446744073709551615`, \
+             expected a integer between 0 and 10 (inclusive) at line 1 column 34",
+        )
+    )]
+    fn deserialize_priority(#[case] input: &str, #[case] expected: Result<u8, &str>) {
+        let actual = serde_json::from_str::<Struct>(input).map_err(|e| e.to_string());
+        let actual = actual
+            .as_ref()
+            .map(
+                |&Struct {
+                     priority: UserDictWordPriority(priority),
+                 }| priority,
+            )
+            .map_err(Deref::deref);
+        assert_eq!(expected, actual);
+
+        #[derive(Deserialize)]
+        struct Struct {
+            priority: UserDictWordPriority,
+        }
     }
 }

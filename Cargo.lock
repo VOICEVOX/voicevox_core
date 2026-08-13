@@ -5019,6 +5019,7 @@ dependencies = [
  "jlabel",
  "libloading 0.7.3",
  "ndarray",
+ "num-bigint",
  "num-traits",
  "once_cell",
  "open",

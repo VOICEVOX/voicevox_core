@@ -335,17 +335,14 @@ fn to_dataclass_via_serde<'py>(
 pub(crate) fn to_rust_user_dict_word(
     ob: &Bound<'_, PyAny>,
 ) -> PyResult<voicevox_core::UserDictWord> {
-    let priority = &ob.getattr("priority")?.extract::<BigInt>()?;
-    let priority = priority
+    let priority = ob.getattr("priority")?.extract::<BigInt>()?;
+    let priority = (&priority)
         .try_into()
         .ok()
         .and_then(|priority| UserDictWordPriority::new(priority).ok())
-        .ok_or_else(|| interop::InvalidWordError::InvalidPriority {
+        .ok_or( interop::InvalidWordError::PriorityOutOfBounds {
             is_validation_of_whole_word: true,
-            actual_int: priority.to_string().parse().expect(
-                "`serde-json` with `arbitrary_precision` should be able to parse \
-                 `num_bigint::BigInt`",
-            ),
+            actual: priority,
         })
         .map_err(voicevox_core::Error::from)
         .into_py_result(ob.py())?;

@@ -188,7 +188,7 @@ pub enum ErrorKind {
     WordNotFound,
     /// OpenJTalkのユーザー辞書の設定に失敗した。
     UseUserDict,
-    /// ユーザー辞書の単語のバリデーションに失敗した。
+    /// ユーザー辞書の単語、もしくはその一部のバリデーションに失敗した。
     InvalidWord,
     /// [`AudioQuery`]、[`FrameAudioQuery`]、[`Score`]、もしくはその一部が不正。
     ///

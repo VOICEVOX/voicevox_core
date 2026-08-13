@@ -304,9 +304,9 @@ impl VoicevoxUserDictWord {
             .priority(
                 self.priority
                     .try_into()
-                    .map_err(|_| InvalidWordError::InvalidPriority {
+                    .map_err(|_| InvalidWordError::PriorityOutOfBounds {
                         is_validation_of_whole_word: true,
-                        actual_int: self.priority.into(),
+                        actual: self.priority.into(),
                     })?,
             )
             .build(

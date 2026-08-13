@@ -79,6 +79,7 @@
     - \[削除\]: `ndarray@0.16`
     - \[削除\]: `git+https://github.com/VOICEVOX/ort.git?rev=6d69dbd1ddfae713081d844c456be5b8d097e17e#voicevox-ort@2.0.0-rc.10`
     - \[追加\]: `ndarray@0.17`
+    - \[追加\]: `num-bigint@0.4`
     - \[追加\]: `git+https://github.com/pykeio/ort.git?rev=94417081c47f47f5a7d6a92ce94bb38fda10019f#ort@2.0.0-rc.12`
     - \[変更\]: `indexmap@2`: `^2.6.0` → `^2.13.0`
     - \[変更\]: `num-traits@0.2`: `^0.2.15` → `^0.2.19`
