@@ -53,6 +53,7 @@
 - \[C,ダウンローダー\] \[macOS\] リリースがコード署名されるようになります ([#1326])。
 - \[ダウンローダー\] `--os`オプションで`android`と`ios`を指定できるようになります。ただしiOSの`c-api`をダウンロードすることはできません ([#1313])。
 - \[ダウンローダー\] 環境変数`VV_DOWNLOADER_C_API_ALLOW_DRAFT`を設定することで、`c-api`のdraft releaseを`--c-api-version`で指定できるようになります。主な用途はこのvoicevox\_coreリポジトリでの内部利用です ([#1315])。
+- \[ダウンローダー\] `models`にてバージョン0.17.*のダウンロードがサポートされるようになります ([#1409])。
 
 ### Changed
 
@@ -87,6 +88,7 @@
 - \[C\] \[BREAKING\] `voicevox_synthesizer_load_voice_model`に引数`VoicevoxLoadVoiceModelOptions options`が追加されます ([#1337])。
 - \[C\] \[BREAKING\] `VoicevoxUserDictWord.priority`が`uint32_t`から`uint8_t`になります ([#1408])。
 - \[Java\] \[BREAKING\] `Synthesizer#load_voice_model`がビルダースタイルになります ([#1337])。
+- \[ダウンローダー\] \[BREAKING\] `c-api`、`onnxruntime`、`additional-libraries`のバージョン指定方法が`models`のものと同じになります。バージョンの指定すべてはSemVerになります。デフォルトで選ばれるものも`latest`ではなく、ある一定のバージョン範囲内の最新のものになります。ONNX RuntimeとVOICEVOX ONNX Runtimeの切り替えは`--onnxruntime-type`で行えます ([#1406])。
 
 ### Fixed
 
@@ -1542,7 +1544,9 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1399]: https://github.com/VOICEVOX/voicevox_core/pull/1399
 [#1402]: https://github.com/VOICEVOX/voicevox_core/pull/1402
 [#1404]: https://github.com/VOICEVOX/voicevox_core/pull/1404
+[#1406]: https://github.com/VOICEVOX/voicevox_core/pull/1406
 [#1408]: https://github.com/VOICEVOX/voicevox_core/pull/1408
+[#1409]: https://github.com/VOICEVOX/voicevox_core/pull/1409
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
