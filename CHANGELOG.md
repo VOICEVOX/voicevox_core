@@ -52,6 +52,7 @@
 - \[C,ダウンローダー\] \[macOS\] リリースがコード署名されるようになります ([#1326])。
 - \[ダウンローダー\] `--os`オプションで`android`と`ios`を指定できるようになります。ただしiOSの`c-api`をダウンロードすることはできません ([#1313])。
 - \[ダウンローダー\] 環境変数`VV_DOWNLOADER_C_API_ALLOW_DRAFT`を設定することで、`c-api`のdraft releaseを`--c-api-version`で指定できるようになります。主な用途はこのvoicevox\_coreリポジトリでの内部利用です ([#1315])。
+- \[ダウンローダー\] `models`にてバージョン0.17.*のダウンロードがサポートされるようになります ([#1409])。
 
 ### Changed
 
@@ -1539,6 +1540,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1402]: https://github.com/VOICEVOX/voicevox_core/pull/1402
 [#1404]: https://github.com/VOICEVOX/voicevox_core/pull/1404
 [#1406]: https://github.com/VOICEVOX/voicevox_core/pull/1406
+[#1409]: https://github.com/VOICEVOX/voicevox_core/pull/1409
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
