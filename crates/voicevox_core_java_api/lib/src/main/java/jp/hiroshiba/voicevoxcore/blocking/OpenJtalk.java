@@ -8,7 +8,7 @@ import jp.hiroshiba.voicevoxcore.AccentPhrase;
 import jp.hiroshiba.voicevoxcore.internal.Dll;
 
 /** テキスト解析機としてのOpen JTalk。 */
-public class OpenJtalk {
+public final class OpenJtalk {
   static {
     Dll.loadLibrary();
   }

@@ -4,7 +4,7 @@ use duplicate::duplicate_item;
 use jni::{
     JNIEnv,
     objects::{JObject, JString},
-    sys::jobject,
+    sys::{jint, jobject},
 };
 use voicevox_core::__internal::interop::ToJsonValue as _;
 
@@ -13,10 +13,23 @@ use crate::{common::throw_if_err, object};
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[duplicate_item(
     f CONST;
-    [ Java_jp_hiroshiba_voicevoxcore_blocking_Onnxruntime_rsLibName ] [ LIB_NAME ];
-    [ Java_jp_hiroshiba_voicevoxcore_blocking_Onnxruntime_rsLibVersion ] [ LIB_VERSION ];
-    [ Java_jp_hiroshiba_voicevoxcore_blocking_Onnxruntime_rsLibVersionedFilename ] [ LIB_VERSIONED_FILENAME ];
-    [ Java_jp_hiroshiba_voicevoxcore_blocking_Onnxruntime_rsLibUnversionedFilename ] [ LIB_UNVERSIONED_FILENAME ];
+    [ Java_jp_hiroshiba_voicevoxcore_blocking_Onnxruntime_rsLibMinRequiredMinorVersion ] [ LIB_MIN_REQUIRED_MINOR_VERSION ];
+    [ Java_jp_hiroshiba_voicevoxcore_blocking_Onnxruntime_rsLibMaxSupportedMinorVersion ] [ LIB_MAX_SUPPORTED_MINOR_VERSION ];
+)]
+#[unsafe(no_mangle)]
+extern "system" fn f(_: JNIEnv<'_>) -> jint {
+    voicevox_core::blocking::Onnxruntime::CONST
+        .try_into()
+        .expect("ONNX Runtime minor version is not considered to be so large")
+}
+
+// SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+#[duplicate_item(
+    f CONST;
+    [ Java_jp_hiroshiba_voicevoxcore_blocking_Onnxruntime_rsLibRecommendedName ] [ LIB_RECOMMENDED_NAME ];
+    [ Java_jp_hiroshiba_voicevoxcore_blocking_Onnxruntime_rsLibRecommendedVersion ] [ LIB_RECOMMENDED_VERSION ];
+    [ Java_jp_hiroshiba_voicevoxcore_blocking_Onnxruntime_rsLibRecommendedVersionedFilename ] [ LIB_RECOMMENDED_VERSIONED_FILENAME ];
+    [ Java_jp_hiroshiba_voicevoxcore_blocking_Onnxruntime_rsLibRecommendedUnversionedFilename ] [ LIB_RECOMMENDED_UNVERSIONED_FILENAME ];
 )]
 #[unsafe(no_mangle)]
 extern "system" fn f(env: JNIEnv<'_>) -> jobject {

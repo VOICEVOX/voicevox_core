@@ -16,6 +16,7 @@ use anyhow::{Context as _, anyhow, bail};
 use bytes::Bytes;
 use clap::{Parser as _, ValueEnum, crate_version};
 use easy_ext::ext;
+use either::Either;
 use flate2::read::GzDecoder;
 use futures_core::Stream;
 use futures_util::{
@@ -63,8 +64,15 @@ const C_API_ALLOW_DRAFT_ENV: &str = "VV_DOWNLOADER_C_API_ALLOW_DRAFT";
 
 const ONNXRUNTIME_TERMS_NAME: &str = "VOICEVOX ONNX Runtime 利用規約";
 
+static SUPPORTED_C_API_VERSIONS: LazyLock<VersionReq> =
+    LazyLock::new(|| ">=0.16.0-preview.0,<0.18".parse().unwrap());
+static SUPPORTED_ONNXRUNTIME_VERSIONS: LazyLock<VersionReq> =
+    LazyLock::new(|| ">=1.17.3,<1.24".parse().unwrap());
+static SUPPORTED_ADDITIONAL_LIBRARIES_VERSIONS: LazyLock<VersionReq> =
+    LazyLock::new(|| ">=0.2.1,<0.4".parse().unwrap());
 static SUPPORTED_MODELS_VERSIONS: LazyLock<VersionReq> =
-    LazyLock::new(|| ">=0.16,<0.17".parse().unwrap());
+    LazyLock::new(|| ">=0.16,<0.18".parse().unwrap());
+
 const MODELS_README_FILENAME: &str = "README.txt";
 const MODELS_DIR_NAME: &str = "vvms";
 const MODELS_TERMS_NAME: &str = "VOICEVOX 音声モデル 利用規約";
@@ -74,7 +82,7 @@ static OPEN_JTALK_DIC_REPO: LazyLock<RepoName> = LazyLock::new(|| RepoName {
     owner: "r9y9".to_owned(),
     repo: "open_jtalk".to_owned(),
 });
-const OPEN_JTALK_DIC_TAG: &str = "v1.11.1";
+static OPEN_JTALK_DIC_VERSION: LazyLock<Version> = LazyLock::new(|| "1.11.1".parse().unwrap());
 const OPEN_JTALK_DIC_FILE: &str = "open_jtalk_dic_utf_8-1.11.tar.gz";
 
 static PROGRESS_STYLE0: LazyLock<ProgressStyle> =
@@ -197,32 +205,76 @@ struct Args {
     )]
     output: PathBuf,
 
-    /// ダウンロードするVOICEVOX CORE C APIのバージョンの指定
     #[arg(
         long,
-        value_name("GIT_TAG_OR_LATEST"),
-        default_value("latest"),
-        long_help("ダウンロードするVOICEVOX CORE C APIのバージョンの指定。")
+        value_name("SEMVER"),
+        help(format!(
+            "VOICEVOX CORE C API (`c-api`)のバージョン。\
+             省略時は`{SUPPORTED_C_API_VERSIONS}`のうちpre-releaseではない最新",
+            SUPPORTED_C_API_VERSIONS = *SUPPORTED_C_API_VERSIONS,
+        )),
+        long_help(format!(
+            "VOICEVOX CORE C API (`c-api`)のバージョン。\n\
+             \n\
+             省略した場合は{SUPPORTED_C_API_VERSIONS}のうち、pre-releaseではない最新のものになる。",
+            SUPPORTED_C_API_VERSIONS = color_print::cformat!(
+                "<s>{SUPPORTED_C_API_VERSIONS}</s>",
+                SUPPORTED_C_API_VERSIONS = *SUPPORTED_C_API_VERSIONS,
+            ),
+        ))
     )]
-    c_api_version: String,
+    c_api_version: Option<Version>,
 
-    /// ダウンロードするONNX Runtimeのバージョンの指定
     #[arg(
         long,
-        value_name("GIT_TAG_OR_LATEST"),
-        default_value("latest"),
-        long_help("ダウンロードするONNX Runtimeのバージョンの指定。")
+        value_name("SEMVER"),
+        help(format!(
+            "(VOICEVOX) ONNX Runtime (`onnxruntime`)のバージョン。\
+             省略時は`{SUPPORTED_ONNXRUNTIME_VERSIONS}`のうちpre-releaseではない最新",
+            SUPPORTED_ONNXRUNTIME_VERSIONS = *SUPPORTED_ONNXRUNTIME_VERSIONS,
+        )),
+        long_help(format!(
+            "(VOICEVOX) ONNX Runtime (`onnxruntime`)のバージョン。\n\
+             \n\
+             省略した場合は{SUPPORTED_ONNXRUNTIME_VERSIONS}のうち、pre-releaseではない最新のものになる。",
+            SUPPORTED_ONNXRUNTIME_VERSIONS = color_print::cformat!(
+                "<s>{SUPPORTED_ONNXRUNTIME_VERSIONS}</s>",
+                SUPPORTED_ONNXRUNTIME_VERSIONS = *SUPPORTED_ONNXRUNTIME_VERSIONS,
+            ),
+        ))
     )]
-    onnxruntime_version: String,
+    onnxruntime_version: Option<Version>,
 
-    /// 追加でダウンロードするライブラリのバージョン
+    /// ONNX Runtime (`onnxruntime`)の種類
     #[arg(
         long,
-        value_name("GIT_TAG_OR_LATEST"),
-        default_value("latest"),
-        long_help("追加でダウンロードするライブラリのバージョン。")
+        value_name("ONNXRUNTIME_TYPE"),
+        default_value(<&str>::from(OnnxruntimeType::default())),
+        long_help("(VOICEVOX) ONNX Runtime (`onnxruntime`)の種類。")
     )]
-    additional_libraries_version: String,
+    onnxruntime_type: OnnxruntimeType,
+
+    #[arg(
+        long,
+        value_name("SEMVER"),
+        help(format!(
+            "追加ライブラリ (`additional-libraries`)のバージョン。\
+             省略時は`{SUPPORTED_ADDITIONAL_LIBRARIES_VERSIONS}`のうちpre-releaseではない最新",
+            SUPPORTED_ADDITIONAL_LIBRARIES_VERSIONS =
+                *SUPPORTED_ADDITIONAL_LIBRARIES_VERSIONS,
+        )),
+        long_help(format!(
+            "追加ライブラリ (`additional-libraries`)のバージョン。\n\
+             \n\
+             省略した場合は{SUPPORTED_ADDITIONAL_LIBRARIES_VERSIONS}のうち、pre-releaseではない最新のものになる。",
+            SUPPORTED_ADDITIONAL_LIBRARIES_VERSIONS = color_print::cformat!(
+                "<s>{SUPPORTED_ADDITIONAL_LIBRARIES_VERSIONS}</s>",
+                SUPPORTED_ADDITIONAL_LIBRARIES_VERSIONS =
+                    *SUPPORTED_ADDITIONAL_LIBRARIES_VERSIONS,
+            ),
+        ))
+    )]
+    additional_libraries_version: Option<Version>,
 
     #[arg(
         long,
@@ -422,6 +474,23 @@ impl Os {
     }
 }
 
+#[derive(Default, ValueEnum, Display, IntoStaticStr, Clone, Copy, PartialEq)]
+#[strum(serialize_all = "kebab-case")]
+enum OnnxruntimeType {
+    #[default]
+    VoicevoxOnnxruntime,
+    Onnxruntime,
+}
+
+impl OnnxruntimeType {
+    fn to_tag_prefix(self) -> &'static str {
+        match self {
+            Self::VoicevoxOnnxruntime => "voicevox_onnxruntime-",
+            Self::Onnxruntime => "onnxruntime-",
+        }
+    }
+}
+
 #[derive(parse_display::FromStr, parse_display::Display, Clone)]
 #[from_str(regex = "(?<owner>[a-zA-Z0-9_-]+)/(?<repo>[a-zA-Z0-9_-]+)")]
 #[display("{owner}/{repo}")]
@@ -461,6 +530,7 @@ async fn main() -> anyhow::Result<()> {
         output,
         c_api_version,
         onnxruntime_version,
+        onnxruntime_type,
         additional_libraries_version,
         models_version,
         models_pattern,
@@ -499,10 +569,10 @@ async fn main() -> anyhow::Result<()> {
         );
     }
     if !targets.contains(&DownloadTarget::CApi) {
-        if c_api_version != "latest" {
+        if let Some(c_api_version) = &c_api_version {
             warn!(
-                "`--c-api-version={c_api_version}`が指定されていますが、`c-api`はダウンロード対象から\
-                 除外されています",
+                "`--c-api-version={c_api_version}`が指定されていますが、`c-api`はダウンロード対象\
+                 から除外されています",
             );
         }
         if c_api_repo.to_string() != DEFAULT_C_API_REPO {
@@ -512,11 +582,12 @@ async fn main() -> anyhow::Result<()> {
             );
         }
     }
+
     if !targets.contains(&DownloadTarget::AdditionalLibraries) {
-        if additional_libraries_version != "latest" {
+        if let Some(additional_libraries_version) = &additional_libraries_version {
             warn!(
-                "`--additional-libraries-version={additional_libraries_version}`が指定されています\
-                 が、`additional-libraries-version`はダウンロード対象から除外されています",
+                "`--additional-libraries-version={additional_libraries_version}`が指定されて\
+                 いますが、`additional-libraries-version`はダウンロード対象から除外されています",
             );
         }
         if additional_libraries_repo.to_string() != DEFAULT_ADDITIONAL_LIBRARIES_REPO {
@@ -551,6 +622,32 @@ async fn main() -> anyhow::Result<()> {
         );
     }
 
+    if let Some(c_api_version) = &c_api_version
+        && !SUPPORTED_C_API_VERSIONS.matches(c_api_version)
+    {
+        warn!(
+            "サポートされているバージョンは{SUPPORTED_C_API_VERSIONS}です: {c_api_version}",
+            SUPPORTED_C_API_VERSIONS = *SUPPORTED_C_API_VERSIONS,
+        );
+    }
+    if let Some(onnxruntime_version) = &onnxruntime_version
+        && !SUPPORTED_ONNXRUNTIME_VERSIONS.matches(onnxruntime_version)
+    {
+        warn!(
+            "サポートされているバージョンは{SUPPORTED_ONNXRUNTIME_VERSIONS}です: \
+             {onnxruntime_version}",
+            SUPPORTED_ONNXRUNTIME_VERSIONS = *SUPPORTED_ONNXRUNTIME_VERSIONS,
+        );
+    }
+    if let Some(additional_libraries_version) = &additional_libraries_version
+        && !SUPPORTED_ADDITIONAL_LIBRARIES_VERSIONS.matches(additional_libraries_version)
+    {
+        warn!(
+            "サポートされているバージョンは{SUPPORTED_ADDITIONAL_LIBRARIES_VERSIONS}です: \
+             {additional_libraries_version}",
+            SUPPORTED_ADDITIONAL_LIBRARIES_VERSIONS = *SUPPORTED_ADDITIONAL_LIBRARIES_VERSIONS,
+        );
+    }
     if let Some(models_version) = &models_version
         && !SUPPORTED_MODELS_VERSIONS.matches(models_version)
     {
@@ -566,7 +663,11 @@ async fn main() -> anyhow::Result<()> {
         find_gh_asset(
             octocrab,
             &c_api_repo,
-            &c_api_version,
+            match &c_api_version {
+                Some(c_api_version) => Either::Left(c_api_version),
+                None => Either::Right(&SUPPORTED_C_API_VERSIONS),
+            },
+            "",
             Some(C_API_ALLOW_DRAFT_ENV),
             |tag, _| {
                 if os == Os::Ios {
@@ -588,7 +689,11 @@ async fn main() -> anyhow::Result<()> {
             find_gh_asset(
                 octocrab,
                 &onnxruntime_builder_repo,
-                &onnxruntime_version,
+                match &onnxruntime_version {
+                    Some(onnxruntime_version) => Either::Left(onnxruntime_version),
+                    None => Either::Right(&SUPPORTED_ONNXRUNTIME_VERSIONS),
+                },
+                onnxruntime_type.to_tag_prefix(),
                 None,
                 |_, body| {
                     let body = body.with_context(|| "リリースノートがありません")?;
@@ -614,7 +719,8 @@ async fn main() -> anyhow::Result<()> {
         find_gh_asset(
             octocrab,
             &OPEN_JTALK_DIC_REPO,
-            OPEN_JTALK_DIC_TAG,
+            Either::Left(&OPEN_JTALK_DIC_VERSION),
+            "v",
             None,
             |_, _| Ok(OPEN_JTALK_DIC_FILE.to_owned()),
         )
@@ -646,7 +752,11 @@ async fn main() -> anyhow::Result<()> {
             find_gh_asset(
                 octocrab,
                 &additional_libraries_repo,
-                &additional_libraries_version,
+                match &additional_libraries_version {
+                    Some(version) => Either::Left(version),
+                    None => Either::Right(&SUPPORTED_ADDITIONAL_LIBRARIES_VERSIONS),
+                },
+                "",
                 None,
                 move |_, _| {
                     Ok({
@@ -671,14 +781,14 @@ async fn main() -> anyhow::Result<()> {
         devices.iter().format(", "),
     );
     if let Some(GhAsset { tag, .. }) = &c_api {
-        info!("ダウンロード{C_API_LIB_NAME}バージョン: {tag}");
+        info!("ダウンロード{C_API_LIB_NAME}タグ: {tag}");
     }
     if let Some(GhAsset { tag, .. }) = &onnxruntime {
-        info!("ダウンロードONNX Runtimeバージョン: {tag}");
+        info!("ダウンロードONNX Runtimeタグ: {tag}");
     }
     if !additional_libraries.is_empty() {
         info!(
-            "ダウンロード追加ライブラリバージョン: {}",
+            "ダウンロード追加ライブラリタグ: {}",
             additional_libraries
                 .iter()
                 .map(|GhAsset { tag, .. }| tag)
@@ -686,11 +796,10 @@ async fn main() -> anyhow::Result<()> {
         );
     }
     if let Some(ModelsWithTerms { tag, .. }) = &models {
-        info!("ダウンロードモデルバージョン: {tag}");
+        info!("ダウンロードモデルタグ: {tag}");
     }
     if let Some(GhAsset { tag, .. }) = &dict {
-        assert_eq!(OPEN_JTALK_DIC_TAG, tag);
-        info!("ダウンロードOpen JTalk辞書バージョン: {OPEN_JTALK_DIC_TAG}");
+        info!("ダウンロードOpen JTalk辞書タグ: {tag}");
     }
 
     let progresses = MultiProgress::new();
@@ -810,7 +919,8 @@ where
 async fn find_gh_asset(
     octocrab: &Arc<Octocrab>,
     repo: &RepoName,
-    git_tag_or_latest: &str,
+    version: Either<&Version, &'static VersionReq>,
+    tag_prefix: &'static str,
     allow_draft_env: Option<&'static str>,
     asset_name: impl FnOnce(
         &str,         // タグ名
@@ -826,9 +936,45 @@ async fn find_gh_asset(
     } = {
         let repos = octocrab.repos(&repo.owner, &repo.repo);
         let releases = repos.releases();
-        match git_tag_or_latest {
-            "latest" => releases.get_latest().await?,
-            tag => releases.find_by_tag(tag, allow_draft_env, octocrab).await?,
+        match version {
+            Either::Left(version) => {
+                releases
+                    .find_by_tag(&format!("{tag_prefix}{version}"), allow_draft_env, octocrab)
+                    .await?
+            }
+            Either::Right(version_req) => releases
+                .list()
+                .per_page(100)
+                .send()
+                .await?
+                .into_stream(octocrab)
+                .map_err(anyhow::Error::from)
+                .try_filter(
+                    |&Release {
+                         draft, prerelease, ..
+                     }| future::ready(!(draft || prerelease)),
+                )
+                .try_filter_map(|release| async move {
+                    let Some(version) = release.tag_name.strip_prefix(tag_prefix) else {
+                        return Ok(None);
+                    };
+                    let version = version.parse::<Version>().with_context(|| {
+                        format!("`{repo}` contains an unexpected tag: {}", release.tag_name)
+                    })?;
+                    Ok(Some((version, release)))
+                })
+                .try_filter(|(version, _)| future::ready(version_req.matches(version)))
+                .try_collect::<Vec<_>>()
+                .await?
+                .into_iter()
+                .max_by(|(version1, _), (version2, _)| version1.cmp(version2))
+                .map(|(_, release)| release)
+                .with_context(|| {
+                    format!(
+                        "{repo}の`{version_req}`の範囲には、\
+                         pre-releaseではないリリースがありません",
+                    )
+                })?,
         }
     };
 

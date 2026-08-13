@@ -4,7 +4,7 @@ import jakarta.annotation.Nonnull;
 import jp.hiroshiba.voicevoxcore.internal.Dll;
 
 /** VOICEVOX CORE自体の情報。 */
-public class GlobalInfo {
+public final class GlobalInfo {
   static {
     Dll.loadLibrary();
   }

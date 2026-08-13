@@ -7,7 +7,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
 /** ライブラリを読み込むためだけ。 */
-public class Dll {
+public final class Dll {
   private static boolean loaded = false;
 
   private Dll() {

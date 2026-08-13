@@ -44,19 +44,27 @@
 ### Added
 
 - `Synthesizer::load_voice_model`にオプション`on_existing`が追加されます ([#1331], [#1337])。
+- ONNX Runtimeのサポート範囲が1.29まで拡大されます（ただし現時点でリリースされている最新のVOICEVOX ONNX Runtimeは1.23.2です） ([#1402], [#1404])。
 - \[Rust\] APIドキュメントが改善されます ([#1343], [#1381])。
     - トップページのコード例で`tracing_subscriber::fmt().init();`が行われるようになります。
     - \[Linux\] muslターゲットでは`load-onnxruntime`が事実上利用不可であることが明記されます。
 - \[C\] \[macOS\] :tada: リリースされるXCFrameworkにmacOS用の内容が入るようになります ([#1056] helped by [@nekomimimi], [#1114], [#1362], [#1399])。
+- \[Python\] `UserDictWord.priority`に負の値や大きな値を入れようとしたときのエラーメッセージが改善されます ([#1408])。
 - \[C,ダウンローダー\] \[macOS\] リリースがコード署名されるようになります ([#1326])。
 - \[ダウンローダー\] `--os`オプションで`android`と`ios`を指定できるようになります。ただしiOSの`c-api`をダウンロードすることはできません ([#1313])。
 - \[ダウンローダー\] 環境変数`VV_DOWNLOADER_C_API_ALLOW_DRAFT`を設定することで、`c-api`のdraft releaseを`--c-api-version`で指定できるようになります。主な用途はこのvoicevox\_coreリポジトリでの内部利用です ([#1315])。
+- \[ダウンローダー\] `models`にてバージョン0.17.*のダウンロードがサポートされるようになります ([#1409])。
 
 ### Changed
 
+- \[BREAKING\] ONNX Runtimeの推奨バージョンが1.23.2になり、`Onnxruntime::load_once`がデフォルトで読みに行く動的ライブラリも1.23.2のものになります ([#1402], [#1404])。
+- \[BREAKING\] `Onnxruntime`の関連定数で示されるONNX Runtimeのバージョンが、最小要求バージョンと推奨バージョンと最大サポートバージョンの３つに分けられます ([#1402], [#1404])。
+    - それぞれ1.17、1.23.2、1.29となります。
+    - 既存の関連定数４つは`LIB_RECOMMENDED_…`という形に改名されます。
 - \[BREAKING\] `AudioQuery`/`AccentPhrase`/`Mora`の警告が、`output_sampling_rate`のものを除きエラーになります。また入力するテキストにより`AccentPhrase`作成時点でエラーになるケースがあります。Rust APIにおいては、制約が強くなる形で各フィールドの型が変わります ([#1384])。
 - \[Windows,Linux\] CUDA利用時における[`cudnn_conv_algo_search`](https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html#cudnn_conv_algo_search)の値が`DEFAULT`から`HEURISTIC`に変わります。これにより、新しいONNX RuntimeのCUDAでも[それなりの動作速度を保ちます](https://github.com/VOICEVOX/voicevox_core/issues/1391#issuecomment-5121934874) ([#1392])。
 - \[Rust\] \[BREAKING\] `Synthesizer::load_voice_model`がビルダースタイルになります ([#1331])。
+- \[Rust\] \[BREAKING\] `UserDictWordPriority`型が追加され、`UserDictWord`はそれを使うようになります ([#1408])。
 - \[Rust\] \[BREAKING\] MSRVが1.89.0になります ([#1323])。
 - \[Rust\] \[BREAKING\] `load-onnxruntime`フィーチャと`link-onnxruntime`フィーチャの両方において、ビルド時のダウンロードおよびリンカーフラグの設定が[pykeio/ort](https://github.com/pykeio/ort)由来の処理に依存しなくなります。それにより、ビルド時の挙動が以下の点で変わります。なお以下で言及する"ONNX Runtime"はVOICEVOX ONNX Runtimeとは異なることに注意してください [#1278]。
     - ビルド時のONNX Runtimeのダウンロードおよび[ターゲットディレクトリ](https://doc.rust-lang.org/cargo/reference/config.html#buildtarget-dir)への配置が、デフォルトでは行われなくなります。新しく追加される`buildtime-download-onnxruntime`フィーチャを有効化**した上で**環境変数`VVCORE_BUILD_DOWNLOAD_AND_COPY_ORT`を`1`にすることで、これまで通りダウンロードおよびターゲットディレクトリへの配置が行われます。
@@ -68,15 +76,21 @@
     - 以前まで使えていた、pykeio/ortに作用する環境変数が使えなくなります。
     - 以前までは`voicevox-ort/{cuda,directml}`フィーチャによりEP付きのONNX Runtimeがダウンロードできていましたが、今後はできなくなります。
 - \[Rust\] `Onnxruntime`型のメモリアドレスの所在が`voicevox_core`側になります ([#1278])。
-- \[Rust\] 依存ライブラリが変化します ([#1278])。
+- \[Rust\] 依存ライブラリが変化します ([#1278], [#1408])。
     - \[削除\]: `ndarray@0.16`
     - \[削除\]: `git+https://github.com/VOICEVOX/ort.git?rev=6d69dbd1ddfae713081d844c456be5b8d097e17e#voicevox-ort@2.0.0-rc.10`
     - \[追加\]: `ndarray@0.17`
+    - \[追加\]: `num-bigint@0.4`
     - \[追加\]: `git+https://github.com/pykeio/ort.git?rev=94417081c47f47f5a7d6a92ce94bb38fda10019f#ort@2.0.0-rc.12`
     - \[変更\]: `indexmap@2`: `^2.6.0` → `^2.13.0`
+    - \[変更\]: `num-traits@0.2`: `^0.2.15` → `^0.2.19`
 - \[C\] \[iOS\] リリースされるXCFrameworkのファイル名がvoicevox\_core-xcframework-{バージョン}.zipという形になります ([#1399])。
 - \[C\] \[BREAKING\] `voicevox_synthesizer_load_voice_model`に引数`VoicevoxLoadVoiceModelOptions options`が追加されます ([#1337])。
+- \[C\] \[BREAKING\] `VoicevoxUserDictWord.priority`が`uint32_t`から`uint8_t`になります ([#1408])。
+- \[C\] \[BREAKING\] <code>VOICEVOX\_RESULT\_INVALID\_MODEL\_**HEADER**\_ERROR</code>は<code>VOICEVOX\_RESULT\_INVALID\_MODEL\_**FORMAT**\_ERROR</code>に改名されます ([#1411])。
 - \[Java\] \[BREAKING\] `Synthesizer#load_voice_model`がビルダースタイルになります ([#1337])。
+- \[Java\] \[BREAKING\] クラスがすべて`final`になります([#1412])。
+- \[ダウンローダー\] \[BREAKING\] `c-api`、`onnxruntime`、`additional-libraries`のバージョン指定方法が`models`のものと同じになります。バージョンの指定すべてはSemVerになります。デフォルトで選ばれるものも`latest`ではなく、ある一定のバージョン範囲内の最新のものになります。ONNX RuntimeとVOICEVOX ONNX Runtimeの切り替えは`--onnxruntime-type`で行えます ([#1406])。
 
 ### Fixed
 
@@ -1530,6 +1544,13 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1392]: https://github.com/VOICEVOX/voicevox_core/pull/1392
 [#1394]: https://github.com/VOICEVOX/voicevox_core/pull/1394
 [#1399]: https://github.com/VOICEVOX/voicevox_core/pull/1399
+[#1402]: https://github.com/VOICEVOX/voicevox_core/pull/1402
+[#1404]: https://github.com/VOICEVOX/voicevox_core/pull/1404
+[#1406]: https://github.com/VOICEVOX/voicevox_core/pull/1406
+[#1408]: https://github.com/VOICEVOX/voicevox_core/pull/1408
+[#1409]: https://github.com/VOICEVOX/voicevox_core/pull/1409
+[#1411]: https://github.com/VOICEVOX/voicevox_core/pull/1411
+[#1412]: https://github.com/VOICEVOX/voicevox_core/pull/1412
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 

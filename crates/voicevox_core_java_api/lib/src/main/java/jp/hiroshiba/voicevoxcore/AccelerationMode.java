@@ -1,7 +1,7 @@
 package jp.hiroshiba.voicevoxcore;
 
 /** ハードウェアアクセラレーションモード。 */
-public class AccelerationMode {
+public final class AccelerationMode {
   /** 実行環境に合わせて自動的に選択する。 */
   public static final AccelerationMode AUTO = new AccelerationMode("AUTO");
 

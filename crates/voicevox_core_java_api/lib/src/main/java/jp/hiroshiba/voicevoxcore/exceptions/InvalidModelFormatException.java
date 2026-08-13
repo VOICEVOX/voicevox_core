@@ -3,7 +3,7 @@ package jp.hiroshiba.voicevoxcore.exceptions;
 import java.io.IOException;
 
 /** モデルの形式が不正。 */
-public class InvalidModelFormatException extends IOException {
+public final class InvalidModelFormatException extends IOException {
   public InvalidModelFormatException(String message) {
     super(message);
   }

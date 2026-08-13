@@ -25,7 +25,6 @@ on:
       - Cargo.*
       - crates/voicevox_core*/**
       - model/**
-      - onnxruntime-version.txt
       - rust-toolchain
   push:
     branches:

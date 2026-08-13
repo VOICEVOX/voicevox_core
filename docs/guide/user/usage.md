@@ -87,7 +87,7 @@ from pprint import pprint
 from voicevox_core.blocking import Onnxruntime, OpenJtalk, Synthesizer, VoiceModelFile
 
 # 1. Synthesizerの初期化
-voicevox_onnxruntime_path = "onnxruntime/lib/" + Onnxruntime.LIB_VERSIONED_FILENAME
+voicevox_onnxruntime_path = "onnxruntime/lib/" + Onnxruntime.LIB_RECOMMENDED_VERSIONED_FILENAME
 open_jtalk_dict_dir = "dict/open_jtalk_dic_utf_8-1.11"
 synthesizer = Synthesizer(Onnxruntime.load_once(filename=voicevox_onnxruntime_path), OpenJtalk(open_jtalk_dict_dir))
 

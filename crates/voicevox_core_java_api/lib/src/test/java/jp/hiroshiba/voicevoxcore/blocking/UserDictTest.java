@@ -1,5 +1,7 @@
 package jp.hiroshiba.voicevoxcore.blocking;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
@@ -74,5 +76,22 @@ class UserDictTest extends TestUtils {
     } finally {
       Files.deleteIfExists(path);
     }
+  }
+
+  @Test
+  void checkWordPriority() {
+    UserDictWord word = new UserDictWord("a", "ア", 0);
+
+    for (int priority = 0; priority <= 10; priority++) {
+      word.priority(priority);
+    }
+
+    IllegalArgumentException e =
+        assertThrowsExactly(
+            IllegalArgumentException.class,
+            () -> {
+              word.priority(11);
+            });
+    assertEquals("priority", e.getMessage());
   }
 }
