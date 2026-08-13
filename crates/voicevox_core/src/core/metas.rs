@@ -241,6 +241,165 @@ pub enum StyleType {
     StreamingTalk,
 }
 
+/// 音声モデルのメタ情報スキーマ（vvm_format_version=2形式）
+pub(super) type VoiceModelMetaSchemaV2 = Vec<CharacterMetaSchemaV2>;
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub(super) struct CharacterMetaSchemaV2 {
+    name: String,
+    styles: Vec<StyleMetaSchemaV2>,
+    version: CharacterVersion,
+    speaker_uuid: String,
+    order: Option<u32>,
+}
+#[derive(Deserialize, Serialize, Clone, PartialEq, Debug)]
+pub(super) struct StyleMetaSchemaV2 {
+    id: StyleId,
+    name: String,
+    #[serde(default)]
+    r#type: StyleTypeSchemaV2,
+    order: Option<u32>,
+}
+
+#[derive(
+    Default,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Debug,
+    strum::Display,
+    Deserialize,
+    Serialize,
+)]
+#[strum(serialize_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
+enum StyleTypeSchemaV2 {
+    #[default]
+    Talk,
+    SingingTeacher,
+    FrameDecode,
+    Sing,
+    StreamingTalk,
+}
+
+impl From<StyleTypeSchemaV2> for StyleType {
+    fn from(value: StyleTypeSchemaV2) -> Self {
+        match value {
+            StyleTypeSchemaV2::Talk => Self::Talk,
+            StyleTypeSchemaV2::SingingTeacher => Self::SingingTeacher,
+            StyleTypeSchemaV2::FrameDecode => Self::FrameDecode,
+            StyleTypeSchemaV2::Sing => Self::Sing,
+            StyleTypeSchemaV2::StreamingTalk => Self::StreamingTalk,
+        }
+    }
+}
+
+impl From<StyleMetaSchemaV2> for StyleMeta {
+    fn from(value: StyleMetaSchemaV2) -> Self {
+        Self {
+            id: value.id,
+            name: value.name,
+            r#type: value.r#type.into(),
+            order: value.order,
+        }
+    }
+}
+
+impl From<CharacterMetaSchemaV2> for CharacterMeta {
+    fn from(value: CharacterMetaSchemaV2) -> Self {
+        Self {
+            name: value.name,
+            styles: value.styles.into_iter().map(Into::into).collect(),
+            version: value.version,
+            speaker_uuid: value.speaker_uuid,
+            order: value.order,
+        }
+    }
+}
+
+/// 音声モデルのメタ情報スキーマ（vvm_format_version=1形式）
+pub(super) type VoiceModelMetaSchemaV1 = Vec<CharacterMetaSchemaV1>;
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub(super) struct CharacterMetaSchemaV1 {
+    name: String,
+    styles: Vec<StyleMetaSchemaV1>,
+    version: CharacterVersion,
+    speaker_uuid: String,
+    order: Option<u32>,
+}
+
+#[derive(Deserialize, Serialize, Clone, PartialEq, Debug)]
+struct StyleMetaSchemaV1 {
+    id: StyleId,
+    name: String,
+    #[serde(default)]
+    r#type: StyleTypeSchemaV1,
+    order: Option<u32>,
+}
+
+#[derive(
+    Default,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Debug,
+    strum::Display,
+    Deserialize,
+    Serialize,
+)]
+#[strum(serialize_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
+enum StyleTypeSchemaV1 {
+    #[default]
+    Talk,
+    SingingTeacher,
+    FrameDecode,
+    Sing,
+}
+
+impl From<StyleTypeSchemaV1> for StyleType {
+    fn from(value: StyleTypeSchemaV1) -> Self {
+        match value {
+            StyleTypeSchemaV1::Talk => Self::Talk,
+            StyleTypeSchemaV1::SingingTeacher => Self::SingingTeacher,
+            StyleTypeSchemaV1::FrameDecode => Self::FrameDecode,
+            StyleTypeSchemaV1::Sing => Self::Sing,
+        }
+    }
+}
+
+impl From<StyleMetaSchemaV1> for StyleMeta {
+    fn from(value: StyleMetaSchemaV1) -> Self {
+        Self {
+            id: value.id,
+            name: value.name,
+            r#type: value.r#type.into(),
+            order: value.order,
+        }
+    }
+}
+
+impl From<CharacterMetaSchemaV1> for CharacterMeta {
+    fn from(value: CharacterMetaSchemaV1) -> Self {
+        Self {
+            name: value.name,
+            styles: value.styles.into_iter().map(Into::into).collect(),
+            version: value.version,
+            speaker_uuid: value.speaker_uuid,
+            order: value.order,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::sync::LazyLock;

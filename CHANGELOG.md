@@ -15,6 +15,7 @@
 - feat!: decode.onnxを復活させる ([#918])
 - [#1319]
 - [#1363]
+- [#1371]
 - [#1364]
 - [#1376]
 - [#1400]
@@ -24,10 +25,8 @@
 [#867]: https://github.com/VOICEVOX/voicevox_core/pull/867
 [#879]: https://github.com/VOICEVOX/voicevox_core/pull/879
 [#1319]: https://github.com/VOICEVOX/voicevox_core/pull/1319
-[#1363]: https://github.com/VOICEVOX/voicevox_core/pull/1363
 [#1364]: https://github.com/VOICEVOX/voicevox_core/pull/1364
 [#1376]: https://github.com/VOICEVOX/voicevox_core/pull/1376
-[#1400]: https://github.com/VOICEVOX/voicevox_core/pull/1400
 
 ### もし`TextAnalyzer`機能を充実させた場合
 
@@ -43,6 +42,7 @@
 
 ### Added
 
+- :tada: 新形式（`vvm_format_version=2`）のVVMが読み込めるようになり、`StyleType`に`StreamingTalk`が追加されます ([#1363], [#1371], [#1400] [#1401])。
 - `Synthesizer::load_voice_model`にオプション`on_existing`が追加されます ([#1331], [#1337])。
 - ONNX Runtimeのサポート範囲が1.29まで拡大されます（ただし現時点でリリースされている最新のVOICEVOX ONNX Runtimeは1.23.2です） ([#1402], [#1404])。
 - \[Rust\] APIドキュメントが改善されます ([#1343], [#1381])。
@@ -1538,12 +1538,16 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1350]: https://github.com/VOICEVOX/voicevox_core/pull/1350
 [#1359]: https://github.com/VOICEVOX/voicevox_core/pull/1359
 [#1362]: https://github.com/VOICEVOX/voicevox_core/pull/1362
+[#1363]: https://github.com/VOICEVOX/voicevox_core/pull/1363
+[#1371]: https://github.com/VOICEVOX/voicevox_core/pull/1371
 [#1381]: https://github.com/VOICEVOX/voicevox_core/pull/1381
 [#1384]: https://github.com/VOICEVOX/voicevox_core/pull/1384
 [#1385]: https://github.com/VOICEVOX/voicevox_core/pull/1385
 [#1392]: https://github.com/VOICEVOX/voicevox_core/pull/1392
 [#1394]: https://github.com/VOICEVOX/voicevox_core/pull/1394
 [#1399]: https://github.com/VOICEVOX/voicevox_core/pull/1399
+[#1400]: https://github.com/VOICEVOX/voicevox_core/pull/1400
+[#1401]: https://github.com/VOICEVOX/voicevox_core/pull/1401
 [#1402]: https://github.com/VOICEVOX/voicevox_core/pull/1402
 [#1404]: https://github.com/VOICEVOX/voicevox_core/pull/1404
 [#1406]: https://github.com/VOICEVOX/voicevox_core/pull/1406
