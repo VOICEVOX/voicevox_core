@@ -26,7 +26,7 @@ import jp.hiroshiba.voicevoxcore.exceptions.InvalidQueryException;
  * <p>Gsonについては将来的には <a href="https://github.com/VOICEVOX/voicevox_core/issues/984"
  * target="_blank">Jacksonに切り替わる予定</a> 。
  */
-public class Mora implements Cloneable {
+public final class Mora implements Cloneable {
   /** 文字。 */
   @SerializedName("text")
   @Expose

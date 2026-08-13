@@ -32,7 +32,7 @@ import jp.hiroshiba.voicevoxcore.internal.Dll;
  * <p>Gsonについては将来的には <a href="https://github.com/VOICEVOX/voicevox_core/issues/984"
  * target="_blank">Jacksonに切り替わる予定</a> 。
  */
-public class AudioQuery {
+public final class AudioQuery {
   static {
     Dll.loadLibrary();
   }

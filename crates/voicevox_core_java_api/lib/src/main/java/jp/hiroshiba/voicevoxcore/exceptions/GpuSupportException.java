@@ -1,7 +1,7 @@
 package jp.hiroshiba.voicevoxcore.exceptions;
 
 /** GPUモードがサポートされていない。 */
-public class GpuSupportException extends RuntimeException {
+public final class GpuSupportException extends RuntimeException {
   public GpuSupportException(String message) {
     super(message);
   }

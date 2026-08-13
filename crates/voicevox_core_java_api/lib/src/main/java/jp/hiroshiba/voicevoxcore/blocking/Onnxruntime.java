@@ -17,7 +17,7 @@ import jp.hiroshiba.voicevoxcore.internal.Dll;
  * assert ort1 == ort2;
  * </pre>
  */
-public class Onnxruntime {
+public final class Onnxruntime {
   static {
     Dll.loadLibrary();
   }
@@ -96,7 +96,7 @@ public class Onnxruntime {
   }
 
   /** {@link #loadOnce}のビルダー。 */
-  public static class LoadOnce {
+  public static final class LoadOnce {
     /**
      * ONNX Runtimeのファイル名（モジュール名）もしくはファイルパスを指定する。
      *

@@ -3,7 +3,7 @@ package jp.hiroshiba.voicevoxcore.exceptions;
 import java.io.IOException;
 
 /** ZIPファイルを開くことに失敗した。 */
-public class OpenZipFileException extends IOException {
+public final class OpenZipFileException extends IOException {
   public OpenZipFileException(String message) {
     super(message);
   }

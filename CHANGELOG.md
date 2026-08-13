@@ -84,6 +84,7 @@
 - \[C\] \[BREAKING\] `voicevox_synthesizer_load_voice_model`に引数`VoicevoxLoadVoiceModelOptions options`が追加されます ([#1337])。
 - \[C\] \[BREAKING\] <code>VOICEVOX\_RESULT\_INVALID\_MODEL\_**HEADER**\_ERROR</code>は<code>VOICEVOX\_RESULT\_INVALID\_MODEL\_**FORMAT**\_ERROR</code>に改名されます ([#1411])。
 - \[Java\] \[BREAKING\] `Synthesizer#load_voice_model`がビルダースタイルになります ([#1337])。
+- \[Java\] \[BREAKING\] クラスがすべて`final`になります([#1412])。
 - \[ダウンローダー\] \[BREAKING\] `c-api`、`onnxruntime`、`additional-libraries`のバージョン指定方法が`models`のものと同じになります。バージョンの指定すべてはSemVerになります。デフォルトで選ばれるものも`latest`ではなく、ある一定のバージョン範囲内の最新のものになります。ONNX RuntimeとVOICEVOX ONNX Runtimeの切り替えは`--onnxruntime-type`で行えます ([#1406])。
 
 ### Fixed
@@ -1543,6 +1544,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1406]: https://github.com/VOICEVOX/voicevox_core/pull/1406
 [#1409]: https://github.com/VOICEVOX/voicevox_core/pull/1409
 [#1411]: https://github.com/VOICEVOX/voicevox_core/pull/1411
+[#1412]: https://github.com/VOICEVOX/voicevox_core/pull/1412
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
