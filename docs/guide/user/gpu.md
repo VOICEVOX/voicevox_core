@@ -15,6 +15,16 @@ DirectML 版を利用するには Downloader の実行が必要です。
 
 macOS の場合、CUDA の macOS サポートは現在終了しているため、VOICEVOX CORE の macOS 向けビルド済みライブラリも CUDA, CUDNN を利用しない CPU 版のみの提供となります。
 
+## WebGPU
+
+VOICEVOX CORE は ONNX Runtime の [WebGPU Execution Provider] にも対応しています。ただし現時点では、Downloader が取得する ONNX Runtime のビルド（[onnxruntime-builder]）に WebGPU Execution Provider は含まれていません。
+
+WebGPU を用いた合成を行うには、WebGPU Execution Provider を有効にしてビルドした ONNX Runtime（`onnxruntime_USE_WEBGPU=ON`）を自前で用意し、[`Onnxruntime::load_once`]（もしくは `voicevox_onnxruntime_load_once`）にそのパスを渡してください。CUDA・DirectML と同様、対応する Execution Provider が利用できない場合は自動的に CPU にフォールバックします。
+
+[WebGPU Execution Provider]: https://onnxruntime.ai/docs/execution-providers/WebGPU-ExecutionProvider.html
+[onnxruntime-builder]: https://github.com/VOICEVOX/onnxruntime-builder
+[`Onnxruntime::load_once`]: https://voicevox.github.io/voicevox_core/apis/rust_api/voicevox_core/blocking/struct.Onnxruntime.html#method.load_once
+
 <!--
 ## Raspberry Piでの使用について
 

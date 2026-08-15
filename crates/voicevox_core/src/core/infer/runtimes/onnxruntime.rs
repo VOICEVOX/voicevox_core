@@ -26,7 +26,7 @@ use ort::{
     environment::Environment,
     ep::{
         CPUExecutionProvider, CUDAExecutionProvider, DirectMLExecutionProvider,
-        ExecutionProvider as _, cuda::ConvAlgorithmSearch,
+        ExecutionProvider as _, WebGPU, cuda::ConvAlgorithmSearch,
     },
     session::{RunOptions, builder::GraphOptimizationLevel},
     value::{PrimitiveTensorElementType, TensorElementType, ValueType},
@@ -251,6 +251,7 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
             let cpu = CPUExecutionProvider::default().is_available()?;
             let cuda = CUDAExecutionProvider::default().is_available()?;
             let dml = DirectMLExecutionProvider::default().is_available()?;
+            let webgpu = WebGPU::default().is_available()?;
 
             ensure!(cpu, "missing `CPUExecutionProvider`");
 
@@ -258,6 +259,7 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
                 cpu: true,
                 cuda,
                 dml,
+                webgpu,
             })
         })()
         .map_err(ErrorRepr::GetSupportedDevices)
@@ -271,6 +273,7 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
                 .with_conv_algorithm_search(ConvAlgorithmSearch::Heuristic)
                 .register(sess_builder),
             GpuSpec::Dml => DirectMLExecutionProvider::default().register(sess_builder),
+            GpuSpec::WebGpu => WebGPU::default().register(sess_builder),
         }
         .map_err(Into::into)
     }
@@ -307,6 +310,9 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
                     .with_memory_pattern(false)
                     .map_err(ort::Error::<()>::from)?;
                 DirectMLExecutionProvider::default().register(&mut builder)?;
+            }
+            DeviceSpec::Gpu(GpuSpec::WebGpu) => {
+                WebGPU::default().register(&mut builder)?;
             }
         };
 

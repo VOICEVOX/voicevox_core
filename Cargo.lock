@@ -2797,6 +2797,9 @@ dependencies = [
 name = "ort-sys"
 version = "2.0.0-rc.12"
 source = "git+https://github.com/pykeio/ort.git?rev=94417081c47f47f5a7d6a92ce94bb38fda10019f#94417081c47f47f5a7d6a92ce94bb38fda10019f"
+dependencies = [
+ "glob",
+]
 
 [[package]]
 name = "os_pipe"
