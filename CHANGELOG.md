@@ -40,6 +40,8 @@
 [@phenylshima]: https://github.com/phenylshima
 -->
 
+## [0.17.0] - 2026-08-14 (+09:00)
+
 ### Added
 
 - :tada: 新形式（`vvm_format_version=2`）のVVMが読み込めるようになり、`StyleType`に`StreamingTalk`が追加されます ([#1363], [#1371], [#1400] [#1401])。
@@ -1123,7 +1125,8 @@ Windows版ダウンローダーのビルドに失敗しています。
 
 - \[Python\] モジュールに`__all__`が適切に設定されます ([#415])。
 
-[Unreleased]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.4...HEAD
+[Unreleased]: https://github.com/VOICEVOX/voicevox_core/compare/0.17.0...HEAD
+[0.17.0]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.4...0.17.0
 [0.16.4]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.3...0.16.4
 [0.16.3]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.2...0.16.3
 [0.16.2]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.1...0.16.2
