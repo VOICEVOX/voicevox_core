@@ -1,7 +1,7 @@
 package jp.hiroshiba.voicevoxcore.exceptions;
 
 /** AudioQuery、もしくはその一部が不正。 */
-public class InvalidQueryException extends IllegalArgumentException {
+public final class InvalidQueryException extends IllegalArgumentException {
   public InvalidQueryException(String message) {
     super(message);
   }

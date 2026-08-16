@@ -11,7 +11,7 @@ import jp.hiroshiba.voicevoxcore.exceptions.SaveUserDictException;
 import jp.hiroshiba.voicevoxcore.internal.Dll;
 
 /** ユーザー辞書。 */
-public class UserDict {
+public final class UserDict {
   static {
     Dll.loadLibrary();
   }

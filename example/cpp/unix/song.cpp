@@ -47,10 +47,10 @@ int main(int argc, char* argv[]) {
   VoicevoxLoadOnnxruntimeOptions load_onnxruntime_options =
       voicevox_make_default_load_onnxruntime_options();
   char libonnxruntime_filename[128];
-  assert(strlen(voicevox_get_onnxruntime_lib_versioned_filename()) <
+  assert(strlen(voicevox_get_onnxruntime_lib_recommended_versioned_filename()) <
          128 - strlen("./voicevox_core/onnxruntime/lib/"));
   snprintf(libonnxruntime_filename, 128, "./voicevox_core/onnxruntime/lib/%s",
-           voicevox_get_onnxruntime_lib_versioned_filename());
+           voicevox_get_onnxruntime_lib_recommended_versioned_filename());
   load_onnxruntime_options.filename = libonnxruntime_filename;
 
   VoicevoxInitializeOptions initialize_options =

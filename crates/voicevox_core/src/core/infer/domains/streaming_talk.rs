@@ -11,10 +11,10 @@ use super::super::{
     InferenceDomain, InferenceInputSignature as _, InferenceOutputSignature as _, OutputTensor,
 };
 
-pub(crate) enum ExperimentalTalkDomain {}
+pub(crate) enum StreamingTalkDomain {}
 
-impl InferenceDomain for ExperimentalTalkDomain {
-    type Operation = ExperimentalTalkOperation;
+impl InferenceDomain for StreamingTalkDomain {
+    type Operation = StreamingTalkOperation;
 
     fn style_types() -> &'static BTreeSet<StyleType> {
         static STYLE_TYPES: LazyLock<BTreeSet<StyleType>> =
@@ -26,9 +26,9 @@ impl InferenceDomain for ExperimentalTalkDomain {
 #[derive(Clone, Copy, Debug, Deserialize, Enum, InferenceOperation)]
 #[serde(rename_all = "snake_case")]
 #[inference_operation(
-    type Domain = ExperimentalTalkDomain;
+    type Domain = StreamingTalkDomain;
 )]
-pub(crate) enum ExperimentalTalkOperation {
+pub(crate) enum StreamingTalkOperation {
     #[inference_operation(
         type Input = PredictDurationInput;
         type Output = PredictDurationOutput;

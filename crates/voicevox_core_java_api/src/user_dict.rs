@@ -1,5 +1,6 @@
 use jni::objects::JClass;
 use std::{borrow::Cow, sync::Arc};
+use voicevox_core::UserDictWordPriority;
 
 use crate::common::{JNIEnvExt as _, JavaApiResult, throw_if_err};
 use jni::{
@@ -118,6 +119,8 @@ fn word_from_java<'local>(
         .get_field(&word, "priority", "I")?
         .i()?
         .try_into()
+        .ok()
+        .and_then(|priority| UserDictWordPriority::new(priority).ok())
         .expect("should be validated");
 
     voicevox_core::UserDictWord::builder()

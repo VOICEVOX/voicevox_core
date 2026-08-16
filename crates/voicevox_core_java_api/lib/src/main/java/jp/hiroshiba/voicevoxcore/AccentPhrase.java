@@ -28,7 +28,7 @@ import jp.hiroshiba.voicevoxcore.exceptions.InvalidQueryException;
  * <p>Gsonについては将来的には <a href="https://github.com/VOICEVOX/voicevox_core/issues/984"
  * target="_blank">Jacksonに切り替わる予定</a> 。
  */
-public class AccentPhrase {
+public final class AccentPhrase {
   /** モーラの配列。 */
   @SerializedName("moras")
   @Expose

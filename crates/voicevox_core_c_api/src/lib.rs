@@ -40,7 +40,7 @@ use tracing_subscriber::EnvFilter;
 use tracing_subscriber::fmt::format::Writer;
 use uuid::Uuid;
 use voicevox_core::__internal::interop::{
-    BlockingTextAnalyzerExt as _, DEFAULT_PRIORITY, DEFAULT_WORD_TYPE, ToJsonValue as _,
+    BlockingTextAnalyzerExt as _, DEFAULT_WORD_TYPE, ToJsonValue as _,
 };
 use voicevox_core::{
     AccentPhrase, AudioQuery, FrameAudioQuery, FramePhoneme, Mora, Note, Score, StyleId,
@@ -92,41 +92,65 @@ fn init_logger_once() {
 
 // TODO: https://github.com/mozilla/cbindgen/issues/927
 //#[cfg(feature = "load-onnxruntime")]
-//pub const VOICEVOX_ONNXRUNTIME_LIB_NAME: &CStr = ..;
+//pub const VOICEVOX_ONNXRUNTIME_LIB_RECOMMENDED_NAME: &CStr = ..;
 //#[cfg(feature = "load-onnxruntime")]
-//pub const VOICEVOX_ONNXRUNTIME_LIB_VERSION: &CStr = ..;
+//pub const VOICEVOX_ONNXRUNTIME_LIB_RECOMMENDED_VERSION: &CStr = ..;
 
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
-/// ONNX Runtimeの動的ライブラリの、バージョン付きのファイル名。
+/// 必要なONNX Runtime 1.xの最小マイナーバージョンを取得する。
 ///
-/// WindowsとAndroidでは ::voicevox_get_onnxruntime_lib_unversioned_filename と同じ。
+/// @return 必要な最小マイナーバージョン
+///
+/// \orig-impl{voicevox_get_onnxruntime_lib_min_required_minor_version}
+#[unsafe(no_mangle)]
+pub extern "C" fn voicevox_get_onnxruntime_lib_min_required_minor_version() -> u32 {
+    init_logger_once();
+    VoicevoxOnnxruntime::LIB_MIN_REQUIRED_MINOR_VERSION
+}
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// サポートされるONNX Runtime 1.xの最大マイナーバージョンを取得する。
+///
+/// @return サポートされる最大マイナーバージョン
+///
+/// \orig-impl{voicevox_get_onnxruntime_lib_max_supported_minor_version}
+#[unsafe(no_mangle)]
+pub extern "C" fn voicevox_get_onnxruntime_lib_max_supported_minor_version() -> u32 {
+    init_logger_once();
+    VoicevoxOnnxruntime::LIB_MAX_SUPPORTED_MINOR_VERSION
+}
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// 推奨されるONNX Runtimeの動的ライブラリの、バージョン付きのファイル名。
+///
+/// WindowsとAndroidでは ::voicevox_get_onnxruntime_lib_recommended_unversioned_filename と同じ。
 ///
 /// \availability{
 ///   [リリース](https://github.com/voicevox/voicevox_core/releases)されているライブラリではiOSを除くプラットフォームで利用可能。詳細は<a href="#voicevox-core-availability">ファイルレベルの"Availability"の節</a>を参照。
 /// }
 ///
-/// \orig-impl{voicevox_get_onnxruntime_lib_versioned_filename}
+/// \orig-impl{voicevox_get_onnxruntime_lib_recommended_versioned_filename}
 #[cfg(feature = "load-onnxruntime")]
 #[unsafe(no_mangle)]
-pub extern "C" fn voicevox_get_onnxruntime_lib_versioned_filename() -> *const c_char {
+pub extern "C" fn voicevox_get_onnxruntime_lib_recommended_versioned_filename() -> *const c_char {
     init_logger_once();
-    const FILENAME: &CStr = VoicevoxOnnxruntime::LIB_VERSIONED_FILENAME;
+    const FILENAME: &CStr = VoicevoxOnnxruntime::LIB_RECOMMENDED_VERSIONED_FILENAME;
     C_STRING_DROP_CHECKER.blacklist(FILENAME).as_ptr()
 }
 
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
-/// ONNX Runtimeの動的ライブラリの、バージョン無しのファイル名。
+/// 推奨されるONNX Runtimeの動的ライブラリの、バージョン無しのファイル名。
 ///
 /// \availability{
 ///   [リリース](https://github.com/voicevox/voicevox_core/releases)されているライブラリではiOSを除くプラットフォームで利用可能。詳細は<a href="#voicevox-core-availability">ファイルレベルの"Availability"の節</a>を参照。
 /// }
 ///
-/// \orig-impl{voicevox_get_onnxruntime_lib_unversioned_filename}
+/// \orig-impl{voicevox_get_onnxruntime_lib_recommended_unversioned_filename}
 #[cfg(feature = "load-onnxruntime")]
 #[unsafe(no_mangle)]
-pub extern "C" fn voicevox_get_onnxruntime_lib_unversioned_filename() -> *const c_char {
+pub extern "C" fn voicevox_get_onnxruntime_lib_recommended_unversioned_filename() -> *const c_char {
     init_logger_once();
-    const FILENAME: &CStr = VoicevoxOnnxruntime::LIB_UNVERSIONED_FILENAME;
+    const FILENAME: &CStr = VoicevoxOnnxruntime::LIB_RECOMMENDED_UNVERSIONED_FILENAME;
     C_STRING_DROP_CHECKER.blacklist(FILENAME).as_ptr()
 }
 
@@ -142,7 +166,7 @@ pub extern "C" fn voicevox_get_onnxruntime_lib_unversioned_filename() -> *const 
 pub struct VoicevoxLoadOnnxruntimeOptions {
     /// ONNX Runtimeのファイル名（モジュール名）もしくはファイルパスを指定する。
     ///
-    /// `dlopen`/[`LoadLibraryExW`](https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibraryexw)の引数に使われる。デフォルトは ::voicevox_get_onnxruntime_lib_versioned_filename と同じ。
+    /// `dlopen`/[`LoadLibraryExW`](https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibraryexw)の引数に使われる。デフォルトは ::voicevox_get_onnxruntime_lib_recommended_versioned_filename と同じ。
     filename: *const c_char,
 }
 
@@ -161,7 +185,7 @@ pub struct VoicevoxLoadOnnxruntimeOptions {
 pub extern "C" fn voicevox_make_default_load_onnxruntime_options() -> VoicevoxLoadOnnxruntimeOptions
 {
     init_logger_once();
-    let filename = VoicevoxOnnxruntime::LIB_VERSIONED_FILENAME;
+    let filename = VoicevoxOnnxruntime::LIB_RECOMMENDED_VERSIONED_FILENAME;
     let filename = C_STRING_DROP_CHECKER.blacklist(filename).as_ptr();
     VoicevoxLoadOnnxruntimeOptions { filename }
 }
@@ -204,6 +228,8 @@ pub extern "C" fn voicevox_onnxruntime_get() -> Option<&'static VoicevoxOnnxrunt
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// ONNX Runtimeをロードして初期化する。
 ///
+/// 対象のONNX Runtimeのマイナーバージョンは ::voicevox_get_onnxruntime_lib_min_required_minor_version 以上でなければならない。 ::voicevox_get_onnxruntime_lib_max_supported_minor_version よりも大きい場合は警告を出す。
+///
 /// 一度成功したら、以後は引数を無視して同じ参照を返す。
 ///
 /// @param [in] options オプション
@@ -244,6 +270,8 @@ pub unsafe extern "C" fn voicevox_onnxruntime_load_once(
 
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// ONNX Runtimeを初期化する。
+///
+/// リンクされているONNX Runtimeのマイナーバージョンが ::voicevox_get_onnxruntime_lib_min_required_minor_version よりも小さい場合失敗する。 ::voicevox_get_onnxruntime_lib_max_supported_minor_version よりも大きい場合は警告を出す。
 ///
 /// 一度成功したら以後は同じ参照を返す。
 ///
@@ -2056,7 +2084,7 @@ pub struct VoicevoxUserDictWord {
     /// 単語の種類
     word_type: VoicevoxUserDictWordType,
     /// 優先度
-    priority: u32,
+    priority: u8,
 }
 
 /// ユーザー辞書の単語の種類。
@@ -2102,7 +2130,7 @@ pub extern "C" fn voicevox_user_dict_word_make(
         pronunciation,
         accent_type,
         word_type: DEFAULT_WORD_TYPE.into(),
-        priority: DEFAULT_PRIORITY,
+        priority: voicevox_core::UserDictWordPriority::default().get(),
     }
 }
 

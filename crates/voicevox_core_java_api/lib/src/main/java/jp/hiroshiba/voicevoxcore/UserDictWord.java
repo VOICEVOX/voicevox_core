@@ -15,7 +15,7 @@ import jakarta.validation.constraints.Min;
  * <p>現在この型はGsonをサポートしていない。将来的には<a href="https://github.com/VOICEVOX/voicevox_core/issues/984"
  * target="_blank">Jacksonに対応する予定</a> 。
  */
-public class UserDictWord {
+public final class UserDictWord {
   /** 単語の表層形。 */
   @Nonnull public String surface;
 
@@ -99,7 +99,7 @@ public class UserDictWord {
   private static native void rsValidatePronunciation(String pronunciation);
 
   /** 単語の種類。 */
-  public static class Type {
+  public static final class Type {
     /** 固有名詞。 */
     public static final Type PROPER_NOUN = new Type("PROPER_NOUN");
 

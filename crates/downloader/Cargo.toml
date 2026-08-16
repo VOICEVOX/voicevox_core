@@ -16,6 +16,7 @@ clap = { workspace = true, features = ["derive"] }
 color-print.workspace = true
 comrak.workspace = true
 easy-ext.workspace = true
+either.workspace = true
 flate2.workspace = true
 fs-err = { workspace = true, features = ["tokio"] }
 futures-core.workspace = true

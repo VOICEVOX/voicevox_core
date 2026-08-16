@@ -10,7 +10,7 @@ import jp.hiroshiba.voicevoxcore.StyleType;
 import jp.hiroshiba.voicevoxcore.internal.Dll;
 
 /** 音声モデルファイル。 */
-public class VoiceModelFile implements Closeable {
+public final class VoiceModelFile implements Closeable {
   static {
     Dll.loadLibrary();
   }

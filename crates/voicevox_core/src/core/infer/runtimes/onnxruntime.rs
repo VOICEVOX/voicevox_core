@@ -12,7 +12,6 @@
 // ```
 
 use std::{
-    cmp,
     ffi::CStr,
     fmt::{Debug, Display},
     mem,
@@ -44,6 +43,9 @@ use super::super::{
     InferenceRuntime, InferenceSessionOptions, InputScalarKind, OutputScalarKind, OutputTensor,
     ParamInfo, PushInputTensor,
 };
+
+const LIB_MIN_REQUIRED_MINOR_VERSION: u32 = ort::sys::ORT_API_VERSION;
+const LIB_MAX_SUPPORTED_MINOR_VERSION: u32 = 29;
 
 static SINGLETON: once_cell::sync::OnceCell<Inner> = once_cell::sync::OnceCell::new();
 
@@ -136,8 +138,6 @@ fn setup(
 ) -> anyhow::Result<()> {
     const EXPECTED_MAJOR_VERSION: u64 = 1;
 
-    const _: () = assert!(ort::sys::ORT_API_VERSION == 17);
-
     // SAFETY: `GetVersionString` should require no preconditions,
     // and should return a valid string.
     let version_string = unsafe { ((api_base).GetVersionString)() };
@@ -151,7 +151,7 @@ fn setup(
             let major_version = version_string.next()?.parse::<u64>().ok()?;
             let minor_version = version_string
                 .next()
-                .and_then(|s| s.parse().ok())
+                .and_then(|s| s.parse::<u64>().ok())
                 .unwrap_or(0);
             Some((major_version, minor_version))
         })
@@ -162,23 +162,20 @@ fn setup(
         "invalid major version",
     );
 
-    match minor_version.cmp(&u64::from(ort::sys::ORT_API_VERSION)) {
-        cmp::Ordering::Less => bail!(
+    match minor_version.try_into() {
+        Ok(..LIB_MIN_REQUIRED_MINOR_VERSION) => bail!(
             "{message_for_version}。\
-             ONNX Runtimeはバージョン1.{ORT_API_VERSION}でなくてはなりません",
+             ONNX Runtimeはバージョン1.{LIB_MIN_REQUIRED_MINOR_VERSION}以降でなくてはなりません",
             message_for_version = lib_info.message_for_version(version_string.to_string_lossy()),
-            ORT_API_VERSION = ort::sys::ORT_API_VERSION,
         ),
-        // TODO: 問題ないとわかっている既知のものであれば警告無しで許容しつつ、未来のものは拒否する。
-        cmp::Ordering::Greater => warn!(
+        Ok(LIB_MIN_REQUIRED_MINOR_VERSION..=LIB_MAX_SUPPORTED_MINOR_VERSION) => {}
+        Ok(_) | Err(_) => warn!(
             "{message_for_version}。\
-             対応しているONNX Runtimeのバージョンは1.{ORT_API_VERSION}なので、\
+             サポートされているONNX Runtimeのバージョンは1.{LIB_MAX_SUPPORTED_MINOR_VERSION}までなので、\
              互換性の問題があるかもしれません",
             message_for_version = lib_info.message_for_version(version_string.to_string_lossy()),
-            ORT_API_VERSION = ort::sys::ORT_API_VERSION,
         ),
-        cmp::Ordering::Equal => {}
-    };
+    }
 
     // SAFETY: `GetApi` should require no preconditions, and should return a valid `OrtApi`.
     let api = unsafe { (api_base.GetApi)(ort::sys::ORT_API_VERSION) };
@@ -271,7 +268,7 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
         let sess_builder = &mut ort::session::builder::SessionBuilder::new()?;
         match gpu {
             GpuSpec::Cuda => CUDAExecutionProvider::default()
-                .with_conv_algorithm_search(ConvAlgorithmSearch::Default)
+                .with_conv_algorithm_search(ConvAlgorithmSearch::Heuristic)
                 .register(sess_builder),
             GpuSpec::Dml => DirectMLExecutionProvider::default().register(sess_builder),
         }
@@ -300,7 +297,7 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
             DeviceSpec::Cpu => {}
             DeviceSpec::Gpu(GpuSpec::Cuda) => {
                 CUDAExecutionProvider::default()
-                    .with_conv_algorithm_search(ConvAlgorithmSearch::Default)
+                    .with_conv_algorithm_search(ConvAlgorithmSearch::Heuristic)
                     .register(&mut builder)?;
             }
             DeviceSpec::Gpu(GpuSpec::Dml) => {
@@ -586,54 +583,75 @@ pub(crate) mod blocking {
     pub struct Onnxruntime(Inner);
 
     impl Onnxruntime {
-        /// ONNX Runtimeのライブラリ名。
+        /// 必要なONNX Runtime 1.xの最小マイナーバージョン。
+        #[cfg_attr(
+            doc,
+            doc(alias = "voicevox_get_onnxruntime_lib_min_required_minor_version")
+        )]
+        pub const LIB_MIN_REQUIRED_MINOR_VERSION: u32 = 17;
+
+        /// サポートされるONNX Runtime 1.xの最大マイナーバージョン。
+        #[cfg_attr(
+            doc,
+            doc(alias = "voicevox_get_onnxruntime_lib_max_supported_minor_version")
+        )]
+        pub const LIB_MAX_SUPPORTED_MINOR_VERSION: u32 = 29;
+
+        /// 推奨されるONNX Runtimeのライブラリ名。
         #[cfg(feature = "load-onnxruntime")]
         #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
-        pub const LIB_NAME: &'static str = "voicevox_onnxruntime";
+        pub const LIB_RECOMMENDED_NAME: &'static str = "voicevox_onnxruntime";
 
         /// 推奨されるONNX Runtimeのバージョン。
         #[cfg(feature = "load-onnxruntime")]
         #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
-        pub const LIB_VERSION: &'static str = include_str!("../../../../onnxruntime-version.txt");
+        pub const LIB_RECOMMENDED_VERSION: &'static str =
+            include_str!("../../../../onnxruntime-recommended-version.txt");
 
-        /// [`LIB_NAME`]と[`LIB_VERSION`]からなる動的ライブラリのファイル名。
+        /// [`LIB_RECOMMENDED_NAME`]と[`LIB_RECOMMENDED_VERSION`]からなる動的ライブラリのファイル名。
         ///
-        /// WindowsとAndroidでは[`LIB_UNVERSIONED_FILENAME`]と同じ。
+        /// WindowsとAndroidでは[`LIB_RECOMMENDED_UNVERSIONED_FILENAME`]と同じ。
         ///
-        /// [`LIB_NAME`]: Self::LIB_NAME
-        /// [`LIB_VERSION`]: Self::LIB_VERSION
-        /// [`LIB_UNVERSIONED_FILENAME`]: Self::LIB_UNVERSIONED_FILENAME
-        #[cfg_attr(doc, doc(alias = "voicevox_get_onnxruntime_lib_versioned_filename"))]
+        /// [`LIB_RECOMMENDED_NAME`]: Self::LIB_RECOMMENDED_NAME
+        /// [`LIB_RECOMMENDED_VERSION`]: Self::LIB_RECOMMENDED_VERSION
+        /// [`LIB_RECOMMENDED_UNVERSIONED_FILENAME`]: Self::LIB_RECOMMENDED_UNVERSIONED_FILENAME
+        #[cfg_attr(
+            doc,
+            doc(alias = "voicevox_get_onnxruntime_lib_recommended_versioned_filename")
+        )]
         #[cfg(feature = "load-onnxruntime")]
         #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
-        pub const LIB_VERSIONED_FILENAME: &'static str = if cfg!(target_os = "linux") {
+        pub const LIB_RECOMMENDED_VERSIONED_FILENAME: &'static str = if cfg!(target_os = "linux") {
             const_format::concatcp!(
                 "lib",
-                Onnxruntime::LIB_NAME,
+                Onnxruntime::LIB_RECOMMENDED_NAME,
                 ".so.",
-                Onnxruntime::LIB_VERSION,
+                Onnxruntime::LIB_RECOMMENDED_VERSION,
             )
         } else if cfg!(any(target_os = "macos", target_os = "ios")) {
             const_format::concatcp!(
                 "lib",
-                Onnxruntime::LIB_NAME,
+                Onnxruntime::LIB_RECOMMENDED_NAME,
                 ".",
-                Onnxruntime::LIB_VERSION,
+                Onnxruntime::LIB_RECOMMENDED_VERSION,
                 ".dylib",
             )
         } else {
-            Self::LIB_UNVERSIONED_FILENAME
+            Self::LIB_RECOMMENDED_UNVERSIONED_FILENAME
         };
 
-        /// [`LIB_NAME`]からなる動的ライブラリのファイル名。
+        /// [`LIB_RECOMMENDED_NAME`]からなる動的ライブラリのファイル名。
         ///
-        /// [`LIB_NAME`]: Self::LIB_NAME
-        #[cfg_attr(doc, doc(alias = "voicevox_get_onnxruntime_lib_unversioned_filename"))]
+        /// [`LIB_RECOMMENDED_NAME`]: Self::LIB_RECOMMENDED_NAME
+        #[cfg_attr(
+            doc,
+            doc(alias = "voicevox_get_onnxruntime_lib_recommended_unversioned_filename")
+        )]
         #[cfg(feature = "load-onnxruntime")]
         #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
-        pub const LIB_UNVERSIONED_FILENAME: &'static str = const_format::concatcp!(
+        pub const LIB_RECOMMENDED_UNVERSIONED_FILENAME: &'static str = const_format::concatcp!(
             std::env::consts::DLL_PREFIX,
-            Onnxruntime::LIB_NAME,
+            Onnxruntime::LIB_RECOMMENDED_NAME,
             std::env::consts::DLL_SUFFIX,
         );
 
@@ -650,7 +668,13 @@ pub(crate) mod blocking {
 
         /// ONNX Runtimeをロードして初期化する。
         ///
+        /// 対象のONNX Runtimeはバージョン<code>1.[LIB_MIN_REQUIRED_MINOR_VERSION]</code>以降のものでなければならない。バージョン<code>1.[LIB_MAX_SUPPORTED_MINOR_VERSION]</code>よりも新しいONNX Runtimeに対しては[警告]を出す。
+        ///
         /// 一度成功したら、以後は引数を無視して同じ参照を返す。
+        ///
+        /// [LIB_MIN_REQUIRED_MINOR_VERSION]: Self::LIB_MIN_REQUIRED_MINOR_VERSION
+        /// [LIB_MAX_SUPPORTED_MINOR_VERSION]: Self::LIB_MAX_SUPPORTED_MINOR_VERSION
+        /// [警告]: tracing::warn
         #[cfg_attr(doc, doc(alias = "voicevox_onnxruntime_load_once"))]
         #[cfg(feature = "load-onnxruntime")]
         #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
@@ -660,7 +684,13 @@ pub(crate) mod blocking {
 
         /// ONNX Runtimeを初期化する。
         ///
+        /// リンクされているONNX Runtimeがバージョン<code>1.[LIB_MIN_REQUIRED_MINOR_VERSION]</code>よりも古い場合失敗する。バージョン<code>1.[LIB_MAX_SUPPORTED_MINOR_VERSION]</code>よりも新しい場合は[警告]を出す。
+        ///
         /// 一度成功したら以後は同じ参照を返す。
+        ///
+        /// [LIB_MIN_REQUIRED_MINOR_VERSION]: Self::LIB_MIN_REQUIRED_MINOR_VERSION
+        /// [LIB_MAX_SUPPORTED_MINOR_VERSION]: Self::LIB_MAX_SUPPORTED_MINOR_VERSION
+        /// [警告]: tracing::warn
         #[cfg_attr(doc, doc(alias = "voicevox_onnxruntime_init_once"))]
         #[cfg(feature = "link-onnxruntime")]
         #[cfg_attr(docsrs, doc(cfg(feature = "link-onnxruntime")))]
@@ -691,6 +721,13 @@ pub(crate) mod blocking {
         }
     }
 
+    const _: () = assert!(
+        Onnxruntime::LIB_MIN_REQUIRED_MINOR_VERSION == super::LIB_MIN_REQUIRED_MINOR_VERSION,
+    );
+    const _: () = assert!(
+        Onnxruntime::LIB_MAX_SUPPORTED_MINOR_VERSION == super::LIB_MAX_SUPPORTED_MINOR_VERSION,
+    );
+
     /// [`Onnxruntime::load_once`]のビルダー。
     #[cfg(feature = "load-onnxruntime")]
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
@@ -702,7 +739,7 @@ pub(crate) mod blocking {
     #[cfg(feature = "load-onnxruntime")]
     impl Default for LoadOnce {
         fn default() -> Self {
-            let filename = Onnxruntime::LIB_VERSIONED_FILENAME.into();
+            let filename = Onnxruntime::LIB_RECOMMENDED_VERSIONED_FILENAME.into();
             Self { filename }
         }
     }
@@ -711,7 +748,7 @@ pub(crate) mod blocking {
     impl LoadOnce {
         /// ONNX Runtimeのファイル名（モジュール名）もしくはファイルパスを指定する。
         ///
-        /// `dlopen`/[`LoadLibraryExW`]の引数に使われる。デフォルトは[`Onnxruntime::LIB_VERSIONED_FILENAME`]。
+        /// `dlopen`/[`LoadLibraryExW`]の引数に使われる。デフォルトは[`Onnxruntime::LIB_RECOMMENDED_VERSIONED_FILENAME`]。
         ///
         /// [`LoadLibraryExW`]:
         /// https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibraryexw
@@ -767,37 +804,44 @@ pub(crate) mod nonblocking {
     pub struct Onnxruntime(pub(crate) super::blocking::Onnxruntime);
 
     impl Onnxruntime {
-        /// ONNX Runtimeのライブラリ名。
+        /// 必要なONNX Runtime 1.xの最小マイナーバージョン。
+        pub const LIB_MIN_REQUIRED_MINOR_VERSION: u32 = 17;
+
+        /// サポートされるONNX Runtime 1.xの最大マイナーバージョン。
+        pub const LIB_MAX_SUPPORTED_MINOR_VERSION: u32 = 29;
+
+        /// 推奨されるONNX Runtimeのライブラリ名。
         #[cfg(feature = "load-onnxruntime")]
         #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
         // ブロッキング版と等しいことはテストで担保
-        pub const LIB_NAME: &'static str = "voicevox_onnxruntime";
+        pub const LIB_RECOMMENDED_NAME: &'static str = "voicevox_onnxruntime";
 
         /// 推奨されるONNX Runtimeのバージョン。
         #[cfg(feature = "load-onnxruntime")]
         #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
         // ブロッキング版と等しいことはテストで担保
-        pub const LIB_VERSION: &'static str = include_str!("../../../../onnxruntime-version.txt");
+        pub const LIB_RECOMMENDED_VERSION: &'static str =
+            include_str!("../../../../onnxruntime-recommended-version.txt");
 
-        /// [`LIB_NAME`]と[`LIB_VERSION`]からなる動的ライブラリのファイル名。
+        /// [`LIB_RECOMMENDED_NAME`]と[`LIB_RECOMMENDED_VERSION`]からなる動的ライブラリのファイル名。
         ///
-        /// WindowsとAndroidでは[`LIB_UNVERSIONED_FILENAME`]と同じ。
+        /// WindowsとAndroidでは[`LIB_RECOMMENDED_UNVERSIONED_FILENAME`]と同じ。
         ///
-        /// [`LIB_NAME`]: Self::LIB_NAME
-        /// [`LIB_VERSION`]: Self::LIB_VERSION
-        /// [`LIB_UNVERSIONED_FILENAME`]: Self::LIB_UNVERSIONED_FILENAME
+        /// [`LIB_RECOMMENDED_NAME`]: Self::LIB_RECOMMENDED_NAME
+        /// [`LIB_RECOMMENDED_VERSION`]: Self::LIB_RECOMMENDED_VERSION
+        /// [`LIB_RECOMMENDED_UNVERSIONED_FILENAME`]: Self::LIB_RECOMMENDED_UNVERSIONED_FILENAME
         #[cfg(feature = "load-onnxruntime")]
         #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
-        pub const LIB_VERSIONED_FILENAME: &'static str =
-            super::blocking::Onnxruntime::LIB_VERSIONED_FILENAME;
+        pub const LIB_RECOMMENDED_VERSIONED_FILENAME: &'static str =
+            super::blocking::Onnxruntime::LIB_RECOMMENDED_VERSIONED_FILENAME;
 
-        /// [`LIB_NAME`]からなる動的ライブラリのファイル名。
+        /// [`LIB_RECOMMENDED_NAME`]からなる動的ライブラリのファイル名。
         ///
-        /// [`LIB_NAME`]: Self::LIB_NAME
+        /// [`LIB_RECOMMENDED_NAME`]: Self::LIB_RECOMMENDED_NAME
         #[cfg(feature = "load-onnxruntime")]
         #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
-        pub const LIB_UNVERSIONED_FILENAME: &'static str =
-            super::blocking::Onnxruntime::LIB_UNVERSIONED_FILENAME;
+        pub const LIB_RECOMMENDED_UNVERSIONED_FILENAME: &'static str =
+            super::blocking::Onnxruntime::LIB_RECOMMENDED_UNVERSIONED_FILENAME;
 
         #[ref_cast_custom]
         pub(crate) const fn from_blocking(blocking: &super::blocking::Onnxruntime) -> &Self;
@@ -811,7 +855,13 @@ pub(crate) mod nonblocking {
 
         /// ONNX Runtimeをロードして初期化する。
         ///
+        /// 対象のONNX Runtimeはバージョン<code>1.[LIB_MIN_REQUIRED_MINOR_VERSION]</code>以降のものでなければならない。バージョン<code>1.[LIB_MAX_SUPPORTED_MINOR_VERSION]</code>よりも新しいONNX Runtimeに対しては[警告]を出す。
+        ///
         /// 一度成功したら、以後は引数を無視して同じ参照を返す。
+        ///
+        /// [LIB_MIN_REQUIRED_MINOR_VERSION]: Self::LIB_MIN_REQUIRED_MINOR_VERSION
+        /// [LIB_MAX_SUPPORTED_MINOR_VERSION]: Self::LIB_MAX_SUPPORTED_MINOR_VERSION
+        /// [警告]: tracing::warn
         #[cfg(feature = "load-onnxruntime")]
         #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
         pub fn load_once() -> LoadOnce {
@@ -820,7 +870,13 @@ pub(crate) mod nonblocking {
 
         /// ONNX Runtimeを初期化する。
         ///
+        /// リンクされているONNX Runtimeがバージョン<code>1.[LIB_MIN_REQUIRED_MINOR_VERSION]</code>よりも古い場合失敗する。バージョン<code>1.[LIB_MAX_SUPPORTED_MINOR_VERSION]</code>よりも新しい場合は[警告]を出す。
+        ///
         /// 一度成功したら以後は同じ参照を返す。
+        ///
+        /// [LIB_MIN_REQUIRED_MINOR_VERSION]: Self::LIB_MIN_REQUIRED_MINOR_VERSION
+        /// [LIB_MAX_SUPPORTED_MINOR_VERSION]: Self::LIB_MAX_SUPPORTED_MINOR_VERSION
+        /// [警告]: tracing::warn
         #[cfg(feature = "link-onnxruntime")]
         #[cfg_attr(docsrs, doc(cfg(feature = "link-onnxruntime")))]
         pub async fn init_once() -> crate::Result<&'static Self> {
@@ -841,6 +897,13 @@ pub(crate) mod nonblocking {
         }
     }
 
+    const _: () = assert!(
+        Onnxruntime::LIB_MIN_REQUIRED_MINOR_VERSION == super::LIB_MIN_REQUIRED_MINOR_VERSION,
+    );
+    const _: () = assert!(
+        Onnxruntime::LIB_MAX_SUPPORTED_MINOR_VERSION == super::LIB_MAX_SUPPORTED_MINOR_VERSION,
+    );
+
     /// [`Onnxruntime::load_once`]のビルダー。
     #[cfg(feature = "load-onnxruntime")]
     #[derive(Default, derive_more::Debug)]
@@ -852,7 +915,7 @@ pub(crate) mod nonblocking {
     impl LoadOnce {
         /// ONNX Runtimeのファイル名（モジュール名）もしくはファイルパスを指定する。
         ///
-        /// `dlopen`/[`LoadLibraryExW`]の引数に使われる。デフォルトは[`Onnxruntime::LIB_VERSIONED_FILENAME`]。
+        /// `dlopen`/[`LoadLibraryExW`]の引数に使われる。デフォルトは[`Onnxruntime::LIB_RECOMMENDED_VERSIONED_FILENAME`]。
         ///
         /// [`LoadLibraryExW`]:
         /// https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibraryexw
@@ -878,12 +941,12 @@ mod tests {
         use pretty_assertions::assert_eq;
 
         assert_eq!(
-            super::blocking::Onnxruntime::LIB_NAME,
-            super::nonblocking::Onnxruntime::LIB_NAME,
+            super::blocking::Onnxruntime::LIB_RECOMMENDED_NAME,
+            super::nonblocking::Onnxruntime::LIB_RECOMMENDED_NAME,
         );
         assert_eq!(
-            super::blocking::Onnxruntime::LIB_VERSION,
-            super::nonblocking::Onnxruntime::LIB_VERSION,
+            super::blocking::Onnxruntime::LIB_RECOMMENDED_VERSION,
+            super::nonblocking::Onnxruntime::LIB_RECOMMENDED_VERSION,
         );
     }
 

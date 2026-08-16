@@ -46,7 +46,7 @@
 //! # #[cfg(false)]
 //! const VVORT: &str = concatcp!(
 //!     "./voicevox_core/onnxruntime/lib/",
-//!     Onnxruntime::LIB_VERSIONED_FILENAME,
+//!     Onnxruntime::LIB_RECOMMENDED_VERSIONED_FILENAME,
 //! );
 //! # use test_util::ONNXRUNTIME_DYLIB_PATH as VVORT;
 //!
@@ -132,7 +132,7 @@
 //! # #[cfg(false)]
 //! const VVORT: &str = concatcp!(
 //!     "./voicevox_core/onnxruntime/lib/",
-//!     Onnxruntime::LIB_VERSIONED_FILENAME,
+//!     Onnxruntime::LIB_RECOMMENDED_VERSIONED_FILENAME,
 //! );
 //! # use test_util::ONNXRUNTIME_DYLIB_PATH as VVORT;
 //!
@@ -483,7 +483,9 @@ pub use self::{
         },
         talk::{
             AccentPhrase, AudioQuery, Mora,
-            user_dict::{UserDictWord, UserDictWordBuilder, UserDictWordType},
+            user_dict::{
+                UserDictWord, UserDictWordBuilder, UserDictWordPriority, UserDictWordType,
+            },
         },
     },
     error::{Error, ErrorKind},

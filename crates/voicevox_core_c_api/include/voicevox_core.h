@@ -217,7 +217,7 @@ enum VoicevoxResultCode
   /**
    * モデルの形式が不正
    */
-  VOICEVOX_RESULT_INVALID_MODEL_HEADER_ERROR = 28,
+  VOICEVOX_RESULT_INVALID_MODEL_FORMAT_ERROR = 28,
   /**
    * すでに読み込まれている音声モデルを読み込もうとした
    */
@@ -396,7 +396,7 @@ typedef struct VoicevoxLoadOnnxruntimeOptions {
   /**
    * ONNX Runtimeのファイル名（モジュール名）もしくはファイルパスを指定する。
    *
-   * `dlopen`/[`LoadLibraryExW`](https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibraryexw)の引数に使われる。デフォルトは ::voicevox_get_onnxruntime_lib_versioned_filename と同じ。
+   * `dlopen`/[`LoadLibraryExW`](https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibraryexw)の引数に使われる。デフォルトは ::voicevox_get_onnxruntime_lib_recommended_versioned_filename と同じ。
    */
   const char *filename;
 } VoicevoxLoadOnnxruntimeOptions;
@@ -508,45 +508,69 @@ typedef struct VoicevoxUserDictWord {
   /**
    * 優先度
    */
-  uint32_t priority;
+  uint8_t priority;
 } VoicevoxUserDictWord;
 
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
 
+/**
+ * 必要なONNX Runtime 1.xの最小マイナーバージョンを取得する。
+ *
+ * @return 必要な最小マイナーバージョン
+ *
+ * \orig-impl{voicevox_get_onnxruntime_lib_min_required_minor_version}
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+uint32_t voicevox_get_onnxruntime_lib_min_required_minor_version(void);
+
+/**
+ * サポートされるONNX Runtime 1.xの最大マイナーバージョンを取得する。
+ *
+ * @return サポートされる最大マイナーバージョン
+ *
+ * \orig-impl{voicevox_get_onnxruntime_lib_max_supported_minor_version}
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+uint32_t voicevox_get_onnxruntime_lib_max_supported_minor_version(void);
+
 #if defined(VOICEVOX_LOAD_ONNXRUNTIME)
 /**
- * ONNX Runtimeの動的ライブラリの、バージョン付きのファイル名。
+ * 推奨されるONNX Runtimeの動的ライブラリの、バージョン付きのファイル名。
  *
- * WindowsとAndroidでは ::voicevox_get_onnxruntime_lib_unversioned_filename と同じ。
+ * WindowsとAndroidでは ::voicevox_get_onnxruntime_lib_recommended_unversioned_filename と同じ。
  *
  * \availability{
  *   [リリース](https://github.com/voicevox/voicevox_core/releases)されているライブラリではiOSを除くプラットフォームで利用可能。詳細は<a href="#voicevox-core-availability">ファイルレベルの"Availability"の節</a>を参照。
  * }
  *
- * \orig-impl{voicevox_get_onnxruntime_lib_versioned_filename}
+ * \orig-impl{voicevox_get_onnxruntime_lib_recommended_versioned_filename}
  */
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-const char *voicevox_get_onnxruntime_lib_versioned_filename(void);
+const char *voicevox_get_onnxruntime_lib_recommended_versioned_filename(void);
 #endif
 
 #if defined(VOICEVOX_LOAD_ONNXRUNTIME)
 /**
- * ONNX Runtimeの動的ライブラリの、バージョン無しのファイル名。
+ * 推奨されるONNX Runtimeの動的ライブラリの、バージョン無しのファイル名。
  *
  * \availability{
  *   [リリース](https://github.com/voicevox/voicevox_core/releases)されているライブラリではiOSを除くプラットフォームで利用可能。詳細は<a href="#voicevox-core-availability">ファイルレベルの"Availability"の節</a>を参照。
  * }
  *
- * \orig-impl{voicevox_get_onnxruntime_lib_unversioned_filename}
+ * \orig-impl{voicevox_get_onnxruntime_lib_recommended_unversioned_filename}
  */
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-const char *voicevox_get_onnxruntime_lib_unversioned_filename(void);
+const char *voicevox_get_onnxruntime_lib_recommended_unversioned_filename(void);
 #endif
 
 #if defined(VOICEVOX_LOAD_ONNXRUNTIME)
@@ -585,6 +609,8 @@ const struct VoicevoxOnnxruntime *voicevox_onnxruntime_get(void);
 /**
  * ONNX Runtimeをロードして初期化する。
  *
+ * 対象のONNX Runtimeのマイナーバージョンは ::voicevox_get_onnxruntime_lib_min_required_minor_version 以上でなければならない。 ::voicevox_get_onnxruntime_lib_max_supported_minor_version よりも大きい場合は警告を出す。
+ *
  * 一度成功したら、以後は引数を無視して同じ参照を返す。
  *
  * @param [in] options オプション
@@ -613,6 +639,8 @@ VoicevoxResultCode voicevox_onnxruntime_load_once(struct VoicevoxLoadOnnxruntime
 #if defined(VOICEVOX_LINK_ONNXRUNTIME)
 /**
  * ONNX Runtimeを初期化する。
+ *
+ * リンクされているONNX Runtimeのマイナーバージョンが ::voicevox_get_onnxruntime_lib_min_required_minor_version よりも小さい場合失敗する。 ::voicevox_get_onnxruntime_lib_max_supported_minor_version よりも大きい場合は警告を出す。
  *
  * 一度成功したら以後は同じ参照を返す。
  *
