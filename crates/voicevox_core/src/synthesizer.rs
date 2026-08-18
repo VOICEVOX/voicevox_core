@@ -221,7 +221,7 @@ pub struct AudioFeature {
     internal_state: ndarray::Array2<f32>,
     /// 生成時に指定したスタイル番号。
     style_id: crate::StyleId,
-    /// フレームレート。音声特徴量のフレーム数をこの値で割ると全体の秒数になる。
+    /// フレームレート。全体の秒数は`frame_length() / frame_rate`で表せる。
     pub frame_rate: f64,
     /// 生成時に利用したクエリ。
     audio_query: ValidatedAudioQuery<'static>,
