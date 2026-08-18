@@ -1309,6 +1309,8 @@ impl<R: InferenceRuntime> Status<R> {
                     .unwrap(),
             );
 
+        let f0_with_padding_len = f0_with_padding.len();
+
         let GenerateFullIntermediateOutput {
             spec: spec_with_padding,
         } = self
@@ -1324,6 +1326,18 @@ impl<R: InferenceRuntime> Status<R> {
                 A::LIGHT_INFERENCE_CANCELLABLE,
             )
             .await?;
+
+        if spec_with_padding.nrows() != f0_with_padding_len {
+            return Err(ErrorRepr::RunModel {
+                note: None,
+                source: anyhow!(
+                    "`generate_full_intermediate` returned an array with {actual} frames. \
+                     expected {f0_with_padding_len} frames",
+                    actual = spec_with_padding.nrows(),
+                ),
+            }
+            .into());
+        }
 
         // マージンがデータからはみ出さないことを保証
         // cf. https://github.com/VOICEVOX/voicevox_core/pull/854#discussion_r1803691291
