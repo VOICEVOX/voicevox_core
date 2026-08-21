@@ -1331,8 +1331,9 @@ impl<R: InferenceRuntime> Status<R> {
             return Err(ErrorRepr::RunModel {
                 note: None,
                 source: anyhow!(
-                    "`generate_full_intermediate` returned an array with {actual} frames. \
-                     expected {f0_with_padding_len} frames",
+                    "`generate_full_intermediate` returned an output with a different number \
+                     of frames than the input: \
+                     expected {f0_with_padding_len} frames, got {actual} frames",
                     actual = spec_with_padding.nrows(),
                 ),
             }
