@@ -2,6 +2,7 @@
 targets = [
     { triple = "x86_64-pc-windows-msvc" },
     { triple = "i686-pc-windows-msvc" },
+    { triple = "aarch64-pc-windows-msvc" },
     { triple = "x86_64-unknown-linux-gnu" },
     { triple = "aarch64-unknown-linux-gnu" },
     { triple = "aarch64-linux-android" },
@@ -40,8 +41,8 @@ bypass = [
     { name = "assert_cmd", version = "2", build-script = "367a36318cd9bb47aeb730f8a8ddad39c10b926175465393f0d5b01cbd993d44" }, # https://docs.rs/crate/assert_cmd/2.0.16/source/build.rs
     { name = "async-trait", version = "0.1", build-script = "b45aa3a5c177cbeaeb4847163088924491ac27b79534f8ea4c53ed3e10c163ea" }, # https://docs.rs/crate/async-trait/0.1.57/source/build.rs
     { name = "aws-lc-rs", version = "1", build-script = "791f97e6abdb685bcc722342d49f2646b3146b209f68753669c178716f6cee01" }, # https://docs.rs/crate/aws-lc-rs/1.16.3/source/build.rs
-    { name = "bindgen", version = "0.70", build-script = "4a9c4ac3759572e17de312a9d3f4ced3b6fd3c71811729e5a8d06bfbd1ac8f82" }, # https://docs.rs/crate/bindgen/0.70.1/source/build.rs
     { name = "bindgen", version = "0.71", build-script = "f7a10af0a21662e104e0058da7e3471a20be328eef6c7c41988525be90fdfe92" }, # https://docs.rs/crate/bindgen/0.71.1/source/build.rs
+    { name = "bindgen", version = "0.72", build-script = "f7a10af0a21662e104e0058da7e3471a20be328eef6c7c41988525be90fdfe92" }, # https://docs.rs/crate/bindgen/0.72.1/source/build.rs
     { name = "camino", version = "1", build-script = "cbdfaa56ff8e211896e75fc7867e3230aa8aa09fdda901111db957c65306f1d8" }, # https://docs.rs/crate/camino/1.1.9/source/build.rs
     { name = "caseless", version = "0.2", build-script = "8ab1dc9ef269f28202fe1156c5c655f286cbc03b6dd4fb20a2f9f9e00763b6f5" }, # https://docs.rs/crate/caseless/0.2.1/source/src/build.rs
     { name = "cbindgen", version = "0.28", build-script = "f0fa57ad2c0dca5855cc2636a2e95acbadb52fa887609216022bdf71ed996dec" }, # https://docs.rs/crate/cbindgen/0.28.0/source/build.rs
@@ -96,6 +97,11 @@ bypass = [
     { name = "typeid", version = "1", build-script = "688afbcaa398ea159c3481b26d74fde6ce3a675d48364d772557c8e91100de46" }, # https://docs.rs/crate/typeid/1.0.2/source/build.rs
     { name = "web_atoms", version = "0.2.0", build-script = "8b50922bbb295e90a26edc3e2ab34f068fee930cefd73ae03cca210cf08f9d89" }, # https://docs.rs/crate/web_atoms/0.2.0/source/build.rs
     { name = "winapi", version = "0.3", build-script = "fa1782968d33345772093666220c7841c2fb4f6dd32fa47951c68a3a400a1a98" }, # https://docs.rs/crate/winapi/0.3.9/source/build.rs
+    { name = "windows_aarch64_msvc", version = "0.36", build-script = "cb87ced2a369513d4593ceec97e176dd38335501ada9f960cb72c454979335a2" }, # https://docs.rs/crate/windows_aarch64_msvc/0.36.1/source/build.rs
+    { name = "windows_aarch64_msvc", version = "0.42", build-script = "cb87ced2a369513d4593ceec97e176dd38335501ada9f960cb72c454979335a2" }, # https://docs.rs/crate/windows_aarch64_msvc/0.42.2/source/build.rs
+    { name = "windows_aarch64_msvc", version = "0.48", build-script = "cb87ced2a369513d4593ceec97e176dd38335501ada9f960cb72c454979335a2" }, # https://docs.rs/crate/windows_aarch64_msvc/0.48.5/source/build.rs
+    { name = "windows_aarch64_msvc", version = "0.52", build-script = "6d40bd2c0ed4cbea5126dfcd89d72f229c7d986540cbf0dc34acc1017f1de20f" }, # https://docs.rs/crate/windows_aarch64_msvc/0.52.6/source/build.rs
+    { name = "windows_aarch64_msvc", version = "0.53", build-script = "6d40bd2c0ed4cbea5126dfcd89d72f229c7d986540cbf0dc34acc1017f1de20f" }, # https://docs.rs/crate/windows_aarch64_msvc/0.53.1/source/build.rs
     { name = "windows_i686_msvc", version = "0.36", build-script = "d5df812ba7add22771644473db37d7de40c1e7479a30f81ae3ccb0d7be3fabe4" }, # https://docs.rs/crate/windows_i686_msvc/0.36.1/source/build.rs
     { name = "windows_i686_msvc", version = "0.42", build-script = "d5df812ba7add22771644473db37d7de40c1e7479a30f81ae3ccb0d7be3fabe4" }, # https://docs.rs/crate/windows_i686_msvc/0.42.2/source/build.rs
     { name = "windows_i686_msvc", version = "0.48", build-script = "d5df812ba7add22771644473db37d7de40c1e7479a30f81ae3ccb0d7be3fabe4" }, # https://docs.rs/crate/windows_i686_msvc/0.48.5/source/build.rs
@@ -134,7 +140,7 @@ bypass = [
     # https://github.com/VOICEVOX/open_jtalk-rs/blob/579d52c29165654b8fc50e212bae36a61c119163/crates/open_jtalk-sys/build.rs
     #
     # Open JTalk is licensed under: https://github.com/VOICEVOX/open_jtalk/blob/1.11/src/COPYING
-    { name = "open_jtalk-sys", version = "=0.16.111", build-script = "d9c3766132686fb7f7bf8f138d94bb59aa09ce4af14e4bca2dad347999d30225" },
+    { name = "open_jtalk-sys", version = "=0.16.111", build-script = "b5faff5352f0ce5f00b764891bd7d826254b360e97cc946870a5665d61d4d752" },
 
     # https://docs.rs/crate/pyo3-ffi/0.27.2/source/build.rs
     #

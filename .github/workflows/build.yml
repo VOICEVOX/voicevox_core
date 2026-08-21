@@ -87,6 +87,15 @@ jobs:
               "can_skip_in_simple_test": true
             },
             {
+              "os": "windows-11-arm",
+              "target": "aarch64-pc-windows-msvc",
+              "artifact_name": "windows-arm64",
+              "c_release_format": "plain-cdylib",
+              "python_whl": true,
+              "java": true,
+              "can_skip_in_simple_test": true
+            },
+            {
               "os": "ubuntu-22.04",
               "target": "x86_64-unknown-linux-gnu",
               "artifact_name": "linux-x64",
@@ -256,11 +265,11 @@ jobs:
               exit 1
           esac
           echo "architecture=$architecture" >> "$GITHUB_OUTPUT"
-      - name: Set up Python 3.10
+      - name: Set up Python 3.10 or 3.11
         if: matrix.python_whl
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          python-version: "3.10"
+          python-version: ${{ matrix.target == 'aarch64-pc-windows-msvc' && '3.11' || '3.10' }}
           architecture: ${{ steps.python-interpreter-arch.outputs.architecture }}
       - name: set up ${{ matrix.target }}
         uses: ./.github/actions/rust-toolchain-from-file
@@ -489,6 +498,7 @@ jobs:
           clean_dlls
           copy_dll windows-x64 windows-x64
           copy_dll windows-x86 windows-x86
+          copy_dll windows-arm64 windows-arm64
           copy_dll linux-x64 linux-x64
           copy_dll linux-arm64 linux-arm64
           copy_dll osx-x64 macos-x64
