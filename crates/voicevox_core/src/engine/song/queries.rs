@@ -812,7 +812,8 @@ mod tests {
     use itertools::iproduct;
     use rstest::rstest;
 
-    use super::key::Key;
+    use super::{Note, OptionalLyric, key::Key};
+    use crate::engine::mora_mappings::MORA_KANA_TO_MORA_PHONEMES;
 
     #[test]
     fn key_new_works() {
@@ -892,6 +893,46 @@ mod tests {
                 cmp::min(lhs.get().saturating_sub(rhs), Key::MAX.get()),
                 lhs.saturating_sub(rhs).get(),
             );
+        }
+    }
+
+    #[test]
+    fn all_mora_kana_are_valid_song_lyrics() {
+        for (mora_kana, &phonemes) in &MORA_KANA_TO_MORA_PHONEMES {
+            let katakana = <&str>::from(mora_kana);
+            assert_valid_song_lyric(katakana, phonemes);
+
+            let hiragana = katakana
+                .chars()
+                .map(|c| match c {
+                    'ァ'..='ヴ' => char::from_u32(u32::from(c) - 96),
+                    _ => None,
+                })
+                .collect::<Option<String>>();
+            if let Some(hiragana) = hiragana {
+                assert_valid_song_lyric(&hiragana, phonemes);
+            }
+        }
+
+        fn assert_valid_song_lyric(
+            text: &str,
+            phonemes: (
+                crate::engine::acoustic_feature_extractor::OptionalConsonant,
+                crate::engine::acoustic_feature_extractor::NonPauBaseVowel,
+            ),
+        ) {
+            let lyric = text.parse::<OptionalLyric>().unwrap();
+            assert_eq!(text, lyric.as_ref());
+            assert_eq!(&[phonemes], lyric.phonemes.as_slice());
+
+            let note = serde_json::from_value::<Note>(serde_json::json!({
+                "key": 60,
+                "frame_length": 1,
+                "lyric": text,
+            }))
+            .unwrap();
+            assert_eq!(text, note.lyric.as_ref());
+            assert_eq!(&[phonemes], note.lyric.phonemes.as_slice());
         }
     }
 

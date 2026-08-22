@@ -1,4 +1,3 @@
-use derive_syn_parse::Parse;
 use quote::quote;
 use syn::{
     Attribute, DeriveInput, Expr, ItemStatic, LitStr, Token, braced,
@@ -27,16 +26,19 @@ pub(crate) fn derive_mora_mappings(input: &DeriveInput) -> syn::Result<proc_macr
         .map(|(attrs, mora_kana_variant)| {
             let attr = find_attr(attrs)?;
             let VariantAttrs {
-                consonant, vowel, ..
+                consonant,
+                vowel,
+                additional,
             } = attr.parse_args()?;
-            Ok((mora_kana_variant, attr.span(), consonant, vowel))
+            Ok((mora_kana_variant, attr.span(), consonant, vowel, additional))
         })
         .collect::<syn::Result<Vec<_>>>()?;
 
     mora_phonemes_to_mora_kana.expr = {
         let variants = variants
             .iter()
-            .map(|(mora_kana_variant, attr_span, consonant, vowel)| {
+            .filter(|(_, _, _, _, additional)| !additional)
+            .map(|(mora_kana_variant, attr_span, consonant, vowel, _)| {
                 let key = LitStr::new(&(consonant.value() + &vowel.value()), *attr_span);
                 quote!(#key => #mora_kana_ty::#mora_kana_variant)
             });
@@ -48,7 +50,7 @@ pub(crate) fn derive_mora_mappings(input: &DeriveInput) -> syn::Result<proc_macr
     };
 
     mora_kana_to_mora_phonemes.expr = {
-        let values = variants.iter().map(|(_, _, consonant, vowel)| {
+        let values = variants.iter().map(|(_, _, consonant, vowel, _)| {
             quote! {
                 (
                     crate::engine::acoustic_feature_extractor::convert::optional_consonant!(#consonant),
@@ -99,11 +101,35 @@ pub(crate) fn derive_mora_mappings(input: &DeriveInput) -> syn::Result<proc_macr
         }
     }
 
-    #[derive(Parse)]
     struct VariantAttrs {
         consonant: LitStr,
-        _comma: Token![,],
         vowel: LitStr,
+        additional: bool,
+    }
+
+    impl Parse for VariantAttrs {
+        fn parse(input: ParseStream<'_>) -> syn::Result<Self> {
+            let consonant = input.parse()?;
+            input.parse::<Token![,]>()?;
+            let vowel = input.parse()?;
+
+            let additional = if input.is_empty() {
+                false
+            } else {
+                input.parse::<Token![,]>()?;
+                let marker = input.parse::<syn::Ident>()?;
+                if marker != "additional" {
+                    return Err(syn::Error::new(marker.span(), "expected `additional`"));
+                }
+                true
+            };
+
+            Ok(Self {
+                consonant,
+                vowel,
+                additional,
+            })
+        }
     }
 
     fn find_attr(attrs: &[Attribute]) -> syn::Result<&Attribute> {
