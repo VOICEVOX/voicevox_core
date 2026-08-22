@@ -192,10 +192,10 @@ fn crop_with_margin(
     audio: &AudioFeature,
     range: std::ops::Range<usize>,
 ) -> ndarray::ArrayView2<'_, f32> {
-    if range.start > audio.frame_length || range.end > audio.frame_length {
+    if range.start > audio.frame_length() || range.end > audio.frame_length() {
         panic!(
             "{range:?} is out of range for audio feature of length {frame_length}",
-            frame_length = audio.frame_length,
+            frame_length = audio.frame_length(),
         );
     }
     if range.start > range.end {
@@ -221,12 +221,17 @@ pub struct AudioFeature {
     internal_state: ndarray::Array2<f32>,
     /// 生成時に指定したスタイル番号。
     style_id: crate::StyleId,
-    /// workaround paddingを除いた音声特徴量のフレーム数。
-    pub frame_length: usize,
-    /// フレームレート。全体の秒数は`frame_length / frame_rate`で表せる。
+    /// フレームレート。全体の秒数は`frame_length() / frame_rate`で表せる。
     pub frame_rate: f64,
     /// 生成時に利用したクエリ。
     audio_query: ValidatedAudioQuery<'static>,
+}
+
+impl AudioFeature {
+    /// workaround paddingを除いた音声特徴量のフレーム数。
+    pub fn frame_length(&self) -> usize {
+        self.internal_state.nrows() - 2 * MARGIN
+    }
 }
 
 #[derive(derive_more::Debug)]
@@ -466,7 +471,6 @@ trait AsInner {
         Ok(AudioFeature {
             internal_state: spec,
             style_id,
-            frame_length: f0.len(),
             frame_rate: (DEFAULT_SAMPLING_RATE as f64) / 256.0,
             audio_query,
         })
@@ -520,7 +524,7 @@ trait AsInner {
         let audio = self
             .precompute_render(audio_query, style_id, options)
             .await?;
-        let pcm = self.render(&audio, 0..audio.frame_length).await?;
+        let pcm = self.render(&audio, 0..audio.frame_length()).await?;
         Ok(wav_from_s16le(
             &pcm,
             audio_query.output_sampling_rate.get().get(),

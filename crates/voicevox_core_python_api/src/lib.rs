@@ -651,7 +651,7 @@ mod blocking {
     impl AudioFeature {
         #[getter]
         fn frame_length(&self) -> usize {
-            self.audio.frame_length
+            self.audio.frame_length()
         }
 
         #[getter]
@@ -931,10 +931,10 @@ mod blocking {
             stop: usize,
             py: Python<'_>,
         ) -> PyResult<Vec<u8>> {
-            if start > audio.frame_length() || stop > audio.frame_length() {
+            if start > audio.audio.frame_length() || stop > audio.audio.frame_length() {
                 return Err(PyIndexError::new_err(format!(
                     "({start}, {stop}) is out of range for audio feature of length {len}",
-                    len = audio.frame_length(),
+                    len = audio.audio.frame_length(),
                 )));
             }
             if start > stop {
