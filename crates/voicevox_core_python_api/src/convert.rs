@@ -472,7 +472,7 @@ pub(crate) impl<T> voicevox_core::Result<T> {
 impl SupportedDevices {
     fn to_py(self, py: Python<'_>) -> PyResult<Bound<'_, PyAny>> {
         assert!(match self.to_json_value() {
-            serde_json::Value::Object(o) => o.len() == 3, // `cpu`, `cuda`, `dml`
+            serde_json::Value::Object(o) => o.len() == 4, // `cpu`, `cuda`, `dml`, `openvino`
             _ => false,
         });
 
