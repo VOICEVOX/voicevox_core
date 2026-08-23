@@ -221,18 +221,21 @@ pub struct AudioFeature {
     internal_state: ndarray::Array2<f32>,
     /// 生成時に指定したスタイル番号。
     style_id: crate::StyleId,
-    /// フレームレート。全体の秒数は`frame_length() / frame_rate`で表せる。
-    pub frame_rate: f64,
     /// `[f32]`からPCMを作るときのオプション。
     pcm_options: PcmOptions,
 }
 
 impl AudioFeature {
+    /// フレームレート。全体の秒数は`frame_length() / FRAME_RATE`で表せる。
+    pub const FRAME_RATE: f64 = 93.75;
+
     /// workaround paddingを除いた音声特徴量のフレーム数。
     pub fn frame_length(&self) -> usize {
         self.internal_state.nrows() - 2 * MARGIN
     }
 }
+
+const _: () = assert!(AudioFeature::FRAME_RATE == (DEFAULT_SAMPLING_RATE as f64) / 256.0);
 
 #[derive(derive_more::Debug)]
 struct Inner<T, A: Async> {
@@ -471,7 +474,6 @@ trait AsInner {
         Ok(AudioFeature {
             internal_state: spec,
             style_id,
-            frame_rate: (DEFAULT_SAMPLING_RATE as f64) / 256.0,
             pcm_options: audio_query.pcm_options(),
         })
     }

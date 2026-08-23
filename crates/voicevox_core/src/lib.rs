@@ -442,7 +442,6 @@ mod asyncs;
 mod collections;
 mod convert;
 mod core;
-/// cbindgen:ignore
 mod engine;
 mod error;
 mod future;

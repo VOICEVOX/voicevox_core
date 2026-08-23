@@ -113,8 +113,7 @@ rename_variants = "ScreamingSnakeCase"
 # Options for how your Rust library should be parsed
 
 [parse]
-parse_deps = true
-include = ["voicevox_core"]
+parse_deps = false
 
 [defines]
 "feature = load-onnxruntime" = "VOICEVOX_LOAD_ONNXRUNTIME"
