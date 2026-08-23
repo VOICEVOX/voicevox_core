@@ -10,7 +10,9 @@ pub(crate) mod talk;
 pub(crate) mod validate;
 
 pub(crate) use self::{
-    acoustic_feature_extractor::PhonemeCode, audio_file::to_s16le_pcm, ndarray::IteratorExt,
+    acoustic_feature_extractor::PhonemeCode,
+    audio_file::{PcmOptions, to_s16le_pcm},
+    ndarray::IteratorExt,
     sampling_rate::DEFAULT_SAMPLING_RATE,
 };
 pub use self::{
