@@ -428,7 +428,7 @@ class Synthesizer:
             スタイルID。
         """
         ...
-    def __precompute_render(
+    def __create_audio_feature(
         self,
         audio_query: AudioQuery,
         style_id: StyleId | int,

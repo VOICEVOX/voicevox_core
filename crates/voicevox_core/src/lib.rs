@@ -487,14 +487,10 @@ pub use self::{
                 UserDictWord, UserDictWordBuilder, UserDictWordPriority, UserDictWordType,
             },
         },
+        wav_from_s16le,
     },
     error::{Error, ErrorKind},
     result::Result,
     synthesizer::AccelerationMode,
     version::VERSION,
 };
-
-// TODO: 後で復活させる
-// https://github.com/VOICEVOX/voicevox_core/issues/970
-#[doc(hidden)]
-pub use self::engine::wav_from_s16le as __wav_from_s16le;

@@ -904,7 +904,7 @@ mod blocking {
             enable_interrogative_upspeak =
                 voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
         ))]
-        fn _Synthesizer__precompute_render(
+        fn _Synthesizer__create_audio_feature(
             &self,
             #[pyo3(from_py_with = crate::convert::from_audio_query)] audio_query: AudioQuery,
             style_id: u32,
@@ -914,7 +914,7 @@ mod blocking {
             let audio = self
                 .synthesizer
                 .read()?
-                .__precompute_render(&audio_query, StyleId::new(style_id))
+                .__create_audio_feature(&audio_query, StyleId::new(style_id))
                 .enable_interrogative_upspeak(enable_interrogative_upspeak)
                 .perform()
                 .into_py_result(py)?;

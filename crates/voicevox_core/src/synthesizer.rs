@@ -211,9 +211,6 @@ fn trim_margin_from_wave(wave_with_margin: ndarray::Array1<f32>) -> ndarray::Arr
 }
 
 /// 音声の中間表現。
-// TODO: 後で復活させる
-// https://github.com/VOICEVOX/voicevox_core/issues/970
-#[doc(hidden)]
 #[derive(Clone, PartialEq, derive_more::Debug)]
 pub struct AudioFeature {
     /// (フレーム数, 特徴数)の形を持つ音声特徴量。
@@ -448,7 +445,7 @@ trait AsInner {
         self.status().metas()
     }
 
-    async fn precompute_render(
+    async fn create_audio_feature(
         &self,
         audio_query: &AudioQuery,
         style_id: StyleId,
@@ -522,7 +519,7 @@ trait AsInner {
             ));
         }
         let audio = self
-            .precompute_render(audio_query, style_id, options)
+            .create_audio_feature(audio_query, style_id, options)
             .await?;
         let pcm = self.render(&audio, 0..audio.frame_length()).await?;
         Ok(wav_from_s16le(
@@ -1753,15 +1750,13 @@ pub(crate) mod blocking {
         }
 
         /// AudioQueryから音声合成用の中間表現を生成する。
-        // TODO: 後で復活させる
-        // https://github.com/VOICEVOX/voicevox_core/issues/970
         #[doc(hidden)]
-        pub fn __precompute_render<'a>(
+        pub fn create_audio_feature<'a>(
             &'a self,
             audio_query: &'a AudioQuery,
             style_id: StyleId,
-        ) -> PrecomputeRender<'a> {
-            PrecomputeRender {
+        ) -> CreateAudioFeature<'a> {
+            CreateAudioFeature {
                 synthesizer: self.0.without_text_analyzer(),
                 audio_query,
                 style_id,
@@ -1770,10 +1765,8 @@ pub(crate) mod blocking {
         }
 
         /// 中間表現から16bit PCMで音声波形を生成する。
-        // TODO: 後で復活させる
-        // https://github.com/VOICEVOX/voicevox_core/issues/970
         #[doc(hidden)]
-        pub fn __render(
+        pub fn render(
             &self,
             audio: &AudioFeature,
             range: impl Into<std::ops::Range<usize>>,
@@ -2506,14 +2499,14 @@ pub(crate) mod blocking {
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
     #[derive(Debug)]
-    pub struct PrecomputeRender<'a> {
+    pub struct CreateAudioFeature<'a> {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, SingleTasked>,
         audio_query: &'a AudioQuery,
         style_id: StyleId,
         options: SynthesisOptions<SingleTasked>,
     }
 
-    impl PrecomputeRender<'_> {
+    impl CreateAudioFeature<'_> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
@@ -2522,7 +2515,7 @@ pub(crate) mod blocking {
         /// 実行する。
         pub fn perform(self) -> crate::Result<AudioFeature> {
             self.synthesizer
-                .precompute_render(self.audio_query, self.style_id, &self.options)
+                .create_audio_feature(self.audio_query, self.style_id, &self.options)
                 .block_on()
         }
     }
