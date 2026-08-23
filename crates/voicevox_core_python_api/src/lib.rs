@@ -359,7 +359,7 @@ fn _to_zenkaku(text: &str) -> PyResult<String> {
 
 #[pyfunction]
 fn wav_from_s16le(pcm: &[u8], sampling_rate: u32, is_stereo: bool) -> Vec<u8> {
-    voicevox_core::__wav_from_s16le(pcm, sampling_rate, is_stereo)
+    voicevox_core::wav_from_s16le(pcm, sampling_rate, is_stereo)
 }
 
 #[pyfunction]
@@ -644,7 +644,7 @@ mod blocking {
     #[pyclass(frozen, eq)]
     #[derive(PartialEq)]
     pub(crate) struct AudioFeature {
-        audio: voicevox_core::blocking::__AudioFeature,
+        audio: voicevox_core::blocking::AudioFeature,
     }
 
     #[pymethods]
@@ -914,7 +914,7 @@ mod blocking {
             let audio = self
                 .synthesizer
                 .read()?
-                .__create_audio_feature(&audio_query, StyleId::new(style_id))
+                .create_audio_feature(&audio_query, StyleId::new(style_id))
                 .enable_interrogative_upspeak(enable_interrogative_upspeak)
                 .perform()
                 .into_py_result(py)?;
@@ -944,7 +944,7 @@ mod blocking {
             }
             self.synthesizer
                 .read()?
-                .__render(&audio.audio, start..stop)
+                .render(&audio.audio, start..stop)
                 .into_py_result(py)
         }
 
