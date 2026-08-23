@@ -42,7 +42,7 @@ use crate::{
         voice_model,
     },
     engine::{
-        DEFAULT_SAMPLING_RATE, IteratorExt as _, PhonemeCode,
+        DEFAULT_SAMPLING_RATE, IteratorExt as _, PcmOptions, PhonemeCode,
         song::{
             self,
             interpret::{ConsonantLengthsFeature, PhonemeFeature, SfDecoderFeature},
@@ -50,8 +50,8 @@ use crate::{
             validate::{ValidatedNote, ValidatedScore},
         },
         talk::{
-            DecoderFeature, LengthedPhoneme, ValidatedAccentPhrase, ValidatedAudioQuery,
-            ValidatedMora, create_kana, initial_process, parse_kana, split_mora,
+            DecoderFeature, LengthedPhoneme, ValidatedAccentPhrase, ValidatedMora, create_kana,
+            initial_process, parse_kana, split_mora,
         },
         to_s16le_pcm, wav_from_s16le,
     },
@@ -223,8 +223,8 @@ pub struct AudioFeature {
     style_id: crate::StyleId,
     /// フレームレート。全体の秒数は`frame_length() / frame_rate`で表せる。
     pub frame_rate: f64,
-    /// 生成時に利用したクエリ。
-    audio_query: ValidatedAudioQuery<'static>,
+    /// `[f32]`からPCMを作るときのオプション。
+    pcm_options: PcmOptions,
 }
 
 impl AudioFeature {
@@ -454,7 +454,7 @@ trait AsInner {
         style_id: StyleId,
         options: &SynthesisOptions<Self::Async>,
     ) -> Result<AudioFeature> {
-        let audio_query = audio_query.to_validated()?.into_owned();
+        let audio_query = audio_query.to_validated()?;
 
         let DecoderFeature { f0, phoneme } =
             audio_query.decoder_feature(options.enable_interrogative_upspeak);
@@ -472,7 +472,7 @@ trait AsInner {
             internal_state: spec,
             style_id,
             frame_rate: (DEFAULT_SAMPLING_RATE as f64) / 256.0,
-            audio_query,
+            pcm_options: audio_query.pcm_options(),
         })
     }
 
@@ -491,7 +491,7 @@ trait AsInner {
         Ok(to_s16le_pcm(
             wave.as_slice()
                 .expect("`trim_margin_from_wave` should just trim an array"),
-            &audio.audio_query,
+            audio.pcm_options,
         ))
     }
 
@@ -516,7 +516,7 @@ trait AsInner {
                 )
                 .await?;
             return Ok(wav_from_s16le(
-                &to_s16le_pcm(wave, &audio_query),
+                &to_s16le_pcm(wave, audio_query.pcm_options()),
                 audio_query.output_sampling_rate.get().get(),
                 audio_query.output_stereo,
             ));
@@ -1035,7 +1035,7 @@ trait AsInner {
         };
 
         Ok(wav_from_s16le(
-            &to_s16le_pcm(wave, frame_audio_query),
+            &to_s16le_pcm(wave, frame_audio_query.pcm_options()),
             frame_audio_query.output_sampling_rate.get().get(),
             frame_audio_query.output_stereo,
         ))

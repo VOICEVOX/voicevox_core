@@ -158,22 +158,6 @@ impl<'original> ValidatedMora<'original> {
             }
         }
     }
-
-    fn into_owned(self) -> ValidatedMora<'static> {
-        let Self {
-            text,
-            consonant,
-            vowel,
-            pitch,
-        } = self;
-        let text = text.into_owned().into();
-        ValidatedMora {
-            text,
-            consonant,
-            vowel,
-            pitch,
-        }
-    }
 }
 
 impl From<ValidatedMora<'_>> for Mora {
@@ -283,23 +267,6 @@ impl<'original> ValidatedAccentPhrase<'original> {
             }
         }
     }
-
-    fn into_owned(self) -> ValidatedAccentPhrase<'static> {
-        let Self {
-            moras,
-            accent,
-            pause_mora,
-            is_interrogative,
-        } = self;
-        let moras = moras.into_iter().map(ValidatedMora::into_owned).collect();
-        let pause_mora = pause_mora.map(ValidatedMora::into_owned);
-        ValidatedAccentPhrase {
-            moras,
-            accent,
-            pause_mora,
-            is_interrogative,
-        }
-    }
 }
 
 impl From<ValidatedAccentPhrase<'_>> for AccentPhrase {
@@ -395,37 +362,6 @@ impl<'original> ValidatedAudioQuery<'original> {
                 value: None,
                 source: Some(source),
             }
-        }
-    }
-
-    pub(crate) fn into_owned(self) -> ValidatedAudioQuery<'static> {
-        let Self {
-            accent_phrases,
-            speed_scale,
-            pitch_scale,
-            intonation_scale,
-            volume_scale,
-            pre_phoneme_length,
-            post_phoneme_length,
-            output_sampling_rate,
-            output_stereo,
-            kana,
-        } = self;
-        let accent_phrases = accent_phrases
-            .into_iter()
-            .map(ValidatedAccentPhrase::into_owned)
-            .collect();
-        ValidatedAudioQuery {
-            accent_phrases,
-            speed_scale,
-            pitch_scale,
-            intonation_scale,
-            volume_scale,
-            pre_phoneme_length,
-            post_phoneme_length,
-            output_sampling_rate,
-            output_stereo,
-            kana,
         }
     }
 }
