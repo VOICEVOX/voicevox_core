@@ -19,8 +19,6 @@ pub mod onnxruntime {
 
 pub mod synthesizer {
     pub use crate::synthesizer::blocking::{
-        Builder, FrameSynthesis, LoadVoiceModel, Synthesis, Tts, TtsFromKana,
+        Builder, CreateAudioFeature, FrameSynthesis, LoadVoiceModel, Synthesis, Tts, TtsFromKana,
     };
-
-    pub use crate::synthesizer::blocking::CreateAudioFeature;
 }

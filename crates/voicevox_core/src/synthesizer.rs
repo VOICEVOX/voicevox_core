@@ -1750,7 +1750,6 @@ pub(crate) mod blocking {
         }
 
         /// AudioQueryから音声合成用の中間表現を生成する。
-        #[doc(hidden)]
         pub fn create_audio_feature<'a>(
             &'a self,
             audio_query: &'a AudioQuery,
@@ -1765,7 +1764,6 @@ pub(crate) mod blocking {
         }
 
         /// 中間表現から16bit PCMで音声波形を生成する。
-        #[doc(hidden)]
         pub fn render(
             &self,
             audio: &AudioFeature,
