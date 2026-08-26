@@ -379,14 +379,12 @@ struct AudioFeature {
 
 #[pymethods]
 impl AudioFeature {
+    #[classattr]
+    const FRAME_RATE: f64 = voicevox_core::AudioFeature::FRAME_RATE;
+
     #[getter]
     fn frame_length(&self) -> usize {
         self.audio.frame_length()
-    }
-
-    #[getter]
-    fn frame_rate(&self) -> f64 {
-        self.audio.frame_rate
     }
 
     fn __repr__(&self, py: Python<'_>) -> String {

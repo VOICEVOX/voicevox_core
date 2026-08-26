@@ -19,7 +19,7 @@
 
 ### Added
 
-- \[Rust\] `Synthesizer::create_audio_feature`と`Synthesizer::render`が追加されます ([#851], [#854], [#864], [#867], [#879], [#918], [#972], [#1319], [#1363], [#1371], [#1376], [#1400], [#1401], [#1419], [#1418], [#1420], [#1421], [#1423])。
+- \[Rust\] `Synthesizer::create_audio_feature`と`Synthesizer::render`が追加されます ([#851], [#854], [#864], [#867], [#879], [#918], [#972], [#1319], [#1363], [#1371], [#1376], [#1400], [#1401], [#1419], [#1418], [#1420], [#1421], [#1423], [#1422])。
 
 ## [0.17.0] - 2026-08-14 (+09:00)
 
@@ -1550,6 +1550,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1419]: https://github.com/VOICEVOX/voicevox_core/pull/1419
 [#1420]: https://github.com/VOICEVOX/voicevox_core/pull/1420
 [#1421]: https://github.com/VOICEVOX/voicevox_core/pull/1421
+[#1422]: https://github.com/VOICEVOX/voicevox_core/pull/1422
 [#1423]: https://github.com/VOICEVOX/voicevox_core/pull/1423
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
