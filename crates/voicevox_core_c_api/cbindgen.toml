@@ -110,11 +110,6 @@ args = "vertical"
 [enum]
 rename_variants = "ScreamingSnakeCase"
 
-# Options for how your Rust library should be parsed
-
-[parse]
-parse_deps = false
-
 [defines]
 "feature = load-onnxruntime" = "VOICEVOX_LOAD_ONNXRUNTIME"
 "feature = link-onnxruntime" = "VOICEVOX_LINK_ONNXRUNTIME"
