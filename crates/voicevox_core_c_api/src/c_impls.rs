@@ -17,7 +17,7 @@ use crate::{
     OpenJtalkRc, VoicevoxInitializeOptions, VoicevoxOnnxruntime, VoicevoxSynthesizer,
     VoicevoxUserDict, VoicevoxVoiceModelFile,
     helpers::CApiResult,
-    object::{CApiObject, CApiObjectPtrExt as _},
+    object::{CApiObject, CApiObjectPtrExt as _, MaybeDeleted},
 };
 
 // FIXME: 中身(Rust API)を直接操作するかラッパーメソッド越しにするのかが混在していて、一貫性を
@@ -169,11 +169,11 @@ impl CApiObject for H {
     }
 
     fn bodies() -> &'static std::sync::Mutex<
-        HashMap<NonZero<usize>, Arc<parking_lot::RwLock<Option<Self::RustApiObject>>>>,
+        HashMap<NonZero<usize>, Arc<parking_lot::RwLock<MaybeDeleted<Self::RustApiObject>>>>,
     > {
         #[expect(clippy::type_complexity, reason = "`CApiObject::bodies`と同様")]
         static BODIES: LazyLock<
-            std::sync::Mutex<HashMap<NonZero<usize>, Arc<parking_lot::RwLock<Option<B>>>>>,
+            std::sync::Mutex<HashMap<NonZero<usize>, Arc<parking_lot::RwLock<MaybeDeleted<B>>>>>,
         > = LazyLock::new(Default::default);
 
         &BODIES
