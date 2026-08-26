@@ -5,35 +5,6 @@
 ## [Unreleased]
 
 <!--
-### ストリーミングAPI
-
-- split decoder into spectrogram and vocoder without changing API ([#851])
-- ストリーミングモードのdecodeを実装（precompute_renderとrender） ([#854])
-- fix: Python APIとexample/python/run.pyの型付けを直す ([#864])
-- fix compat breaking: revive workaround padding in decode() ([#867])
-- feat!: `render`の引数の範囲指定部分を各言語の慣習に合わせる ([#879])
-- feat!: decode.onnxを復活させる ([#918])
-- [#1319]
-- [#1363]
-- [#1371]
-- [#1364]
-- [#1376]
-- [#1400]
-- [#1418]
-- [#1420]
-- [#1421]
-
-[#854]: https://github.com/VOICEVOX/voicevox_core/pull/854
-[#864]: https://github.com/VOICEVOX/voicevox_core/pull/864
-[#867]: https://github.com/VOICEVOX/voicevox_core/pull/867
-[#879]: https://github.com/VOICEVOX/voicevox_core/pull/879
-[#1319]: https://github.com/VOICEVOX/voicevox_core/pull/1319
-[#1364]: https://github.com/VOICEVOX/voicevox_core/pull/1364
-[#1376]: https://github.com/VOICEVOX/voicevox_core/pull/1376
-[#1418]: https://github.com/VOICEVOX/voicevox_core/pull/1418
-[#1420]: https://github.com/VOICEVOX/voicevox_core/pull/1420
-[#1421]: https://github.com/VOICEVOX/voicevox_core/pull/1421
-
 ### もし`TextAnalyzer`機能を充実させた場合
 
 - TextAnalyzer traitにstring->AccentPhraseModel[]を移動 ([#740] by [@eyr1n])。
@@ -45,6 +16,10 @@
 
 [@phenylshima]: https://github.com/phenylshima
 -->
+
+### Added
+
+- \[Rust\] `Synthesizer::create_audio_feature`と`Synthesizer::render`が追加されます ([#851], [#854], [#864], [#867], [#879], [#918], [#972], [#1319], [#1363], [#1371], [#1376], [#1400], [#1401], [#1419], [#1418], [#1420], [#1421], [#1422])。
 
 ## [0.17.0] - 2026-08-14 (+09:00)
 
@@ -1336,13 +1311,17 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#849]: https://github.com/VOICEVOX/voicevox_core/pull/849
 [#850]: https://github.com/VOICEVOX/voicevox_core/pull/850
 [#851]: https://github.com/VOICEVOX/voicevox_core/pull/851
+[#854]: https://github.com/VOICEVOX/voicevox_core/pull/854
 [#856]: https://github.com/VOICEVOX/voicevox_core/pull/856
 [#860]: https://github.com/VOICEVOX/voicevox_core/pull/860
 [#861]: https://github.com/VOICEVOX/voicevox_core/pull/861
 [#862]: https://github.com/VOICEVOX/voicevox_core/pull/862
 [#863]: https://github.com/VOICEVOX/voicevox_core/pull/863
+[#864]: https://github.com/VOICEVOX/voicevox_core/pull/864
+[#867]: https://github.com/VOICEVOX/voicevox_core/pull/867
 [#868]: https://github.com/VOICEVOX/voicevox_core/pull/868
 [#876]: https://github.com/VOICEVOX/voicevox_core/pull/876
+[#879]: https://github.com/VOICEVOX/voicevox_core/pull/879
 [#881]: https://github.com/VOICEVOX/voicevox_core/pull/881
 [#882]: https://github.com/VOICEVOX/voicevox_core/pull/882
 [#884]: https://github.com/VOICEVOX/voicevox_core/pull/884
@@ -1396,6 +1375,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#965]: https://github.com/VOICEVOX/voicevox_core/pull/965
 [#967]: https://github.com/VOICEVOX/voicevox_core/pull/967
 [#969]: https://github.com/VOICEVOX/voicevox_core/pull/969
+[#972]: https://github.com/VOICEVOX/voicevox_core/pull/972
 [#973]: https://github.com/VOICEVOX/voicevox_core/pull/973
 [#974]: https://github.com/VOICEVOX/voicevox_core/pull/974
 [#976]: https://github.com/VOICEVOX/voicevox_core/pull/976
@@ -1538,6 +1518,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1304]: https://github.com/VOICEVOX/voicevox_core/pull/1304
 [#1313]: https://github.com/VOICEVOX/voicevox_core/pull/1313
 [#1315]: https://github.com/VOICEVOX/voicevox_core/pull/1315
+[#1319]: https://github.com/VOICEVOX/voicevox_core/pull/1319
 [#1323]: https://github.com/VOICEVOX/voicevox_core/pull/1323
 [#1326]: https://github.com/VOICEVOX/voicevox_core/pull/1326
 [#1331]: https://github.com/VOICEVOX/voicevox_core/pull/1331
@@ -1549,6 +1530,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1362]: https://github.com/VOICEVOX/voicevox_core/pull/1362
 [#1363]: https://github.com/VOICEVOX/voicevox_core/pull/1363
 [#1371]: https://github.com/VOICEVOX/voicevox_core/pull/1371
+[#1376]: https://github.com/VOICEVOX/voicevox_core/pull/1376
 [#1381]: https://github.com/VOICEVOX/voicevox_core/pull/1381
 [#1384]: https://github.com/VOICEVOX/voicevox_core/pull/1384
 [#1385]: https://github.com/VOICEVOX/voicevox_core/pull/1385
@@ -1564,6 +1546,11 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1409]: https://github.com/VOICEVOX/voicevox_core/pull/1409
 [#1411]: https://github.com/VOICEVOX/voicevox_core/pull/1411
 [#1412]: https://github.com/VOICEVOX/voicevox_core/pull/1412
+[#1418]: https://github.com/VOICEVOX/voicevox_core/pull/1418
+[#1419]: https://github.com/VOICEVOX/voicevox_core/pull/1419
+[#1420]: https://github.com/VOICEVOX/voicevox_core/pull/1420
+[#1421]: https://github.com/VOICEVOX/voicevox_core/pull/1421
+[#1422]: https://github.com/VOICEVOX/voicevox_core/pull/1422
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
