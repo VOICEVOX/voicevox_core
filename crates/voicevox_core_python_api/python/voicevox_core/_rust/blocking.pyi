@@ -16,6 +16,7 @@ if TYPE_CHECKING:
         UserDictWord,
         VoiceModelId,
     )
+    from voicevox_core._rust import AudioFeature
 
 class VoiceModelFile:
     """
@@ -180,13 +181,6 @@ class OpenJtalk:
             日本語のテキスト。
         """
         ...
-
-class AudioFeature:
-    FRAME_RATE: float = 24000 / 256
-    @property
-    def frame_length(self) -> int: ...
-    def __repr__(self) -> str: ...
-    def __eq__(self, other: object) -> bool: ...
 
 class Synthesizer:
     """

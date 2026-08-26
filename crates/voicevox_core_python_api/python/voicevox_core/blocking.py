@@ -1,8 +1,5 @@
 """ブロッキング版API。"""
 
-# TODO: `AudioFeature`を復活させる
-# https://github.com/VOICEVOX/voicevox_core/issues/970
-
 # pyright: reportMissingModuleSource=false
 from ._rust.blocking import (
     Onnxruntime,

@@ -14,7 +14,7 @@ use macros::pyproject_project_version;
 use pyo3::{
     Bound, Py, PyAny, PyResult, PyTypeInfo, Python, create_exception,
     exceptions::{PyException, PyKeyError, PyValueError},
-    pyclass, pyfunction, pymodule,
+    pyclass, pyfunction, pymethods, pymodule,
     types::{PyAnyMethods as _, PyList, PyModule, PyModuleMethods as _, PyString},
     wrap_pyfunction,
 };
@@ -30,6 +30,7 @@ fn rust(py: Python<'_>, module: &Bound<'_, PyModule>) -> PyResult<()> {
 
     module.add("__version__", pyproject_project_version!())?;
     module.add_class::<_ReservedFields>()?;
+    module.add_class::<AudioFeature>()?;
     module.add_wrapped(wrap_pyfunction!(_audio_query_from_accent_phrases))?;
     module.add_wrapped(wrap_pyfunction!(_audio_query_from_json))?;
     module.add_wrapped(wrap_pyfunction!(_audio_query_to_json))?;
@@ -53,7 +54,6 @@ fn rust(py: Python<'_>, module: &Bound<'_, PyModule>) -> PyResult<()> {
     blocking_module.add_class::<self::blocking::OpenJtalk>()?;
     blocking_module.add_class::<self::blocking::VoiceModelFile>()?;
     blocking_module.add_class::<self::blocking::UserDict>()?;
-    blocking_module.add_class::<self::blocking::AudioFeature>()?;
     module.add_and_register_submodule(blocking_module)?;
 
     let asyncio_module = PyModule::new(py, "voicevox_core._rust.asyncio")?;
@@ -371,6 +371,32 @@ fn ensure_compatible(
     voicevox_core::ensure_compatible(&score, &frame_audio_query).into_py_result(py)
 }
 
+#[pyclass(frozen, eq)]
+#[derive(PartialEq)]
+struct AudioFeature {
+    audio: voicevox_core::AudioFeature,
+}
+
+#[pymethods]
+impl AudioFeature {
+    #[classattr]
+    const FRAME_RATE: f64 = voicevox_core::AudioFeature::FRAME_RATE;
+
+    #[getter]
+    fn frame_length(&self) -> usize {
+        self.audio.frame_length()
+    }
+
+    fn __repr__(&self, py: Python<'_>) -> String {
+        let Self { audio: rust_api } = self;
+        let rust_api = PyString::new(py, &format!("{rust_api:?}"));
+        format!(
+            "<voicevox_core.{NAME} rust_api=<{rust_api:?}>>",
+            NAME = Self::NAME,
+        )
+    }
+}
+
 mod blocking {
     use std::{ffi::OsString, path::PathBuf, sync::Arc};
 
@@ -391,7 +417,7 @@ mod blocking {
     };
 
     use crate::{
-        Closable, SingleTasked, VoiceModelFilePyFields,
+        AudioFeature, Closable, SingleTasked, VoiceModelFilePyFields,
         convert::{ToDataclass, VoicevoxCoreResultExt as _},
     };
 
@@ -638,32 +664,6 @@ mod blocking {
     impl voicevox_core::blocking::TextAnalyzer for OwnedOpenJtalk {
         fn analyze(&self, text: &str) -> anyhow::Result<Vec<AccentPhrase>> {
             self.0.get().open_jtalk.analyze(text)
-        }
-    }
-
-    #[pyclass(frozen, eq)]
-    #[derive(PartialEq)]
-    pub(crate) struct AudioFeature {
-        audio: voicevox_core::blocking::AudioFeature,
-    }
-
-    #[pymethods]
-    impl AudioFeature {
-        #[classattr]
-        const FRAME_RATE: f64 = voicevox_core::blocking::AudioFeature::FRAME_RATE;
-
-        #[getter]
-        fn frame_length(&self) -> usize {
-            self.audio.frame_length()
-        }
-
-        fn __repr__(&self, py: Python<'_>) -> String {
-            let Self { audio: rust_api } = self;
-            let rust_api = PyString::new(py, &format!("{rust_api:?}"));
-            format!(
-                "<voicevox_core.blocking.{NAME} rust_api=<{rust_api:?}>>",
-                NAME = Self::NAME,
-            )
         }
     }
 

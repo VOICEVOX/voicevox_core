@@ -1647,11 +1647,9 @@ pub(crate) mod blocking {
     };
 
     use super::{
-        AccelerationMode, AsInner as _, AssumeSingleTasked, InitializeOptions, Inner,
+        AccelerationMode, AsInner as _, AssumeSingleTasked, AudioFeature, InitializeOptions, Inner,
         InnerRefWithoutTextAnalyzer, LoadVoiceModelOptions, SynthesisOptions, TtsOptions,
     };
-
-    pub use super::AudioFeature;
 
     /// 音声シンセサイザ。
     #[cfg_attr(doc, doc(alias = "VoicevoxSynthesizer"))]

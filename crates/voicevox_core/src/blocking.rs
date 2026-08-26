@@ -8,7 +8,7 @@ pub use crate::{
         open_jtalk::blocking::OpenJtalk, text_analyzer::blocking::TextAnalyzer,
         user_dict::dict::blocking::UserDict,
     },
-    synthesizer::blocking::{AudioFeature, Synthesizer},
+    synthesizer::blocking::Synthesizer,
 };
 
 pub mod onnxruntime {

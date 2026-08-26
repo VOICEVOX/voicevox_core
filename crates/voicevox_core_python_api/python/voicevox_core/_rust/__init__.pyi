@@ -14,6 +14,13 @@ if TYPE_CHECKING:
 
 __version__: str
 
+class AudioFeature:
+    FRAME_RATE: float = 24000 / 256
+    @property
+    def frame_length(self) -> int: ...
+    def __repr__(self) -> str: ...
+    def __eq__(self, other: object) -> bool: ...
+
 class NotLoadedOpenjtalkDictError(Exception):
     """open_jtalk辞書ファイルが読み込まれていない。"""
 
