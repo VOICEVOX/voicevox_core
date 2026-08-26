@@ -491,6 +491,6 @@ pub use self::{
     },
     error::{Error, ErrorKind},
     result::Result,
-    synthesizer::AccelerationMode,
+    synthesizer::{AccelerationMode, AudioFeature},
     version::VERSION,
 };

@@ -1,6 +1,6 @@
 """無料で使える中品質なテキスト読み上げソフトウェア、VOICEVOXのコア。"""
 
-# TODO: `wav_from_s16le`を復活させる
+# TODO: `AudioFeature`と`wav_from_s16le`を復活させる
 # https://github.com/VOICEVOX/voicevox_core/issues/970
 
 from ._python import (  # noqa: F401
