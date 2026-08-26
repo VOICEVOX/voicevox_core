@@ -51,7 +51,7 @@ pub(crate) trait CApiObject: Default + Debug + 'static {
             NonZero<usize>, // `heads`の要素へのポインタのアドレス
             Arc<
                 parking_lot::RwLock<
-                    MaybeDeleted<Self::RustApiObject>, // `RwLock`をdropする直前まで`Some`
+                    MaybeDeleted<Self::RustApiObject>, // `RwLock`をdropする直前まで`Alive`
                 >,
             >,
         >,
