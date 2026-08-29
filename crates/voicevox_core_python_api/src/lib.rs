@@ -403,7 +403,7 @@ mod blocking {
     use camino::Utf8PathBuf;
     use pyo3::{
         Bound, IntoPyObject as _, Py, PyAny, PyRef, PyResult, PyTypeInfo as _, Python,
-        exceptions::{PyIndexError, PyTypeError, PyValueError},
+        exceptions::PyTypeError,
         pyclass, pymethods,
         sync::PyOnceLock,
         types::{IntoPyDict as _, PyAnyMethods as _, PyDict, PyList, PyString, PyTuple, PyType},
@@ -925,21 +925,11 @@ mod blocking {
         fn _Synthesizer__render(
             &self,
             audio: &AudioFeature,
-            start: usize,
-            stop: usize,
+            #[pyo3(from_py_with = crate::convert::from_audio_feature_range_start)] start: usize,
+            #[pyo3(from_py_with = crate::convert::from_audio_feature_range_stop)] stop: usize,
             py: Python<'_>,
         ) -> PyResult<Vec<u8>> {
-            if start > audio.audio.frame_length() || stop > audio.audio.frame_length() {
-                return Err(PyIndexError::new_err(format!(
-                    "({start}, {stop}) is out of range for audio feature of length {len}",
-                    len = audio.audio.frame_length(),
-                )));
-            }
-            if start > stop {
-                return Err(PyValueError::new_err(format!(
-                    "({start}, {stop}) is invalid range because start > end",
-                )));
-            }
+            crate::convert::error_for_audio_feature_range(audio.audio.frame_length(), start, stop)?;
             self.synthesizer
                 .read()?
                 .render(&audio.audio, start..stop)

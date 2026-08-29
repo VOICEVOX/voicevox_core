@@ -5,6 +5,7 @@ use derive_more::From;
 use easy_ext::ext;
 use heck::{ToLowerCamelCase as _, ToSnakeCase as _};
 use num_bigint::BigInt;
+use num_traits::Signed as _;
 use pyo3::{
     Bound, FromPyObject, IntoPyObject, PyAny, PyErr, PyResult, Python,
     exceptions::{PyException, PyValueError},
@@ -30,6 +31,69 @@ use crate::{
     ParseKanaError, ReadZipEntryError, RunModelError, SaveUserDictError, StyleAlreadyLoadedError,
     StyleNotFoundError, UseUserDictError, WordNotFoundError,
 };
+
+pub(crate) fn from_audio_feature_range_start(ob: &Bound<'_, PyAny>) -> PyResult<usize> {
+    from_audio_feature_range_index(ob, "start")
+}
+
+pub(crate) fn from_audio_feature_range_stop(ob: &Bound<'_, PyAny>) -> PyResult<usize> {
+    from_audio_feature_range_index(ob, "stop")
+}
+
+fn from_audio_feature_range_index(ob: &Bound<'_, PyAny>, name: &'static str) -> PyResult<usize> {
+    let index = &BigInt::extract(ob.as_borrowed())?;
+    if index.is_negative() {
+        return Err(PyValueError::new_err(format!(
+            "argument '{name}': must not be negative: {index} \
+             (note: instead, consider subtracting an offset from the 'AudioFeature.frame_length')",
+        )));
+    }
+    index.try_into().map_err(|_| {
+        PyValueError::new_err(format!(
+            "argument '{name}': cannot fit '{index}' into an index-sized integer \
+             (note: if you meant the end of the audio feature, consider using the \
+             'AudioFeature.frame_length')",
+        ))
+    })
+}
+
+/// Rustの`[_; frame_length]`に対して`start..stop`が不適当であるなら[`PyValueError`]を返す。
+///
+/// # Motivation
+///
+/// Pythonの`list`や`NDArray`であれば、どんな値であろうとスライスを拒否することはない。
+///
+/// ```text
+/// >>> list(range(10))[1 << 99999:1 << 999]  # OK!
+/// []
+/// ```
+///
+/// しかしVOICEVOXの`AudioFeature`では誤った範囲指定を拒否したいため、Rustと同じ基準で入力を弾きたい。
+pub(crate) fn error_for_audio_feature_range(
+    frame_length: usize,
+    start: usize,
+    stop: usize,
+) -> PyResult<()> {
+    if vec![(); frame_length].get(start..stop).is_none() {
+        return Err(PyValueError::new_err(format!(
+            "Audio feature of length {frame_length} cannot accept '{start}:{stop}' as a valid \
+             range: {reason}",
+            reason = if start > frame_length {
+                "'start' out of range for the audio feature \
+                 (note: if you meant the end of the audio feature, consider using the \
+                 'AudioFeature.frame_length')"
+            } else if stop > frame_length {
+                "'stop' out of range for the audio feature \
+                 (note: if you meant the end of the audio feature, consider using the \
+                 'AudioFeature.frame_length')"
+            } else {
+                assert!(start > stop);
+                "'start' exceeds 'stop'"
+            }
+        )));
+    }
+    Ok(())
+}
 
 pub(crate) fn from_acceleration_mode(ob: &Bound<'_, PyAny>) -> PyResult<AccelerationMode> {
     match ob.extract::<&str>()? {
