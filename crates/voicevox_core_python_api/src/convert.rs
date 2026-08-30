@@ -32,6 +32,75 @@ use crate::{
     StyleNotFoundError, UseUserDictError, WordNotFoundError,
 };
 
+pub(crate) fn from_acceleration_mode(ob: &Bound<'_, PyAny>) -> PyResult<AccelerationMode> {
+    match ob.extract::<&str>()? {
+        "AUTO" => Ok(AccelerationMode::Auto),
+        "CPU" => Ok(AccelerationMode::Cpu),
+        "GPU" => Ok(AccelerationMode::Gpu),
+        mode => Err(PyValueError::new_err(format!(
+            "`AccelerationMode` should be one of {{AUTO, CPU, GPU}}: {mode}",
+            mode = PyString::new(ob.py(), mode).repr()?,
+        ))),
+    }
+}
+
+pub(crate) fn from_on_existing_voice_model_id(
+    ob: &Bound<'_, PyAny>,
+) -> PyResult<OnExistingVoiceModelId> {
+    match ob.extract::<&str>()? {
+        "ERROR" => Ok(OnExistingVoiceModelId::Error),
+        "RELOAD" => Ok(OnExistingVoiceModelId::Reload),
+        "SKIP" => Ok(OnExistingVoiceModelId::Skip),
+        on_existing => Err(PyValueError::new_err(format!(
+            "`OnExistingVoiceModelId` should be one of {{ERROR, RELOAD, SKIP}}: {on_existing}",
+            on_existing = PyString::new(ob.py(), on_existing).repr()?,
+        ))),
+    }
+}
+
+pub(crate) fn from_audio_query<T: HasCamelCaseFields>(ob: &Bound<'_, PyAny>) -> PyResult<T> {
+    let py = ob.py();
+
+    let fields = dataclasses_asdict(ob)?
+        .iter()
+        .map(|(key, value)| {
+            let key = key.cast::<PyString>()?.to_str()?;
+            let key = if T::SNAKE_CASE_FIELDS.contains(&key) {
+                key.to_owned()
+            } else {
+                key.to_lower_camel_case()
+            };
+            Ok((key, value))
+        })
+        .collect::<PyResult<Vec<_>>>()?
+        .into_py_dict(py)?;
+
+    serde_pyobject::from_pyobject(fields).map_err(|serde_pyobject::Error(cause)| {
+        let err = InvalidQueryError::new_err(T::validation_error_description());
+        err.set_cause(py, Some(cause));
+        err
+    })
+}
+
+pub(crate) trait HasCamelCaseFields: Validate {
+    const SNAKE_CASE_FIELDS: &[&str];
+}
+
+impl HasCamelCaseFields for AudioQuery {
+    const SNAKE_CASE_FIELDS: &[&str] = &["accent_phrases"];
+}
+
+impl HasCamelCaseFields for FrameAudioQuery {
+    const SNAKE_CASE_FIELDS: &[&str] = &[];
+}
+
+pub(crate) fn from_accent_phrases(ob: &Bound<'_, PyAny>) -> PyResult<Vec<AccentPhrase>> {
+    ob.cast::<PyList>()?
+        .iter()
+        .map(|p| from_query_like_via_serde(&p))
+        .collect()
+}
+
 pub(crate) fn from_audio_feature_range_start(ob: &Bound<'_, PyAny>) -> PyResult<usize> {
     from_audio_feature_range_index(
         ob,
@@ -118,75 +187,6 @@ pub(crate) fn error_for_audio_feature_range(
         )));
     }
     Ok(())
-}
-
-pub(crate) fn from_acceleration_mode(ob: &Bound<'_, PyAny>) -> PyResult<AccelerationMode> {
-    match ob.extract::<&str>()? {
-        "AUTO" => Ok(AccelerationMode::Auto),
-        "CPU" => Ok(AccelerationMode::Cpu),
-        "GPU" => Ok(AccelerationMode::Gpu),
-        mode => Err(PyValueError::new_err(format!(
-            "`AccelerationMode` should be one of {{AUTO, CPU, GPU}}: {mode}",
-            mode = PyString::new(ob.py(), mode).repr()?,
-        ))),
-    }
-}
-
-pub(crate) fn from_on_existing_voice_model_id(
-    ob: &Bound<'_, PyAny>,
-) -> PyResult<OnExistingVoiceModelId> {
-    match ob.extract::<&str>()? {
-        "ERROR" => Ok(OnExistingVoiceModelId::Error),
-        "RELOAD" => Ok(OnExistingVoiceModelId::Reload),
-        "SKIP" => Ok(OnExistingVoiceModelId::Skip),
-        on_existing => Err(PyValueError::new_err(format!(
-            "`OnExistingVoiceModelId` should be one of {{ERROR, RELOAD, SKIP}}: {on_existing}",
-            on_existing = PyString::new(ob.py(), on_existing).repr()?,
-        ))),
-    }
-}
-
-pub(crate) fn from_audio_query<T: HasCamelCaseFields>(ob: &Bound<'_, PyAny>) -> PyResult<T> {
-    let py = ob.py();
-
-    let fields = dataclasses_asdict(ob)?
-        .iter()
-        .map(|(key, value)| {
-            let key = key.cast::<PyString>()?.to_str()?;
-            let key = if T::SNAKE_CASE_FIELDS.contains(&key) {
-                key.to_owned()
-            } else {
-                key.to_lower_camel_case()
-            };
-            Ok((key, value))
-        })
-        .collect::<PyResult<Vec<_>>>()?
-        .into_py_dict(py)?;
-
-    serde_pyobject::from_pyobject(fields).map_err(|serde_pyobject::Error(cause)| {
-        let err = InvalidQueryError::new_err(T::validation_error_description());
-        err.set_cause(py, Some(cause));
-        err
-    })
-}
-
-pub(crate) trait HasCamelCaseFields: Validate {
-    const SNAKE_CASE_FIELDS: &[&str];
-}
-
-impl HasCamelCaseFields for AudioQuery {
-    const SNAKE_CASE_FIELDS: &[&str] = &["accent_phrases"];
-}
-
-impl HasCamelCaseFields for FrameAudioQuery {
-    const SNAKE_CASE_FIELDS: &[&str] = &[];
-}
-
-pub(crate) fn from_accent_phrases(ob: &Bound<'_, PyAny>) -> PyResult<Vec<AccentPhrase>> {
-    ob.cast::<PyList>()?
-        .iter()
-        .map(|p| from_query_like_via_serde(&p))
-        .collect()
 }
 
 pub(crate) fn from_utf8_path(ob: &Bound<'_, PyAny>) -> PyResult<Utf8PathBuf> {
