@@ -14,7 +14,7 @@ use macros::pyproject_project_version;
 use pyo3::{
     Bound, Py, PyAny, PyResult, PyTypeInfo, Python, create_exception,
     exceptions::{PyException, PyKeyError, PyValueError},
-    pyclass, pyfunction, pymodule,
+    pyclass, pyfunction, pymethods, pymodule,
     types::{PyAnyMethods as _, PyList, PyModule, PyModuleMethods as _, PyString},
     wrap_pyfunction,
 };
@@ -30,6 +30,7 @@ fn rust(py: Python<'_>, module: &Bound<'_, PyModule>) -> PyResult<()> {
 
     module.add("__version__", pyproject_project_version!())?;
     module.add_class::<_ReservedFields>()?;
+    module.add_class::<AudioFeature>()?;
     module.add_wrapped(wrap_pyfunction!(_audio_query_from_accent_phrases))?;
     module.add_wrapped(wrap_pyfunction!(_audio_query_from_json))?;
     module.add_wrapped(wrap_pyfunction!(_audio_query_to_json))?;
@@ -53,7 +54,6 @@ fn rust(py: Python<'_>, module: &Bound<'_, PyModule>) -> PyResult<()> {
     blocking_module.add_class::<self::blocking::OpenJtalk>()?;
     blocking_module.add_class::<self::blocking::VoiceModelFile>()?;
     blocking_module.add_class::<self::blocking::UserDict>()?;
-    blocking_module.add_class::<self::blocking::AudioFeature>()?;
     module.add_and_register_submodule(blocking_module)?;
 
     let asyncio_module = PyModule::new(py, "voicevox_core._rust.asyncio")?;
@@ -359,7 +359,7 @@ fn _to_zenkaku(text: &str) -> PyResult<String> {
 
 #[pyfunction]
 fn wav_from_s16le(pcm: &[u8], sampling_rate: u32, is_stereo: bool) -> Vec<u8> {
-    voicevox_core::__wav_from_s16le(pcm, sampling_rate, is_stereo)
+    voicevox_core::wav_from_s16le(pcm, sampling_rate, is_stereo)
 }
 
 #[pyfunction]
@@ -369,6 +369,32 @@ fn ensure_compatible(
     py: Python<'_>,
 ) -> PyResult<()> {
     voicevox_core::ensure_compatible(&score, &frame_audio_query).into_py_result(py)
+}
+
+#[pyclass(frozen, eq)]
+#[derive(PartialEq)]
+struct AudioFeature {
+    audio: voicevox_core::AudioFeature,
+}
+
+#[pymethods]
+impl AudioFeature {
+    #[classattr]
+    const FRAME_RATE: f64 = voicevox_core::AudioFeature::FRAME_RATE;
+
+    #[getter]
+    fn frame_length(&self) -> usize {
+        self.audio.frame_length()
+    }
+
+    fn __repr__(&self, py: Python<'_>) -> String {
+        let Self { audio: rust_api } = self;
+        let rust_api = PyString::new(py, &format!("{rust_api:?}"));
+        format!(
+            "<voicevox_core.{NAME} rust_api=<{rust_api:?}>>",
+            NAME = Self::NAME,
+        )
+    }
 }
 
 mod blocking {
@@ -391,7 +417,7 @@ mod blocking {
     };
 
     use crate::{
-        Closable, SingleTasked, VoiceModelFilePyFields,
+        AudioFeature, Closable, SingleTasked, VoiceModelFilePyFields,
         convert::{ToDataclass, VoicevoxCoreResultExt as _},
     };
 
@@ -498,18 +524,28 @@ mod blocking {
     #[pymethods]
     impl Onnxruntime {
         #[classattr]
-        const LIB_NAME: &'static str = voicevox_core::blocking::Onnxruntime::LIB_NAME;
+        const LIB_MIN_REQUIRED_MINOR_VERSION: u32 =
+            voicevox_core::blocking::Onnxruntime::LIB_MIN_REQUIRED_MINOR_VERSION;
 
         #[classattr]
-        const LIB_VERSION: &'static str = voicevox_core::blocking::Onnxruntime::LIB_VERSION;
+        const LIB_MAX_SUPPORTED_MINOR_VERSION: u32 =
+            voicevox_core::blocking::Onnxruntime::LIB_MAX_SUPPORTED_MINOR_VERSION;
 
         #[classattr]
-        const LIB_VERSIONED_FILENAME: &'static str =
-            voicevox_core::blocking::Onnxruntime::LIB_VERSIONED_FILENAME;
+        const LIB_RECOMMENDED_NAME: &'static str =
+            voicevox_core::blocking::Onnxruntime::LIB_RECOMMENDED_NAME;
 
         #[classattr]
-        const LIB_UNVERSIONED_FILENAME: &'static str =
-            voicevox_core::blocking::Onnxruntime::LIB_UNVERSIONED_FILENAME;
+        const LIB_RECOMMENDED_VERSION: &'static str =
+            voicevox_core::blocking::Onnxruntime::LIB_RECOMMENDED_VERSION;
+
+        #[classattr]
+        const LIB_RECOMMENDED_VERSIONED_FILENAME: &'static str =
+            voicevox_core::blocking::Onnxruntime::LIB_RECOMMENDED_VERSIONED_FILENAME;
+
+        #[classattr]
+        const LIB_RECOMMENDED_UNVERSIONED_FILENAME: &'static str =
+            voicevox_core::blocking::Onnxruntime::LIB_RECOMMENDED_UNVERSIONED_FILENAME;
 
         #[new]
         #[classmethod]
@@ -547,7 +583,7 @@ mod blocking {
         }
 
         #[staticmethod]
-        #[pyo3(signature = (*, filename = Self::LIB_VERSIONED_FILENAME.into()))]
+        #[pyo3(signature = (*, filename = Self::LIB_RECOMMENDED_VERSIONED_FILENAME.into()))]
         fn load_once(filename: OsString, py: Python<'_>) -> PyResult<Py<Self>> {
             ONNXRUNTIME
                 .get_or_try_init(py, || {
@@ -628,34 +664,6 @@ mod blocking {
     impl voicevox_core::blocking::TextAnalyzer for OwnedOpenJtalk {
         fn analyze(&self, text: &str) -> anyhow::Result<Vec<AccentPhrase>> {
             self.0.get().open_jtalk.analyze(text)
-        }
-    }
-
-    #[pyclass(frozen, eq)]
-    #[derive(PartialEq)]
-    pub(crate) struct AudioFeature {
-        audio: voicevox_core::blocking::__AudioFeature,
-    }
-
-    #[pymethods]
-    impl AudioFeature {
-        #[getter]
-        fn frame_length(&self) -> usize {
-            self.audio.frame_length
-        }
-
-        #[getter]
-        fn frame_rate(&self) -> f64 {
-            self.audio.frame_rate
-        }
-
-        fn __repr__(&self, py: Python<'_>) -> String {
-            let Self { audio: rust_api } = self;
-            let rust_api = PyString::new(py, &format!("{rust_api:?}"));
-            format!(
-                "<voicevox_core.blocking.{NAME} rust_api=<{rust_api:?}>>",
-                NAME = Self::NAME,
-            )
         }
     }
 
@@ -894,7 +902,7 @@ mod blocking {
             enable_interrogative_upspeak =
                 voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
         ))]
-        fn _Synthesizer__precompute_render(
+        fn _Synthesizer__create_audio_feature(
             &self,
             #[pyo3(from_py_with = crate::convert::from_audio_query)] audio_query: AudioQuery,
             style_id: u32,
@@ -904,7 +912,7 @@ mod blocking {
             let audio = self
                 .synthesizer
                 .read()?
-                .__precompute_render(&audio_query, StyleId::new(style_id))
+                .create_audio_feature(&audio_query, StyleId::new(style_id))
                 .enable_interrogative_upspeak(enable_interrogative_upspeak)
                 .perform()
                 .into_py_result(py)?;
@@ -921,10 +929,10 @@ mod blocking {
             stop: usize,
             py: Python<'_>,
         ) -> PyResult<Vec<u8>> {
-            if start > audio.frame_length() || stop > audio.frame_length() {
+            if start > audio.audio.frame_length() || stop > audio.audio.frame_length() {
                 return Err(PyIndexError::new_err(format!(
                     "({start}, {stop}) is out of range for audio feature of length {len}",
-                    len = audio.frame_length(),
+                    len = audio.audio.frame_length(),
                 )));
             }
             if start > stop {
@@ -934,7 +942,7 @@ mod blocking {
             }
             self.synthesizer
                 .read()?
-                .__render(&audio.audio, start..stop)
+                .render(&audio.audio, start..stop)
                 .into_py_result(py)
         }
 
@@ -1269,18 +1277,28 @@ mod asyncio {
     #[pymethods]
     impl Onnxruntime {
         #[classattr]
-        const LIB_NAME: &'static str = voicevox_core::nonblocking::Onnxruntime::LIB_NAME;
+        const LIB_MIN_REQUIRED_MINOR_VERSION: u32 =
+            voicevox_core::nonblocking::Onnxruntime::LIB_MIN_REQUIRED_MINOR_VERSION;
 
         #[classattr]
-        const LIB_VERSION: &'static str = voicevox_core::nonblocking::Onnxruntime::LIB_VERSION;
+        const LIB_MAX_SUPPORTED_MINOR_VERSION: u32 =
+            voicevox_core::nonblocking::Onnxruntime::LIB_MAX_SUPPORTED_MINOR_VERSION;
 
         #[classattr]
-        const LIB_VERSIONED_FILENAME: &'static str =
-            voicevox_core::nonblocking::Onnxruntime::LIB_VERSIONED_FILENAME;
+        const LIB_RECOMMENDED_NAME: &'static str =
+            voicevox_core::nonblocking::Onnxruntime::LIB_RECOMMENDED_NAME;
 
         #[classattr]
-        const LIB_UNVERSIONED_FILENAME: &'static str =
-            voicevox_core::nonblocking::Onnxruntime::LIB_UNVERSIONED_FILENAME;
+        const LIB_RECOMMENDED_VERSION: &'static str =
+            voicevox_core::nonblocking::Onnxruntime::LIB_RECOMMENDED_VERSION;
+
+        #[classattr]
+        const LIB_RECOMMENDED_VERSIONED_FILENAME: &'static str =
+            voicevox_core::nonblocking::Onnxruntime::LIB_RECOMMENDED_VERSIONED_FILENAME;
+
+        #[classattr]
+        const LIB_RECOMMENDED_UNVERSIONED_FILENAME: &'static str =
+            voicevox_core::nonblocking::Onnxruntime::LIB_RECOMMENDED_UNVERSIONED_FILENAME;
 
         #[new]
         #[classmethod]
@@ -1314,7 +1332,7 @@ mod asyncio {
         }
 
         #[staticmethod]
-        #[pyo3(signature = (*, filename = Self::LIB_VERSIONED_FILENAME.into()))]
+        #[pyo3(signature = (*, filename = Self::LIB_RECOMMENDED_VERSIONED_FILENAME.into()))]
         async fn load_once(filename: OsString) -> PyResult<&'static Py<Onnxruntime>> {
             let inner = voicevox_core::nonblocking::Onnxruntime::load_once()
                 .filename(filename)

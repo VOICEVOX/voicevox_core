@@ -51,7 +51,7 @@ pub(crate) trait CApiObject: Default + Debug + 'static {
             NonZero<usize>, // `heads`の要素へのポインタのアドレス
             Arc<
                 parking_lot::RwLock<
-                    Option<Self::RustApiObject>, // `RwLock`をdropする直前まで`Some`
+                    MaybeDeleted<Self::RustApiObject>, // `RwLock`をdropする直前まで`Alive`
                 >,
             >,
         >,
@@ -65,7 +65,7 @@ pub(crate) trait CApiObject: Default + Debug + 'static {
             NonNull::from(&Self::heads()[i])
         };
         Self::lock_known_addrs().insert(this.addr());
-        let body = parking_lot::RwLock::new(body.into()).into();
+        let body = parking_lot::RwLock::new(MaybeDeleted::Alive(body)).into();
         Self::lock_bodies().insert(this.addr(), body);
         this
     }
@@ -158,8 +158,33 @@ impl<T: CApiObject> T {
     }
 
     fn lock_bodies() -> impl DerefMut<
-        Target = HashMap<NonZero<usize>, Arc<parking_lot::RwLock<Option<Self::RustApiObject>>>>,
+        Target = HashMap<
+            NonZero<usize>,
+            Arc<parking_lot::RwLock<MaybeDeleted<Self::RustApiObject>>>,
+        >,
     > {
         Self::bodies().lock().unwrap_or_else(|e| panic!("{e}"))
+    }
+}
+
+#[derive(Debug)]
+pub(crate) enum MaybeDeleted<T> {
+    Alive(T),
+    Deleted,
+}
+
+impl<T> MaybeDeleted<T> {
+    fn take(&mut self) -> Option<T> {
+        match mem::replace(self, Self::Deleted) {
+            MaybeDeleted::Alive(x) => Some(x),
+            MaybeDeleted::Deleted => None,
+        }
+    }
+
+    fn as_ref(&self) -> Option<&T> {
+        match self {
+            MaybeDeleted::Alive(x) => Some(x),
+            MaybeDeleted::Deleted => None,
+        }
     }
 }

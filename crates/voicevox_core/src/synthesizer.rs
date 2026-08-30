@@ -7,14 +7,13 @@ use easy_ext::ext;
 use educe::Educe;
 use enum_map::enum_map;
 use futures_util::TryFutureExt as _;
-use itertools::{Itertools as _, chain};
 use std::{
     fmt::{self, Debug},
     marker::PhantomData,
     sync::Arc,
 };
 use tracing::info;
-use typed_floats::{NonNaNFinite, PositiveFinite};
+use typed_floats::{NonNaNFinite, PositiveFinite, tf32};
 
 use crate::{
     AccentPhrase, AudioQuery, OnExistingVoiceModelId, Result, StyleId, VoiceModelId,
@@ -24,18 +23,18 @@ use crate::{
     core::{
         Array1ExtForPostProcess as _, Array1ExtForPreProcess as _, ArrayExt as _,
         devices::{self, DeviceSpec, GpuSpec},
-        ensure_minimum_phoneme_length,
+        ensure_minimum_phoneme_length, ensure_non_nan_finite, ensure_positive_finite,
         infer::{
             self, InferenceRuntime, InferenceSessionOptions,
             domains::{
-                DecodeInput, DecodeOutput, ExperimentalTalkDomain, ExperimentalTalkOperation,
-                FrameDecodeDomain, FrameDecodeOperation, GenerateFullIntermediateInput,
-                GenerateFullIntermediateOutput, InferenceDomainMap,
+                DecodeInput, DecodeOutput, FrameDecodeDomain, FrameDecodeOperation,
+                GenerateFullIntermediateInput, GenerateFullIntermediateOutput, InferenceDomainMap,
                 PredictSingConsonantLengthInput, PredictSingConsonantLengthOutput,
                 PredictSingF0Input, PredictSingF0Output, PredictSingVolumeInput,
                 PredictSingVolumeOutput, RenderAudioSegmentInput, RenderAudioSegmentOutput,
                 SfDecodeInput, SfDecodeOutput, SingingTeacherDomain, SingingTeacherOperation,
-                TalkDomain, TalkOperation, experimental_talk, talk,
+                StreamingTalkDomain, StreamingTalkOperation, TalkDomain, TalkOperation,
+                streaming_talk, talk,
             },
         },
         pad_decoder_feature,
@@ -43,7 +42,7 @@ use crate::{
         voice_model,
     },
     engine::{
-        DEFAULT_SAMPLING_RATE, IteratorExt as _, PhonemeCode,
+        DEFAULT_SAMPLING_RATE, IteratorExt as _, PcmOptions, PhonemeCode,
         song::{
             self,
             interpret::{ConsonantLengthsFeature, PhonemeFeature, SfDecoderFeature},
@@ -51,14 +50,14 @@ use crate::{
             validate::{ValidatedNote, ValidatedScore},
         },
         talk::{
-            DecoderFeature, LengthedPhoneme, ValidatedAccentPhrase, ValidatedAudioQuery,
-            ValidatedMora, create_kana, initial_process, parse_kana, split_mora,
+            DecoderFeature, LengthedPhoneme, ValidatedAccentPhrase, ValidatedMora, create_kana,
+            initial_process, parse_kana, split_mora,
         },
         to_s16le_pcm, wav_from_s16le,
     },
     error::ErrorRepr,
     future::FutureExt as _,
-    numerics::positive_finite_f32,
+    numerics::{non_nan_finite_f32, positive_finite_f32},
 };
 
 pub const DEFAULT_CPU_NUM_THREADS: u16 = 0;
@@ -193,10 +192,10 @@ fn crop_with_margin(
     audio: &AudioFeature,
     range: std::ops::Range<usize>,
 ) -> ndarray::ArrayView2<'_, f32> {
-    if range.start > audio.frame_length || range.end > audio.frame_length {
+    if range.start > audio.frame_length() || range.end > audio.frame_length() {
         panic!(
             "{range:?} is out of range for audio feature of length {frame_length}",
-            frame_length = audio.frame_length,
+            frame_length = audio.frame_length(),
         );
     }
     if range.start > range.end {
@@ -212,9 +211,6 @@ fn trim_margin_from_wave(wave_with_margin: ndarray::Array1<f32>) -> ndarray::Arr
 }
 
 /// 音声の中間表現。
-// TODO: 後で復活させる
-// https://github.com/VOICEVOX/voicevox_core/issues/970
-#[doc(hidden)]
 #[derive(Clone, PartialEq, derive_more::Debug)]
 pub struct AudioFeature {
     /// (フレーム数, 特徴数)の形を持つ音声特徴量。
@@ -222,13 +218,21 @@ pub struct AudioFeature {
     internal_state: ndarray::Array2<f32>,
     /// 生成時に指定したスタイル番号。
     style_id: crate::StyleId,
-    /// workaround paddingを除いた音声特徴量のフレーム数。
-    pub frame_length: usize,
-    /// フレームレート。全体の秒数は`frame_length / frame_rate`で表せる。
-    pub frame_rate: f64,
-    /// 生成時に利用したクエリ。
-    audio_query: ValidatedAudioQuery<'static>,
+    /// `[f32]`からPCMを作るときのオプション。
+    pcm_options: PcmOptions,
 }
+
+impl AudioFeature {
+    /// フレームレート。全体の秒数は`frame_length() / FRAME_RATE`で表せる。
+    pub const FRAME_RATE: f64 = 93.75;
+
+    /// workaround paddingを除いた音声特徴量のフレーム数。
+    pub fn frame_length(&self) -> usize {
+        self.internal_state.nrows() - 2 * MARGIN
+    }
+}
+
+const _: () = assert!(AudioFeature::FRAME_RATE == (DEFAULT_SAMPLING_RATE as f64) / 256.0);
 
 #[derive(derive_more::Debug)]
 struct Inner<T, A: Async> {
@@ -336,11 +340,11 @@ impl<T, A: AsyncExt> Inner<T, A> {
                     }
                     TalkOperation::Decode => heavy_session_options,
                 },
-                experimental_talk: enum_map! {
-                    ExperimentalTalkOperation::PredictDuration
-                    | ExperimentalTalkOperation::PredictIntonation
-                    | ExperimentalTalkOperation::GenerateFullIntermediate => light_session_options,
-                    ExperimentalTalkOperation::RenderAudioSegment => heavy_session_options,
+                streaming_talk: enum_map! {
+                    StreamingTalkOperation::PredictDuration
+                    | StreamingTalkOperation::PredictIntonation
+                    | StreamingTalkOperation::GenerateFullIntermediate => light_session_options,
+                    StreamingTalkOperation::RenderAudioSegment => heavy_session_options,
                 },
                 singing_teacher: enum_map! {
                     SingingTeacherOperation::PredictSingConsonantLength
@@ -444,13 +448,13 @@ trait AsInner {
         self.status().metas()
     }
 
-    async fn precompute_render(
+    async fn create_audio_feature(
         &self,
         audio_query: &AudioQuery,
         style_id: StyleId,
         options: &SynthesisOptions<Self::Async>,
     ) -> Result<AudioFeature> {
-        let audio_query = audio_query.to_validated()?.into_owned();
+        let audio_query = audio_query.to_validated()?;
 
         let DecoderFeature { f0, phoneme } =
             audio_query.decoder_feature(options.enable_interrogative_upspeak);
@@ -467,9 +471,7 @@ trait AsInner {
         Ok(AudioFeature {
             internal_state: spec,
             style_id,
-            frame_length: f0.len(),
-            frame_rate: (DEFAULT_SAMPLING_RATE as f64) / 256.0,
-            audio_query,
+            pcm_options: audio_query.pcm_options(),
         })
     }
 
@@ -488,7 +490,7 @@ trait AsInner {
         Ok(to_s16le_pcm(
             wave.as_slice()
                 .expect("`trim_margin_from_wave` should just trim an array"),
-            &audio.audio_query,
+            audio.pcm_options,
         ))
     }
 
@@ -513,18 +515,18 @@ trait AsInner {
                 )
                 .await?;
             return Ok(wav_from_s16le(
-                &to_s16le_pcm(wave, &audio_query),
+                &to_s16le_pcm(wave, audio_query.pcm_options()),
                 audio_query.output_sampling_rate.get().get(),
                 audio_query.output_stereo,
             ));
         }
         let audio = self
-            .precompute_render(audio_query, style_id, options)
+            .create_audio_feature(audio_query, style_id, options)
             .await?;
-        let pcm = self.render(&audio, 0..audio.frame_length).await?;
+        let pcm = self.render(&audio, 0..audio.frame_length()).await?;
         Ok(wav_from_s16le(
             &pcm,
-            audio_query.output_sampling_rate,
+            audio_query.output_sampling_rate.get().get(),
             audio_query.output_stereo,
         ))
     }
@@ -608,7 +610,7 @@ trait AsInner {
 
         #[ext]
         impl<P: Clone> LengthedPhoneme<P> {
-            fn with_length(&self, length: f32) -> LengthedPhoneme<P> {
+            fn with_length(&self, length: PositiveFinite<f32>) -> LengthedPhoneme<P> {
                 LengthedPhoneme {
                     phoneme: self.phoneme.clone(),
                     length,
@@ -680,7 +682,7 @@ trait AsInner {
 
         for i in 0..vowel_phoneme_data_list.len() {
             if vowel_phoneme_data_list[i].is_unvoiced() {
-                f0_list[i] = 0.;
+                f0_list[i] = tf32::ZERO.into();
             }
         }
 
@@ -918,27 +920,9 @@ trait AsInner {
             .predict_sing_f0::<Self::Async>(phonemes_by_frame, keys_by_frame, style_id)
             .await?;
 
-        f0s.iter()
-            .copied()
-            .map(TryInto::try_into)
-            .collect::<std::result::Result<_, _>>()
-            .map_err(|_| {
-                let invalid = chain!(
-                    f0s.iter().copied().any(f32::is_nan).then_some("NaN"),
-                    f0s.iter().copied().any(f32::is_infinite).then_some("inf"),
-                    f0s.iter()
-                        .copied()
-                        .any(f32::is_sign_negative)
-                        .then_some("-inf"),
-                )
-                .join(", ");
-                assert!(!invalid.is_empty());
-                ErrorRepr::RunModel {
-                    note: None,
-                    source: anyhow!("`predict_sing_f0` returned an array that contains: {invalid}"),
-                }
-                .into()
-            })
+        ensure_positive_finite(&f0s.into_vec(), |invalid| {
+            anyhow!("`predict_sing_f0` returned an array that contains: {invalid}")
+        })
     }
 
     async fn create_sing_frame_volume(
@@ -991,28 +975,14 @@ trait AsInner {
 
         let f0s = f0s.iter().copied().map(Into::into).collect();
 
-        self.status()
+        let volumes = self
+            .status()
             .predict_sing_volume::<Self::Async>(phonemes_by_frame, keys_by_frame, f0s, style_id)
-            .await?
-            .into_iter()
-            .map(|volume| volume.try_into().map_err(|_| volume))
-            .collect::<std::result::Result<_, _>>()
-            .map_err(|volume| {
-                ErrorRepr::RunModel {
-                    note: None,
-                    source: if volume.is_nan() {
-                        anyhow!("`predict_sing_volume` returned NaN")
-                    } else {
-                        assert!(volume.is_infinite());
-                        if volume.is_sign_positive() {
-                            anyhow!("`predict_sing_volume` returned `inf`")
-                        } else {
-                            anyhow!("`predict_sing_volume` returned `-inf`")
-                        }
-                    },
-                }
-                .into()
-            })
+            .await?;
+
+        ensure_non_nan_finite(&volumes.into_vec(), |invalid| {
+            anyhow!("`predict_sing_volume` returned an array that contains: {invalid}")
+        })
     }
 
     async fn frame_synthesis(
@@ -1064,7 +1034,7 @@ trait AsInner {
         };
 
         Ok(wav_from_s16le(
-            &to_s16le_pcm(wave, frame_audio_query),
+            &to_s16le_pcm(wave, frame_audio_query.pcm_options()),
             frame_audio_query.output_sampling_rate.get().get(),
             frame_audio_query.output_stereo,
         ))
@@ -1075,7 +1045,7 @@ trait AsInner {
         &self,
         phoneme_vector: &[i64],
         style_id: StyleId,
-    ) -> Result<Vec<f32>> {
+    ) -> Result<Vec<PositiveFinite<f32>>> {
         let status = self.status().clone();
         let phoneme_vector = ndarray::arr1(phoneme_vector);
         status
@@ -1098,7 +1068,7 @@ trait AsInner {
         start_accent_phrase_vector: &[i64],
         end_accent_phrase_vector: &[i64],
         style_id: StyleId,
-    ) -> Result<Vec<f32>> {
+    ) -> Result<Vec<NonNaNFinite<f32>>> {
         let status = self.status().clone();
         let vowel_phoneme_vector = ndarray::arr1(vowel_phoneme_vector);
         let consonant_phoneme_vector = ndarray::arr1(consonant_phoneme_vector);
@@ -1217,8 +1187,8 @@ impl<R: InferenceRuntime> Status<R> {
         &self,
         phoneme_vector: ndarray::Array1<i64>,
         style_id: StyleId,
-    ) -> Result<Vec<f32>> {
-        // `TalkDomain`と`ExperimentalTalkDomain`の両方がある場合、`TalkDomain`を優先
+    ) -> Result<Vec<PositiveFinite<f32>>> {
+        // `TalkDomain`と`StreamingTalkDomain`の両方がある場合、`TalkDomain`を優先
         if self.contains_domain::<TalkDomain>(style_id) {
             let (model_id, inner_voice_id) = self.ids_for::<TalkDomain>(style_id)?;
             let talk::PredictDurationOutput {
@@ -1233,23 +1203,29 @@ impl<R: InferenceRuntime> Status<R> {
                     A::LIGHT_INFERENCE_CANCELLABLE,
                 )
                 .await?;
-            return Ok(ensure_minimum_phoneme_length(output.into_vec()));
+            let output = ensure_non_nan_finite(&output.into_vec(), |invalid| {
+                anyhow!("`predict_duration` returned an array that contains: {invalid}")
+            })?;
+            return Ok(ensure_minimum_phoneme_length(output));
         }
-        let (model_id, inner_voice_id) = self.ids_for::<ExperimentalTalkDomain>(style_id)?;
+        let (model_id, inner_voice_id) = self.ids_for::<StreamingTalkDomain>(style_id)?;
 
-        let experimental_talk::PredictDurationOutput {
+        let streaming_talk::PredictDurationOutput {
             phoneme_length: output,
         } = self
             .run_session::<A, _>(
                 model_id,
-                experimental_talk::PredictDurationInput {
+                streaming_talk::PredictDurationInput {
                     phoneme_list: phoneme_vector,
                     speaker_id: ndarray::arr1(&[inner_voice_id.raw_id().into()]),
                 },
                 A::LIGHT_INFERENCE_CANCELLABLE,
             )
             .await?;
-        Ok(ensure_minimum_phoneme_length(output.into_vec()))
+        let output = ensure_non_nan_finite(&output.into_vec(), |invalid| {
+            anyhow!("`predict_duration` returned an array that contains: {invalid}")
+        })?;
+        Ok(ensure_minimum_phoneme_length(output))
     }
 
     #[expect(
@@ -1267,8 +1243,8 @@ impl<R: InferenceRuntime> Status<R> {
         start_accent_phrase_vector: ndarray::Array1<i64>,
         end_accent_phrase_vector: ndarray::Array1<i64>,
         style_id: StyleId,
-    ) -> Result<Vec<f32>> {
-        // `TalkDomain`と`ExperimentalTalkDomain`の両方がある場合、`TalkDomain`を優先
+    ) -> Result<Vec<NonNaNFinite<f32>>> {
+        // `TalkDomain`と`StreamingTalkDomain`の両方がある場合、`TalkDomain`を優先
         if self.contains_domain::<TalkDomain>(style_id) {
             let (model_id, inner_voice_id) = self.ids_for::<TalkDomain>(style_id)?;
             let talk::PredictIntonationOutput { f0_list: output } = self
@@ -1287,14 +1263,16 @@ impl<R: InferenceRuntime> Status<R> {
                     A::LIGHT_INFERENCE_CANCELLABLE,
                 )
                 .await?;
-            return Ok(output.into_vec());
+            return ensure_non_nan_finite(&output.into_vec(), |invalid| {
+                anyhow!("`predict_intonation` returned an array that contains: {invalid}")
+            });
         }
-        let (model_id, inner_voice_id) = self.ids_for::<ExperimentalTalkDomain>(style_id)?;
+        let (model_id, inner_voice_id) = self.ids_for::<StreamingTalkDomain>(style_id)?;
 
-        let experimental_talk::PredictIntonationOutput { f0_list: output } = self
+        let streaming_talk::PredictIntonationOutput { f0_list: output } = self
             .run_session::<A, _>(
                 model_id,
-                experimental_talk::PredictIntonationInput {
+                streaming_talk::PredictIntonationInput {
                     length: ndarray::arr0(length as i64),
                     vowel_phoneme_list: vowel_phoneme_vector,
                     consonant_phoneme_list: consonant_phoneme_vector,
@@ -1308,7 +1286,9 @@ impl<R: InferenceRuntime> Status<R> {
             )
             .await?;
 
-        Ok(output.into_vec())
+        ensure_non_nan_finite(&output.into_vec(), |invalid| {
+            anyhow!("`predict_intonation` returned an array that contains: {invalid}")
+        })
     }
 
     /// モデル`generate_full_intermediate`の実行と、その前後の処理を行う。
@@ -1322,7 +1302,7 @@ impl<R: InferenceRuntime> Status<R> {
         phoneme_vector: ndarray::Array1<f32>,
         style_id: StyleId,
     ) -> Result<ndarray::Array2<f32>> {
-        let (model_id, inner_voice_id) = self.ids_for::<ExperimentalTalkDomain>(style_id)?;
+        let (model_id, inner_voice_id) = self.ids_for::<StreamingTalkDomain>(style_id)?;
 
         let (length_with_padding, f0_with_padding, phoneme_with_padding) =
             pad_decoder_feature::<PADDING_FRAME_LENGTH>(
@@ -1331,6 +1311,8 @@ impl<R: InferenceRuntime> Status<R> {
                     .into_shape_with_order([length, phoneme_size])
                     .unwrap(),
             );
+
+        let f0_with_padding_len = f0_with_padding.len();
 
         let GenerateFullIntermediateOutput {
             spec: spec_with_padding,
@@ -1347,6 +1329,19 @@ impl<R: InferenceRuntime> Status<R> {
                 A::LIGHT_INFERENCE_CANCELLABLE,
             )
             .await?;
+
+        if spec_with_padding.nrows() != f0_with_padding_len {
+            return Err(ErrorRepr::RunModel {
+                note: None,
+                source: anyhow!(
+                    "`generate_full_intermediate` returned an output with a different number \
+                     of frames than the input: \
+                     expected {f0_with_padding_len} frames, got {actual} frames",
+                    actual = spec_with_padding.nrows(),
+                ),
+            }
+            .into());
+        }
 
         // マージンがデータからはみ出さないことを保証
         // cf. https://github.com/VOICEVOX/voicevox_core/pull/854#discussion_r1803691291
@@ -1371,7 +1366,7 @@ impl<R: InferenceRuntime> Status<R> {
         spec: ndarray::Array2<f32>,
         style_id: StyleId,
     ) -> Result<ndarray::Array1<f32>> {
-        let (model_id, _inner_voice_id) = self.ids_for::<ExperimentalTalkDomain>(style_id)?;
+        let (model_id, _inner_voice_id) = self.ids_for::<StreamingTalkDomain>(style_id)?;
         let RenderAudioSegmentOutput { wave } = self
             .run_session::<A, _>(
                 model_id,
@@ -1391,7 +1386,7 @@ impl<R: InferenceRuntime> Status<R> {
         style_id: StyleId,
         cancellable: A::Cancellable,
     ) -> Result<Vec<f32>> {
-        // `TalkDomain`と`ExperimentalTalkDomain`の両方がある場合、`TalkDomain`を優先
+        // `TalkDomain`と`StreamingTalkDomain`の両方がある場合、`TalkDomain`を優先
         if self.contains_domain::<TalkDomain>(style_id) {
             let (model_id, inner_voice_id) = self.ids_for::<TalkDomain>(style_id)?;
             let (length_with_padding, f0_with_padding, phoneme_with_padding) =
@@ -1616,13 +1611,13 @@ impl Default for AudioQuery {
     fn default() -> Self {
         Self {
             accent_phrases: vec![],
-            speed_scale: 1.,
-            pitch_scale: 0.,
-            intonation_scale: 1.,
-            volume_scale: 1.,
-            pre_phoneme_length: 0.1,
-            post_phoneme_length: 0.1,
-            output_sampling_rate: DEFAULT_SAMPLING_RATE,
+            speed_scale: positive_finite_f32!(1.),
+            pitch_scale: non_nan_finite_f32!(0.),
+            intonation_scale: non_nan_finite_f32!(1.),
+            volume_scale: positive_finite_f32!(1.),
+            pre_phoneme_length: positive_finite_f32!(0.1),
+            post_phoneme_length: positive_finite_f32!(0.1),
+            output_sampling_rate: Default::default(),
             output_stereo: false,
             kana: None,
         }
@@ -1652,11 +1647,9 @@ pub(crate) mod blocking {
     };
 
     use super::{
-        AccelerationMode, AsInner as _, AssumeSingleTasked, InitializeOptions, Inner,
+        AccelerationMode, AsInner as _, AssumeSingleTasked, AudioFeature, InitializeOptions, Inner,
         InnerRefWithoutTextAnalyzer, LoadVoiceModelOptions, SynthesisOptions, TtsOptions,
     };
-
-    pub use super::AudioFeature;
 
     /// 音声シンセサイザ。
     #[cfg_attr(doc, doc(alias = "VoicevoxSynthesizer"))]
@@ -1757,15 +1750,12 @@ pub(crate) mod blocking {
         }
 
         /// AudioQueryから音声合成用の中間表現を生成する。
-        // TODO: 後で復活させる
-        // https://github.com/VOICEVOX/voicevox_core/issues/970
-        #[doc(hidden)]
-        pub fn __precompute_render<'a>(
+        pub fn create_audio_feature<'a>(
             &'a self,
             audio_query: &'a AudioQuery,
             style_id: StyleId,
-        ) -> PrecomputeRender<'a> {
-            PrecomputeRender {
+        ) -> CreateAudioFeature<'a> {
+            CreateAudioFeature {
                 synthesizer: self.0.without_text_analyzer(),
                 audio_query,
                 style_id,
@@ -1774,10 +1764,7 @@ pub(crate) mod blocking {
         }
 
         /// 中間表現から16bit PCMで音声波形を生成する。
-        // TODO: 後で復活させる
-        // https://github.com/VOICEVOX/voicevox_core/issues/970
-        #[doc(hidden)]
-        pub fn __render(
+        pub fn render(
             &self,
             audio: &AudioFeature,
             range: impl Into<std::ops::Range<usize>>,
@@ -2318,7 +2305,11 @@ pub(crate) mod blocking {
             phoneme_vector: &[i64],
             style_id: StyleId,
         ) -> crate::Result<Vec<f32>> {
-            self.0.predict_duration(phoneme_vector, style_id).block_on()
+            // TODO: typed_floatsにissueかPRを出しに行き、スライス変換かbytemuck対応を入れてもらう
+            self.0
+                .predict_duration(phoneme_vector, style_id)
+                .block_on()
+                .map(|o| o.into_iter().map(Into::into).collect())
         }
 
         pub fn predict_intonation(
@@ -2332,6 +2323,7 @@ pub(crate) mod blocking {
             end_accent_phrase_vector: &[i64],
             style_id: StyleId,
         ) -> crate::Result<Vec<f32>> {
+            // TODO: typed_floatsにissueかPRを出しに行き、スライス変換かbytemuck対応を入れてもらう
             self.0
                 .predict_intonation(
                     length,
@@ -2344,6 +2336,7 @@ pub(crate) mod blocking {
                     style_id,
                 )
                 .block_on()
+                .map(|o| o.into_iter().map(Into::into).collect())
         }
 
         pub fn generate_full_intermediate(
@@ -2504,14 +2497,14 @@ pub(crate) mod blocking {
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
     #[derive(Debug)]
-    pub struct PrecomputeRender<'a> {
+    pub struct CreateAudioFeature<'a> {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, SingleTasked>,
         audio_query: &'a AudioQuery,
         style_id: StyleId,
         options: SynthesisOptions<SingleTasked>,
     }
 
-    impl PrecomputeRender<'_> {
+    impl CreateAudioFeature<'_> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
@@ -2520,7 +2513,7 @@ pub(crate) mod blocking {
         /// 実行する。
         pub fn perform(self) -> crate::Result<AudioFeature> {
             self.synthesizer
-                .precompute_render(self.audio_query, self.style_id, &self.options)
+                .create_audio_feature(self.audio_query, self.style_id, &self.options)
                 .block_on()
         }
     }
@@ -3448,16 +3441,18 @@ pub(crate) mod nonblocking {
 
 #[cfg(test)]
 mod tests {
-    use std::mem;
+    use std::{mem, num::NonZero};
 
     use super::{AccelerationMode, AsInner as _, DEFAULT_HEAVY_INFERENCE_CANCELLABLE};
     use crate::{
         AccentPhrase, FramePhoneme, Note, NoteId, Result, Score, StyleId,
         asyncs::BlockingThreadPool, engine::talk::Mora, macros::tests::assert_debug_fmt_eq,
+        numerics::non_zero,
     };
     use ::test_util::OPEN_JTALK_DIC_DIR;
     use itertools::Itertools as _;
     use rstest::rstest;
+    use typed_floats::tf32;
 
     #[rstest]
     #[case(Ok(()))]
@@ -3794,12 +3789,17 @@ mod tests {
         assert_eq!(result.unwrap().len(), F0_LENGTH * 256);
     }
 
-    type TextConsonantVowelData =
-        [(&'static [(&'static str, &'static str, &'static str)], usize)];
+    type TextConsonantVowelData = [(
+        &'static [(&'static str, &'static str, &'static str)],
+        NonZero<usize>,
+    )];
 
     // [([(テキスト, 母音, 子音), ...], アクセントの位置), ...] の形式
     const TEXT_CONSONANT_VOWEL_DATA1: &TextConsonantVowelData = &[
-        (&[("コ", "k", "o"), ("レ", "r", "e"), ("ワ", "w", "a")], 3),
+        (
+            &[("コ", "k", "o"), ("レ", "r", "e"), ("ワ", "w", "a")],
+            non_zero!(3usize),
+        ),
         (
             &[
                 ("テ", "t", "e"),
@@ -3808,12 +3808,15 @@ mod tests {
                 ("デ", "d", "e"),
                 ("ス", "s", "U"),
             ],
-            1,
+            non_zero!(1usize),
         ),
     ];
 
     const TEXT_CONSONANT_VOWEL_DATA2: &TextConsonantVowelData = &[
-        (&[("コ", "k", "o"), ("レ", "r", "e"), ("ワ", "w", "a")], 1),
+        (
+            &[("コ", "k", "o"), ("レ", "r", "e"), ("ワ", "w", "a")],
+            non_zero!(1usize),
+        ),
         (
             &[
                 ("テ", "t", "e"),
@@ -3822,7 +3825,7 @@ mod tests {
                 ("デ", "d", "e"),
                 ("ス", "s", "U"),
             ],
-            3,
+            non_zero!(3usize),
         ),
     ];
 
@@ -3890,11 +3893,11 @@ mod tests {
                 // NOTE: 子音の長さが必ず非ゼロになるテストケースを想定している
                 assert_ne!(
                     mora.consonant_length,
-                    Some(0.),
+                    Some(tf32::ZERO),
                     "expected mora.consonant_length is not Some(0.0), but got Some(0.0)."
                 );
-                assert_eq!(mora.consonant, Some(consonant.to_string()));
-                assert_eq!(mora.vowel, vowel);
+                assert_eq!(mora.consonant, Some(consonant.parse().unwrap()));
+                assert_eq!(mora.vowel, vowel.parse().unwrap());
                 // NOTE: 母音の長さが必ず非ゼロになるテストケースを想定している
                 assert_ne!(
                     mora.vowel_length, 0.,
@@ -3965,11 +3968,11 @@ mod tests {
                 // NOTE: 子音の長さが必ず非ゼロになるテストケースを想定している
                 assert_ne!(
                     mora.consonant_length,
-                    Some(0.),
+                    Some(tf32::ZERO),
                     "expected mora.consonant_length is not Some(0.0), but got Some(0.0)."
                 );
-                assert_eq!(mora.consonant, Some(consonant.to_string()));
-                assert_eq!(mora.vowel, vowel);
+                assert_eq!(mora.consonant, Some(consonant.parse().unwrap()));
+                assert_eq!(mora.vowel, vowel.parse().unwrap());
                 // NOTE: 母音の長さが必ず非ゼロになるテストケースを想定している
                 assert_ne!(
                     mora.vowel_length, 0.,
@@ -4034,7 +4037,7 @@ mod tests {
             assert_eq!(pause_mora.text, "、");
             assert_eq!(pause_mora.consonant, None);
             assert_eq!(pause_mora.consonant_length, None);
-            assert_eq!(pause_mora.vowel, "pau");
+            assert_eq!(pause_mora.vowel, "pau".parse().unwrap());
             assert_ne!(
                 pause_mora.vowel_length, 0.0,
                 "pause_mora.vowel_length should not be 0.0",

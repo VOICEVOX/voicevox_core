@@ -46,7 +46,7 @@
 //! # #[cfg(false)]
 //! const VVORT: &str = concatcp!(
 //!     "./voicevox_core/onnxruntime/lib/",
-//!     Onnxruntime::LIB_VERSIONED_FILENAME,
+//!     Onnxruntime::LIB_RECOMMENDED_VERSIONED_FILENAME,
 //! );
 //! # use test_util::ONNXRUNTIME_DYLIB_PATH as VVORT;
 //!
@@ -132,7 +132,7 @@
 //! # #[cfg(false)]
 //! const VVORT: &str = concatcp!(
 //!     "./voicevox_core/onnxruntime/lib/",
-//!     Onnxruntime::LIB_VERSIONED_FILENAME,
+//!     Onnxruntime::LIB_RECOMMENDED_VERSIONED_FILENAME,
 //! );
 //! # use test_util::ONNXRUNTIME_DYLIB_PATH as VVORT;
 //!
@@ -442,7 +442,6 @@ mod asyncs;
 mod collections;
 mod convert;
 mod core;
-/// cbindgen:ignore
 mod engine;
 mod error;
 mod future;
@@ -476,23 +475,21 @@ pub use self::{
         voice_model::VoiceModelId,
     },
     engine::{
-        Phoneme, SamplingRate, Sil,
+        Consonant, NonConsonant, Phoneme, SamplingRate, Sil,
         song::{
             queries::{FrameAudioQuery, FramePhoneme, Key, Note, NoteId, OptionalLyric, Score},
             validate::ensure_compatible,
         },
         talk::{
             AccentPhrase, AudioQuery, Mora,
-            user_dict::{UserDictWord, UserDictWordBuilder, UserDictWordType},
+            user_dict::{
+                UserDictWord, UserDictWordBuilder, UserDictWordPriority, UserDictWordType,
+            },
         },
+        wav_from_s16le,
     },
     error::{Error, ErrorKind},
     result::Result,
-    synthesizer::AccelerationMode,
+    synthesizer::{AccelerationMode, AudioFeature},
     version::VERSION,
 };
-
-// TODO: 後で復活させる
-// https://github.com/VOICEVOX/voicevox_core/issues/970
-#[doc(hidden)]
-pub use self::engine::wav_from_s16le as __wav_from_s16le;

@@ -15,6 +15,7 @@ on:
       - crates/voicevox_core/src/**
       - crates/voicevox_core_build_features/Cargo.toml
       - crates/voicevox_core_build_features/onnxruntime-libs.toml
+      - crates/voicevox_core_build_features/onnxruntime-version-for-test.txt
       - crates/voicevox_core_build_features/src/**
       - crates/voicevox_core_macros/Cargo.toml
       - crates/voicevox_core_macros/src/**

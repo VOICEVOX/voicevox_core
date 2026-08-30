@@ -8,8 +8,9 @@ use std::{
 use typed_floats::{NonNaNFinite, PositiveFinite};
 use uuid::Uuid;
 use voicevox_core::{
-    __internal::interop::Validate, AccelerationMode, AccentPhrase, AudioQuery, FrameAudioQuery,
-    FramePhoneme, Mora, Note, Score, UserDictWord, VoiceModelId,
+    __internal::interop::{InvalidWordError, Validate},
+    AccelerationMode, AccentPhrase, AudioQuery, FrameAudioQuery, FramePhoneme, Mora, Note, Score,
+    UserDictWord, VoiceModelId,
 };
 
 use duplicate::duplicate_item;
@@ -42,7 +43,7 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
                 InitInferenceRuntime => VOICEVOX_RESULT_INIT_INFERENCE_RUNTIME_ERROR,
                 OpenZipFile => VOICEVOX_RESULT_OPEN_ZIP_FILE_ERROR,
                 ReadZipEntry => VOICEVOX_RESULT_READ_ZIP_ENTRY_ERROR,
-                InvalidModelFormat => VOICEVOX_RESULT_INVALID_MODEL_HEADER_ERROR,
+                InvalidModelFormat => VOICEVOX_RESULT_INVALID_MODEL_FORMAT_ERROR,
                 ModelAlreadyLoaded => VOICEVOX_RESULT_MODEL_ALREADY_LOADED_ERROR,
                 StyleAlreadyLoaded => VOICEVOX_RESULT_STYLE_ALREADY_LOADED_ERROR,
                 InvalidModelData => VOICEVOX_RESULT_INVALID_MODEL_DATA_ERROR,
@@ -111,6 +112,12 @@ pub(crate) enum CApiError {
     InvalidFramePhoneme(Either<serde_json::Error, String>),
     #[error("無効なUUIDです: {0}")]
     InvalidUuid(uuid::Error),
+}
+
+impl From<InvalidWordError> for CApiError {
+    fn from(err: InvalidWordError) -> Self {
+        Self::RustApi(err.into())
+    }
 }
 
 pub(crate) trait ValidateJson: Validate {
@@ -294,7 +301,12 @@ impl VoicevoxUserDictWord {
 
         UserDictWord::builder()
             .word_type(self.word_type.into())
-            .priority(self.priority)
+            .priority(self.priority.try_into().map_err(|_| {
+                InvalidWordError::PriorityOutOfBounds {
+                    is_validation_of_whole_word: true,
+                    actual: self.priority.into(),
+                }
+            })?)
             .build(
                 ensure_utf8(surface)?,
                 ensure_utf8(pronunciation)?.to_string(),

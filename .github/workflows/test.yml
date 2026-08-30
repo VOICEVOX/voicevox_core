@@ -12,7 +12,6 @@ on:
       - crates/**
       - example/**
       - model/**
-      - onnxruntime-version.txt
       - rust-toolchain
   workflow_dispatch:
 

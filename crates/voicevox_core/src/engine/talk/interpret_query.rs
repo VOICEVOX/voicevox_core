@@ -1,5 +1,9 @@
 //! [`AudioQuery`]から特徴量を取り出す処理を集めたもの。
 
+use typed_floats::{NonNaNFinite, PositiveFinite, tf32};
+
+use crate::numerics::{non_nan_finite_f32, positive_finite_f32};
+
 use super::{
     super::{
         DEFAULT_SAMPLING_RATE, PhonemeCode,
@@ -93,6 +97,13 @@ impl ValidatedAudioQuery<'_> {
             ..
         } = self;
 
+        // FIXME: 可能な範囲でtyped_floatsを取り回し続けるべきではないか？
+        let speed_scale = f32::from(*speed_scale);
+        let pitch_scale = f32::from(*pitch_scale);
+        let intonation_scale = f32::from(*intonation_scale);
+        let pre_phoneme_length = f32::from(*pre_phoneme_length);
+        let post_phoneme_length = f32::from(*post_phoneme_length);
+
         let accent_phrases = if enable_interrogative_upspeak {
             &adjust_interrogative_accent_phrases(accent_phrases)
         } else {
@@ -101,7 +112,7 @@ impl ValidatedAudioQuery<'_> {
 
         let (flatten_moras, phoneme_data_list) = initial_process(accent_phrases);
 
-        let mut phoneme_length_list = vec![*pre_phoneme_length];
+        let mut phoneme_length_list = vec![pre_phoneme_length];
         let mut f0_list = vec![0.];
         let mut voiced_list = vec![false];
         {
@@ -116,11 +127,11 @@ impl ValidatedAudioQuery<'_> {
             } in flatten_moras
             {
                 if let Some(consonant) = consonant {
-                    phoneme_length_list.push(consonant.length);
+                    phoneme_length_list.push(consonant.length.into());
                 }
-                phoneme_length_list.push(vowel.length);
+                phoneme_length_list.push(vowel.length.into());
 
-                let f0_single = pitch * 2.0_f32.powf(*pitch_scale);
+                let f0_single = f32::from(pitch) * 2.0_f32.powf(pitch_scale);
                 f0_list.push(f0_single);
 
                 let bigger_than_zero = f0_single > 0.;
@@ -131,7 +142,7 @@ impl ValidatedAudioQuery<'_> {
                     count_of_f0_bigger_than_zero += 1;
                 }
             }
-            phoneme_length_list.push(*post_phoneme_length);
+            phoneme_length_list.push(post_phoneme_length);
             f0_list.push(0.);
             voiced_list.push(false);
             let mean_f0 = sum_of_f0_bigger_than_zero / (count_of_f0_bigger_than_zero as f32);
@@ -217,11 +228,13 @@ impl ValidatedAudioQuery<'_> {
         fn make_interrogative_mora<'query>(
             last_mora: &ValidatedMora<'query>,
         ) -> ValidatedMora<'query> {
-            const FIX_VOWEL_LENGTH: f32 = 0.15;
-            const ADJUST_PITCH: f32 = 0.3;
-            const MAX_PITCH: f32 = 6.5;
+            const FIX_VOWEL_LENGTH: PositiveFinite<f32> = positive_finite_f32!(0.15);
+            const ADJUST_PITCH: NonNaNFinite<f32> = non_nan_finite_f32!(0.3);
+            const MAX_PITCH: NonNaNFinite<f32> = non_nan_finite_f32!(6.5);
 
-            let pitch = (last_mora.pitch + ADJUST_PITCH).min(MAX_PITCH);
+            let pitch = NonNaNFinite::try_from(last_mora.pitch + ADJUST_PITCH)
+                .unwrap_or_else(|_| tf32::MAX.into())
+                .min(MAX_PITCH);
 
             ValidatedMora {
                 text: mora_to_text(None, &last_mora.vowel.phoneme.to_string()).into(),

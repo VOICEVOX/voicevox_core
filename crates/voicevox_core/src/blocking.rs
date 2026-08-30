@@ -11,11 +11,6 @@ pub use crate::{
     synthesizer::blocking::Synthesizer,
 };
 
-// TODO: 後で復活させる
-// https://github.com/VOICEVOX/voicevox_core/issues/970
-#[doc(hidden)]
-pub use crate::synthesizer::blocking::AudioFeature as __AudioFeature;
-
 pub mod onnxruntime {
     #[cfg(feature = "load-onnxruntime")]
     #[cfg_attr(docsrs, doc(cfg(feature = "load-onnxruntime")))]
@@ -24,10 +19,6 @@ pub mod onnxruntime {
 
 pub mod synthesizer {
     pub use crate::synthesizer::blocking::{
-        Builder, FrameSynthesis, LoadVoiceModel, Synthesis, Tts, TtsFromKana,
+        Builder, CreateAudioFeature, FrameSynthesis, LoadVoiceModel, Synthesis, Tts, TtsFromKana,
     };
-
-    // TODO: 後で復活させる
-    // https://github.com/VOICEVOX/voicevox_core/issues/970
-    //pub use crate::synthesizer::blocking::PrecomputeRender;
 }

@@ -17,26 +17,34 @@ import jp.hiroshiba.voicevoxcore.internal.Dll;
  * assert ort1 == ort2;
  * </pre>
  */
-public class Onnxruntime {
+public final class Onnxruntime {
   static {
     Dll.loadLibrary();
   }
 
-  /** ONNX Runtimeのライブラリ名。 */
-  public static final String LIB_NAME = "voicevox_onnxruntime";
+  /** 必要なONNX Runtime 1.xの最小マイナーバージョン。 */
+  public static final int LIB_MIN_REQUIRED_MINOR_VERSION = 17;
+
+  /** サポートされるONNX Runtime 1.xの最大マイナーバージョン。 */
+  public static final int LIB_MAX_SUPPORTED_MINOR_VERSION = 29;
+
+  /** 推奨されるONNX Runtimeのライブラリ名。 */
+  public static final String LIB_RECOMMENDED_NAME = "voicevox_onnxruntime";
 
   /** 推奨されるONNX Runtimeのバージョン。 */
-  public static final String LIB_VERSION = "1.17.3";
+  public static final String LIB_RECOMMENDED_VERSION = "1.23.2";
 
   /**
-   * {@link LIB_NAME}と{@link LIB_VERSION}からなる動的ライブラリのファイル名。
+   * {@link LIB_RECOMMENDED_NAME}と{@link LIB_RECOMMENDED_VERSION}からなる動的ライブラリのファイル名。
    *
-   * <p>WindowsとAndroidでは{@link LIB_UNVERSIONED_FILENAME}と同じ。
+   * <p>WindowsとAndroidでは{@link LIB_RECOMMENDED_UNVERSIONED_FILENAME}と同じ。
    */
-  public static final String LIB_VERSIONED_FILENAME = rsLibVersionedFilename();
+  public static final String LIB_RECOMMENDED_VERSIONED_FILENAME =
+      rsLibRecommendedVersionedFilename();
 
-  /** {@link LIB_NAME}からなる動的ライブラリのファイル名。 */
-  public static final String LIB_UNVERSIONED_FILENAME = rsLibUnversionedFilename();
+  /** {@link LIB_RECOMMENDED_NAME}からなる動的ライブラリのファイル名。 */
+  public static final String LIB_RECOMMENDED_UNVERSIONED_FILENAME =
+      rsLibRecommendedUnversionedFilename();
 
   @Nullable private static Onnxruntime instance = null;
 
@@ -51,37 +59,50 @@ public class Onnxruntime {
     }
   }
 
+  // spotless:off
   /**
    * ONNX Runtimeをロードして初期化する。
+   *
+   * <p>対象のONNX
+   * Runtimeはバージョン<code>1.{@link #LIB_MIN_REQUIRED_MINOR_VERSION}</code>以降のものでなければならない。バージョン<code>1.{@link #LIB_MAX_SUPPORTED_MINOR_VERSION}</code>よりも新しいONNX
+   * Runtimeに対しては警告を出す。
    *
    * <p>一度成功したら、以後は引数を無視して同じインスタンスを返す。
    *
    * @return {@link LoadOnce}。
    */
+  // spotless:on
   public static LoadOnce loadOnce() {
     return new LoadOnce();
   }
 
-  private static native String rsLibName();
+  private static native int rsLibMinRequiredMinorVersion();
 
-  private static native String rsLibVersion();
+  private static native int rsLibMaxSupportedMinorVersion();
 
-  private static native String rsLibVersionedFilename();
+  private static native String rsLibRecommendedName();
 
-  private static native String rsLibUnversionedFilename();
+  private static native String rsLibRecommendedVersion();
+
+  private static native String rsLibRecommendedVersionedFilename();
+
+  private static native String rsLibRecommendedUnversionedFilename();
 
   static {
-    assert LIB_NAME.equals(rsLibName()) && LIB_VERSION.equals(rsLibVersion());
+    assert LIB_MIN_REQUIRED_MINOR_VERSION == rsLibMinRequiredMinorVersion()
+        && LIB_MAX_SUPPORTED_MINOR_VERSION == rsLibMaxSupportedMinorVersion()
+        && LIB_RECOMMENDED_NAME.equals(rsLibRecommendedName())
+        && LIB_RECOMMENDED_VERSION.equals(rsLibRecommendedVersion());
   }
 
   /** {@link #loadOnce}のビルダー。 */
-  public static class LoadOnce {
+  public static final class LoadOnce {
     /**
      * ONNX Runtimeのファイル名（モジュール名）もしくはファイルパスを指定する。
      *
      * @param filename {@code dlopen}/<a
      *     href="https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-loadlibraryexw">{@code
-     *     LoadLibraryExW}</a>の引数に使われる。デフォルトは{@link LIB_VERSIONED_FILENAME}。
+     *     LoadLibraryExW}</a>の引数に使われる。デフォルトは{@link LIB_RECOMMENDED_VERSIONED_FILENAME}。
      * @return このオブジェクト。
      */
     public LoadOnce filename(@Nonnull String filename) {
@@ -105,7 +126,7 @@ public class Onnxruntime {
 
     private LoadOnce() {}
 
-    @Nonnull private String filename = LIB_VERSIONED_FILENAME;
+    @Nonnull private String filename = LIB_RECOMMENDED_VERSIONED_FILENAME;
   }
 
   private long handle;

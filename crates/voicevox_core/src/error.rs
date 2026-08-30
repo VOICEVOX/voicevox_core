@@ -188,7 +188,7 @@ pub enum ErrorKind {
     WordNotFound,
     /// OpenJTalkのユーザー辞書の設定に失敗した。
     UseUserDict,
-    /// ユーザー辞書の単語のバリデーションに失敗した。
+    /// ユーザー辞書の単語、もしくはその一部のバリデーションに失敗した。
     InvalidWord,
     /// [`AudioQuery`]、[`FrameAudioQuery`]、[`Score`]、もしくはその一部が不正。
     ///
@@ -268,8 +268,8 @@ pub(crate) enum InvalidQueryErrorSource {
     #[error("\"sil\"を含む文字列である必要があります")]
     MustContainSil,
 
-    #[error("`0`にすることはできません")]
-    IsZero,
+    #[error("アクセント位置はモーラ数を超過してはいけません")]
+    TooLargeAccent,
 
     #[error("0より大きい{DEFAULT_SAMPLING_RATE}の倍数でなければなりません")]
     IsNotMultipleOfBaseSamplingRate,

@@ -28,7 +28,7 @@ import jp.hiroshiba.voicevoxcore.internal.Dll;
  *
  * @see Synthesizer#builder
  */
-public class Synthesizer {
+public final class Synthesizer {
   static {
     Dll.loadLibrary();
   }
@@ -514,7 +514,7 @@ public class Synthesizer {
    *
    * @see Synthesizer#builder
    */
-  public static class Builder {
+  public static final class Builder {
     private Onnxruntime onnxruntime;
     private OpenJtalk openJtalk;
 
@@ -547,7 +547,7 @@ public class Synthesizer {
      * @return ビルダー。
      */
     public Builder cpuNumThreads(int cpuNumThreads) {
-      if (Utils.isU16(cpuNumThreads)) {
+      if (!Utils.isU16(cpuNumThreads)) {
         throw new IllegalArgumentException("cpuNumThreads");
       }
       this.cpuNumThreads = cpuNumThreads;
@@ -566,7 +566,7 @@ public class Synthesizer {
   }
 
   /** {@link Synthesizer#loadVoiceModel} のオプション。 */
-  public class LoadVoiceModelConfigurator {
+  public final class LoadVoiceModelConfigurator {
     private Synthesizer synthesizer;
     private VoiceModelFile voiceModel;
 
@@ -600,7 +600,7 @@ public class Synthesizer {
   }
 
   /** {@link Synthesizer#synthesis} のオプション。 */
-  public class SynthesisConfigurator {
+  public final class SynthesisConfigurator {
     private Synthesizer synthesizer;
     private AudioQuery audioQuery;
     private int styleId;
@@ -645,7 +645,7 @@ public class Synthesizer {
   }
 
   /** {@link Synthesizer#ttsFromKana} のオプション。 */
-  public class TtsFromKanaConfigurator {
+  public final class TtsFromKanaConfigurator {
     private Synthesizer synthesizer;
     private String kana;
     private int styleId;
@@ -688,7 +688,7 @@ public class Synthesizer {
   }
 
   /** {@link Synthesizer#tts} のオプション。 */
-  public class TtsConfigurator {
+  public final class TtsConfigurator {
     private Synthesizer synthesizer;
     private String text;
     private int styleId;

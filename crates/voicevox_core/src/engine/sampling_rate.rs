@@ -22,6 +22,13 @@ const DEFAULT_SAMPLING_RATE_: NonZero<u32> = NonZero::new(24000).unwrap();
 pub struct SamplingRate(NonZero<u32>);
 
 impl SamplingRate {
+    /// [`u32`]から`SamplingRate`をコンストラクトする。
+    ///
+    /// # Errors
+    ///
+    /// 与えられた値が`24000`の倍数ではない、もしくは`0`のとき[`ErrorKind::InvalidQuery`]を表わすエラーを返す。
+    ///
+    /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
     pub fn new(n: u32) -> crate::Result<Self> {
         Self::new_(n).map_err(Into::into)
     }

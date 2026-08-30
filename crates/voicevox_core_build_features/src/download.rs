@@ -13,7 +13,7 @@ use serde::Deserialize;
 use serde_with::{hex::Hex, serde_as};
 use sha2::{Digest as _, Sha256};
 
-const VERSION: &str = include_str!("../onnxruntime-version.txt");
+const VERSION: &str = include_str!("../onnxruntime-version-for-test.txt");
 
 static TARGET: LazyLock<String> = LazyLock::new(|| env::var("TARGET").unwrap());
 static OUT_DIR: LazyLock<Utf8PathBuf> =

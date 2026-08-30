@@ -25,7 +25,6 @@ on:
       - Cargo.*
       - crates/voicevox_core*/**
       - model/**
-      - onnxruntime-version.txt
       - rust-toolchain
   push:
     branches:
@@ -388,13 +387,7 @@ jobs:
       IOS_AARCH64_PATH: artifact/voicevox_core-aarch64-apple-ios
       MACOS_ARM64_PATH: artifact/voicevox_core-aarch64-apple-darwin
       MACOS_X64_PATH: artifact/voicevox_core-x86_64-apple-darwin
-    strategy:
-      matrix:
-        include:
-          - asset-name: "voicevox_core-xcframework-cpu-${{ needs.config.outputs.version }}"
-            output-asset-path: "artifact/voicevox_core-xcframework-cpu"
-          - asset-name: "voicevox_core-ios-xcframework-cpu-${{ needs.config.outputs.version }}"
-            output-asset-path: "artifact/voicevox_core-ios-xcframework-cpu"
+      ASSET_NAME: voicevox_core-xcframework-${{ needs.config.outputs.version }}
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
       - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
@@ -420,23 +413,20 @@ jobs:
       - name: Create xcframework
         id: create-xcframework
         run: |
-          case ${{ matrix.asset-name }} in
-            voicevox_core-xcframework-cpu-*) build_util/make_xcframework.bash ;;
-            voicevox_core-ios-xcframework-cpu-*) build_util/make_ios_xcframework.bash ;;
-          esac
+          build_util/make_xcframework.bash
           echo "output_asset_path=${OUTPUT_ASSET_PATH}" >> "$GITHUB_OUTPUT"
         env:
-          OUTPUT_ASSET_PATH: ${{ matrix.output-asset-path }}
+          OUTPUT_ASSET_PATH: artifact/voicevox_core-xcframework
       - name: Archive artifact
         run: |
           cd ${{ steps.create-xcframework.outputs.output_asset_path }}
-          7z a "../../${{ matrix.asset-name }}.zip" "voicevox_core.xcframework"
+          7z a "../../${{ env.ASSET_NAME }}.zip" "voicevox_core.xcframework"
       - name: Upload to Release
         if: needs.config.outputs.mode == 'draft-release'
         uses: ./.github/actions/upload-gh-release-assets
         with:
           upload-url: ${{ fromJson(needs.create_draft_release.outputs.release).upload_url }}
-          files: ${{ matrix.asset-name }}.zip
+          files: ${{ env.ASSET_NAME }}.zip
 
   build_java_package:
     runs-on: ubuntu-latest

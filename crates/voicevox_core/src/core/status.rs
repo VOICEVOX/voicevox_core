@@ -19,7 +19,7 @@ use super::{
         self, InferenceDomain, InferenceInputSignature, InferenceRuntime, InferenceSessionOptions,
         InferenceSignature,
         domains::{
-            ExperimentalTalkDomain, FrameDecodeDomain, InferenceDomainMap, SingingTeacherDomain,
+            FrameDecodeDomain, InferenceDomainMap, SingingTeacherDomain, StreamingTalkDomain,
             TalkDomain, inference_domain_map_values,
         },
         session_set::{InferenceSessionCell, InferenceSessionSet},
@@ -402,7 +402,7 @@ pub(crate) trait InferenceDomainExt: InferenceDomain {
 #[duplicate_item(
     T                        field;
     [ TalkDomain ]           [ talk ];
-    [ ExperimentalTalkDomain ] [ experimental_talk ];
+    [ StreamingTalkDomain ] [ streaming_talk ];
     [ SingingTeacherDomain ] [ singing_teacher ];
     [ FrameDecodeDomain ]    [ frame_decode ];
 )]
@@ -432,7 +432,7 @@ impl InferenceDomainMap<ModelBytesWithInnerVoiceIdsByDomain> {
             [
                 field;
                 [ talk ];
-                [ experimental_talk ];
+                [ streaming_talk ];
                 [ singing_teacher ];
                 [ frame_decode ];
             ]
@@ -448,7 +448,7 @@ impl InferenceDomainMap<ModelBytesWithInnerVoiceIdsByDomain> {
 
         Ok(InferenceDomainMap {
             talk,
-            experimental_talk,
+            streaming_talk,
             singing_teacher,
             frame_decode,
         })
@@ -484,8 +484,8 @@ mod tests {
                 InferenceOperation, InferenceRuntime, InferenceSessionOptions, InputScalarKind,
                 OutputScalarKind, OutputTensor, ParamInfo, PushInputTensor,
                 domains::{
-                    ExperimentalTalkOperation, FrameDecodeOperation, InferenceDomainMap,
-                    SingingTeacherOperation, TalkOperation, inference_domain_map,
+                    FrameDecodeOperation, InferenceDomainMap, SingingTeacherOperation,
+                    StreamingTalkOperation, TalkOperation, inference_domain_map,
                 },
             },
             voice_model::{ModelBytes, ModelBytesWithInnerVoiceIdsByDomain, VoiceModelHeader},
@@ -511,11 +511,11 @@ mod tests {
                 }
                 TalkOperation::Decode => heavy_session_options,
             },
-            experimental_talk: enum_map! {
-                ExperimentalTalkOperation::PredictDuration
-                | ExperimentalTalkOperation::PredictIntonation
-                | ExperimentalTalkOperation::GenerateFullIntermediate => light_session_options,
-                ExperimentalTalkOperation::RenderAudioSegment => heavy_session_options,
+            streaming_talk: enum_map! {
+                StreamingTalkOperation::PredictDuration
+                | StreamingTalkOperation::PredictIntonation
+                | StreamingTalkOperation::GenerateFullIntermediate => light_session_options,
+                StreamingTalkOperation::RenderAudioSegment => heavy_session_options,
             },
             singing_teacher: enum_map! {
                 SingingTeacherOperation::PredictSingConsonantLength
@@ -530,20 +530,19 @@ mod tests {
 
         assert_eq!(
             light_session_options,
-            status.session_options.experimental_talk[ExperimentalTalkOperation::PredictDuration],
+            status.session_options.streaming_talk[StreamingTalkOperation::PredictDuration],
         );
         assert_eq!(
             light_session_options,
-            status.session_options.experimental_talk[ExperimentalTalkOperation::PredictIntonation],
+            status.session_options.streaming_talk[StreamingTalkOperation::PredictIntonation],
         );
         assert_eq!(
             light_session_options,
-            status.session_options.experimental_talk
-                [ExperimentalTalkOperation::GenerateFullIntermediate],
+            status.session_options.streaming_talk[StreamingTalkOperation::GenerateFullIntermediate],
         );
         assert_eq!(
             heavy_session_options,
-            status.session_options.experimental_talk[ExperimentalTalkOperation::RenderAudioSegment],
+            status.session_options.streaming_talk[StreamingTalkOperation::RenderAudioSegment],
         );
 
         assert!(status.loaded_models.lock().unwrap().0.is_empty());
@@ -698,7 +697,7 @@ mod tests {
                 Default::default(),
                 EnumMap::from_fn(|op: TalkOperation| ModelBytes::Onnx(vec![op.into_usize() as u8])),
             )),
-            experimental_talk: None,
+            streaming_talk: None,
             singing_teacher: None,
             frame_decode: None,
         });

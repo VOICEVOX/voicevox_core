@@ -17,20 +17,26 @@ use crate::{
     OpenJtalkRc, VoicevoxInitializeOptions, VoicevoxOnnxruntime, VoicevoxSynthesizer,
     VoicevoxUserDict, VoicevoxVoiceModelFile,
     helpers::CApiResult,
-    object::{CApiObject, CApiObjectPtrExt as _},
+    object::{CApiObject, CApiObjectPtrExt as _, MaybeDeleted},
 };
 
 // FIXME: 中身(Rust API)を直接操作するかラッパーメソッド越しにするのかが混在していて、一貫性を
 // 欠いている
 
 impl VoicevoxOnnxruntime {
-    #[cfg(feature = "load-onnxruntime")]
-    pub(crate) const LIB_VERSIONED_FILENAME: &'static std::ffi::CStr =
-        to_cstr!(voicevox_core::blocking::Onnxruntime::LIB_VERSIONED_FILENAME);
+    pub(crate) const LIB_MIN_REQUIRED_MINOR_VERSION: u32 =
+        voicevox_core::blocking::Onnxruntime::LIB_MIN_REQUIRED_MINOR_VERSION;
+
+    pub(crate) const LIB_MAX_SUPPORTED_MINOR_VERSION: u32 =
+        voicevox_core::blocking::Onnxruntime::LIB_MAX_SUPPORTED_MINOR_VERSION;
 
     #[cfg(feature = "load-onnxruntime")]
-    pub(crate) const LIB_UNVERSIONED_FILENAME: &'static std::ffi::CStr =
-        to_cstr!(voicevox_core::blocking::Onnxruntime::LIB_UNVERSIONED_FILENAME);
+    pub(crate) const LIB_RECOMMENDED_VERSIONED_FILENAME: &'static std::ffi::CStr =
+        to_cstr!(voicevox_core::blocking::Onnxruntime::LIB_RECOMMENDED_VERSIONED_FILENAME);
+
+    #[cfg(feature = "load-onnxruntime")]
+    pub(crate) const LIB_RECOMMENDED_UNVERSIONED_FILENAME: &'static std::ffi::CStr =
+        to_cstr!(voicevox_core::blocking::Onnxruntime::LIB_RECOMMENDED_UNVERSIONED_FILENAME);
 
     #[ref_cast_custom]
     fn new(rust: &voicevox_core::blocking::Onnxruntime) -> &Self;
@@ -163,11 +169,11 @@ impl CApiObject for H {
     }
 
     fn bodies() -> &'static std::sync::Mutex<
-        HashMap<NonZero<usize>, Arc<parking_lot::RwLock<Option<Self::RustApiObject>>>>,
+        HashMap<NonZero<usize>, Arc<parking_lot::RwLock<MaybeDeleted<Self::RustApiObject>>>>,
     > {
         #[expect(clippy::type_complexity, reason = "`CApiObject::bodies`と同様")]
         static BODIES: LazyLock<
-            std::sync::Mutex<HashMap<NonZero<usize>, Arc<parking_lot::RwLock<Option<B>>>>>,
+            std::sync::Mutex<HashMap<NonZero<usize>, Arc<parking_lot::RwLock<MaybeDeleted<B>>>>>,
         > = LazyLock::new(Default::default);
 
         &BODIES

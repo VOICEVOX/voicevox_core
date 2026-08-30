@@ -1,12 +1,7 @@
 use std::collections::HashMap;
 use std::sync::LazyLock;
 
-use crate::UserDictWordType;
-
-/// 最小の優先度。
-pub(super) static MIN_PRIORITY: u32 = 0;
-/// 最大の優先度。
-pub(super) static MAX_PRIORITY: u32 = 10;
+use crate::{UserDictWordPriority, UserDictWordType};
 
 /// 品詞ごとの情報。
 #[derive(Debug)]
@@ -114,7 +109,7 @@ fn search_cost_candidates(context_id: i32) -> &'static [i32] {
         .cost_candidates
 }
 
-pub(super) fn priority2cost(context_id: i32, priority: u32) -> i32 {
+pub(super) fn priority2cost(context_id: i32, priority: UserDictWordPriority) -> i32 {
     let cost_candidates = search_cost_candidates(context_id);
-    cost_candidates[(MAX_PRIORITY - priority) as usize]
+    cost_candidates[priority.to_index()]
 }

@@ -20,7 +20,7 @@
       "303": 3
     }
   },
-  "experimental_talk": {
+  "streaming_talk": {
     "predict_duration": {
       "type": "onnx",
       "filename": "predict_duration.onnx"

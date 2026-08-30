@@ -5,7 +5,7 @@ package jp.hiroshiba.voicevoxcore;
  * Synthesizer.loadVoiceModel}の実行時に、同じIDの{@link jp.hiroshiba.voicevoxcore.blocking.VoiceModelFile
  * VoiceModelFile}が既に読み込まれていたときのふるまい。
  */
-public class OnExistingVoiceModelId {
+public final class OnExistingVoiceModelId {
   /**
    * エラー。
    *

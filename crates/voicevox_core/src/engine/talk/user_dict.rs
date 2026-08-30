@@ -3,6 +3,8 @@ mod part_of_speech_data;
 mod word;
 
 pub use self::word::{
-    DEFAULT_PRIORITY, DEFAULT_WORD_TYPE, UserDictWord, UserDictWordBuilder, UserDictWordType,
+    DEFAULT_WORD_TYPE, InvalidWordError, UserDictWord, UserDictWordBuilder, UserDictWordPriority,
+    UserDictWordType,
 };
-pub(crate) use self::word::{InvalidWordError, validate_pronunciation};
+
+pub(crate) use self::word::validate_pronunciation;

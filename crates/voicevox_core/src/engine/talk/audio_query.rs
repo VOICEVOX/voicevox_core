@@ -1,6 +1,13 @@
 mod validated;
 
+use std::num::NonZero;
+
 use serde::{Deserialize, Serialize};
+use typed_floats::{NonNaNFinite, PositiveFinite};
+
+use crate::SamplingRate;
+
+use super::super::acoustic_feature_extractor::{Consonant, NonConsonant};
 
 pub(crate) use self::validated::{
     LengthedPhoneme, ValidatedAccentPhrase, ValidatedAudioQuery, ValidatedMora,
@@ -32,15 +39,15 @@ pub struct Mora {
     /// 文字。
     pub text: String,
     /// 子音の音素。
-    pub consonant: Option<String>,
+    pub consonant: Option<Consonant>,
     /// 子音の音長。
-    pub consonant_length: Option<f32>,
+    pub consonant_length: Option<PositiveFinite<f32>>,
     /// 母音の音素。
-    pub vowel: String,
+    pub vowel: NonConsonant,
     /// 母音の音長。
-    pub vowel_length: f32,
+    pub vowel_length: PositiveFinite<f32>,
     /// 音高。
-    pub pitch: f32,
+    pub pitch: NonNaNFinite<f32>,
 }
 
 /// AccentPhrase (アクセント句ごとの情報)。
@@ -67,7 +74,7 @@ pub struct AccentPhrase {
     /// モーラの配列。
     pub moras: Vec<Mora>,
     /// アクセント箇所。
-    pub accent: usize,
+    pub accent: NonZero<usize>,
     /// 後ろに無音を付けるかどうか。
     pub pause_mora: Option<Mora>,
     /// 疑問系かどうか。
@@ -125,7 +132,7 @@ pub struct AudioQuery {
     ///
     /// [Serde]: serde
     #[serde(rename = "speedScale")]
-    pub speed_scale: f32,
+    pub speed_scale: PositiveFinite<f32>,
     /// 全体の音高。
     ///
     /// # Serde
@@ -134,7 +141,7 @@ pub struct AudioQuery {
     ///
     /// [Serde]: serde
     #[serde(rename = "pitchScale")]
-    pub pitch_scale: f32,
+    pub pitch_scale: NonNaNFinite<f32>,
     /// 全体の抑揚。
     ///
     /// # Serde
@@ -143,7 +150,7 @@ pub struct AudioQuery {
     ///
     /// [Serde]: serde
     #[serde(rename = "intonationScale")]
-    pub intonation_scale: f32,
+    pub intonation_scale: NonNaNFinite<f32>,
     /// 全体の音量。
     ///
     /// # Serde
@@ -152,7 +159,7 @@ pub struct AudioQuery {
     ///
     /// [Serde]: serde
     #[serde(rename = "volumeScale")]
-    pub volume_scale: f32,
+    pub volume_scale: PositiveFinite<f32>,
     /// 音声の前の無音時間。
     ///
     /// # Serde
@@ -161,7 +168,7 @@ pub struct AudioQuery {
     ///
     /// [Serde]: serde
     #[serde(rename = "prePhonemeLength")]
-    pub pre_phoneme_length: f32,
+    pub pre_phoneme_length: PositiveFinite<f32>,
     /// 音声の後の無音時間。
     ///
     /// # Serde
@@ -170,7 +177,7 @@ pub struct AudioQuery {
     ///
     /// [Serde]: serde
     #[serde(rename = "postPhonemeLength")]
-    pub post_phoneme_length: f32,
+    pub post_phoneme_length: PositiveFinite<f32>,
     /// 音声データの出力サンプリングレート。
     ///
     /// # Serde
@@ -179,7 +186,7 @@ pub struct AudioQuery {
     ///
     /// [Serde]: serde
     #[serde(rename = "outputSamplingRate")]
-    pub output_sampling_rate: u32,
+    pub output_sampling_rate: SamplingRate,
     /// 音声データをステレオ出力するか否か。
     ///
     /// # Serde
