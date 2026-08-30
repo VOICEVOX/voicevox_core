@@ -84,14 +84,18 @@ fn from_audio_feature_range_index(
 ///
 /// # Motivation
 ///
-/// Pythonの`list`や`NDArray`であれば、どんな値であろうとスライスを拒否することはない。
+/// Rust APIの`render`に不適当な範囲を渡すとパニックするため、渡す前に対処する必要がある。その方法は
 ///
-/// ```text
-/// >>> list(range(10))[1 << 99999:1 << 999]  # OK!
-/// []
-/// ```
+/// 1. 範囲を補正してしまうか、
+/// 2. `ValueError`として拒否するか
 ///
-/// しかしVOICEVOXの`AudioFeature`では誤った範囲指定を拒否したいため、Rustと同じ基準で入力を弾きたい。
+/// の２つ。
+///
+/// `list`や`NDArray`にならうならば1.だが、例えば同じPythonでもPillowではデフォルト値で埋められるし、OpenCVはエラーになる。
+///
+/// そのためVOICEVOX COREとしても言語間で挙動を統一するメリットの方を取ることとする。
+///
+/// <https://github.com/VOICEVOX/voicevox_core/pull/867#discussion_r1831401779>
 pub(crate) fn error_for_audio_feature_range(
     frame_length: usize,
     start: usize,
