@@ -33,28 +33,51 @@ use crate::{
 };
 
 pub(crate) fn from_audio_feature_range_start(ob: &Bound<'_, PyAny>) -> PyResult<usize> {
-    from_audio_feature_range_index(ob, "start")
+    from_audio_feature_range_index(
+        ob,
+        |index| {
+            format!(
+                "argument 'start': must not be negative: {index} \
+                 (note: instead, consider subtracting an offset from the \
+                 'AudioFeature.frame_length')",
+            )
+        },
+        |index| format!("argument 'start': cannot fit '{index}' into an index-sized integer"),
+    )
 }
 
 pub(crate) fn from_audio_feature_range_stop(ob: &Bound<'_, PyAny>) -> PyResult<usize> {
-    from_audio_feature_range_index(ob, "stop")
+    from_audio_feature_range_index(
+        ob,
+        |index| {
+            format!(
+                "argument 'stop': must not be negative: {index} \
+                 (note: instead, consider subtracting an offset from the \
+                 'AudioFeature.frame_length')",
+            )
+        },
+        |index| {
+            format!(
+                "argument 'stop': cannot fit '{index}' into an index-sized integer \
+                 (note: if you meant the end of the audio feature, consider using the \
+                 'AudioFeature.frame_length')",
+            )
+        },
+    )
 }
 
-fn from_audio_feature_range_index(ob: &Bound<'_, PyAny>, name: &'static str) -> PyResult<usize> {
+fn from_audio_feature_range_index(
+    ob: &Bound<'_, PyAny>,
+    error_for_negative: fn(&BigInt) -> String,
+    error_for_too_large: fn(&BigInt) -> String,
+) -> PyResult<usize> {
     let index = &BigInt::extract(ob.as_borrowed())?;
     if index.is_negative() {
-        return Err(PyValueError::new_err(format!(
-            "argument '{name}': must not be negative: {index} \
-             (note: instead, consider subtracting an offset from the 'AudioFeature.frame_length')",
-        )));
+        return Err(PyValueError::new_err(error_for_negative(index)));
     }
-    index.try_into().map_err(|_| {
-        PyValueError::new_err(format!(
-            "argument '{name}': cannot fit '{index}' into an index-sized integer \
-             (note: if you meant the end of the audio feature, consider using the \
-             'AudioFeature.frame_length')",
-        ))
-    })
+    index
+        .try_into()
+        .map_err(|_| PyValueError::new_err(error_for_too_large(index)))
 }
 
 /// Rustの`[_; frame_length]`に対して`start..stop`が不適当であるなら[`PyValueError`]を返す。
@@ -79,9 +102,7 @@ pub(crate) fn error_for_audio_feature_range(
             "Audio feature of length {frame_length} cannot accept '{start}:{stop}' as a valid \
              range: {reason}",
             reason = if start > frame_length {
-                "'start' out of range for the audio feature \
-                 (note: if you meant the end of the audio feature, consider using the \
-                 'AudioFeature.frame_length')"
+                "'start' out of range for the audio feature"
             } else if stop > frame_length {
                 "'stop' out of range for the audio feature \
                  (note: if you meant the end of the audio feature, consider using the \
