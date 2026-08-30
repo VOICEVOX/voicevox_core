@@ -192,16 +192,18 @@ fn crop_with_margin(
     audio: &AudioFeature,
     range: std::ops::Range<usize>,
 ) -> ndarray::ArrayView2<'_, f32> {
-    if range.start > audio.frame_length() || range.end > audio.frame_length() {
-        panic!(
-            "{range:?} is out of range for audio feature of length {frame_length}",
-            frame_length = audio.frame_length(),
-        );
+    let frame_length = audio.frame_length();
+    let std::ops::Range { start, end } = range;
+    if start > frame_length {
+        panic!("range start index {start} out of range for audio feature of length {frame_length}");
     }
-    if range.start > range.end {
-        panic!("{range:?} is invalid because start > end",);
+    if end > frame_length {
+        panic!("range end index {end} out of range for audio feature of length {frame_length}");
     }
-    let range = range.start..range.end + 2 * MARGIN;
+    if start > end {
+        panic!("range starts at {start} but ends at {end}");
+    }
+    let range = start..end + 2 * MARGIN;
     audio.internal_state.slice(ndarray::s![range, ..])
 }
 /// 追加した安全マージンを生成音声から取り除く
