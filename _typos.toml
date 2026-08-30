@@ -5,6 +5,9 @@
 extend-ignore-identifiers-re = [
     "\\bPNGs\\b", # https://github.com/crate-ci/typos/issues/745
 ]
+extend-ignore-words-re = [
+    "^[A-Za-z]{2}$",
+]
 
 [default.extend-identifiers]
 NdArray="NdArray" # onnxruntime::session::NdArray
