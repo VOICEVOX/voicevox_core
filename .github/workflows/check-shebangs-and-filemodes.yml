@@ -31,7 +31,7 @@ jobs:
             }
 
             is_shellscript() {
-              [[ "$filename" =~ \.(bash|sh)$ ]]
+              [[ "$filename" =~ \.(ba)?sh$ ]]
             }
 
             is_executable() {
