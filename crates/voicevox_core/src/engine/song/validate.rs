@@ -227,7 +227,7 @@ impl AsRef<[ValidatedNote]> for ValidatedNoteSeq {
 }
 
 pub(crate) struct ValidatedNote {
-    pub(crate) id: Option<NoteId>,
+    pub(super) id: Option<NoteId>,
     pub(crate) pau_or_key_and_lyric: PauOrKeyAndLyric,
     pub(crate) frame_length: U53,
 }

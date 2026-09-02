@@ -13,7 +13,7 @@ use super::{
 
 #[derive(thiserror::Error, Debug)]
 #[error("入力テキストからのフルコンテキストラベル抽出に失敗しました: {context}")]
-pub(crate) struct FullContextLabelError {
+pub(super) struct FullContextLabelError {
     context: ErrorKind,
     #[source]
     source: Option<anyhow::Error>,
@@ -42,7 +42,7 @@ type Result<T> = std::result::Result<T, FullContextLabelError>;
 ///
 /// - アクセント位置として`0`が存在する。
 /// - [`generate_moras`]のパニック条件を満たす。
-pub(crate) fn extract_full_context_label(
+pub(super) fn extract_full_context_label(
     open_jtalk: &impl FullcontextExtractor,
     text: impl AsRef<str>,
 ) -> Result<Vec<AccentPhrase>> {
@@ -207,7 +207,7 @@ fn generate_mora(
     })
 }
 
-pub fn mora_to_text(consonant: Option<&str>, vowel: &str) -> String {
+pub(super) fn mora_to_text(consonant: Option<&str>, vowel: &str) -> String {
     let mora_text = format!(
         "{}{}",
         consonant.unwrap_or(""),

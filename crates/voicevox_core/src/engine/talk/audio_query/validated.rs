@@ -288,17 +288,17 @@ impl From<ValidatedAccentPhrase<'_>> for AccentPhrase {
 }
 
 #[derive(Clone, PartialEq, Debug)]
-pub struct ValidatedAudioQuery<'original> {
-    pub(crate) accent_phrases: Vec<ValidatedAccentPhrase<'original>>,
-    pub(crate) speed_scale: PositiveFinite<f32>,
-    pub(crate) pitch_scale: NonNaNFinite<f32>,
-    pub(crate) intonation_scale: NonNaNFinite<f32>,
-    pub(crate) volume_scale: PositiveFinite<f32>,
-    pub(crate) pre_phoneme_length: PositiveFinite<f32>,
-    pub(crate) post_phoneme_length: PositiveFinite<f32>,
+pub(crate) struct ValidatedAudioQuery<'original> {
+    pub(in crate::engine) accent_phrases: Vec<ValidatedAccentPhrase<'original>>,
+    pub(in crate::engine) speed_scale: PositiveFinite<f32>,
+    pub(in crate::engine) pitch_scale: NonNaNFinite<f32>,
+    pub(in crate::engine) intonation_scale: NonNaNFinite<f32>,
+    pub(in crate::engine) volume_scale: PositiveFinite<f32>,
+    pub(in crate::engine) pre_phoneme_length: PositiveFinite<f32>,
+    pub(in crate::engine) post_phoneme_length: PositiveFinite<f32>,
     pub(crate) output_sampling_rate: SamplingRate,
     pub(crate) output_stereo: bool,
-    pub(crate) kana: Option<String>,
+    pub(in crate::engine) kana: Option<String>,
 }
 
 impl<'original> ValidatedAudioQuery<'original> {

@@ -78,13 +78,13 @@ impl<'de> Deserialize<'de> for Manifest {
 }
 
 /// モデル内IDの実体
-pub type RawInnerVoiceId = u32;
+type RawInnerVoiceId = u32;
 /// モデル内ID
 #[derive(PartialEq, Eq, Clone, Copy, Ord, PartialOrd, Deserialize, Serialize, new, Debug)]
-pub struct InnerVoiceId(RawInnerVoiceId);
+pub(crate) struct InnerVoiceId(RawInnerVoiceId);
 
 impl InnerVoiceId {
-    pub fn raw_id(self) -> RawInnerVoiceId {
+    pub(crate) fn raw_id(self) -> RawInnerVoiceId {
         self.0
     }
 }
@@ -121,7 +121,7 @@ impl<'de> Deserialize<'de> for FormatVersion {
 
 /// voicevox_coreで使われているManifest
 #[derive(Debug, Getters)]
-pub struct Manifest {
+pub(super) struct Manifest {
     vvm_format_version: FormatVersion, // この値は固定ではない。バージョンに応じてmetasの構造やバリデーションが変化する。
     pub(super) id: VoiceModelId,
     metas_filename: String,
@@ -181,7 +181,7 @@ pub(super) type ManifestDomains = inference_domain_map_values!(for<D> Option<Man
 #[derive(derive_more::Debug, Index, Deserialize)]
 #[cfg_attr(test, derive(educe::Educe), educe(Default))]
 #[debug(bounds(D::Operation: Debug))]
-pub(crate) struct ManifestDomain<D: InferenceDomain> {
+pub(super) struct ManifestDomain<D: InferenceDomain> {
     #[index]
     #[serde(flatten)]
     filenames: EnumMap<D::Operation, ModelFile>,
@@ -191,7 +191,7 @@ pub(crate) struct ManifestDomain<D: InferenceDomain> {
 }
 
 #[derive(Deserialize, Clone, Debug)]
-pub(crate) struct ModelFile {
+pub(super) struct ModelFile {
     pub(super) r#type: ModelFileType,
     pub(super) filename: Arc<str>,
 }

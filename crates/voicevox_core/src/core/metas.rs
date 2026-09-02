@@ -253,7 +253,7 @@ pub(super) struct CharacterMetaSchemaV2 {
     order: Option<u32>,
 }
 #[derive(Deserialize, Serialize, Clone, PartialEq, Debug)]
-pub(super) struct StyleMetaSchemaV2 {
+struct StyleMetaSchemaV2 {
     id: StyleId,
     name: String,
     #[serde(default)]

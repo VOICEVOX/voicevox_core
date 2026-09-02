@@ -274,8 +274,8 @@ impl<D: PartialEq> ParamInfo<D> {
 
 #[derive(new, Clone, Copy, PartialEq, Debug)]
 pub(crate) struct InferenceSessionOptions {
-    pub(crate) cpu_num_threads: u16,
-    pub(crate) device: DeviceSpec,
+    cpu_num_threads: u16,
+    device: DeviceSpec,
 }
 
 // TODO: `ShapeError`を直接扱い、データ型違いはパニックにすべきでは？

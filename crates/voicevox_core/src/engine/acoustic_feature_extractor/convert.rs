@@ -247,7 +247,7 @@ impl<'de> Deserialize<'de> for T {
 }
 
 impl Consonant {
-    pub(in super::super) fn from_str_with_inner_error(s: &str) -> Result<Self, InvalidQueryError> {
+    fn from_str_with_inner_error(s: &str) -> Result<Self, InvalidQueryError> {
         use self::Phoneme::*;
 
         let error = |source| InvalidQueryError {
@@ -288,7 +288,7 @@ impl FromStr for Consonant {
 }
 
 impl NonConsonant {
-    pub(in super::super) fn from_str_with_inner_error(s: &str) -> Result<Self, InvalidQueryError> {
+    fn from_str_with_inner_error(s: &str) -> Result<Self, InvalidQueryError> {
         let error = |source| InvalidQueryError {
             what: "非子音",
             value: Some(Box::new(s.to_owned())),
