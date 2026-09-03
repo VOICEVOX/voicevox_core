@@ -421,14 +421,14 @@ class Synthesizer:
             スタイルID。
         """
         ...
-    def __create_audio_feature(
+    def create_audio_feature(
         self,
         audio_query: AudioQuery,
         style_id: StyleId | int,
         *,
         enable_interrogative_upspeak: bool = True,
     ) -> AudioFeature: ...
-    def __render(
+    def render(
         self,
         audio: AudioFeature,
         start: int,
