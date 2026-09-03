@@ -23,7 +23,10 @@ use self::object::{CApiObject as _, CApiObjectPtrExt as _};
 use self::result_code::VoicevoxResultCode;
 use self::slice_owner::U8_SLICE_OWNER;
 use anstream::{AutoStream, stream::RawStream};
-use c_impls::{VoicevoxSynthesizerPtrExt as _, VoicevoxVoiceModelFilePtrExt as _};
+use c_impls::{
+    VoicevoxAudioFeaturePtrExt as _, VoicevoxSynthesizerPtrExt as _,
+    VoicevoxVoiceModelFilePtrExt as _,
+};
 use chrono::SecondsFormat;
 use colorchoice::ColorChoice;
 use educe::Educe;
@@ -1592,6 +1595,136 @@ pub unsafe extern "C" fn voicevox_synthesizer_synthesis(
         unsafe { U8_SLICE_OWNER.own_and_lend(wav, output_wav, output_wav_length) };
         Ok(())
     })())
+}
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// AudioQueryから音声合成用の中間表現を<b>構築</b>(_construct_)する。
+///
+/// 生成した中間表現を解放するには ::voicevox_audio_feature_delete を使う。
+///
+/// @param [in] synthesizer 音声シンセサイザ
+/// @param [in] audio_query_json AudioQueryのJSON文字列
+/// @param [in] style_id スタイルID
+/// @param [in] options オプション
+/// @param [out] out_audio_feature 構築先
+///
+/// @returns 結果コード
+///
+/// \safety{
+/// - `audio_query_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+/// - `out_audio_feature`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+/// }
+///
+/// \orig-impl{voicevox_synthesizer_create_audio_feature}
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn voicevox_synthesizer_create_audio_feature(
+    synthesizer: *const VoicevoxSynthesizer,
+    audio_query_json: *const c_char,
+    style_id: VoicevoxStyleId,
+    options: VoicevoxSynthesisOptions,
+    out_audio_feature: NonNull<NonNull<VoicevoxAudioFeature>>,
+) -> VoicevoxResultCode {
+    init_logger_once();
+    into_result_code_with_error((|| {
+        // SAFETY: The safety contract must be upheld by the caller.
+        let audio_query_json = unsafe { CStr::from_ptr(audio_query_json) };
+        let audio_query = ValidateJson::validate_json(audio_query_json)?;
+        let VoicevoxSynthesisOptions {
+            enable_interrogative_upspeak,
+        } = options;
+        let audio_feature = synthesizer
+            .body()
+            .create_audio_feature(&audio_query, StyleId::new(style_id))
+            .enable_interrogative_upspeak(enable_interrogative_upspeak)
+            .perform()?;
+        let audio_feature = <VoicevoxAudioFeature as object::CApiObject>::new(audio_feature);
+        // SAFETY: The safety contract must be upheld by the caller.
+        unsafe { out_audio_feature.write_unaligned(audio_feature) };
+        Ok(())
+    })())
+}
+
+/// 音声合成用の中間表現。
+///
+/// <b>構築</b>(_construction_)は ::voicevox_synthesizer_create_audio_feature で行い、<b>破棄</b>(_destruction_)は ::voicevox_audio_feature_delete で行う。
+///
+/// \no-orig-impl{VoicevoxAudioFeature}
+#[derive(Debug, Educe)]
+#[educe(Default(expression = "Self { _padding: MaybeUninit::uninit() }"))]
+pub struct VoicevoxAudioFeature {
+    _padding: MaybeUninit<[u8; 1]>,
+}
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// ::VoicevoxAudioFeature のフレーム数を取得する。
+///
+/// @param [in] audio_feature 音声合成用の中間表現
+///
+/// @returns フレーム数
+///
+/// \no-orig-impl{voicevox_audio_feature_frame_length}
+#[unsafe(no_mangle)]
+pub extern "C" fn voicevox_audio_feature_frame_length(
+    audio_feature: *const VoicevoxAudioFeature,
+) -> usize {
+    init_logger_once();
+    audio_feature.frame_length()
+}
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// ::VoicevoxAudioFeature の一部区間から、16bit PCMで音声波形を生成する。
+///
+/// 生成したPCMデータを解放するには ::voicevox_wav_free を使う。
+///
+/// @param [in] synthesizer 音声シンセサイザ
+/// @param [in] audio_feature 音声合成用の中間表現
+/// @param [in] frame_start 開始フレーム番号
+/// @param [in] frame_stop 終了フレーム番号（この番号は含まれない）
+/// @param [out] output_pcm_length 出力のバイト長
+/// @param [out] output_pcm 出力先
+///
+/// @returns 結果コード
+///
+/// \safety{
+/// - `output_pcm_length`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+/// - `output_pcm`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+/// }
+///
+/// \no-orig-impl{voicevox_synthesizer_render_audio_feature}
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn voicevox_synthesizer_render_audio_feature(
+    synthesizer: *const VoicevoxSynthesizer,
+    audio_feature: *const VoicevoxAudioFeature,
+    frame_start: usize,
+    frame_stop: usize,
+    output_pcm_length: NonNull<usize>,
+    output_pcm: NonNull<NonNull<u8>>,
+) -> VoicevoxResultCode {
+    init_logger_once();
+    into_result_code_with_error((|| {
+        let pcm = synthesizer
+            .body()
+            .render(&audio_feature.body(), frame_start..frame_stop)?;
+        // SAFETY: The safety contract must be upheld by the caller.
+        unsafe { U8_SLICE_OWNER.own_and_lend(pcm, output_pcm, output_pcm_length) };
+        Ok(())
+    })())
+}
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// ::VoicevoxAudioFeature を<b>破棄</b>(_destruct_)する。
+///
+/// 破棄対象への他スレッドでのアクセスが存在する場合、それらがすべて終わるのを待ってから破棄する。
+///
+/// この関数の呼び出し後に破棄し終えた対象にアクセスすると、プロセスを異常終了する。
+///
+/// @param [in] audio_feature 破棄対象。nullable
+///
+/// \no-orig-impl{voicevox_audio_feature_delete}
+#[unsafe(no_mangle)]
+pub extern "C" fn voicevox_audio_feature_delete(audio_feature: *mut VoicevoxAudioFeature) {
+    init_logger_once();
+    audio_feature.drop_body();
 }
 
 /// ::voicevox_synthesizer_tts のオプション。
