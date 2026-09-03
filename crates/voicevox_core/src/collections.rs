@@ -147,7 +147,7 @@ mod non_empty_slice_iter {
     use super::AssertNonEmpty;
 
     #[derive(IntoIterator)]
-    pub(crate) struct NonEmptySliceIter<'a, T>(
+    pub(super) struct NonEmptySliceIter<'a, T>(
         /// # Invariant
         ///
         /// This must be non-empty.

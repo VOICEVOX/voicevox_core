@@ -553,7 +553,7 @@ pub(crate) enum MoraTail {
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, NoUninit, EnumCount)]
 #[cfg_attr(test, derive(strum::EnumIter))]
 #[repr(i64)]
-pub(crate) enum NonPauBaseVowel {
+pub(super) enum NonPauBaseVowel {
     //None = -1,
     //MorablePau = 0,
     //UnvoicedVowelA = 1,

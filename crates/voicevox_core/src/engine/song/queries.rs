@@ -756,7 +756,7 @@ mod optional_lyric {
         /// # Invariant
         ///
         /// This must come from `text`.
-        pub(super) phonemes: ArrayVec<(OptionalConsonant, NonPauBaseVowel), 1>,
+        phonemes: ArrayVec<(OptionalConsonant, NonPauBaseVowel), 1>,
     }
 
     impl OptionalLyric {

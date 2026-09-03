@@ -80,7 +80,7 @@ public final class Dll {
     loaded = true;
   }
 
-  static class LoggerInitializer {
-    native void initLogger();
+  private static class LoggerInitializer {
+    private native void initLogger();
   }
 }
