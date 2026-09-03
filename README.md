@@ -1,5 +1,9 @@
 # VOICEVOX CORE
 
+> [!NOTE]
+> プレビュー版ビルドの`0.15.0-preview.*`および`0.16.0-preview.*`は削除予定です。\
+> 早めの最新バージョン`0.16`への移行を推奨します。詳しくは[こちら](https://github.com/VOICEVOX/voicevox_core/issues/1067)。
+
 [![releases](https://img.shields.io/github/v/release/VOICEVOX/voicevox_core?label=release)](https://github.com/VOICEVOX/voicevox_core/releases)
 [![test](https://github.com/VOICEVOX/voicevox_core/actions/workflows/test.yml/badge.svg)](https://github.com/VOICEVOX/voicevox_core/actions/workflows/test.yml)
 [![dependency status](https://deps.rs/repo/github/VOICEVOX/voicevox_core/status.svg)](https://deps.rs/repo/github/VOICEVOX/voicevox_core)
