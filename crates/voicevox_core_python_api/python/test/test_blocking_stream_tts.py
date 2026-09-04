@@ -10,13 +10,14 @@ from voicevox_core.blocking import Onnxruntime, OpenJtalk, Synthesizer, VoiceMod
 
 def test(synthesizer: Synthesizer) -> None:
     TEXT = "こんにちは？"
-    STYLE_ID = 302  # `streaming_talk`に対応したスタイル。voicevox_core/model/sample.vvm/metas.jsonを参照。
+    # `streaming_talk`に対応したスタイルを使用。voicevox_core/model/sample.vvm/metas.jsonを参照。
+    STYLE_ID = 302
 
     wav1 = synthesizer.tts(TEXT, STYLE_ID)
 
     query = synthesizer.create_audio_query(TEXT, STYLE_ID)
     feat2 = synthesizer.create_audio_feature(query, STYLE_ID)
-    wav2 = synthesizer.render(feat2, 0, feat2.audio.frame_length())
+    wav2 = synthesizer.render(feat2, 0, feat2.frame_length)
 
     assert wav1 == wav2
 
