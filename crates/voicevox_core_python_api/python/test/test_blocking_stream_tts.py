@@ -10,7 +10,7 @@ from voicevox_core.blocking import Onnxruntime, OpenJtalk, Synthesizer, VoiceMod
 
 def test(synthesizer: Synthesizer) -> None:
     TEXT = "こんにちは？"
-    STYLE_ID = 0
+    STYLE_ID = 302  # `streaming_talk`に対応したスタイル。voicevox_core/model/sample.vvm/metas.jsonを参照。
 
     wav1 = synthesizer.tts(TEXT, STYLE_ID)
 
