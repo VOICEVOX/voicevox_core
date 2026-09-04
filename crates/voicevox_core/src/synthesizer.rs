@@ -213,6 +213,7 @@ fn trim_margin_from_wave(wave_with_margin: ndarray::Array1<f32>) -> ndarray::Arr
 }
 
 /// 音声の中間表現。
+#[cfg_attr(doc, doc(alias="VoicevoxAudioFeature"))]
 #[derive(Clone, PartialEq, derive_more::Debug)]
 pub struct AudioFeature {
     /// (フレーム数, 特徴数)の形を持つ音声特徴量。
@@ -1752,6 +1753,7 @@ pub(crate) mod blocking {
         }
 
         /// AudioQueryから音声合成用の中間表現を生成する。
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_create_audio_feature"))]
         pub fn create_audio_feature<'a>(
             &'a self,
             audio_query: &'a AudioQuery,
@@ -1766,6 +1768,7 @@ pub(crate) mod blocking {
         }
 
         /// 中間表現から16bit PCMで音声波形を生成する。
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_render"))]
         pub fn render(
             &self,
             audio: &AudioFeature,

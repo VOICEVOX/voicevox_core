@@ -1648,7 +1648,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_audio_feature(
 ///
 /// <b>構築</b>(_construction_)は ::voicevox_synthesizer_create_audio_feature で行い、<b>破棄</b>(_destruction_)は ::voicevox_audio_feature_delete で行う。
 ///
-/// \no-orig-impl{VoicevoxAudioFeature}
+/// \orig-impl{VoicevoxAudioFeature}
 #[derive(Debug, Educe)]
 #[educe(Default(expression = "Self { _padding: MaybeUninit::uninit() }"))]
 pub struct VoicevoxAudioFeature {
@@ -1690,9 +1690,9 @@ pub extern "C" fn voicevox_audio_feature_frame_length(
 /// - `output_pcm`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
 ///
-/// \no-orig-impl{voicevox_synthesizer_render_audio_feature}
+/// \orig-impl{voicevox_synthesizer_render}
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn voicevox_synthesizer_render_audio_feature(
+pub unsafe extern "C" fn voicevox_synthesizer_render(
     synthesizer: *const VoicevoxSynthesizer,
     audio_feature: *const VoicevoxAudioFeature,
     frame_start: usize,
