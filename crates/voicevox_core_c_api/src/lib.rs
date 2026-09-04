@@ -19,7 +19,7 @@ use self::helpers::{
     CApiError, ToCJson as _, UuidBytesExt as _, ValidateJson, accent_phrases_to_json,
     audio_query_model_to_json, ensure_utf8, into_result_code_with_error,
 };
-use self::object::{CApiObject as _, CApiObjectPtrExt as _};
+use self::object::{CApiObject, CApiObjectPtrExt as _};
 use self::result_code::VoicevoxResultCode;
 use self::slice_owner::U8_SLICE_OWNER;
 use anstream::{AutoStream, stream::RawStream};
@@ -1676,7 +1676,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_audio_feature(
             .create_audio_feature(&audio_query, StyleId::new(style_id))
             .enable_interrogative_upspeak(enable_interrogative_upspeak)
             .perform()?;
-        let audio_feature = <VoicevoxAudioFeature as object::CApiObject>::new(audio_feature);
+        let audio_feature = <VoicevoxAudioFeature as CApiObject>::new(audio_feature);
         // SAFETY: The safety contract must be upheld by the caller.
         unsafe { out_audio_feature.write_unaligned(audio_feature) };
         Ok(())
@@ -1710,6 +1710,7 @@ pub extern "C" fn voicevox_audio_feature_frame_length(
     audio_feature.frame_length()
 }
 
+// FIXME: voicevox_wav_freeをvoicevox_bytes_freeに改名
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// ::VoicevoxAudioFeature の一部区間から、16bit PCMで音声波形を生成する。
 ///
@@ -1717,8 +1718,8 @@ pub extern "C" fn voicevox_audio_feature_frame_length(
 ///
 /// @param [in] synthesizer 音声シンセサイザ
 /// @param [in] audio_feature 音声合成用の中間表現
-/// @param [in] frame_start 開始フレーム番号
-/// @param [in] frame_stop 終了フレーム番号（この番号は含まれない）
+/// @param [in] start_inclusive 開始フレーム番号
+/// @param [in] end_exclusive 終了フレーム番号（この番号は含まれない）
 /// @param [out] output_pcm_length 出力のバイト長
 /// @param [out] output_pcm 出力先
 ///
@@ -1734,8 +1735,8 @@ pub extern "C" fn voicevox_audio_feature_frame_length(
 pub unsafe extern "C" fn voicevox_synthesizer_render(
     synthesizer: *const VoicevoxSynthesizer,
     audio_feature: *const VoicevoxAudioFeature,
-    frame_start: usize,
-    frame_stop: usize,
+    start_inclusive: usize,
+    end_exclusive: usize,
     output_pcm_length: NonNull<usize>,
     output_pcm: NonNull<NonNull<u8>>,
 ) -> VoicevoxResultCode {
@@ -1743,7 +1744,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_render(
     into_result_code_with_error((|| {
         let pcm = synthesizer
             .body()
-            .render(&audio_feature.body(), frame_start..frame_stop)?;
+            .render(&audio_feature.body(), start_inclusive..end_exclusive)?;
         // SAFETY: The safety contract must be upheld by the caller.
         unsafe { U8_SLICE_OWNER.own_and_lend(pcm, output_pcm, output_pcm_length) };
         Ok(())
@@ -2178,6 +2179,7 @@ pub unsafe extern "C" fn voicevox_json_free(json: *mut c_char) {
     }
 }
 
+// FIXME: voicevox_synthesizer_renderで確保するPCMデータの管理にも使うため、voicevox_wav_freeをvoicevox_bytes_freeに改名
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// WAVデータを解放する。
 ///

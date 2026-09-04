@@ -452,20 +452,20 @@ class Synthesizer:
         stop: int,
     ) -> bytes:
         """
-        :class:`AudioFeature` から音声合成する。
+        :class:`AudioFeature` からPCM形式の音声バイナリを生成する。
 
         Parameters
         ----------
         audio_feature
             :class:`AudioFeature` 。
         start
-            開始フレーム。
+            生成範囲の始端（このフレームを含む）。
         stop
-            終了フレーム。
+            生成範囲の終端（このフレームは含まれない）。
 
         Returns
         -------
-        WAVデータ。
+        signed 16-bit little endianのPCMデータ。
         """
         ...
     def synthesis(

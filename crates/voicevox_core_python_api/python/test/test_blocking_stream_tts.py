@@ -16,10 +16,11 @@ def test(synthesizer: Synthesizer) -> None:
     wav1 = synthesizer.tts(TEXT, STYLE_ID)
 
     query = synthesizer.create_audio_query(TEXT, STYLE_ID)
-    feat2 = synthesizer.create_audio_feature(query, STYLE_ID)
-    pcm2 = synthesizer.render(feat2, 0, feat2.frame_length)
+    feat = synthesizer.create_audio_feature(query, STYLE_ID)
+    pcm = synthesizer.render(feat, 0, feat.frame_length)
+    wav2 = wav_from_s16le(pcm, query.output_sampling_rate, query.output_stereo)
 
-    assert wav1 == wav_from_s16le(pcm2, query.output_sampling_rate, query.output_stereo)
+    assert wav1 == wav2
 
 
 @pytest.fixture
