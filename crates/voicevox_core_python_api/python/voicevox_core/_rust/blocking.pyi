@@ -427,13 +427,47 @@ class Synthesizer:
         style_id: StyleId | int,
         *,
         enable_interrogative_upspeak: bool = True,
-    ) -> AudioFeature: ...
+    ) -> AudioFeature:
+        """
+        :class:`AudioQuery` から中間表現である :class:`AudioFeature` を生成する。
+
+        Parameters
+        ----------
+        audio_query
+            :class:`AudioQuery` 。
+        style_id
+            スタイルID。
+        enable_interrogative_upspeak
+            疑問文の調整を有効にするかどうか。
+
+        Returns
+        -------
+        :class:`AudioFeature` 。
+        """
+        ...
     def render(
         self,
         audio: AudioFeature,
         start: int,
         stop: int,
-    ) -> bytes: ...
+    ) -> bytes:
+        """
+        :class:`AudioFeature` から音声合成する。
+
+        Parameters
+        ----------
+        audio_feature
+            :class:`AudioFeature` 。
+        start
+            開始フレーム。
+        stop
+            終了フレーム。
+
+        Returns
+        -------
+        WAVデータ。
+        """
+        ...
     def synthesis(
         self,
         audio_query: AudioQuery,
