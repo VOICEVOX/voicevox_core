@@ -1013,6 +1013,36 @@ VoicevoxResultCode voicevox_ensure_compatible(const char *score_json,
                                               const char *frame_audio_query_json);
 
 /**
+ * signed 16-bit little endianのPCMデータからWAV形式のバイナリを生成する。
+ *
+ * @param [in] pcm_length PCMデータのバイト長
+ * @param [in] pcm PCMデータ
+ * @param [in] sampling_rate サンプリングレート
+ * @param [in] is_stereo ステレオかどうか
+ * @param [out] output_wav_length 出力のバイト長
+ * @param [out] output_wav 出力先
+ *
+ * @returns 結果コード
+ *
+ * \safety{
+ * - `pcm`はRustの`&[u8; pcm_length]`として解釈できなければならない。
+ * - `output_wav_length`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+ * - `output_wav`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+ * }
+ *
+ * \orig-impl{voicevox_wav_from_s16le}
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_wav_from_s16le(uintptr_t pcm_length,
+                                           const uint8_t *pcm,
+                                           uint32_t sampling_rate,
+                                           bool is_stereo,
+                                           uintptr_t *output_wav_length,
+                                           uint8_t **output_wav);
+
+/**
  * VVMファイルを開く。
  *
  * @param [in] path vvmファイルへのUTF-8のファイルパス

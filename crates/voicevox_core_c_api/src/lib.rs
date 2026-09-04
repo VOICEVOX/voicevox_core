@@ -805,6 +805,45 @@ pub unsafe extern "C" fn voicevox_ensure_compatible(
     })())
 }
 
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// signed 16-bit little endianのPCMデータからWAV形式のバイナリを生成する。
+///
+/// @param [in] pcm_length PCMデータのバイト長
+/// @param [in] pcm PCMデータ
+/// @param [in] sampling_rate サンプリングレート
+/// @param [in] is_stereo ステレオかどうか
+/// @param [out] output_wav_length 出力のバイト長
+/// @param [out] output_wav 出力先
+///
+/// @returns 結果コード
+///
+/// \safety{
+/// - `pcm`はRustの`&[u8; pcm_length]`として解釈できなければならない。
+/// - `output_wav_length`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+/// - `output_wav`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+/// }
+///
+/// \orig-impl{voicevox_wav_from_s16le}
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn voicevox_wav_from_s16le(
+    pcm_length: usize,
+    pcm: *const u8,
+    sampling_rate: u32,
+    is_stereo: bool,
+    output_wav_length: NonNull<usize>,
+    output_wav: NonNull<NonNull<u8>>,
+) -> VoicevoxResultCode {
+    init_logger_once();
+    into_result_code_with_error((|| {
+        // SAFETY: The safety contract must be upheld by the caller.
+        let pcm = unsafe { std::slice::from_raw_parts(pcm, pcm_length) };
+        let wav = voicevox_core::wav_from_s16le(pcm, sampling_rate, is_stereo);
+        // SAFETY: The safety contract must be upheld by the caller.
+        unsafe { U8_SLICE_OWNER.own_and_lend(wav, output_wav, output_wav_length) };
+        Ok(())
+    })())
+}
+
 /// 音声モデルファイル。
 ///
 /// VVMファイルと対応する。
