@@ -340,6 +340,15 @@ typedef int32_t VoicevoxUserDictWordType;
 typedef struct OpenJtalkRc OpenJtalkRc;
 
 /**
+ * 音声合成用の中間表現。
+ *
+ * <b>構築</b>(_construction_)は ::voicevox_synthesizer_create_audio_feature で行い、<b>破棄</b>(_destruction_)は ::voicevox_audio_feature_delete で行う。
+ *
+ * \orig-impl{VoicevoxAudioFeature}
+ */
+typedef struct VoicevoxAudioFeature VoicevoxAudioFeature;
+
+/**
  * ONNX Runtime。
  *
  * シングルトンであり、インスタンスは高々一つ。
@@ -1574,15 +1583,6 @@ VoicevoxResultCode voicevox_synthesizer_create_audio_feature(const struct Voicev
                                                              struct VoicevoxAudioFeature **out_audio_feature);
 
 /**
- * 音声合成用の中間表現。
- *
- * <b>構築</b>(_construction_)は ::voicevox_synthesizer_create_audio_feature で行い、<b>破棄</b>(_destruction_)は ::voicevox_audio_feature_delete で行う。
- *
- * \orig-impl{VoicevoxAudioFeature}
- */
-typedef struct VoicevoxAudioFeature VoicevoxAudioFeature;
-
-/**
  * ::VoicevoxAudioFeature のフレーム数を取得する。
  *
  * @param [in] audio_feature 音声合成用の中間表現
@@ -1620,8 +1620,8 @@ uintptr_t voicevox_audio_feature_frame_length(const struct VoicevoxAudioFeature 
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-VoicevoxResultCode voicevox_synthesizer_render(const struct VoicevoxSynthesizer* synthesizer,
-                                               const struct VoicevoxAudioFeature* audio_feature,
+VoicevoxResultCode voicevox_synthesizer_render(const struct VoicevoxSynthesizer *synthesizer,
+                                               const struct VoicevoxAudioFeature *audio_feature,
                                                uintptr_t frame_start,
                                                uintptr_t frame_stop,
                                                uintptr_t *output_pcm_length,
