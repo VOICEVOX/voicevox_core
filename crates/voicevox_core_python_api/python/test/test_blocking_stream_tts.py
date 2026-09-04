@@ -4,7 +4,7 @@
 
 import conftest
 import pytest
-from voicevox_core import AudioQuery
+from voicevox_core import wav_from_s16le
 from voicevox_core.blocking import Onnxruntime, OpenJtalk, Synthesizer, VoiceModelFile
 
 
@@ -17,9 +17,9 @@ def test(synthesizer: Synthesizer) -> None:
 
     query = synthesizer.create_audio_query(TEXT, STYLE_ID)
     feat2 = synthesizer.create_audio_feature(query, STYLE_ID)
-    wav2 = synthesizer.render(feat2, 0, feat2.frame_length)
+    pcm2 = synthesizer.render(feat2, 0, feat2.frame_length)
 
-    assert wav1 == wav2
+    assert wav1 == wav_from_s16le(pcm2)
 
 
 @pytest.fixture
