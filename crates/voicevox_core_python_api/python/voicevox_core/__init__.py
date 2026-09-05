@@ -1,8 +1,5 @@
 """無料で使える中品質なテキスト読み上げソフトウェア、VOICEVOXのコア。"""
 
-# TODO: `AudioFeature`と`wav_from_s16le`を復活させる
-# https://github.com/VOICEVOX/voicevox_core/issues/970
-
 from ._python import (  # noqa: F401
     AccelerationMode,
     AccentPhrase,
@@ -26,6 +23,7 @@ from ._python import (  # noqa: F401
 )
 from ._rust import (  # noqa: F401
     AnalyzeTextError,
+    AudioFeature,
     GetSupportedDevicesError,
     GpuSupportError,
     IncompatibleQueriesError,
@@ -49,6 +47,7 @@ from ._rust import (  # noqa: F401
     WordNotFoundError,
     __version__,
     ensure_compatible,
+    wav_from_s16le,
 )
 
 from . import asyncio, blocking  # noqa: F401 isort: skip
@@ -58,6 +57,7 @@ __all__ = [
     "AccelerationMode",
     "AccentPhrase",
     "AnalyzeTextError",
+    "AudioFeature",
     "AudioQuery",
     "asyncio",
     "blocking",
@@ -99,4 +99,5 @@ __all__ = [
     "VoiceModelId",
     "WordNotFoundError",
     "ensure_compatible",
+    "wav_from_s16le",
 ]

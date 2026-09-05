@@ -72,6 +72,7 @@ impl FrameAudioQuery {
 }
 
 /// 16bit PCMにヘッダを付加しWAVフォーマットのバイナリを生成する。
+#[cfg_attr(doc, doc(alias = "voicevox_wav_from_s16le"))]
 pub fn wav_from_s16le(pcm: &[u8], sampling_rate: u32, is_stereo: bool) -> Vec<u8> {
     let num_channels: u16 = if is_stereo { 2 } else { 1 };
     let bit_depth: u16 = 16;
