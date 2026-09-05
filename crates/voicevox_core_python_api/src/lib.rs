@@ -892,9 +892,6 @@ mod blocking {
                 .into_py_result(py)
         }
 
-        // TODO: 後で復活させる
-        // https://github.com/VOICEVOX/voicevox_core/issues/970
-        #[allow(non_snake_case)]
         #[pyo3(signature=(
             audio_query,
             style_id,
@@ -902,7 +899,7 @@ mod blocking {
             enable_interrogative_upspeak =
                 voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
         ))]
-        fn _Synthesizer__create_audio_feature(
+        fn create_audio_feature(
             &self,
             #[pyo3(from_py_with = crate::convert::from_audio_query)] audio_query: AudioQuery,
             style_id: u32,
@@ -919,10 +916,7 @@ mod blocking {
             Ok(AudioFeature { audio })
         }
 
-        // TODO: 後で復活させる
-        // https://github.com/VOICEVOX/voicevox_core/issues/970
-        #[allow(non_snake_case)]
-        fn _Synthesizer__render(
+        fn render(
             &self,
             audio: &AudioFeature,
             #[pyo3(from_py_with = crate::convert::from_audio_feature_range_start)] start: usize,

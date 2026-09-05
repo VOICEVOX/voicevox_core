@@ -421,19 +421,53 @@ class Synthesizer:
             スタイルID。
         """
         ...
-    def __create_audio_feature(
+    def create_audio_feature(
         self,
         audio_query: AudioQuery,
         style_id: StyleId | int,
         *,
         enable_interrogative_upspeak: bool = True,
-    ) -> AudioFeature: ...
-    def __render(
+    ) -> AudioFeature:
+        """
+        :class:`AudioQuery` から中間表現である :class:`AudioFeature` を生成する。
+
+        Parameters
+        ----------
+        audio_query
+            :class:`AudioQuery` 。
+        style_id
+            スタイルID。
+        enable_interrogative_upspeak
+            疑問文の調整を有効にするかどうか。
+
+        Returns
+        -------
+        :class:`AudioFeature` 。
+        """
+        ...
+    def render(
         self,
         audio: AudioFeature,
         start: int,
         stop: int,
-    ) -> bytes: ...
+    ) -> bytes:
+        """
+        :class:`AudioFeature` からPCM形式の音声バイナリを生成する。
+
+        Parameters
+        ----------
+        audio_feature
+            :class:`AudioFeature` 。
+        start
+            生成範囲の始端（このフレームを含む）。
+        stop
+            生成範囲の終端（このフレームは含まれない）。
+
+        Returns
+        -------
+        signed 16-bit little endianのPCMデータ。
+        """
+        ...
     def synthesis(
         self,
         audio_query: AudioQuery,

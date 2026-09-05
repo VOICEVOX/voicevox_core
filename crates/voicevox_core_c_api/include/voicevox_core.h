@@ -340,6 +340,15 @@ typedef int32_t VoicevoxUserDictWordType;
 typedef struct OpenJtalkRc OpenJtalkRc;
 
 /**
+ * 音声合成用の中間表現。
+ *
+ * <b>構築</b>(_construction_)は ::voicevox_synthesizer_create_audio_feature で行い、<b>破棄</b>(_destruction_)は ::voicevox_audio_feature_delete で行う。
+ *
+ * \orig-impl{VoicevoxAudioFeature}
+ */
+typedef struct VoicevoxAudioFeature VoicevoxAudioFeature;
+
+/**
  * ONNX Runtime。
  *
  * シングルトンであり、インスタンスは高々一つ。
@@ -1004,6 +1013,36 @@ VoicevoxResultCode voicevox_ensure_compatible(const char *score_json,
                                               const char *frame_audio_query_json);
 
 /**
+ * signed 16-bit little endianのPCMデータからWAV形式のバイナリを生成する。
+ *
+ * @param [in] pcm_length PCMデータのバイト長
+ * @param [in] pcm PCMデータ
+ * @param [in] sampling_rate サンプリングレート
+ * @param [in] is_stereo ステレオかどうか
+ * @param [out] output_wav_length 出力のバイト長
+ * @param [out] output_wav 出力先
+ *
+ * @returns 結果コード
+ *
+ * \safety{
+ * - `pcm`は長さ`pcm_length`にわたって<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+ * - `output_wav_length`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+ * - `output_wav`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+ * }
+ *
+ * \orig-impl{voicevox_wav_from_s16le}
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+void voicevox_wav_from_s16le(uintptr_t pcm_length,
+                             const uint8_t *pcm,
+                             uint32_t sampling_rate,
+                             bool is_stereo,
+                             uintptr_t *output_wav_length,
+                             uint8_t **output_wav);
+
+/**
  * VVMファイルを開く。
  *
  * @param [in] path vvmファイルへのUTF-8のファイルパス
@@ -1543,6 +1582,96 @@ VoicevoxResultCode voicevox_synthesizer_synthesis(const struct VoicevoxSynthesiz
                                                   struct VoicevoxSynthesisOptions options,
                                                   uintptr_t *output_wav_length,
                                                   uint8_t **output_wav);
+
+/**
+ * AudioQueryから音声合成用の中間表現を<b>構築</b>(_construct_)する。
+ *
+ * 生成した中間表現を解放するには ::voicevox_audio_feature_delete を使う。
+ *
+ * @param [in] synthesizer 音声シンセサイザ
+ * @param [in] audio_query_json AudioQueryのJSON文字列
+ * @param [in] style_id スタイルID
+ * @param [in] options オプション
+ * @param [out] out_audio_feature 構築先
+ *
+ * @returns 結果コード
+ *
+ * \safety{
+ * - `audio_query_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+ * - `out_audio_feature`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+ * }
+ *
+ * \orig-impl{voicevox_synthesizer_create_audio_feature}
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_synthesizer_create_audio_feature(const struct VoicevoxSynthesizer *synthesizer,
+                                                             const char *audio_query_json,
+                                                             VoicevoxStyleId style_id,
+                                                             struct VoicevoxSynthesisOptions options,
+                                                             struct VoicevoxAudioFeature **out_audio_feature);
+
+/**
+ * ::VoicevoxAudioFeature のフレーム数を取得する。
+ *
+ * @param [in] audio_feature 音声合成用の中間表現
+ *
+ * @returns フレーム数
+ *
+ * \no-orig-impl{voicevox_audio_feature_frame_length}
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+uintptr_t voicevox_audio_feature_frame_length(const struct VoicevoxAudioFeature *audio_feature);
+
+/**
+ * ::VoicevoxAudioFeature の一部区間から、16bit PCMで音声波形を生成する。
+ *
+ * 生成したPCMデータを解放するには ::voicevox_wav_free を使う。
+ *
+ * @param [in] synthesizer 音声シンセサイザ
+ * @param [in] audio_feature 音声合成用の中間表現
+ * @param [in] start_inclusive 開始フレーム番号
+ * @param [in] end_exclusive 終了フレーム番号（この番号は含まれない）
+ * @param [out] output_pcm_length 出力のバイト長
+ * @param [out] output_pcm 出力先
+ *
+ * @returns 結果コード
+ *
+ * \safety{
+ * - `output_pcm_length`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+ * - `output_pcm`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+ * }
+ *
+ * \orig-impl{voicevox_synthesizer_render}
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_synthesizer_render(const struct VoicevoxSynthesizer *synthesizer,
+                                               const struct VoicevoxAudioFeature *audio_feature,
+                                               uintptr_t start_inclusive,
+                                               uintptr_t end_exclusive,
+                                               uintptr_t *output_pcm_length,
+                                               uint8_t **output_pcm);
+
+/**
+ * ::VoicevoxAudioFeature を<b>破棄</b>(_destruct_)する。
+ *
+ * 破棄対象への他スレッドでのアクセスが存在する場合、それらがすべて終わるのを待ってから破棄する。
+ *
+ * この関数の呼び出し後に破棄し終えた対象にアクセスすると、プロセスを異常終了する。
+ *
+ * @param [in] audio_feature 破棄対象。nullable
+ *
+ * \no-orig-impl{voicevox_audio_feature_delete}
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+void voicevox_audio_feature_delete(struct VoicevoxAudioFeature *audio_feature);
 
 /**
  * デフォルトのテキスト音声合成オプションを生成する

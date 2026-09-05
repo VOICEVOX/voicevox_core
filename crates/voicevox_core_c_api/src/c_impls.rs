@@ -14,8 +14,8 @@ use ref_cast::ref_cast_custom;
 use voicevox_core::{CharacterMeta, Result, VoiceModelId};
 
 use crate::{
-    OpenJtalkRc, VoicevoxInitializeOptions, VoicevoxOnnxruntime, VoicevoxSynthesizer,
-    VoicevoxUserDict, VoicevoxVoiceModelFile,
+    OpenJtalkRc, VoicevoxAudioFeature, VoicevoxInitializeOptions, VoicevoxOnnxruntime,
+    VoicevoxSynthesizer, VoicevoxUserDict, VoicevoxVoiceModelFile,
     helpers::CApiResult,
     object::{CApiObject, CApiObjectPtrExt as _, MaybeDeleted},
 };
@@ -142,6 +142,13 @@ impl *const VoicevoxVoiceModelFile {
     }
 }
 
+#[ext(VoicevoxAudioFeaturePtrExt)]
+impl *const VoicevoxAudioFeature {
+    pub(crate) fn frame_length(self) -> usize {
+        self.body().frame_length()
+    }
+}
+
 fn metas_to_json(metas: &[CharacterMeta]) -> CString {
     let metas = serde_json::to_string(metas).expect("should not fail");
     CString::new(metas).expect("should not contain NUL")
@@ -153,6 +160,7 @@ fn metas_to_json(metas: &[CharacterMeta]) -> CString {
     [ VoicevoxUserDict ]       [ voicevox_core::blocking::UserDict ];
     [ VoicevoxSynthesizer ]    [ voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk> ];
     [ VoicevoxVoiceModelFile ] [ voicevox_core::blocking::VoiceModelFile ];
+    [ VoicevoxAudioFeature ]   [ voicevox_core::AudioFeature ];
 )]
 impl CApiObject for H {
     type RustApiObject = B;
