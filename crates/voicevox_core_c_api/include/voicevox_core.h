@@ -1025,7 +1025,7 @@ VoicevoxResultCode voicevox_ensure_compatible(const char *score_json,
  * @returns 結果コード
  *
  * \safety{
- * - `pcm`はRustの`&[u8; pcm_length]`として解釈できなければならない。
+ * - `pcm`は長さ`pcm_length`にわたって<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
  * - `output_wav_length`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  * - `output_wav`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  * }
@@ -1035,12 +1035,12 @@ VoicevoxResultCode voicevox_ensure_compatible(const char *score_json,
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-VoicevoxResultCode voicevox_wav_from_s16le(uintptr_t pcm_length,
-                                           const uint8_t *pcm,
-                                           uint32_t sampling_rate,
-                                           bool is_stereo,
-                                           uintptr_t *output_wav_length,
-                                           uint8_t **output_wav);
+void voicevox_wav_from_s16le(uintptr_t pcm_length,
+                             const uint8_t *pcm,
+                             uint32_t sampling_rate,
+                             bool is_stereo,
+                             uintptr_t *output_wav_length,
+                             uint8_t **output_wav);
 
 /**
  * VVMファイルを開く。
@@ -1633,8 +1633,8 @@ uintptr_t voicevox_audio_feature_frame_length(const struct VoicevoxAudioFeature 
  *
  * @param [in] synthesizer 音声シンセサイザ
  * @param [in] audio_feature 音声合成用の中間表現
- * @param [in] frame_start 開始フレーム番号
- * @param [in] frame_stop 終了フレーム番号（この番号は含まれない）
+ * @param [in] start_inclusive 開始フレーム番号
+ * @param [in] end_exclusive 終了フレーム番号（この番号は含まれない）
  * @param [out] output_pcm_length 出力のバイト長
  * @param [out] output_pcm 出力先
  *
@@ -1652,8 +1652,8 @@ __declspec(dllimport)
 #endif
 VoicevoxResultCode voicevox_synthesizer_render(const struct VoicevoxSynthesizer *synthesizer,
                                                const struct VoicevoxAudioFeature *audio_feature,
-                                               uintptr_t frame_start,
-                                               uintptr_t frame_stop,
+                                               uintptr_t start_inclusive,
+                                               uintptr_t end_exclusive,
                                                uintptr_t *output_pcm_length,
                                                uint8_t **output_pcm);
 

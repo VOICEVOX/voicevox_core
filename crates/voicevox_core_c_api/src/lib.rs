@@ -818,7 +818,7 @@ pub unsafe extern "C" fn voicevox_ensure_compatible(
 /// @returns 結果コード
 ///
 /// \safety{
-/// - `pcm`はRustの`&[u8; pcm_length]`として解釈できなければならない。
+/// - `pcm`は長さ`pcm_length`にわたって<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// - `output_wav_length`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// - `output_wav`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
@@ -832,16 +832,13 @@ pub unsafe extern "C" fn voicevox_wav_from_s16le(
     is_stereo: bool,
     output_wav_length: NonNull<usize>,
     output_wav: NonNull<NonNull<u8>>,
-) -> VoicevoxResultCode {
+) {
     init_logger_once();
-    into_result_code_with_error((|| {
-        // SAFETY: The safety contract must be upheld by the caller.
-        let pcm = unsafe { std::slice::from_raw_parts(pcm, pcm_length) };
-        let wav = voicevox_core::wav_from_s16le(pcm, sampling_rate, is_stereo);
-        // SAFETY: The safety contract must be upheld by the caller.
-        unsafe { U8_SLICE_OWNER.own_and_lend(wav, output_wav, output_wav_length) };
-        Ok(())
-    })())
+    // SAFETY: The safety contract must be upheld by the caller.
+    let pcm = unsafe { std::slice::from_raw_parts(pcm, pcm_length) };
+    let wav = voicevox_core::wav_from_s16le(pcm, sampling_rate, is_stereo);
+    // SAFETY: The safety contract must be upheld by the caller.
+    unsafe { U8_SLICE_OWNER.own_and_lend(wav, output_wav, output_wav_length) };
 }
 
 /// 音声モデルファイル。
