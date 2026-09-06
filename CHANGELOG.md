@@ -21,6 +21,10 @@
 
 - \[Rust,C,Python\] `Synthesizer::create_audio_feature`と`Synthesizer::render`が追加されます ([#851], [#854], [#864], [#867], [#879], [#918], [#972], [#1319], [#1363], [#1371], [#1376], [#1400], [#1401], [#1419], [#1418], [#1420], [#1421], [#1423], [#1422], [#1426], [#1430])。
 
+### Fixed
+
+- \[Python\] `VoiceModelFile.open`が送出する`InvalidModelFormatError`が、`voicevox_core`モジュールにて適切に公開されます ([#1429])。
+
 ## [0.17.0] - 2026-08-14 (+09:00)
 
 ### Added
@@ -1553,6 +1557,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1422]: https://github.com/VOICEVOX/voicevox_core/pull/1422
 [#1423]: https://github.com/VOICEVOX/voicevox_core/pull/1423
 [#1426]: https://github.com/VOICEVOX/voicevox_core/pull/1426
+[#1429]: https://github.com/VOICEVOX/voicevox_core/pull/1429
 [#1430]: https://github.com/VOICEVOX/voicevox_core/pull/1430
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
