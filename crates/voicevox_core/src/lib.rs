@@ -239,7 +239,7 @@
 //!
 //! ユーザーガイドの[テキスト音声合成の流れ]を参照。
 //!
-//! 以下の`wav1`から`wav4`はすべて同一となる。
+//! 以下の`wav1`から`wav6`はすべて同一となる。
 //!
 //! [テキスト音声合成の流れ]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/tts-process.md
 //!
@@ -259,7 +259,7 @@
 //! #   #[cfg(false)]
 //!     const TEXT: &str = _;
 //! #
-//! #   const STYLE_ID: StyleId = StyleId(0);
+//! #   const STYLE_ID: StyleId = StyleId(302);
 //! #   #[cfg(false)]
 //!     const STYLE_ID: StyleId = _;
 //!
@@ -291,7 +291,21 @@
 //!         synth.synthesis(&query, STYLE_ID).perform()?
 //!     };
 //!
-//!     assert_eq!(1, HashSet::from([wav1, wav2, wav3, wav4, wav5]).len());
+//!     let wav6 = {
+//!         let phrases = synth.text_analyzer().analyze(TEXT)?;
+//!         let phrases = synth.replace_phoneme_length(&phrases, STYLE_ID)?;
+//!         let phrases = synth.replace_mora_pitch(&phrases, STYLE_ID)?;
+//!         let query = AudioQuery::from(phrases);
+//!         let feat = synth.create_audio_feature(&query, STYLE_ID).perform()?;
+//!         let pcm = synth.render(&feat, 0..feat.frame_length())?;
+//!         voicevox_core::wav_from_s16le(
+//!             &pcm,
+//!             query.output_sampling_rate.get().get(),
+//!             query.output_stereo,
+//!         )
+//!     };
+//!
+//!     assert_eq!(1, HashSet::from([wav1, wav2, wav3, wav4, wav5, wav6]).len());
 //!     Ok(())
 //! }
 //! #

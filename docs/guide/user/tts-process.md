@@ -8,14 +8,18 @@ flowchart TD;
     ap-without-mora-data[音高・音素長<b>抜きの</b><br><a href="https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/index.html#voicevox_core.AccentPhrase">アクセント句</a>の列]
     ap-with-mora-data[音高・音素長<b>入りの</b><br><a href="https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/index.html#voicevox_core.AccentPhrase">アクセント句</a>の列]
     aq[<a href="https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/index.html#voicevox_core.AudioQuery">AudioQuery</a>]
+    af[<a href="https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/index.html#voicevox_core.AudioFeature">AudioFeature</a>]
+    pcm[PCM形式の音声]
     wav[WAV形式の音声]
 
     ja-txt -->|<a href="https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/blocking/index.html#voicevox_core.blocking.OpenJtalk.analyze">OpenJtalk.analyze</a>| ap-without-mora-data
            -->|<ul><li><a href="https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/blocking/index.html#voicevox_core.blocking.Synthesizer.replace_phoneme_length">Synthesizer.replace_phoneme_length</a></li><li><a href="https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/blocking/index.html#voicevox_core.blocking.Synthesizer.replace_mora_pitch">Synthesizer.replace_mora_pitch</a></li><ul>| ap-with-mora-data
            -->|<a href="https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/index.html#voicevox_core.AudioQuery.from_accent_phrases">AudioQuery.from_accent_phrases</a>| aq
-           -->|<a href="https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/blocking/index.html#voicevox_core.blocking.Synthesizer.synthesis">Synthesizer.synthesis</a>| wav
+           -->|<a href="https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/blocking/index.html#voicevox_core.blocking.Synthesizer.create_audio_feature">Synthesizer.create_audio_feature</a>| af
+           -->|<a href="https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/blocking/index.html#voicevox_core.blocking.Synthesizer.render">Synthesizer.render</a>| pcm
+           -->|<a href="https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/index.html#voicevox_core.wav_from_s16le">wav_from_s16le</a>| wav
 
-    linkStyle 0,1,2,3 font-family:monospace;
+    linkStyle 0,1,2,3,4,5 font-family:monospace;
 ```
 
 毎回これらの関数を経るのは大変なので、ショートハンドとなるAPIもあります。例えば[`Synthesizer.tts`]は日本語のテキストから直接音声を生成します。
