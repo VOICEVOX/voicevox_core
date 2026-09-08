@@ -180,6 +180,16 @@ stderr.unix = '''
 {timestamp}  INFO voicevox_core::synthesizer: CPUを利用します
 '''
 
+[streaming_talk]
+output."こんにちは、音声合成の世界へようこそ".wav_length = 186412
+stderr.windows = '''
+{windows-video-cards}
+{timestamp}  INFO voicevox_core::synthesizer: CPUを利用します
+'''
+stderr.unix = '''
+{timestamp}  INFO voicevox_core::synthesizer: CPUを利用します
+'''
+
 [synthesizer_new_output_json]
 metas = '''
 [
