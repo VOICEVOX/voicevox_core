@@ -480,12 +480,16 @@ trait AsInner {
 
     async fn render(&self, audio: &AudioFeature, range: std::ops::Range<usize>) -> Result<Vec<u8>> {
         // TODO: 44.1kHzなどの対応
-        if range.is_empty() {
-            // FIXME: `start>end`に対してパニックせずに正常に空を返してしまうのでは？
-            // 指定区間が空のときは早期リターン
+        let spec_segment = crop_with_margin(audio, range.clone());
+        if spec_segment.nrows() == 2 * MARGIN {
+            // このまま推論しても問題ないが、実行時間短縮のため推論をスキップする。
+
+            assert!(range.is_empty());
+            // 一貫性の観点から、推論を行わない場合でも`StyleNotFound`エラーが出るようにする。
+            self.status()
+                .ids_for::<StreamingTalkDomain>(audio.style_id)?;
             return Ok(vec![]);
         }
-        let spec_segment = crop_with_margin(audio, range);
         let wave_with_margin = self
             .render_audio_segment(spec_segment.to_owned(), audio.style_id)
             .await?;
