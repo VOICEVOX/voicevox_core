@@ -854,11 +854,10 @@ pub unsafe extern "C" fn voicevox_wav_from_s16le(
             },
         );
     }
-    let pcm = match pcm_length {
-        0 => &[],
-        // SAFETY: The safety contract must be upheld by the caller.
-        pcm_length => unsafe { std::slice::from_raw_parts(pcm, pcm_length) },
-    };
+    // SAFETY:
+    // - We have denied null.
+    // - The safety contract must be upheld by the caller.
+    let pcm = unsafe { std::slice::from_raw_parts(pcm, pcm_length) };
     let wav = voicevox_core::wav_from_s16le(pcm, sampling_rate, is_stereo);
     // SAFETY: The safety contract must be upheld by the caller.
     unsafe { U8_SLICE_OWNER.own_and_lend(wav, output_wav, output_wav_length) };

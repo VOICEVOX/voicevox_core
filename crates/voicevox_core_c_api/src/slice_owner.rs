@@ -86,7 +86,7 @@ impl<T: SliceElement> SliceOwner<T> {
         let Some(ptr) = NonNull::new(ptr) else { return };
 
         if ptr == T::PTR_FOR_EMPTY {
-            warn!("`voicevox_empty_bytes`を解放することはできません");
+            warn!("`{}`を解放することはできません", T::EMPTY_SLICE_VAR_NAME);
             return;
         }
 
@@ -102,6 +102,7 @@ impl<T: SliceElement> SliceOwner<T> {
 }
 
 pub(crate) trait SliceElement: Sized + 'static {
+    const EMPTY_SLICE_VAR_NAME: &str;
     const REF_FOR_EMPTY: &'static MaybeUninit<Self>;
 
     const PTR_FOR_EMPTY: NonNull<Self> =
@@ -109,6 +110,7 @@ pub(crate) trait SliceElement: Sized + 'static {
 }
 
 impl SliceElement for u8 {
+    const EMPTY_SLICE_VAR_NAME: &str = "voicevox_empty_bytes";
     const REF_FOR_EMPTY: &'static MaybeUninit<Self> = {
         static DUMMY: MaybeUninit<u8> = MaybeUninit::uninit();
         &DUMMY
