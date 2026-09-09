@@ -279,6 +279,7 @@ impl assert_cdylib::TestCase for TestCase {
                 let mut accent_phrases = MaybeUninit::uninit();
                 assert_ok(unsafe {
                     // SAFETY:
+                    // - `text` is valid string.
                     // - `accent_phrases` is valid for writes.
                     lib.voicevox_open_jtalk_rc_analyze(
                         openjtalk,
@@ -392,7 +393,7 @@ impl assert_cdylib::TestCase for TestCase {
                 });
                 // SAFETY: `accent_phrases` is valid and is no longer used.
                 unsafe { lib.voicevox_json_free(accent_phrases) };
-                // SAFETY: `voicevox_synthesizer_replace_mora_length` initializes
+                // SAFETY: `voicevox_synthesizer_replace_phoneme_length` initializes
                 // `next_accent_phrases` if succeeded.
                 unsafe { next_accent_phrases.assume_init() }
             };
@@ -411,13 +412,16 @@ impl assert_cdylib::TestCase for TestCase {
                 });
                 // SAFETY: `accent_phrases` is valid and is no longer used.
                 unsafe { lib.voicevox_json_free(accent_phrases) };
-                // SAFETY: `voicevox_synthesizer_replace_mora_length` initializes
+                // SAFETY: `voicevox_synthesizer_replace_mora_pitch` initializes
                 // `next_accent_phrases` if succeeded.
                 unsafe { next_accent_phrases.assume_init() }
             };
             let audio_query = {
                 let mut audio_query = MaybeUninit::uninit();
                 assert_ok(unsafe {
+                    // SAFETY:
+                    // - `accent_phrases` is a valid string.
+                    // - `next_accent_phrases` is valid for writes.
                     lib.voicevox_audio_query_create_from_accent_phrases(
                         accent_phrases,
                         audio_query.as_mut_ptr(),
