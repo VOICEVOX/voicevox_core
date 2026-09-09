@@ -7,6 +7,7 @@ mod double_delete_voice_model_file;
 mod ensure_compatible;
 mod free_for_null;
 mod global_info;
+mod render_empty;
 mod simple_tts;
 mod song;
 mod streaming_talk;
