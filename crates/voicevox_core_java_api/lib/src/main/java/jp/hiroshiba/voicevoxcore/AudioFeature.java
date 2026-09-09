@@ -8,7 +8,20 @@ public final class AudioFeature {
     Dll.loadLibrary();
   }
 
+  /** フレームレート。全体の秒数は{@code getFrameLength() / FRAME_RATE}で表せる。 */
+  public static final double FRAME_RATE = 24000. / 256.;
+
+  static {
+    assert FRAME_RATE == rsFrameRate();
+  }
+
+  private static native double rsFrameRate();
+
   private long handle;
+
+  private AudioFeature(long handle) {
+    this.handle = handle;
+  }
 
   protected void finalize() throws Throwable {
     rsDrop();
