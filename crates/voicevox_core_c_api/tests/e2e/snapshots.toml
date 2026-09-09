@@ -160,6 +160,17 @@ result_messages.33 = "無効なFrameAudioQueryです"
 result_messages.34 = "無効なFramePhonemeです"
 stderr = ''
 
+[render_empty]
+stderr.windows = '''
+{windows-video-cards}
+{timestamp}  INFO voicevox_core::synthesizer: CPUを利用します
+{timestamp}  WARN voicevox_core::slice_owner: `voicevox_empty_bytes`を解放することはできません
+'''
+stderr.unix = '''
+{timestamp}  INFO voicevox_core::synthesizer: CPUを利用します
+{timestamp}  WARN voicevox_core::slice_owner: `voicevox_empty_bytes`を解放することはできません
+'''
+
 [simple_tts]
 output."こんにちは、音声合成の世界へようこそ".wav_length = 176172
 stderr.windows = '''
