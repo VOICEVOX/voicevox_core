@@ -318,7 +318,9 @@ public final class Synthesizer {
   @Nonnull
   public byte[] render(AudioFeature audioFeature, long startInclusive, long endExclusive)
       throws RunModelException {
-    if (startInclusive < 0 || endExclusive < startInclusive || endExclusive > audioFeature.getFrameLength()) {
+    if (startInclusive < 0
+        || endExclusive < startInclusive
+        || endExclusive > audioFeature.getFrameLength()) {
       throw new IllegalArgumentException("range");
     }
     return rsRender(audioFeature, startInclusive, endExclusive);
