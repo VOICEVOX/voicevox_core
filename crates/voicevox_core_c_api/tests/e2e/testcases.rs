@@ -9,6 +9,7 @@ mod free_for_null;
 mod global_info;
 mod simple_tts;
 mod song;
+mod streaming_talk;
 mod synthesizer_new_output_json;
 mod tts;
 mod user_dict_load;
