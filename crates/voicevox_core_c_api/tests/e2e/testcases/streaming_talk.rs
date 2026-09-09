@@ -32,7 +32,7 @@ struct TestCase {
     text: String,
 }
 
-#[typetag::serde(name = "tts")]
+#[typetag::serde(name = "streaming_talk")]
 impl assert_cdylib::TestCase for TestCase {
     unsafe fn exec(&self, lib: Library) -> anyhow::Result<()> {
         // SAFETY: The safety contract must be upheld by the caller.
@@ -463,6 +463,152 @@ impl assert_cdylib::TestCase for TestCase {
             (wav_length, wav)
         };
 
+        // `voicevox_open_jtalk_rc_analyze`
+        // → `voicevox_synthesizer_replace_phoneme_length`
+        // → `voicevox_synthesizer_replace_mora_pitch`
+        // → `voicevox_audio_query_create_from_accent_phrases`
+        // → `voicevox_synthesizer_create_audio_feature`
+        // → `voicevox_synthesizer_render`
+        // → `voicevox_wav_from_s16le`
+        let (wav_length6, wav6) = {
+            let accent_phrases = {
+                let mut accent_phrases = MaybeUninit::uninit();
+                assert_ok(unsafe {
+                    // SAFETY:
+                    // - `accent_phrases` is valid for writes.
+                    lib.voicevox_open_jtalk_rc_analyze(
+                        openjtalk,
+                        text.as_ptr(),
+                        accent_phrases.as_mut_ptr(),
+                    )
+                });
+                // SAFETY: `voicevox_open_jtalk_rc_analyze` initializes `accent_phrases` if
+                // succeeded.
+                unsafe { accent_phrases.assume_init() }
+            };
+            let accent_phrases = {
+                let mut next_accent_phrases = MaybeUninit::uninit();
+                assert_ok(unsafe {
+                    // SAFETY:
+                    // - `accent_phrases` is a valid string.
+                    // - `next_accent_phrases` is valid for writes.
+                    lib.voicevox_synthesizer_replace_phoneme_length(
+                        synthesizer,
+                        accent_phrases,
+                        STYLE_ID,
+                        next_accent_phrases.as_mut_ptr(),
+                    )
+                });
+                // SAFETY: `accent_phrases` is valid and is no longer used.
+                unsafe { lib.voicevox_json_free(accent_phrases) };
+                // SAFETY: `voicevox_synthesizer_replace_phoneme_length` initializes
+                // `next_accent_phrases` if succeeded.
+                unsafe { next_accent_phrases.assume_init() }
+            };
+            let accent_phrases = {
+                let mut next_accent_phrases = MaybeUninit::uninit();
+                assert_ok(unsafe {
+                    // SAFETY:
+                    // - `accent_phrases` is a valid string.
+                    // - `next_accent_phrases` is valid for writes.
+                    lib.voicevox_synthesizer_replace_mora_pitch(
+                        synthesizer,
+                        accent_phrases,
+                        STYLE_ID,
+                        next_accent_phrases.as_mut_ptr(),
+                    )
+                });
+                // SAFETY: `accent_phrases` is valid and is no longer used.
+                unsafe { lib.voicevox_json_free(accent_phrases) };
+                // SAFETY: `voicevox_synthesizer_replace_mora_pitch` initializes
+                // `next_accent_phrases` if succeeded.
+                unsafe { next_accent_phrases.assume_init() }
+            };
+            let audio_query = {
+                let mut audio_query = MaybeUninit::uninit();
+                assert_ok(unsafe {
+                    // SAFETY:
+                    // - `accent_phrases` is a valid string.
+                    // - `next_accent_phrases` is valid for writes.
+                    lib.voicevox_audio_query_create_from_accent_phrases(
+                        accent_phrases,
+                        audio_query.as_mut_ptr(),
+                    )
+                });
+                // SAFETY: `accent_phrases` is valid and is no longer used.
+                unsafe { lib.voicevox_json_free(accent_phrases) };
+                // SAFETY: `voicevox_audio_query_create_from_accent_phrases` initializes
+                // `audio_query` if succeeded.
+                unsafe { audio_query.assume_init() }
+            };
+            let audio_feature = {
+                let mut audio_feature = MaybeUninit::uninit();
+                assert_ok(unsafe {
+                    // SAFETY:
+                    // - `audio_query` is a valid string.
+                    // - `audio_feature` is valid for writes.
+                    lib.voicevox_synthesizer_create_audio_feature(
+                        synthesizer,
+                        audio_query,
+                        STYLE_ID,
+                        lib.voicevox_make_default_synthesis_options(),
+                        audio_feature.as_mut_ptr(),
+                    )
+                });
+                // SAFETY: `voicevox_synthesizer_create_audio_feature` initializes `audio_feature`
+                // if succeeded.
+                unsafe { audio_feature.assume_init() }
+            };
+            let (pcm_length, pcm) = {
+                let mut pcm_length = MaybeUninit::uninit();
+                let mut pcm = MaybeUninit::uninit();
+                assert_ok(unsafe {
+                    // SAFETY: `pcm_length` and `pcm` are valid for writes.
+                    lib.voicevox_synthesizer_render(
+                        synthesizer,
+                        audio_feature,
+                        0,
+                        lib.voicevox_audio_feature_frame_length(audio_feature),
+                        pcm_length.as_mut_ptr(),
+                        pcm.as_mut_ptr(),
+                    )
+                });
+                // SAFETY: `voicevox_synthesizer_render` initializes `pcm_length` and `pcm` if
+                // succeeded.
+                unsafe { (pcm_length.assume_init(), pcm.assume_init()) }
+            };
+
+            let mut wav_length = MaybeUninit::uninit();
+            let mut wav = MaybeUninit::uninit();
+
+            unsafe {
+                // SAFETY:
+                // - `pcm` is valid for `pcm_length` bytes.
+                // - `wav_length` and `wav` are valid for writes.
+                lib.voicevox_wav_from_s16le(
+                    pcm_length,
+                    pcm,
+                    24000,
+                    false,
+                    wav_length.as_mut_ptr(),
+                    wav.as_mut_ptr(),
+                )
+            };
+
+            // SAFETY: `audio_query` and `pcm` are valid and is no longer used.
+            unsafe { lib.voicevox_json_free(audio_query) };
+            unsafe { lib.voicevox_wav_free(pcm) };
+
+            // SAFETY: `voicevox_audio_feature_delete` has no safety requirements.
+            unsafe { lib.voicevox_audio_feature_delete(audio_feature) };
+
+            // SAFETY: `voicevox_wav_from_s16le` initializes `wav_length` and `wav`.
+            let wav_length = unsafe { wav_length.assume_init() };
+            let wav = unsafe { wav.assume_init() };
+
+            (wav_length, wav)
+        };
+
         std::assert_eq!(SNAPSHOTS.output[&self.text].wav_length, wav_length1);
 
         std::assert_eq!(
@@ -474,6 +620,7 @@ impl assert_cdylib::TestCase for TestCase {
                 unsafe { slice::from_raw_parts(wav3, wav_length3) },
                 unsafe { slice::from_raw_parts(wav4, wav_length4) },
                 unsafe { slice::from_raw_parts(wav5, wav_length5) },
+                unsafe { slice::from_raw_parts(wav6, wav_length6) },
             ])
             .len(),
         );
@@ -490,10 +637,11 @@ impl assert_cdylib::TestCase for TestCase {
         unsafe { lib.voicevox_wav_free(wav3) };
         unsafe { lib.voicevox_wav_free(wav4) };
         unsafe { lib.voicevox_wav_free(wav5) };
+        unsafe { lib.voicevox_wav_free(wav6) };
 
         return Ok(());
 
-        const STYLE_ID: u32 = 0;
+        const STYLE_ID: u32 = 302;
 
         fn assert_ok(result_code: VoicevoxResultCode) {
             std::assert_eq!(c_api::VoicevoxResultCode_VOICEVOX_RESULT_OK, result_code);
@@ -512,7 +660,7 @@ impl assert_cdylib::TestCase for TestCase {
     }
 }
 
-static SNAPSHOTS: LazyLock<Snapshots> = snapshots::section!(tts);
+static SNAPSHOTS: LazyLock<Snapshots> = snapshots::section!(streaming_talk);
 
 #[derive(Deserialize)]
 struct Snapshots {
