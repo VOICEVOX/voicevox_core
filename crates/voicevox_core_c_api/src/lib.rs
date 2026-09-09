@@ -2215,6 +2215,7 @@ pub unsafe extern "C" fn voicevox_json_free(json: *mut c_char) {
 ///     - ::voicevox_synthesizer_tts
 ///     - ::voicevox_synthesizer_tts_from_kana
 ///     - ::voicevox_synthesizer_frame_synthesis
+///     - ::voicevox_wav_from_s16le
 /// - `wav`がヌルポインタでも ::voicevox_empty_bytes でもないならば、<a href="#voicevox-core-safety">読み込みと書き込みについて有効</a>でなければならない。
 /// - `wav`がヌルポインタでも ::voicevox_empty_bytes でもないならば、以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。
 /// }
