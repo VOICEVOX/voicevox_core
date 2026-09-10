@@ -723,8 +723,7 @@ public final class Synthesizer {
     @Nonnull
     public AudioFeature perform() throws RunModelException {
       String queryJson = Convert.jsonFromQueryLike(this.audioQuery, "不正なAudioQueryです");
-      return synthesizer.rsCreateAudioFeature(
-          queryJson, this.styleId, this.interrogativeUpspeak);
+      return synthesizer.rsCreateAudioFeature(queryJson, this.styleId, this.interrogativeUpspeak);
     }
   }
 
