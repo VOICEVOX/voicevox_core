@@ -549,12 +549,11 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
 >(
     env: JNIEnv<'local>,
     this: JObject<'local>,
-    audio_feature: JObject<'local>,
     query_json: JString<'local>,
     style_id: jint,
     enable_interrogative_upspeak: jboolean,
-) {
-    throw_if_err(env, (), |env| {
+) -> jobject {
+    throw_if_err(env, std::ptr::null_mut(), |env| {
         let audio_query: String = env.get_string(&query_json)?.into();
         let audio_query: voicevox_core::AudioQuery = query_from_json(&audio_query)?;
         let style_id = style_id as u32;
@@ -575,8 +574,10 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
             .enable_interrogative_upspeak(enable_interrogative_upspeak != 0)
             .perform()?;
 
+        let audio_feature_class = env.find_class(object!("AudioFeature"))?;
+        let audio_feature = env.new_object(audio_feature_class, "()V", &[])?;
         unsafe { env.set_rust_field(&audio_feature, "handle", audio_feature_internal) }?;
-        Ok(())
+        Ok(audio_feature.into_raw())
     })
 }
 

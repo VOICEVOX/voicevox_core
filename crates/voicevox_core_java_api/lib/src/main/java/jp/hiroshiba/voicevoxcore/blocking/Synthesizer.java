@@ -513,9 +513,8 @@ public final class Synthesizer {
   private native byte[] rsSynthesis(
       String queryJson, int styleId, boolean enableInterrogativeUpspeak) throws RunModelException;
 
-  private native void rsCreateAudioFeature(
-      AudioFeature audioFeature, String queryJson, int styleId, boolean enableInterrogativeUpspeak)
-      throws RunModelException;
+  private native AudioFeature rsCreateAudioFeature(
+      String queryJson, int styleId, boolean enableInterrogativeUpspeak) throws RunModelException;
 
   @Nonnull
   private native byte[] rsRender(AudioFeature audioFeature, long startInclusive, long endExclusive)
@@ -724,10 +723,8 @@ public final class Synthesizer {
     @Nonnull
     public AudioFeature perform() throws RunModelException {
       String queryJson = Convert.jsonFromQueryLike(this.audioQuery, "不正なAudioQueryです");
-      AudioFeature audioFeature = new AudioFeature();
-      synthesizer.rsCreateAudioFeature(
-          audioFeature, queryJson, this.styleId, this.interrogativeUpspeak);
-      return audioFeature;
+      return synthesizer.rsCreateAudioFeature(
+          queryJson, this.styleId, this.interrogativeUpspeak);
     }
   }
 
