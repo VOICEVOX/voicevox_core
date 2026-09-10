@@ -32,7 +32,7 @@ public final class AudioFeature {
    * 音声のフレーム数を取得する。
    *
    * @return 音声のフレーム数。
-  */
+   */
   public long getFrameLength() {
     return rsGetFrameLength();
   }

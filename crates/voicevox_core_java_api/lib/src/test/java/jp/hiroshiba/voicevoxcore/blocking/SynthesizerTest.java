@@ -4,12 +4,12 @@
  */
 package jp.hiroshiba.voicevoxcore.blocking;
 
+import static jp.hiroshiba.voicevoxcore.Wav.wavFromS16le;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static jp.hiroshiba.voicevoxcore.Wav.wavFromS16le;
 
 import java.util.Arrays;
 import java.util.List;
