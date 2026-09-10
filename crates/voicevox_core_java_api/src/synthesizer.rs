@@ -591,12 +591,20 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {
         let internal = unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.blocking.Synthesizer.handle` must correspond to
+            //   `Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>`.
             type RustField =
                 Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>;
             env.get_rust_field::<_, _, RustField>(&this, "handle")
         }?
         .clone();
         let audio_feature = unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.AudioFeature.handle` must correspond to
+            //   `voicevox_core::AudioFeature`.
             type RustField = voicevox_core::AudioFeature;
             env.get_rust_field::<_, _, RustField>(&audio_feature, "handle")
         }?
