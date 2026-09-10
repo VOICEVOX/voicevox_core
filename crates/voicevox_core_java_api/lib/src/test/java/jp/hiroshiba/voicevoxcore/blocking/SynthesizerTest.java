@@ -14,12 +14,14 @@ import java.util.Arrays;
 import java.util.List;
 import jp.hiroshiba.voicevoxcore.AccelerationMode;
 import jp.hiroshiba.voicevoxcore.AccentPhrase;
+import jp.hiroshiba.voicevoxcore.AudioFeature;
 import jp.hiroshiba.voicevoxcore.AudioQuery;
 import jp.hiroshiba.voicevoxcore.FrameAudioQuery;
 import jp.hiroshiba.voicevoxcore.Mora;
 import jp.hiroshiba.voicevoxcore.Note;
 import jp.hiroshiba.voicevoxcore.Score;
 import jp.hiroshiba.voicevoxcore.TestUtils;
+import jp.hiroshiba.voicevoxcore.Wav.wavFromS16le;
 import jp.hiroshiba.voicevoxcore.exceptions.InvalidModelDataException;
 import jp.hiroshiba.voicevoxcore.exceptions.RunModelException;
 import org.junit.jupiter.api.Test;
@@ -214,6 +216,29 @@ class SynthesizerTest extends TestUtils {
     assertArrayEquals(wav6, wav8);
     assertArrayEquals(wav6, wav9);
     assertArrayEquals(wav6, wav10);
+  }
+
+  @Test
+  void checkStreamTts() throws RunModelException, InvalidModelDataException {
+    Onnxruntime onnxruntime = loadOnnxruntime();
+    OpenJtalk openJtalk = loadOpenJtalk();
+    Synthesizer synthesizer = Synthesizer.builder(onnxruntime, openJtalk).build();
+    try (VoiceModelFile model = openModel()) {
+      synthesizer.loadVoiceModel(model).perform();
+    }
+
+    final String TEXT = "こんにちは？";
+    // `streaming_talk`に対応したスタイルを使用する
+    final int STYLE_ID = 302;
+
+    byte[] wav1 = synthesizer.tts(TEXT, STYLE_ID).perform();
+
+    AudioQuery query = synthesizer.createAudioQuery(TEXT, STYLE_ID);
+    AudioFeature audioFeature = synthesizer.createAudioFeature(query, STYLE_ID).perform();
+    byte[] pcm = synthesizer.render(audioFeature, 0, audioFeature.getFrameLength());
+    byte[] wav2 = wavFromS16le(pcm, query.outputSamplingRate, query.outputStereo);
+
+    assertArrayEquals(wav1, wav2);
   }
 
   @Test
