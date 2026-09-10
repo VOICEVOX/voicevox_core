@@ -480,11 +480,6 @@ trait AsInner {
 
     async fn render(&self, audio: &AudioFeature, range: std::ops::Range<usize>) -> Result<Vec<u8>> {
         // TODO: 44.1kHzなどの対応
-        if range.is_empty() {
-            // FIXME: `start>end`に対してパニックせずに正常に空を返してしまうのでは？
-            // 指定区間が空のときは早期リターン
-            return Ok(vec![]);
-        }
         let spec_segment = crop_with_margin(audio, range);
         let wave_with_margin = self
             .render_audio_segment(spec_segment.to_owned(), audio.style_id)
