@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static jp.hiroshiba.voicevoxcore.Wav.wavFromS16le;
 
 import java.util.Arrays;
 import java.util.List;
@@ -21,7 +22,6 @@ import jp.hiroshiba.voicevoxcore.Mora;
 import jp.hiroshiba.voicevoxcore.Note;
 import jp.hiroshiba.voicevoxcore.Score;
 import jp.hiroshiba.voicevoxcore.TestUtils;
-import jp.hiroshiba.voicevoxcore.Wav.wavFromS16le;
 import jp.hiroshiba.voicevoxcore.exceptions.InvalidModelDataException;
 import jp.hiroshiba.voicevoxcore.exceptions.RunModelException;
 import org.junit.jupiter.api.Test;
