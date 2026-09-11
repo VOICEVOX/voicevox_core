@@ -2,8 +2,9 @@ use std::{
     borrow::Cow,
     collections::{BTreeSet, HashSet},
     env,
+    fs::File,
     future::{self, Future},
-    io::{self, Cursor, IsTerminal as _, Read, Write as _},
+    io::{self, IsTerminal as _, Read, Write as _},
     iter,
     num::NonZero,
     path::{Path, PathBuf},
@@ -37,7 +38,6 @@ use octocrab::{
     },
     repos::{ReleasesHandler, RepoHandler},
 };
-use rayon::iter::{IntoParallelIterator as _, ParallelIterator as _};
 use semver::{Version, VersionReq};
 use strum::{Display, IntoStaticStr};
 use tokio::task::{JoinError, JoinSet};
@@ -1489,7 +1489,7 @@ async fn download_and_extract(
     pb: ProgressBar,
 ) -> anyhow::Result<()> {
     let pb = with_style(pb, &PROGRESS_STYLE1).await?;
-    let archive = download(
+    let archive = download_to_tempfile(
         bytes_stream,
         content_length,
         archive_kind.into(),
@@ -1499,96 +1499,121 @@ async fn download_and_extract(
     .await?;
 
     let pb = with_style(pb, &PROGRESS_STYLE2).await?;
-    let files = &read_archive(archive, archive_kind, pb.clone()).await?;
-    return extract(files, stripping, output, pb).await;
-
-    async fn read_archive(
-        archive: Vec<u8>,
-        archive_kind: ArchiveKind,
-        pb: ProgressBar,
-    ) -> anyhow::Result<Vec<(PathBuf, Vec<u8>)>> {
-        tokio::task::spawn_blocking(move || pb.set_message("Inflating...")).await?;
-
-        tokio::task::spawn_blocking(move || match archive_kind {
-            ArchiveKind::Zip => read_zip(&archive),
-            ArchiveKind::Tgz => read_tgz(&archive),
-        })
-        .await?
-    }
-
-    fn read_zip(zip: &[u8]) -> anyhow::Result<Vec<(PathBuf, Vec<u8>)>> {
-        let zip = ZipArchive::new(Cursor::new(zip))?;
-
-        (0..zip.len())
-            .into_par_iter()
-            .map(|i| {
-                let mut zip = zip.clone();
-                let entry = zip.by_index(i)?;
-                if entry.is_dir() {
-                    return Ok(None);
-                }
-                let filename = entry.mangled_name();
-                let size = entry.size() as _;
-                let content = read_bytes(entry, size)?;
-                Ok(Some((filename, content)))
-            })
-            .flat_map(Result::transpose)
-            .collect()
-    }
-
-    fn read_tgz(tgz: &[u8]) -> anyhow::Result<Vec<(PathBuf, Vec<u8>)>> {
-        tar::Archive::new(GzDecoder::new(tgz))
-            .entries()?
-            .map(|entry| {
-                let entry = entry?;
-                if !entry.header().entry_type().is_file() {
-                    return Ok(None);
-                }
-                let path = entry.path()?.into_owned();
-                let size = entry.size() as _;
-                let content = read_bytes(entry, size)?;
-                Ok(Some((path, content)))
-            })
-            .flat_map(Result::transpose)
-            .collect()
-    }
-
-    fn read_bytes(mut rdr: impl Read, size: usize) -> io::Result<Vec<u8>> {
-        let mut buf = Vec::with_capacity(size);
-        rdr.read_to_end(&mut buf)?;
-        Ok(buf)
-    }
-
-    async fn extract(
-        files: &[(PathBuf, Vec<u8>)],
-        stripping: Stripping,
-        output: &Path,
-        pb: ProgressBar,
-    ) -> anyhow::Result<()> {
-        let pb = tokio::task::spawn_blocking(move || {
-            pb.set_message("Writing files...");
-            pb
-        })
-        .await?;
-
-        for (filename, content) in files {
-            let filename = filename
-                .iter()
-                .skip(match stripping {
-                    Stripping::None => 0,
-                    Stripping::FirstDir => 1,
-                })
-                .collect::<PathBuf>();
-            let dst = &output.join(filename);
-            if let Some(parent) = dst.parent() {
-                fs_err::tokio::create_dir_all(parent).await?;
-            }
-            fs_err::tokio::write(dst, content).await?;
-        }
-
-        tokio::task::spawn_blocking(move || pb.finish_with_message("Done!")).await?;
+    pb.set_message("Inflating and writing files...");
+    let output = output.to_owned();
+    tokio::task::spawn_blocking(move || {
+        extract_archive(archive, archive_kind, stripping, &output)?;
+        pb.finish_with_message("Done!");
         Ok(())
+    })
+    .await?
+}
+
+fn extract_archive(
+    archive: File,
+    archive_kind: ArchiveKind,
+    stripping: Stripping,
+    output: &Path,
+) -> anyhow::Result<()> {
+    match archive_kind {
+        ArchiveKind::Zip => extract_zip(archive, stripping, output),
+        ArchiveKind::Tgz => extract_tgz(archive, stripping, output),
     }
+}
+
+async fn download_to_tempfile(
+    mut bytes_stream: impl Stream<Item = anyhow::Result<Bytes>> + Unpin,
+    content_length: Option<u64>,
+    kind: FileKind,
+    WebService::Github: WebService,
+    pb: ProgressBar,
+) -> anyhow::Result<File> {
+    use tokio::io::{AsyncReadExt as _, AsyncSeekExt as _, AsyncWriteExt as _};
+
+    if let Some(content_length) = content_length {
+        pb.set_length(content_length);
+    }
+
+    let mut archive = tokio::fs::File::from_std(tempfile::tempfile()?);
+    let mut prefix = Vec::with_capacity(4);
+    let mut downloaded = 0;
+    while let Some(chunk) = bytes_stream.next().await.transpose()? {
+        if prefix.len() < 4 {
+            prefix.extend_from_slice(&chunk[..chunk.len().min(4 - prefix.len())]);
+        }
+        archive.write_all(&chunk).await?;
+        downloaded += chunk.len() as u64;
+        pb.set_position(downloaded);
+    }
+    archive.flush().await?;
+
+    if !has_expected_magic(&prefix, kind) {
+        archive.rewind().await?;
+        let mut content = Vec::with_capacity(downloaded as usize);
+        archive.read_to_end(&mut content).await?;
+        return Err(error_for_unexpected_file_content(
+            &content,
+            WebService::Github,
+        ));
+    }
+
+    archive.rewind().await?;
+    Ok(archive.into_std().await)
+}
+
+fn has_expected_magic(content: &[u8], kind: FileKind) -> bool {
+    matches!(
+        (kind, content),
+        (FileKind::ZipOrVvm, [0x50, 0x4b, 0x03, 0x04, ..])
+            | (FileKind::Tgz, [0x1f, 0x8b, 0x08, ..])
+    )
+}
+
+fn extract_zip(archive: File, stripping: Stripping, output: &Path) -> anyhow::Result<()> {
+    let mut zip = ZipArchive::new(archive)?;
+    for i in 0..zip.len() {
+        let mut entry = zip.by_index(i)?;
+        if entry.is_dir() {
+            continue;
+        }
+        let filename = entry.mangled_name();
+        extract_entry(&mut entry, &filename, stripping, output)?;
+    }
+    Ok(())
+}
+
+fn extract_tgz(archive: File, stripping: Stripping, output: &Path) -> anyhow::Result<()> {
+    for entry in tar::Archive::new(GzDecoder::new(archive)).entries()? {
+        let mut entry = entry?;
+        if !entry.header().entry_type().is_file() {
+            continue;
+        }
+        let path = entry.path()?.into_owned();
+        extract_entry(&mut entry, &path, stripping, output)?;
+    }
+    Ok(())
+}
+
+fn extract_entry(
+    mut entry: impl Read,
+    path: &Path,
+    stripping: Stripping,
+    output: &Path,
+) -> anyhow::Result<()> {
+    let path = path
+        .iter()
+        .skip(match stripping {
+            Stripping::None => 0,
+            Stripping::FirstDir => 1,
+        })
+        .collect::<PathBuf>();
+    let dst = output.join(path);
+    if let Some(parent) = dst.parent() {
+        fs_err::create_dir_all(parent)?;
+    }
+    let mut dst = fs_err::File::create(dst)?;
+    io::copy(&mut entry, &mut dst)?;
+    Ok(())
 }
 
 async fn with_style(
@@ -1655,13 +1680,13 @@ fn validate_archive_file(
     content_kind: FileKind,
     WebService::Github: WebService,
 ) -> anyhow::Result<Vec<u8>> {
-    match (content_kind, &*content) {
-        (FileKind::ZipOrVvm, [0x50, 0x4b, 0x03, 0x04, ..])
-        | (FileKind::Tgz, [0x1f, 0x8b, 0x08, ..]) => Ok(content),
-        (_, content) => Err(error_for_unexpected_file_content(
-            content,
+    if has_expected_magic(&content, content_kind) {
+        Ok(content)
+    } else {
+        Err(error_for_unexpected_file_content(
+            &content,
             WebService::Github,
-        )),
+        ))
     }
 }
 
@@ -1767,10 +1792,21 @@ enum Stripping {
 
 #[cfg(test)]
 mod tests {
-    use clap::Parser as _;
-    use rstest::rstest;
+    use std::{
+        fs::File,
+        io::{Seek as _, Write as _},
+        path::Path,
+    };
 
-    use super::Args;
+    use clap::Parser as _;
+    use flate2::{Compression, write::GzEncoder};
+    use rstest::rstest;
+    use tempfile::tempdir;
+    use zip::{ZipWriter, write::FileOptions};
+
+    use super::{
+        ArchiveKind, Args, FileKind, Stripping, WebService, download_to_tempfile, extract_archive,
+    };
 
     #[rstest]
     #[case(&["", "--only", "c-api", "--exclude", "models"])]
@@ -1779,5 +1815,106 @@ mod tests {
     fn it_denies_conflicting_options(#[case] args: &[&str]) {
         let result = Args::try_parse_from(args).map(|_| ()).map_err(|e| e.kind());
         assert_eq!(Err(clap::error::ErrorKind::ArgumentConflict), result);
+    }
+
+    #[rstest]
+    #[case(ArchiveKind::Zip, Stripping::None, "root/nested/file.txt")]
+    #[case(ArchiveKind::Zip, Stripping::FirstDir, "nested/file.txt")]
+    #[case(ArchiveKind::Tgz, Stripping::None, "root/nested/file.txt")]
+    #[case(ArchiveKind::Tgz, Stripping::FirstDir, "nested/file.txt")]
+    fn it_extracts_archive_entries(
+        #[case] archive_kind: ArchiveKind,
+        #[case] stripping: Stripping,
+        #[case] expected_path: &str,
+    ) {
+        let archive = create_archive(archive_kind);
+        let output = tempdir().unwrap();
+
+        extract_archive(archive, archive_kind, stripping, output.path()).unwrap();
+
+        assert_eq!(
+            b"content",
+            &*std::fs::read(output.path().join(expected_path)).unwrap()
+        );
+        assert!(!output.path().join("root/empty").is_dir());
+    }
+
+    #[tokio::test]
+    async fn it_downloads_an_archive_in_chunks() {
+        let chunks = [
+            b"PK".as_slice(),
+            b"\x03".as_slice(),
+            b"\x04content".as_slice(),
+        ]
+        .into_iter()
+        .map(|chunk| Ok(chunk.to_vec().into()));
+
+        let mut archive = download_to_tempfile(
+            futures_util::stream::iter(chunks),
+            None,
+            FileKind::ZipOrVvm,
+            WebService::Github,
+            indicatif::ProgressBar::hidden(),
+        )
+        .await
+        .unwrap();
+
+        let mut content = Vec::new();
+        std::io::Read::read_to_end(&mut archive, &mut content).unwrap();
+        assert_eq!(b"PK\x03\x04content", &*content);
+    }
+
+    #[tokio::test]
+    async fn it_preserves_the_unexpected_content_error() {
+        let chunks = [Ok(b"unexpected response".to_vec().into())];
+
+        let error = download_to_tempfile(
+            futures_util::stream::iter(chunks),
+            None,
+            FileKind::ZipOrVvm,
+            WebService::Github,
+            indicatif::ProgressBar::hidden(),
+        )
+        .await
+        .unwrap_err();
+
+        assert_eq!(
+            "予期しない応答をGitHubが返しました: unexpected response",
+            error.to_string()
+        );
+    }
+
+    fn create_archive(archive_kind: ArchiveKind) -> File {
+        let mut archive = tempfile::tempfile().unwrap();
+        match archive_kind {
+            ArchiveKind::Zip => {
+                let mut zip = ZipWriter::new(archive);
+                zip.add_directory("root/empty/", FileOptions::default())
+                    .unwrap();
+                zip.start_file("root/nested/file.txt", FileOptions::default())
+                    .unwrap();
+                zip.write_all(b"content").unwrap();
+                archive = zip.finish().unwrap();
+            }
+            ArchiveKind::Tgz => {
+                let gz = GzEncoder::new(archive, Compression::default());
+                let mut tar = tar::Builder::new(gz);
+                let empty_dir = tempdir().unwrap();
+                tar.append_dir("root/empty", empty_dir.path()).unwrap();
+                let mut header = tar::Header::new_gnu();
+                header.set_size(7);
+                header.set_mode(0o644);
+                header.set_cksum();
+                tar.append_data(
+                    &mut header,
+                    Path::new("root/nested/file.txt"),
+                    &b"content"[..],
+                )
+                .unwrap();
+                archive = tar.into_inner().unwrap().finish().unwrap();
+            }
+        }
+        archive.rewind().unwrap();
+        archive
     }
 }
