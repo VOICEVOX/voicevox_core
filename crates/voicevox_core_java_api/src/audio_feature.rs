@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use jni::{
     JNIEnv,
     objects::JObject,
@@ -27,8 +29,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_AudioFeature_rsGetFrame
             // SAFETY:
             // - The safety contract must be upheld by the caller.
             // - `jp.hiroshiba.voicevoxcore.AudioFeature.handle` must correspond to
-            //   `voicevox_core::AudioFeature`.
-            env.get_rust_field::<_, _, AudioFeature>(&this, "handle")
+            //   `Arc<voicevox_core::AudioFeature>`.
+            type RustField = Arc<AudioFeature>;
+            env.get_rust_field::<_, _, RustField>(&this, "handle")
         }?;
 
         Ok(internal.frame_length())
@@ -48,8 +51,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_AudioFeature_rsDrop<'lo
             // SAFETY:
             // - The safety contract must be upheld by the caller.
             // - `jp.hiroshiba.voicevoxcore.AudioFeature.handle` must correspond to
-            //   `voicevox_core::AudioFeature`.
-            env.take_rust_field::<_, _, AudioFeature>(&this, "handle")
+            //   `Arc<voicevox_core::AudioFeature>`.
+            type RustField = Arc<AudioFeature>;
+            env.take_rust_field::<_, _, RustField>(&this, "handle")
         }?;
         Ok(())
     })

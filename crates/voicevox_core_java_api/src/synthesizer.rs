@@ -9,6 +9,7 @@ use jni::{
     sys::{jboolean, jint, jlong, jobject},
 };
 use std::{borrow::Cow, sync::Arc};
+use voicevox_core::AudioFeature;
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
@@ -572,11 +573,15 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
         let audio_feature_internal = internal
             .create_audio_feature(&audio_query, voicevox_core::StyleId::new(style_id))
             .enable_interrogative_upspeak(enable_interrogative_upspeak != 0)
-            .perform()?;
+            .perform()?
+            .into();
 
         let audio_feature_class = env.find_class(object!("AudioFeature"))?;
         let audio_feature = env.new_object(audio_feature_class, "()V", &[])?;
-        unsafe { env.set_rust_field(&audio_feature, "handle", audio_feature_internal) }?;
+        unsafe {
+            type RustField = Arc<AudioFeature>;
+            env.set_rust_field::<_, _, RustField>(&audio_feature, "handle", audio_feature_internal)
+        }?;
         Ok(audio_feature.into_raw())
     })
 }
@@ -605,8 +610,8 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
             // SAFETY:
             // - The safety contract must be upheld by the caller.
             // - `jp.hiroshiba.voicevoxcore.AudioFeature.handle` must correspond to
-            //   `voicevox_core::AudioFeature`.
-            type RustField = voicevox_core::AudioFeature;
+            //   `Arc<voicevox_core::AudioFeature>`.
+            type RustField = Arc<AudioFeature>;
             env.get_rust_field::<_, _, RustField>(&audio_feature, "handle")
         }?
         .clone();
