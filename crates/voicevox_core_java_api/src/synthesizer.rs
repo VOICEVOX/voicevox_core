@@ -579,6 +579,10 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
         let audio_feature_class = env.find_class(object!("AudioFeature"))?;
         let audio_feature = env.new_object(audio_feature_class, "()V", &[])?;
         unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.AudioFeature.handle` must correspond to
+            //   `Arc<voicevox_core::AudioFeature>`.
             type RustField = Arc<AudioFeature>;
             env.set_rust_field::<_, _, RustField>(&audio_feature, "handle", audio_feature_internal)
         }?;
