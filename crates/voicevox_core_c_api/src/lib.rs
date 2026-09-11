@@ -21,7 +21,7 @@ use self::helpers::{
 };
 use self::object::{CApiObject, CApiObjectPtrExt as _};
 use self::result_code::VoicevoxResultCode;
-use self::slice_owner::U8_SLICE_OWNER;
+use self::slice_owner::{SliceElement, U8_SLICE_OWNER};
 use anstream::{AutoStream, stream::RawStream};
 use c_impls::{
     VoicevoxAudioFeaturePtrExt as _, VoicevoxSynthesizerPtrExt as _,
@@ -98,6 +98,13 @@ fn init_logger_once() {
 //pub const VOICEVOX_ONNXRUNTIME_LIB_RECOMMENDED_NAME: &CStr = ..;
 //#[cfg(feature = "load-onnxruntime")]
 //pub const VOICEVOX_ONNXRUNTIME_LIB_RECOMMENDED_VERSION: &CStr = ..;
+
+// ドキュメントでの説明を円滑にするためだけに存在。この変数自体がユーザーからアクセスしづらいことについては許容する。
+/// このライブラリにおいて、空の`uint8_t`の配列を表すポインタ。
+///
+/// このポインタが指す先は未初期化の値であり、読み書きされるべきではない。
+#[unsafe(no_mangle)]
+pub static voicevox_empty_bytes: &MaybeUninit<u8> = SliceElement::REF_FOR_EMPTY;
 
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// 必要なONNX Runtime 1.xの最小マイナーバージョンを取得する。
@@ -808,8 +815,10 @@ pub unsafe extern "C" fn voicevox_ensure_compatible(
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// signed 16-bit little endianのPCMデータからWAV形式のバイナリを生成する。
 ///
+/// `pcm`がヌルならクラッシュする。
+///
 /// @param [in] pcm_length PCMデータのバイト長
-/// @param [in] pcm PCMデータ
+/// @param [in] pcm PCMデータ。非ヌル
 /// @param [in] sampling_rate サンプリングレート
 /// @param [in] is_stereo ステレオかどうか
 /// @param [out] output_wav_length 出力のバイト長
@@ -818,7 +827,7 @@ pub unsafe extern "C" fn voicevox_ensure_compatible(
 /// @returns 結果コード
 ///
 /// \safety{
-/// - `pcm`は長さ`pcm_length`にわたって<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+/// - `pcm_length > 0`のとき、`pcm`は長さ`pcm_length`にわたって<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// - `output_wav_length`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// - `output_wav`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
@@ -834,7 +843,20 @@ pub unsafe extern "C" fn voicevox_wav_from_s16le(
     output_wav: NonNull<NonNull<u8>>,
 ) {
     init_logger_once();
-    // SAFETY: The safety contract must be upheld by the caller.
+    if pcm.is_null() {
+        panic!(
+            "`pcm`は非ヌルのポインタでなくてはなりません{}",
+            match pcm_length {
+                0 =>
+                    ": `pcm_length`が`0`のときは`voicevox_empty_bytes`か、\
+                     適当な非ヌルのポインタを渡してください",
+                _ => "",
+            },
+        );
+    }
+    // SAFETY:
+    // - We have denied null.
+    // - The safety contract must be upheld by the caller.
     let pcm = unsafe { std::slice::from_raw_parts(pcm, pcm_length) };
     let wav = voicevox_core::wav_from_s16le(pcm, sampling_rate, is_stereo);
     // SAFETY: The safety contract must be upheld by the caller.
@@ -1711,7 +1733,9 @@ pub extern "C" fn voicevox_audio_feature_frame_length(
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// ::VoicevoxAudioFeature の一部区間から、16bit PCMで音声波形を生成する。
 ///
-/// 生成したPCMデータを解放するには ::voicevox_wav_free を使う。
+/// 生成されたPCMデータが`0`バイトのとき、`output_pcm_length`には`0`が、`output_pcm`には ::voicevox_empty_bytes が書き込まれる。
+///
+/// 生成した`1`バイト以上のPCMデータを解放するには ::voicevox_wav_free を使う。
 ///
 /// @param [in] synthesizer 音声シンセサイザ
 /// @param [in] audio_feature 音声合成用の中間表現
@@ -2180,16 +2204,20 @@ pub unsafe extern "C" fn voicevox_json_free(json: *mut c_char) {
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// WAVデータを解放する。
 ///
+/// ::voicevox_empty_bytes に対しては警告のログを出す。
+///
 /// @param [in] wav 解放するWAVデータ。nullable
 ///
 /// \safety{
 /// - `wav`がヌルポインタでないならば、以下のAPIで得られたポインタでなくてはいけない。
+///     - ::voicevox_synthesizer_render
 ///     - ::voicevox_synthesizer_synthesis
 ///     - ::voicevox_synthesizer_tts
 ///     - ::voicevox_synthesizer_tts_from_kana
 ///     - ::voicevox_synthesizer_frame_synthesis
-/// - `wav`がヌルポインタでないならば、<a href="#voicevox-core-safety">読み込みと書き込みについて有効</a>でなければならない。
-/// - `wav`がヌルポインタでないならば、以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。
+///     - ::voicevox_wav_from_s16le
+/// - `wav`がヌルポインタでも ::voicevox_empty_bytes でもないならば、<a href="#voicevox-core-safety">読み込みと書き込みについて有効</a>でなければならない。
+/// - `wav`がヌルポインタでも ::voicevox_empty_bytes でもないならば、以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。
 /// }
 ///
 /// \no-orig-impl{voicevox_wav_free}
