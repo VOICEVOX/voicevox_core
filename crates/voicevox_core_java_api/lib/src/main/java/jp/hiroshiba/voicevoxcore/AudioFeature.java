@@ -19,9 +19,7 @@ public final class AudioFeature {
 
   private long handle;
 
-  private AudioFeature(long handle) {
-    this.handle = handle;
-  }
+  private AudioFeature() {}
 
   protected void finalize() throws Throwable {
     rsDrop();
