@@ -2726,13 +2726,13 @@ pub(crate) mod nonblocking {
 
     use crate::{
         AccentPhrase, AudioQuery, FrameAudioQuery, OnExistingVoiceModelId, Result, Score, StyleId,
-        VoiceModelId, VoiceModelMeta, asyncs::BlockingThreadPool,
-        wav_header_from_s16le,
+        VoiceModelId, VoiceModelMeta, asyncs::BlockingThreadPool, wav_header_from_s16le,
     };
 
     use super::{
-        AccelerationMode, AsInner as _, AssumeBlockable, AudioFeature, FrameSynthesisOptions, InitializeOptions,
-        Inner, InnerRefWithoutTextAnalyzer, LoadVoiceModelOptions, SynthesisOptions, TtsOptions,
+        AccelerationMode, AsInner as _, AssumeBlockable, AudioFeature, FrameSynthesisOptions,
+        InitializeOptions, Inner, InnerRefWithoutTextAnalyzer, LoadVoiceModelOptions,
+        SynthesisOptions, TtsOptions,
     };
 
     /// 音声シンセサイザ。
@@ -3551,7 +3551,8 @@ pub(crate) mod nonblocking {
         pub async fn perform(self) -> crate::Result<SynthesisStream<'a>> {
             let audio_feature = self
                 .synthesizer
-                .create_audio_feature(self.audio_query, self.style_id, &self.options).await?;
+                .create_audio_feature(self.audio_query, self.style_id, &self.options)
+                .await?;
             let offset_frames = (self.start_offset * AudioFeature::FRAME_RATE).round() as usize;
             let render_frames = audio_feature.frame_length() - offset_frames;
             let render_pcm_length = render_frames * 256;
