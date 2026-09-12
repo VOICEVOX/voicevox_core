@@ -2238,7 +2238,9 @@ pub(crate) mod blocking {
                 .synthesizer
                 .upgrade()
                 .unwrap_or_else(|| todo!())
+                .0
                 .render(&self.audio_feature, self.cursor..next_cursor)
+                .block_on()
             {
                 Ok(pcm) => pcm,
                 Err(e) => return Some(Err(e)),
@@ -3278,47 +3280,40 @@ pub(crate) mod nonblocking {
         pcm_future: Option<BoxFuture<'static, crate::Result<Vec<u8>>>>,
     }
 
-    // impl<'a> Stream for SynthesisStream<'a> {
-    //     type Item = crate::Result<Vec<u8>>;
+    impl<T> Stream for SynthesisStream<T> {
+        type Item = crate::Result<Vec<u8>>;
 
-    //     fn poll_next(
-    //         mut self: Pin<&mut Self>,
-    //         cx: &mut Context<'_>,
-    //     ) -> Poll<Option<Self::Item>> {
-    //         if self.cursor >= self.audio_feature.frame_length() {
-    //             return Poll::Ready(None);
-    //         }
-    //         let next_cursor = std::cmp::min(
-    //             self.cursor + self.segment_frames,
-    //             self.audio_feature.frame_length(),
-    //         );
-    //         if self.pcm_future.is_none() {
-    //             self.pcm_future = Some(Box::pin(
-    //                 self.synthesizer
-    //                     .upgrade()
-    //                     .unwrap()
-    //                     .render(&self.audio_feature, self.cursor..next_cursor),
-    //             ));
-    //         }
+        fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+            if self.cursor >= self.audio_feature.frame_length() {
+                return Poll::Ready(None);
+            }
+            let next_cursor = std::cmp::min(
+                self.cursor + self.segment_frames,
+                self.audio_feature.frame_length(),
+            );
+            if self.pcm_future.is_none() {
+                let inner = &self.synthesizer.upgrade().unwrap_or_else(|| todo!()).0;
+                let pcm_future = inner.render(&self.audio_feature, self.cursor..next_cursor);
+                self.pcm_future = Some(Box::pin(pcm_future));
+            }
 
-    //         let pcm = match Pin::new(self.pcm_future.as_mut().unwrap()).poll(cx)
-    //         {
-    //             Poll::Ready(val) => match val {
-    //                 Ok(pcm) => pcm,
-    //                 Err(e) => return Poll::Ready(Some(Err(e))),
-    //             },
-    //             Poll::Pending => return Poll::Pending,
-    //         };
-    //         self.cursor = next_cursor;
-    //         if self.header.is_empty() {
-    //             Poll::Ready(Some(Ok(pcm)))
-    //         } else {
-    //             let pcm_with_header = [self.header.clone(), pcm].concat();
-    //             self.header.clear();
-    //             Poll::Ready(Some(Ok(pcm_with_header)))
-    //         }
-    //     }
-    // }
+            let pcm = match Pin::new(self.pcm_future.as_mut().unwrap()).poll(cx) {
+                Poll::Ready(val) => match val {
+                    Ok(pcm) => pcm,
+                    Err(e) => return Poll::Ready(Some(Err(e))),
+                },
+                Poll::Pending => return Poll::Pending,
+            };
+            self.cursor = next_cursor;
+            if self.header.is_empty() {
+                Poll::Ready(Some(Ok(pcm)))
+            } else {
+                let pcm_with_header = [self.header.clone(), pcm].concat();
+                self.header.clear();
+                Poll::Ready(Some(Ok(pcm_with_header)))
+            }
+        }
+    }
 
     impl<T> self::Synthesizer<T> {
         /// AudioQueryから直接WAVフォーマットで音声波形をストリーミング生成する。
