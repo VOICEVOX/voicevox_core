@@ -118,19 +118,17 @@ impl<A: infer::AsyncExt> Default for FrameSynthesisOptions<A> {
 #[derive(derive_more::Debug)]
 #[debug(bound(A::Cancellable: Debug))]
 struct StreamingSynthesisOptions<A: infer::AsyncExt> {
-    enable_interrogative_upspeak: bool,
+    synthesis: SynthesisOptions<A>,
     start_offset: f64,
     segment_length: f64,
-    cancellable: A::Cancellable,
 }
 
 impl<A: infer::AsyncExt> Default for StreamingSynthesisOptions<A> {
     fn default() -> Self {
         Self {
-            enable_interrogative_upspeak: DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
+            synthesis: SynthesisOptions::default(),
             start_offset: 0.0,
             segment_length: 3.0,
-            cancellable: A::DEFAULT_HEAVY_INFERENCE_CANCELLABLE,
         }
     }
 }
@@ -2218,7 +2216,7 @@ pub(crate) mod blocking {
     }
 
     pub struct SynthesisStream<T> {
-        synthesizer: Weak<Synthesizer<T>>,
+        synthesizer: Weak<self::Synthesizer<T>>,
         audio_feature: AudioFeature,
         cursor: usize,
         segment_frames: usize,
@@ -2651,8 +2649,9 @@ pub(crate) mod blocking {
         pub fn perform(self) -> crate::Result<SynthesisStream<T>> {
             let audio_feature = self
                 .synthesizer
-                .create_audio_feature(self.audio_query, self.style_id)
-                .perform()?;
+                .0
+                .create_audio_feature(self.audio_query, self.style_id, &self.options.synthesis)
+                .block_on()?;
             let offset_frames =
                 (self.options.start_offset * AudioFeature::FRAME_RATE).round_ties_even() as usize;
             let render_frames = audio_feature.frame_length() - offset_frames;
@@ -3270,13 +3269,13 @@ pub(crate) mod nonblocking {
         }
     }
 
-    pub struct SynthesisStream<'a> {
-        synthesizer: Weak<InnerRefWithoutTextAnalyzer<'a, BlockingThreadPool>>,
+    pub struct SynthesisStream<T> {
+        synthesizer: Weak<self::Synthesizer<T>>,
         audio_feature: AudioFeature,
         cursor: usize,
         segment_frames: usize,
         header: Vec<u8>,
-        pcm_future: Option<BoxFuture<'a, crate::Result<Vec<u8>>>>,
+        pcm_future: Option<BoxFuture<'static, crate::Result<Vec<u8>>>>,
     }
 
     // impl<'a> Stream for SynthesisStream<'a> {
@@ -3558,8 +3557,8 @@ pub(crate) mod nonblocking {
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
     #[derive(Debug)]
-    pub struct StreamingSynthesis<'a> {
-        synthesizer: Arc<InnerRefWithoutTextAnalyzer<'a, BlockingThreadPool>>,
+    pub struct StreamingSynthesis<'a, T> {
+        synthesizer: &'a Arc<self::Synthesizer<T>>,
         audio_query: &'a AudioQuery,
         style_id: StyleId,
         start_offset: f64,
@@ -3567,14 +3566,14 @@ pub(crate) mod nonblocking {
         options: SynthesisOptions<BlockingThreadPool>,
     }
 
-    impl<'a> StreamingSynthesis<'a> {
+    impl<'a, T> StreamingSynthesis<'a, T> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
         }
 
         /// 実行する。
-        pub async fn perform(self) -> crate::Result<SynthesisStream<'a>> {
+        pub async fn perform(self) -> crate::Result<SynthesisStream<T>> {
             let audio_feature = self
                 .synthesizer
                 .create_audio_feature(self.audio_query, self.style_id, &self.options)
