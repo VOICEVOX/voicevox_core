@@ -1644,7 +1644,8 @@ pub(crate) mod blocking {
 
     use crate::{
         AccentPhrase, AudioQuery, FrameAudioQuery, OnExistingVoiceModelId, Score, StyleId,
-        VoiceModelId, VoiceModelMeta, asyncs::SingleTasked, future::FutureExt as _, wav_from_s16le,
+        VoiceModelId, VoiceModelMeta, asyncs::SingleTasked, future::FutureExt as _,
+        wav_header_from_s16le,
     };
 
     use super::{
@@ -2200,8 +2201,7 @@ pub(crate) mod blocking {
         audio_feature: AudioFeature,
         cursor: usize,
         segment_frames: usize,
-        output_sampling_rate: u32,
-        output_stereo: bool,
+        header: Vec<u8>,
     }
 
     impl<'a> Iterator for SynthesisStream<'a> {
@@ -2226,11 +2226,13 @@ pub(crate) mod blocking {
                 Err(e) => return Some(Err(e)),
             };
             self.cursor = next_cursor;
-            Some(Ok(wav_from_s16le(
-                &pcm,
-                self.output_sampling_rate,
-                self.output_stereo,
-            )))
+            if self.header.is_empty() {
+                Some(Ok(pcm))
+            } else {
+                let pcm_with_header = [self.header.clone(), pcm].concat();
+                self.header.clear();
+                Some(Ok(pcm_with_header))
+            }
         }
     }
 
@@ -2627,13 +2629,21 @@ pub(crate) mod blocking {
                 .synthesizer
                 .create_audio_feature(self.audio_query, self.style_id, &self.options)
                 .block_on()?;
+            let offset_frames = (self.start_offset * AudioFeature::FRAME_RATE).round() as usize;
+            let render_frames = audio_feature.frame_length() - offset_frames;
+            let render_pcm_length = render_frames * 256;
+            let output_sampling_rate = self.audio_query.output_sampling_rate.get().get();
+            let output_stereo = self.audio_query.output_stereo;
             Ok(SynthesisStream {
                 synthesizer: std::sync::Arc::downgrade(&self.synthesizer),
                 audio_feature,
-                cursor: (self.start_offset * AudioFeature::FRAME_RATE).round() as usize,
+                cursor: offset_frames,
                 segment_frames: (self.segment_length * AudioFeature::FRAME_RATE).round() as usize,
-                output_sampling_rate: self.audio_query.output_sampling_rate.get().get(),
-                output_stereo: self.audio_query.output_stereo,
+                header: wav_header_from_s16le(
+                    render_pcm_length,
+                    output_sampling_rate,
+                    output_stereo,
+                ),
             })
         }
     }
@@ -4399,5 +4409,43 @@ mod tests {
                 lyric: lyric.parse().unwrap(),
             }
         }
+    }
+
+    #[rstest]
+    #[tokio::test]
+    async fn streaming_synthesis_equivalent() {
+        let synthesizer = super::nonblocking::Synthesizer::builder(
+            crate::nonblocking::Onnxruntime::from_test_util_data()
+                .await
+                .unwrap(),
+        )
+        .text_analyzer(
+            crate::nonblocking::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
+                .await
+                .unwrap(),
+        )
+        .acceleration_mode(AccelerationMode::Cpu)
+        .build()
+        .unwrap();
+
+        let model = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
+        synthesizer.load_voice_model(model).perform().await.unwrap();
+
+        let audio_query = synthesizer
+            .create_audio_query("これはテストです", StyleId::new(302))
+            .await
+            .unwrap();
+
+        let expected_wav = synthesizer
+            .synthesis(&audio_query, StyleId::new(302))
+            .await
+            .unwrap();
+
+        let actual_wav = synthesizer
+            .streaming_synthesis(&audio_query, StyleId::new(302))
+            .await
+            .unwrap();
+
+        assert_eq!(expected_wav, actual_wav);
     }
 }
