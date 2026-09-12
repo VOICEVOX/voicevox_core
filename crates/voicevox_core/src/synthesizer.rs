@@ -115,6 +115,26 @@ impl<A: infer::AsyncExt> Default for FrameSynthesisOptions<A> {
     }
 }
 
+#[derive(derive_more::Debug)]
+#[debug(bound(A::Cancellable: Debug))]
+struct StreamingSynthesisOptions<A: infer::AsyncExt> {
+    enable_interrogative_upspeak: bool,
+    start_offset: f64,
+    segment_length: f64,
+    cancellable: A::Cancellable,
+}
+
+impl<A: infer::AsyncExt> Default for StreamingSynthesisOptions<A> {
+    fn default() -> Self {
+        Self {
+            enable_interrogative_upspeak: DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
+            start_offset: 0.0,
+            segment_length: 3.0,
+            cancellable: A::DEFAULT_HEAVY_INFERENCE_CANCELLABLE,
+        }
+    }
+}
+
 /// ハードウェアアクセラレーションモードを設定する設定値。
 #[cfg_attr(doc, doc(alias = "VoicevoxAccelerationMode"))]
 #[expect(
@@ -1650,7 +1670,8 @@ pub(crate) mod blocking {
 
     use super::{
         AccelerationMode, AsInner as _, AssumeSingleTasked, AudioFeature, InitializeOptions, Inner,
-        InnerRefWithoutTextAnalyzer, LoadVoiceModelOptions, SynthesisOptions, TtsOptions,
+        InnerRefWithoutTextAnalyzer, LoadVoiceModelOptions, StreamingSynthesisOptions,
+        SynthesisOptions, TtsOptions,
     };
 
     /// 音声シンセサイザ。
@@ -2196,15 +2217,15 @@ pub(crate) mod blocking {
         }
     }
 
-    pub struct SynthesisStream<'a> {
-        synthesizer: Weak<InnerRefWithoutTextAnalyzer<'a, SingleTasked>>,
+    pub struct SynthesisStream<T> {
+        synthesizer: Weak<Synthesizer<T>>,
         audio_feature: AudioFeature,
         cursor: usize,
         segment_frames: usize,
         header: Vec<u8>,
     }
 
-    impl<'a> Iterator for SynthesisStream<'a> {
+    impl<T> Iterator for SynthesisStream<T> {
         type Item = crate::Result<Vec<u8>>;
 
         fn next(&mut self) -> Option<Self::Item> {
@@ -2218,9 +2239,8 @@ pub(crate) mod blocking {
             let pcm = match self
                 .synthesizer
                 .upgrade()
-                .unwrap()
+                .unwrap_or_else(|| todo!())
                 .render(&self.audio_feature, self.cursor..next_cursor)
-                .block_on()
             {
                 Ok(pcm) => pcm,
                 Err(e) => return Some(Err(e)),
@@ -2240,18 +2260,14 @@ pub(crate) mod blocking {
         /// AudioQueryから直接WAVフォーマットで音声波形をストリーミング生成する。
         #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_streaming_synthesis"))]
         pub fn streaming_synthesis<'a>(
-            &'a self,
+            self: &'a Arc<Self>,
             audio_query: &'a AudioQuery,
             style_id: StyleId,
-            start_offset: f64,
-            segment_length: f64,
-        ) -> StreamingSynthesis<'a> {
+        ) -> StreamingSynthesis<'a, T> {
             StreamingSynthesis {
-                synthesizer: Arc::new(self.0.without_text_analyzer()),
+                synthesizer: self,
                 audio_query,
                 style_id,
-                start_offset,
-                segment_length,
                 options: Default::default(),
             }
         }
@@ -2608,37 +2624,47 @@ pub(crate) mod blocking {
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
     #[derive(Debug)]
-    pub struct StreamingSynthesis<'a> {
-        synthesizer: Arc<InnerRefWithoutTextAnalyzer<'a, SingleTasked>>,
+    pub struct StreamingSynthesis<'a, T> {
+        synthesizer: &'a Arc<self::Synthesizer<T>>,
         audio_query: &'a AudioQuery,
         style_id: StyleId,
-        start_offset: f64,
-        segment_length: f64,
-        options: SynthesisOptions<SingleTasked>,
+        options: StreamingSynthesisOptions<SingleTasked>,
     }
 
-    impl<'a> StreamingSynthesis<'a> {
+    impl<'a, T> StreamingSynthesis<'a, T> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
         }
 
+        pub fn start_offset(mut self, start_offset: f64) -> Self {
+            self.options.start_offset = start_offset;
+            self
+        }
+
+        pub fn segment_length(mut self, segment_length: f64) -> Self {
+            self.options.segment_length = segment_length;
+            self
+        }
+
         /// 実行する。
-        pub fn perform(self) -> crate::Result<SynthesisStream<'a>> {
+        pub fn perform(self) -> crate::Result<SynthesisStream<T>> {
             let audio_feature = self
                 .synthesizer
-                .create_audio_feature(self.audio_query, self.style_id, &self.options)
-                .block_on()?;
-            let offset_frames = (self.start_offset * AudioFeature::FRAME_RATE).round() as usize;
+                .create_audio_feature(self.audio_query, self.style_id)
+                .perform()?;
+            let offset_frames =
+                (self.options.start_offset * AudioFeature::FRAME_RATE).round_ties_even() as usize;
             let render_frames = audio_feature.frame_length() - offset_frames;
             let render_pcm_length = render_frames * 256;
             let output_sampling_rate = self.audio_query.output_sampling_rate.get().get();
             let output_stereo = self.audio_query.output_stereo;
             Ok(SynthesisStream {
-                synthesizer: std::sync::Arc::downgrade(&self.synthesizer),
+                synthesizer: Arc::downgrade(self.synthesizer),
                 audio_feature,
                 cursor: offset_frames,
-                segment_frames: (self.segment_length * AudioFeature::FRAME_RATE).round() as usize,
+                segment_frames: (self.options.segment_length * AudioFeature::FRAME_RATE)
+                    .round_ties_even() as usize,
                 header: wav_header_from_s16le(
                     render_pcm_length,
                     output_sampling_rate,
