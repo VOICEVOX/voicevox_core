@@ -1634,14 +1634,17 @@ impl From<Vec<AccentPhrase>> for AudioQuery {
               形を考えると、ここの引数を構造体にまとめたりしても可読性に寄与しない"
 )]
 pub(crate) mod blocking {
-    use std::fmt::{self, Debug};
+    use std::{
+        fmt::{self, Debug},
+        sync::{Arc, Weak},
+    };
 
     use easy_ext::ext;
     use typed_floats::{NonNaNFinite, PositiveFinite};
 
     use crate::{
         AccentPhrase, AudioQuery, FrameAudioQuery, OnExistingVoiceModelId, Score, StyleId,
-        VoiceModelId, VoiceModelMeta, asyncs::SingleTasked, future::FutureExt as _,
+        VoiceModelId, VoiceModelMeta, asyncs::SingleTasked, future::FutureExt as _, wav_from_s16le,
     };
 
     use super::{
@@ -2192,6 +2195,63 @@ pub(crate) mod blocking {
         }
     }
 
+    pub struct SynthesisStream<'a> {
+        synthesizer: Weak<InnerRefWithoutTextAnalyzer<'a, SingleTasked>>,
+        audio_feature: AudioFeature,
+        cursor: usize,
+        segment_frames: usize,
+        output_sampling_rate: u32,
+        output_stereo: bool,
+    }
+
+    impl<'a> Iterator for SynthesisStream<'a> {
+        type Item = crate::Result<Vec<u8>>;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            let next_cursor = self.cursor + self.segment_frames;
+            if next_cursor > self.audio_feature.frame_length() {
+                return None;
+            }
+            let pcm = match self
+                .synthesizer
+                .upgrade()
+                .unwrap()
+                .render(&self.audio_feature, self.cursor..next_cursor)
+                .block_on()
+            {
+                Ok(pcm) => pcm,
+                Err(e) => return Some(Err(e)),
+            };
+            self.cursor = next_cursor;
+            Some(Ok(wav_from_s16le(
+                &pcm,
+                self.output_sampling_rate,
+                self.output_stereo,
+            )))
+        }
+    }
+
+    impl<T> self::Synthesizer<T> {
+        /// AudioQueryから直接WAVフォーマットで音声波形をストリーミング生成する。
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_streaming_synthesis"))]
+        pub fn streaming_synthesis<'a>(
+            &'a self,
+            audio_query: &'a AudioQuery,
+            style_id: StyleId,
+            start_offset: f64,
+            segment_length: f64,
+        ) -> StreamingSynthesis<'a> {
+            StreamingSynthesis {
+                synthesizer: Arc::new(self.0.without_text_analyzer()),
+                audio_query,
+                style_id,
+                start_offset,
+                segment_length,
+                options: Default::default(),
+            }
+        }
+    }
+
     impl<T: crate::blocking::TextAnalyzer> self::Synthesizer<T> {
         /// 日本語のテキストからAccentPhrase (アクセント句)の配列を生成する。
         ///
@@ -2538,6 +2598,40 @@ pub(crate) mod blocking {
             self.synthesizer
                 .synthesis(self.audio_query, self.style_id, &self.options)
                 .block_on()
+        }
+    }
+
+    #[must_use = "this is a builder. it does nothing until `perform`ed"]
+    #[derive(Debug)]
+    pub struct StreamingSynthesis<'a> {
+        synthesizer: Arc<InnerRefWithoutTextAnalyzer<'a, SingleTasked>>,
+        audio_query: &'a AudioQuery,
+        style_id: StyleId,
+        start_offset: f64,
+        segment_length: f64,
+        options: SynthesisOptions<SingleTasked>,
+    }
+
+    impl<'a> StreamingSynthesis<'a> {
+        pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
+            self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
+            self
+        }
+
+        /// 実行する。
+        pub fn perform(self) -> crate::Result<SynthesisStream<'a>> {
+            let audio_feature = self
+                .synthesizer
+                .create_audio_feature(self.audio_query, self.style_id, &self.options)
+                .block_on()?;
+            Ok(SynthesisStream {
+                synthesizer: std::sync::Arc::downgrade(&self.synthesizer),
+                audio_feature,
+                cursor: (self.start_offset * AudioFeature::FRAME_RATE).round() as usize,
+                segment_frames: (self.segment_length * AudioFeature::FRAME_RATE).round() as usize,
+                output_sampling_rate: self.audio_query.output_sampling_rate.get().get(),
+                output_stereo: self.audio_query.output_stereo,
+            })
         }
     }
 
