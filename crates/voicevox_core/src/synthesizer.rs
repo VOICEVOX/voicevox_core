@@ -2211,7 +2211,10 @@ pub(crate) mod blocking {
             if self.cursor >= self.audio_feature.frame_length() {
                 return None;
             }
-            let next_cursor = std::cmp::min(self.cursor + self.segment_frames, self.audio_feature.frame_length());
+            let next_cursor = std::cmp::min(
+                self.cursor + self.segment_frames,
+                self.audio_feature.frame_length(),
+            );
             let pcm = match self
                 .synthesizer
                 .upgrade()
