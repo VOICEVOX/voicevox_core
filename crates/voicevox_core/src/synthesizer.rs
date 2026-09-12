@@ -397,6 +397,15 @@ impl<T, A: AsyncExt> Inner<T, A> {
         }
     }
 
+    fn without_text_analyzer_cloned(&self) -> Inner<(), A> {
+        Inner {
+            status: self.status.clone(),
+            text_analyzer: (),
+            use_gpu: self.use_gpu,
+            _marker: PhantomData,
+        }
+    }
+
     fn fill_debug_struct_body(&self, mut fmt: fmt::DebugStruct<'_, '_>) -> fmt::Result
     where
         T: Debug,
@@ -2215,15 +2224,15 @@ pub(crate) mod blocking {
         }
     }
 
-    pub struct SynthesisStream<T> {
-        synthesizer: Weak<self::Synthesizer<T>>,
+    pub struct SynthesisStream {
+        synthesizer: Weak<self::Inner<(), SingleTasked>>,
         audio_feature: AudioFeature,
         cursor: usize,
         segment_frames: usize,
         header: Vec<u8>,
     }
 
-    impl<T> Iterator for SynthesisStream<T> {
+    impl Iterator for SynthesisStream {
         type Item = crate::Result<Vec<u8>>;
 
         fn next(&mut self) -> Option<Self::Item> {
@@ -2238,7 +2247,6 @@ pub(crate) mod blocking {
                 .synthesizer
                 .upgrade()
                 .unwrap_or_else(|| todo!())
-                .0
                 .render(&self.audio_feature, self.cursor..next_cursor)
                 .block_on()
             {
@@ -2648,10 +2656,11 @@ pub(crate) mod blocking {
         }
 
         /// 実行する。
-        pub fn perform(self) -> crate::Result<SynthesisStream<T>> {
+        pub fn perform(self) -> crate::Result<SynthesisStream> {
             let audio_feature = self
                 .synthesizer
                 .0
+                .without_text_analyzer_cloned()
                 .create_audio_feature(self.audio_query, self.style_id, &self.options.synthesis)
                 .block_on()?;
             let offset_frames =
@@ -2661,7 +2670,9 @@ pub(crate) mod blocking {
             let output_sampling_rate = self.audio_query.output_sampling_rate.get().get();
             let output_stereo = self.audio_query.output_stereo;
             Ok(SynthesisStream {
-                synthesizer: Arc::downgrade(self.synthesizer),
+                synthesizer: Arc::downgrade(&Arc::new(
+                    self.synthesizer.0.without_text_analyzer_cloned(),
+                )),
                 audio_feature,
                 cursor: offset_frames,
                 segment_frames: (self.options.segment_length * AudioFeature::FRAME_RATE)
@@ -2753,7 +2764,8 @@ pub(crate) mod nonblocking {
 
     use crate::{
         AccentPhrase, AudioQuery, FrameAudioQuery, OnExistingVoiceModelId, Result, Score, StyleId,
-        VoiceModelId, VoiceModelMeta, asyncs::BlockingThreadPool, wav_header_from_s16le,
+        VoiceModelId, VoiceModelMeta, asyncs::BlockingThreadPool, future::FutureExt,
+        wav_header_from_s16le,
     };
 
     use super::{
@@ -2874,6 +2886,20 @@ pub(crate) mod nonblocking {
         ) -> Synthesis<'a> {
             Synthesis {
                 synthesizer: self.0.without_text_analyzer(),
+                audio_query,
+                style_id,
+                options: Default::default(),
+            }
+        }
+
+        /// AudioQueryから直接WAVフォーマットで音声波形をストリーミング生成する。
+        pub fn streaming_synthesis<'a>(
+            self: &'a Arc<Self>,
+            audio_query: &'a AudioQuery,
+            style_id: StyleId,
+        ) -> StreamingSynthesis<'a, T> {
+            StreamingSynthesis {
+                synthesizer: self,
                 audio_query,
                 style_id,
                 options: Default::default(),
@@ -3271,19 +3297,19 @@ pub(crate) mod nonblocking {
         }
     }
 
-    pub struct SynthesisStream<T> {
-        synthesizer: Weak<self::Synthesizer<T>>,
+    pub struct SynthesisStream {
+        synthesizer: Weak<self::Inner<(), BlockingThreadPool>>,
         audio_feature: AudioFeature,
         cursor: usize,
         segment_frames: usize,
         header: Vec<u8>,
-        pcm_future: Option<BoxFuture<'static, crate::Result<Vec<u8>>>>,
+        // pcm_future: Option<BoxFuture<'static, crate::Result<Vec<u8>>>>,
     }
 
-    impl<T> Stream for SynthesisStream<T> {
+    impl Stream for SynthesisStream {
         type Item = crate::Result<Vec<u8>>;
 
-        fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        fn poll_next(mut self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
             if self.cursor >= self.audio_feature.frame_length() {
                 return Poll::Ready(None);
             }
@@ -3291,19 +3317,17 @@ pub(crate) mod nonblocking {
                 self.cursor + self.segment_frames,
                 self.audio_feature.frame_length(),
             );
-            if self.pcm_future.is_none() {
-                let inner = &self.synthesizer.upgrade().unwrap_or_else(|| todo!()).0;
-                let pcm_future = inner.render(&self.audio_feature, self.cursor..next_cursor);
-                self.pcm_future = Some(Box::pin(pcm_future));
-            }
-
-            let pcm = match Pin::new(self.pcm_future.as_mut().unwrap()).poll(cx) {
-                Poll::Ready(val) => match val {
-                    Ok(pcm) => pcm,
-                    Err(e) => return Poll::Ready(Some(Err(e))),
-                },
-                Poll::Pending => return Poll::Pending,
+            let pcm = match self
+                .synthesizer
+                .upgrade()
+                .unwrap_or_else(|| todo!())
+                .render(&self.audio_feature, self.cursor..next_cursor)
+                .block_on()  // FIXME: blockせずにPoll::Pendingを返す
+            {
+                Ok(pcm) => pcm,
+                Err(e) => return Poll::Ready(Some(Err(e))),
             };
+
             self.cursor = next_cursor;
             if self.header.is_empty() {
                 Poll::Ready(Some(Ok(pcm)))
@@ -3315,22 +3339,22 @@ pub(crate) mod nonblocking {
         }
     }
 
-    impl<T> self::Synthesizer<T> {
-        /// AudioQueryから直接WAVフォーマットで音声波形をストリーミング生成する。
-        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_streaming_synthesis"))]
-        pub fn streaming_synthesis<'a>(
-            self: &'a Arc<Self>,
-            audio_query: &'a AudioQuery,
-            style_id: StyleId,
-        ) -> StreamingSynthesis<'a, T> {
-            StreamingSynthesis {
-                synthesizer: self,
-                audio_query,
-                style_id,
-                options: Default::default(),
-            }
-        }
-    }
+    // impl<T: Send + Sync + 'static> self::Synthesizer<T> {
+    //     /// AudioQueryから直接WAVフォーマットで音声波形をストリーミング生成する。
+    //     #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_streaming_synthesis"))]
+    //     pub fn streaming_synthesis<'a>(
+    //         self: &'a Arc<Self>,
+    //         audio_query: &'a AudioQuery,
+    //         style_id: StyleId,
+    //     ) -> StreamingSynthesis<'a, T> {
+    //         StreamingSynthesis {
+    //             synthesizer: self,
+    //             audio_query,
+    //             style_id,
+    //             options: Default::default(),
+    //         }
+    //     }
+    // }
 
     impl<T: crate::nonblocking::TextAnalyzer> self::Synthesizer<T> {
         /// 日本語のテキストからAccentPhrase (アクセント句)の配列を生成する。
@@ -3562,10 +3586,11 @@ pub(crate) mod nonblocking {
         }
 
         /// 実行する。
-        pub async fn perform(self) -> crate::Result<SynthesisStream<T>> {
+        pub async fn perform(self) -> crate::Result<SynthesisStream> {
             let audio_feature = self
                 .synthesizer
                 .0
+                .without_text_analyzer_cloned()
                 .create_audio_feature(self.audio_query, self.style_id, &self.options.synthesis)
                 .await?;
             let offset_frames =
@@ -3575,7 +3600,9 @@ pub(crate) mod nonblocking {
             let output_sampling_rate = self.audio_query.output_sampling_rate.get().get();
             let output_stereo = self.audio_query.output_stereo;
             Ok(SynthesisStream {
-                synthesizer: Arc::downgrade(self.synthesizer),
+                synthesizer: Arc::downgrade(&Arc::new(
+                    self.synthesizer.0.without_text_analyzer_cloned(),
+                )),
                 audio_feature,
                 cursor: offset_frames,
                 segment_frames: (self.options.segment_length * AudioFeature::FRAME_RATE)
@@ -3585,7 +3612,6 @@ pub(crate) mod nonblocking {
                     output_sampling_rate,
                     output_stereo,
                 ),
-                pcm_future: None,
             })
         }
     }
@@ -3687,7 +3713,7 @@ pub(crate) mod nonblocking {
 
 #[cfg(test)]
 mod tests {
-    use std::{mem, num::NonZero};
+    use std::{mem, num::NonZero, sync::Arc};
 
     use super::{AccelerationMode, AsInner as _, DEFAULT_HEAVY_INFERENCE_CANCELLABLE};
     use crate::{
@@ -3696,6 +3722,7 @@ mod tests {
         numerics::non_zero,
     };
     use ::test_util::OPEN_JTALK_DIC_DIR;
+    use futures_lite::StreamExt;
     use itertools::Itertools as _;
     use rstest::rstest;
     use typed_floats::tf32;
@@ -4581,12 +4608,20 @@ mod tests {
             .await
             .unwrap();
 
-        let actual_wav_iter = synthesizer
-            .streaming_synthesis(&audio_query, StyleId::new(302), 0.0, 0.3)
+        let actual_wav_iter = Arc::new(synthesizer)
+            .streaming_synthesis(&audio_query, StyleId::new(302))
             .perform()
             .await
-            .unwrap();
+            .unwrap()
+            .collect::<Vec<_>>()
+            .await
+            .into_iter()
+            .map(|chunk| chunk.unwrap())
+            .collect::<Vec<_>>()
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>();
 
-        assert_eq!(expected_wav, actual_wav_iter.collect::<Vec<_>>().await);
+        assert_eq!(expected_wav, actual_wav_iter);
     }
 }
