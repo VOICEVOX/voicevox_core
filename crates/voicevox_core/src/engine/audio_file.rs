@@ -80,12 +80,13 @@ pub fn wav_header_from_s16le(pcm_length: usize, sampling_rate: u32, is_stereo: b
 
     let bytes_size = pcm_length as u32;
     let header_size = 44;
+    let wave_size = header_size + bytes_size;
 
-    let buf: Vec<u8> = Vec::with_capacity(header_size);
+    let buf: Vec<u8> = Vec::with_capacity(header_size as usize);
     let mut cur = Cursor::new(buf);
 
     cur.write_all("RIFF".as_bytes()).unwrap();
-    cur.write_all(&(header_size - 8).to_le_bytes()).unwrap();
+    cur.write_all(&(wave_size - 8).to_le_bytes()).unwrap();
     cur.write_all("WAVEfmt ".as_bytes()).unwrap();
     cur.write_all(&16_u32.to_le_bytes()).unwrap(); // fmt header length
     cur.write_all(&1_u16.to_le_bytes()).unwrap(); // linear PCM
