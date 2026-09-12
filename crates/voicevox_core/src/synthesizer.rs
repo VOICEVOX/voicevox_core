@@ -2713,18 +2713,25 @@ pub(crate) mod blocking {
 }
 
 pub(crate) mod nonblocking {
-    use std::fmt::{self, Debug};
+    use std::{
+        fmt::{self, Debug},
+        pin::Pin,
+        sync::{Arc, Weak},
+        task::{Context, Poll},
+    };
 
     use easy_ext::ext;
+    use futures_core::{Stream, future::BoxFuture};
     use typed_floats::{NonNaNFinite, PositiveFinite};
 
     use crate::{
         AccentPhrase, AudioQuery, FrameAudioQuery, OnExistingVoiceModelId, Result, Score, StyleId,
         VoiceModelId, VoiceModelMeta, asyncs::BlockingThreadPool,
+        wav_header_from_s16le,
     };
 
     use super::{
-        AccelerationMode, AsInner as _, AssumeBlockable, FrameSynthesisOptions, InitializeOptions,
+        AccelerationMode, AsInner as _, AssumeBlockable, AudioFeature, FrameSynthesisOptions, InitializeOptions,
         Inner, InnerRefWithoutTextAnalyzer, LoadVoiceModelOptions, SynthesisOptions, TtsOptions,
     };
 
@@ -3237,6 +3244,78 @@ pub(crate) mod nonblocking {
         }
     }
 
+    pub struct SynthesisStream<'a> {
+        synthesizer: Weak<InnerRefWithoutTextAnalyzer<'a, BlockingThreadPool>>,
+        audio_feature: AudioFeature,
+        cursor: usize,
+        segment_frames: usize,
+        header: Vec<u8>,
+        pcm_future: Option<BoxFuture<'a, crate::Result<Vec<u8>>>>,
+    }
+
+    // impl<'a> Stream for SynthesisStream<'a> {
+    //     type Item = crate::Result<Vec<u8>>;
+
+    //     fn poll_next(
+    //         mut self: Pin<&mut Self>,
+    //         cx: &mut Context<'_>,
+    //     ) -> Poll<Option<Self::Item>> {
+    //         if self.cursor >= self.audio_feature.frame_length() {
+    //             return Poll::Ready(None);
+    //         }
+    //         let next_cursor = std::cmp::min(
+    //             self.cursor + self.segment_frames,
+    //             self.audio_feature.frame_length(),
+    //         );
+    //         if self.pcm_future.is_none() {
+    //             self.pcm_future = Some(Box::pin(
+    //                 self.synthesizer
+    //                     .upgrade()
+    //                     .unwrap()
+    //                     .render(&self.audio_feature, self.cursor..next_cursor),
+    //             ));
+    //         }
+
+    //         let pcm = match Pin::new(self.pcm_future.as_mut().unwrap()).poll(cx)
+    //         {
+    //             Poll::Ready(val) => match val {
+    //                 Ok(pcm) => pcm,
+    //                 Err(e) => return Poll::Ready(Some(Err(e))),
+    //             },
+    //             Poll::Pending => return Poll::Pending,
+    //         };
+    //         self.cursor = next_cursor;
+    //         if self.header.is_empty() {
+    //             Poll::Ready(Some(Ok(pcm)))
+    //         } else {
+    //             let pcm_with_header = [self.header.clone(), pcm].concat();
+    //             self.header.clear();
+    //             Poll::Ready(Some(Ok(pcm_with_header)))
+    //         }
+    //     }
+    // }
+
+    impl<T> self::Synthesizer<T> {
+        /// AudioQueryから直接WAVフォーマットで音声波形をストリーミング生成する。
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_streaming_synthesis"))]
+        pub fn streaming_synthesis<'a>(
+            &'a self,
+            audio_query: &'a AudioQuery,
+            style_id: StyleId,
+            start_offset: f64,
+            segment_length: f64,
+        ) -> StreamingSynthesis<'a> {
+            StreamingSynthesis {
+                synthesizer: Arc::new(self.0.without_text_analyzer()),
+                audio_query,
+                style_id,
+                start_offset,
+                segment_length,
+                options: Default::default(),
+            }
+        }
+    }
+
     impl<T: crate::nonblocking::TextAnalyzer> self::Synthesizer<T> {
         /// 日本語のテキストからAccentPhrase (アクセント句)の配列を生成する。
         ///
@@ -3448,6 +3527,48 @@ pub(crate) mod nonblocking {
             self.synthesizer
                 .synthesis(self.audio_query, self.style_id, &self.options)
                 .await
+        }
+    }
+
+    #[must_use = "this is a builder. it does nothing until `perform`ed"]
+    #[derive(Debug)]
+    pub struct StreamingSynthesis<'a> {
+        synthesizer: Arc<InnerRefWithoutTextAnalyzer<'a, BlockingThreadPool>>,
+        audio_query: &'a AudioQuery,
+        style_id: StyleId,
+        start_offset: f64,
+        segment_length: f64,
+        options: SynthesisOptions<BlockingThreadPool>,
+    }
+
+    impl<'a> StreamingSynthesis<'a> {
+        pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
+            self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
+            self
+        }
+
+        /// 実行する。
+        pub async fn perform(self) -> crate::Result<SynthesisStream<'a>> {
+            let audio_feature = self
+                .synthesizer
+                .create_audio_feature(self.audio_query, self.style_id, &self.options).await?;
+            let offset_frames = (self.start_offset * AudioFeature::FRAME_RATE).round() as usize;
+            let render_frames = audio_feature.frame_length() - offset_frames;
+            let render_pcm_length = render_frames * 256;
+            let output_sampling_rate = self.audio_query.output_sampling_rate.get().get();
+            let output_stereo = self.audio_query.output_stereo;
+            Ok(SynthesisStream {
+                synthesizer: std::sync::Arc::downgrade(&self.synthesizer),
+                audio_feature,
+                cursor: offset_frames,
+                segment_frames: (self.segment_length * AudioFeature::FRAME_RATE).round() as usize,
+                header: wav_header_from_s16le(
+                    render_pcm_length,
+                    output_sampling_rate,
+                    output_stereo,
+                ),
+                pcm_future: None,
+            })
         }
     }
 
@@ -4438,14 +4559,16 @@ mod tests {
 
         let expected_wav = synthesizer
             .synthesis(&audio_query, StyleId::new(302))
+            .perform()
             .await
             .unwrap();
 
-        let actual_wav = synthesizer
-            .streaming_synthesis(&audio_query, StyleId::new(302))
+        let actual_wav_iter = synthesizer
+            .streaming_synthesis(&audio_query, StyleId::new(302), 0.0, 0.3)
+            .perform()
             .await
             .unwrap();
 
-        assert_eq!(expected_wav, actual_wav);
+        assert_eq!(expected_wav, actual_wav_iter.collect::<Vec<_>>().await);
     }
 }

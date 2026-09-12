@@ -5011,6 +5011,7 @@ dependencies = [
  "educe",
  "enum-map",
  "fs-err",
+ "futures-core",
  "futures-io",
  "futures-lite",
  "futures-util",
