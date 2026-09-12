@@ -2208,10 +2208,10 @@ pub(crate) mod blocking {
         type Item = crate::Result<Vec<u8>>;
 
         fn next(&mut self) -> Option<Self::Item> {
-            let next_cursor = self.cursor + self.segment_frames;
-            if next_cursor > self.audio_feature.frame_length() {
+            if self.cursor >= self.audio_feature.frame_length() {
                 return None;
             }
+            let next_cursor = std::cmp::min(self.cursor + self.segment_frames, self.audio_feature.frame_length());
             let pcm = match self
                 .synthesizer
                 .upgrade()
