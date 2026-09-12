@@ -2631,7 +2631,7 @@ pub(crate) mod blocking {
 
     impl<'a, T> StreamingSynthesis<'a, T> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
-            self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
+            self.options.synthesis.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
         }
 
@@ -2757,7 +2757,7 @@ pub(crate) mod nonblocking {
     use super::{
         AccelerationMode, AsInner as _, AssumeBlockable, AudioFeature, FrameSynthesisOptions,
         InitializeOptions, Inner, InnerRefWithoutTextAnalyzer, LoadVoiceModelOptions,
-        SynthesisOptions, TtsOptions,
+        StreamingSynthesisOptions, SynthesisOptions, TtsOptions,
     };
 
     /// 音声シンセサイザ。
@@ -3324,18 +3324,14 @@ pub(crate) mod nonblocking {
         /// AudioQueryから直接WAVフォーマットで音声波形をストリーミング生成する。
         #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_streaming_synthesis"))]
         pub fn streaming_synthesis<'a>(
-            &'a self,
+            self: &'a Arc<Self>,
             audio_query: &'a AudioQuery,
             style_id: StyleId,
-            start_offset: f64,
-            segment_length: f64,
-        ) -> StreamingSynthesis<'a> {
+        ) -> StreamingSynthesis<'a, T> {
             StreamingSynthesis {
-                synthesizer: Arc::new(self.0.without_text_analyzer()),
+                synthesizer: self,
                 audio_query,
                 style_id,
-                start_offset,
-                segment_length,
                 options: Default::default(),
             }
         }
@@ -3561,14 +3557,12 @@ pub(crate) mod nonblocking {
         synthesizer: &'a Arc<self::Synthesizer<T>>,
         audio_query: &'a AudioQuery,
         style_id: StyleId,
-        start_offset: f64,
-        segment_length: f64,
-        options: SynthesisOptions<BlockingThreadPool>,
+        options: StreamingSynthesisOptions<BlockingThreadPool>,
     }
 
     impl<'a, T> StreamingSynthesis<'a, T> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
-            self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
+            self.options.synthesis.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
         }
 
@@ -3576,18 +3570,21 @@ pub(crate) mod nonblocking {
         pub async fn perform(self) -> crate::Result<SynthesisStream<T>> {
             let audio_feature = self
                 .synthesizer
-                .create_audio_feature(self.audio_query, self.style_id, &self.options)
+                .0
+                .create_audio_feature(self.audio_query, self.style_id, &self.options.synthesis)
                 .await?;
-            let offset_frames = (self.start_offset * AudioFeature::FRAME_RATE).round() as usize;
+            let offset_frames =
+                (self.options.start_offset * AudioFeature::FRAME_RATE).round_ties_even() as usize;
             let render_frames = audio_feature.frame_length() - offset_frames;
             let render_pcm_length = render_frames * 256;
             let output_sampling_rate = self.audio_query.output_sampling_rate.get().get();
             let output_stereo = self.audio_query.output_stereo;
             Ok(SynthesisStream {
-                synthesizer: std::sync::Arc::downgrade(&self.synthesizer),
+                synthesizer: Arc::downgrade(self.synthesizer),
                 audio_feature,
                 cursor: offset_frames,
-                segment_frames: (self.segment_length * AudioFeature::FRAME_RATE).round() as usize,
+                segment_frames: (self.options.segment_length * AudioFeature::FRAME_RATE)
+                    .round_ties_even() as usize,
                 header: wav_header_from_s16le(
                     render_pcm_length,
                     output_sampling_rate,
