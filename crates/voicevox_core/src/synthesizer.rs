@@ -2224,15 +2224,15 @@ pub(crate) mod blocking {
         }
     }
 
-    pub struct SynthesisStream {
-        synthesizer: Weak<self::Inner<(), SingleTasked>>,
+    pub struct SynthesisStream<T> {
+        synthesizer: Weak<Synthesizer<T>>,
         audio_feature: AudioFeature,
         cursor: usize,
         segment_frames: usize,
         header: Vec<u8>,
     }
 
-    impl Iterator for SynthesisStream {
+    impl<T> Iterator for SynthesisStream<T> {
         type Item = crate::Result<Vec<u8>>;
 
         fn next(&mut self) -> Option<Self::Item> {
@@ -2247,6 +2247,7 @@ pub(crate) mod blocking {
                 .synthesizer
                 .upgrade()
                 .unwrap_or_else(|| todo!())
+                .0
                 .render(&self.audio_feature, self.cursor..next_cursor)
                 .block_on()
             {
@@ -2656,7 +2657,7 @@ pub(crate) mod blocking {
         }
 
         /// 実行する。
-        pub fn perform(self) -> crate::Result<SynthesisStream> {
+        pub fn perform(self) -> crate::Result<SynthesisStream<T>> {
             let audio_feature = self
                 .synthesizer
                 .0
@@ -2670,9 +2671,7 @@ pub(crate) mod blocking {
             let output_sampling_rate = self.audio_query.output_sampling_rate.get().get();
             let output_stereo = self.audio_query.output_stereo;
             Ok(SynthesisStream {
-                synthesizer: Arc::downgrade(&Arc::new(
-                    self.synthesizer.0.without_text_analyzer_cloned(),
-                )),
+                synthesizer: Arc::downgrade(self.synthesizer),
                 audio_feature,
                 cursor: offset_frames,
                 segment_frames: (self.options.segment_length * AudioFeature::FRAME_RATE)
@@ -3297,8 +3296,8 @@ pub(crate) mod nonblocking {
         }
     }
 
-    pub struct SynthesisStream {
-        synthesizer: Weak<self::Inner<(), BlockingThreadPool>>,
+    pub struct SynthesisStream<T> {
+        synthesizer: Weak<Synthesizer<T>>,
         audio_feature: AudioFeature,
         cursor: usize,
         segment_frames: usize,
@@ -3306,7 +3305,7 @@ pub(crate) mod nonblocking {
         // pcm_future: Option<BoxFuture<'static, crate::Result<Vec<u8>>>>,
     }
 
-    impl Stream for SynthesisStream {
+    impl<T> Stream for SynthesisStream<T> {
         type Item = crate::Result<Vec<u8>>;
 
         fn poll_next(mut self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
@@ -3321,6 +3320,7 @@ pub(crate) mod nonblocking {
                 .synthesizer
                 .upgrade()
                 .unwrap_or_else(|| todo!())
+                .0
                 .render(&self.audio_feature, self.cursor..next_cursor)
                 .block_on()  // FIXME: blockせずにPoll::Pendingを返す
             {
@@ -3338,23 +3338,6 @@ pub(crate) mod nonblocking {
             }
         }
     }
-
-    // impl<T: Send + Sync + 'static> self::Synthesizer<T> {
-    //     /// AudioQueryから直接WAVフォーマットで音声波形をストリーミング生成する。
-    //     #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_streaming_synthesis"))]
-    //     pub fn streaming_synthesis<'a>(
-    //         self: &'a Arc<Self>,
-    //         audio_query: &'a AudioQuery,
-    //         style_id: StyleId,
-    //     ) -> StreamingSynthesis<'a, T> {
-    //         StreamingSynthesis {
-    //             synthesizer: self,
-    //             audio_query,
-    //             style_id,
-    //             options: Default::default(),
-    //         }
-    //     }
-    // }
 
     impl<T: crate::nonblocking::TextAnalyzer> self::Synthesizer<T> {
         /// 日本語のテキストからAccentPhrase (アクセント句)の配列を生成する。
@@ -3573,7 +3556,7 @@ pub(crate) mod nonblocking {
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
     #[derive(Debug)]
     pub struct StreamingSynthesis<'a, T> {
-        synthesizer: &'a Arc<self::Synthesizer<T>>,
+        synthesizer: &'a Arc<Synthesizer<T>>,
         audio_query: &'a AudioQuery,
         style_id: StyleId,
         options: StreamingSynthesisOptions<BlockingThreadPool>,
@@ -3586,11 +3569,10 @@ pub(crate) mod nonblocking {
         }
 
         /// 実行する。
-        pub async fn perform(self) -> crate::Result<SynthesisStream> {
+        pub async fn perform(self) -> crate::Result<SynthesisStream<T>> {
             let audio_feature = self
                 .synthesizer
                 .0
-                .without_text_analyzer_cloned()
                 .create_audio_feature(self.audio_query, self.style_id, &self.options.synthesis)
                 .await?;
             let offset_frames =
@@ -3600,9 +3582,7 @@ pub(crate) mod nonblocking {
             let output_sampling_rate = self.audio_query.output_sampling_rate.get().get();
             let output_stereo = self.audio_query.output_stereo;
             Ok(SynthesisStream {
-                synthesizer: Arc::downgrade(&Arc::new(
-                    self.synthesizer.0.without_text_analyzer_cloned(),
-                )),
+                synthesizer: Arc::downgrade(self.synthesizer),
                 audio_feature,
                 cursor: offset_frames,
                 segment_frames: (self.options.segment_length * AudioFeature::FRAME_RATE)
@@ -3717,9 +3697,7 @@ mod tests {
 
     use super::{AccelerationMode, AsInner as _, DEFAULT_HEAVY_INFERENCE_CANCELLABLE};
     use crate::{
-        AccentPhrase, FramePhoneme, Note, NoteId, Result, Score, StyleId,
-        asyncs::BlockingThreadPool, engine::talk::Mora, macros::tests::assert_debug_fmt_eq,
-        numerics::non_zero,
+        AccentPhrase, FramePhoneme, Note, NoteId, Result, Score, StyleId, asyncs::BlockingThreadPool, blocking::synthesizer, engine::talk::Mora, macros::tests::assert_debug_fmt_eq, numerics::non_zero,
     };
     use ::test_util::OPEN_JTALK_DIC_DIR;
     use futures_lite::StreamExt;
@@ -4593,6 +4571,7 @@ mod tests {
         .acceleration_mode(AccelerationMode::Cpu)
         .build()
         .unwrap();
+        let synthesizer = Arc::new(synthesizer);
 
         let model = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
         synthesizer.load_voice_model(model).perform().await.unwrap();
@@ -4608,7 +4587,7 @@ mod tests {
             .await
             .unwrap();
 
-        let actual_wav_iter = Arc::new(synthesizer)
+        let actual_wav_iter = synthesizer
             .streaming_synthesis(&audio_query, StyleId::new(302))
             .perform()
             .await
