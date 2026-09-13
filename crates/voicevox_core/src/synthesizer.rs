@@ -2762,13 +2762,13 @@ pub(crate) mod nonblocking {
     };
 
     use easy_ext::ext;
-    use futures_core::Stream;
+    use futures_core::{Stream, future::BoxFuture};
+    use futures_lite::FutureExt;
     use typed_floats::{NonNaNFinite, PositiveFinite};
 
     use crate::{
         AccentPhrase, AudioQuery, FrameAudioQuery, OnExistingVoiceModelId, Result, Score, StyleId,
-        VoiceModelId, VoiceModelMeta, asyncs::BlockingThreadPool, future::FutureExt,
-        wav_header_from_s16le,
+        VoiceModelId, VoiceModelMeta, asyncs::BlockingThreadPool, wav_header_from_s16le,
     };
 
     use super::{
@@ -3300,45 +3300,58 @@ pub(crate) mod nonblocking {
         }
     }
 
+    pub struct PendingPcm {
+        next_cursor: usize,
+        future: BoxFuture<'static, crate::Result<Vec<u8>>>,
+    }
     pub struct SynthesisStream<T> {
         synthesizer: Weak<Synthesizer<T>>,
         audio_feature: AudioFeature,
         cursor: usize,
         segment_frames: usize,
         header: Vec<u8>,
-        // pcm_future: Option<BoxFuture<'static, crate::Result<Vec<u8>>>>,
+        pending_pcm: Option<PendingPcm>,
+        // pending_pcm: Option<BoxFuture<'static, crate::Result<Vec<u8>>>>,
     }
 
-    impl<T> Stream for SynthesisStream<T> {
+    impl<T: Send + Sync + 'static> Stream for SynthesisStream<T> {
         type Item = crate::Result<Vec<u8>>;
 
-        fn poll_next(mut self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-            if self.cursor >= self.audio_feature.frame_length() {
-                return Poll::Ready(None);
-            }
-            let next_cursor = std::cmp::min(
-                self.cursor + self.segment_frames,
-                self.audio_feature.frame_length(),
-            );
-            let pcm = match self
-                .synthesizer
-                .upgrade()
-                .unwrap_or_else(|| todo!())
-                .0
-                .render(&self.audio_feature, self.cursor..next_cursor)
-                .block_on()  // FIXME: blockせずにPoll::Pendingを返す
-            {
-                Ok(pcm) => pcm,
-                Err(e) => return Poll::Ready(Some(Err(e))),
-            };
-
-            self.cursor = next_cursor;
-            if self.header.is_empty() {
-                Poll::Ready(Some(Ok(pcm)))
-            } else {
-                let pcm_with_header = [self.header.clone(), pcm].concat();
+        fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+            // まずヘッダーが残っていればそれを返す
+            if !self.header.is_empty() {
+                let header = self.header.clone();
                 self.header.clear();
-                Poll::Ready(Some(Ok(pcm_with_header)))
+                return Poll::Ready(Some(Ok(header)));
+            }
+            loop {
+                // 処理中のPCMデータがあればそれを返す
+                if let Some(pending) = self.pending_pcm.as_mut() {
+                    let result = match pending.future.as_mut().poll(cx) {
+                        Poll::Pending => return Poll::Pending,
+                        Poll::Ready(result) => result,
+                    };
+                    self.cursor = pending.next_cursor;
+                    self.pending_pcm = None;
+                    return Poll::Ready(Some(result));
+                }
+                // 終了するか、次のPCMデータを生成する
+                if self.cursor >= self.audio_feature.frame_length() {
+                    return Poll::Ready(None);
+                }
+                let next_cursor = std::cmp::min(
+                    self.cursor + self.segment_frames,
+                    self.audio_feature.frame_length(),
+                );
+                let synthesizer = self.synthesizer.upgrade().unwrap_or_else(|| todo!());
+                let inner = synthesizer.0.without_text_analyzer_cloned();
+                let audio_feature = self.audio_feature.clone();
+                let range = self.cursor..next_cursor;
+
+                self.pending_pcm = Some(PendingPcm {
+                    next_cursor,
+                    future: async move { inner.render(&audio_feature, range).await }.boxed(),
+                });
             }
         }
     }
@@ -3600,6 +3613,7 @@ pub(crate) mod nonblocking {
                     output_sampling_rate,
                     output_stereo,
                 ),
+                pending_pcm: None,
             })
         }
     }
