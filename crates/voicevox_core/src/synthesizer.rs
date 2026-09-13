@@ -2762,7 +2762,7 @@ pub(crate) mod nonblocking {
     };
 
     use easy_ext::ext;
-    use futures_core::{Stream, future::BoxFuture};
+    use futures_core::Stream;
     use typed_floats::{NonNaNFinite, PositiveFinite};
 
     use crate::{
@@ -3706,8 +3706,8 @@ mod tests {
     use super::{AccelerationMode, AsInner as _, DEFAULT_HEAVY_INFERENCE_CANCELLABLE};
     use crate::{
         AccentPhrase, FramePhoneme, Note, NoteId, Result, Score, StyleId,
-        asyncs::BlockingThreadPool, blocking::synthesizer, engine::talk::Mora,
-        macros::tests::assert_debug_fmt_eq, numerics::non_zero,
+        asyncs::BlockingThreadPool, engine::talk::Mora, macros::tests::assert_debug_fmt_eq,
+        numerics::non_zero,
     };
     use ::test_util::OPEN_JTALK_DIC_DIR;
     use futures_lite::StreamExt;
@@ -4567,7 +4567,7 @@ mod tests {
 
     #[rstest]
     #[tokio::test]
-    async fn streaming_synthesis_equivalent() {
+    async fn nonblocking_streaming_synthesis_equivalent() {
         let synthesizer = super::nonblocking::Synthesizer::builder(
             crate::nonblocking::Onnxruntime::from_test_util_data()
                 .await
@@ -4604,6 +4604,45 @@ mod tests {
             .unwrap()
             .collect::<Vec<_>>()
             .await
+            .into_iter()
+            .map(|chunk| chunk.unwrap())
+            .collect::<Vec<_>>()
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>();
+
+        assert_eq!(expected_wav, actual_wav_iter);
+    }
+
+    #[rstest]
+    #[tokio::test]
+    async fn blocking_streaming_synthesis_equivalent() {
+        let synthesizer = super::blocking::Synthesizer::builder(
+            crate::blocking::Onnxruntime::from_test_util_data().unwrap(),
+        )
+        .text_analyzer(crate::blocking::OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap())
+        .acceleration_mode(AccelerationMode::Cpu)
+        .build()
+        .unwrap();
+        let synthesizer = Arc::new(synthesizer);
+
+        let model = &crate::blocking::VoiceModelFile::sample().unwrap();
+        synthesizer.load_voice_model(model).perform().unwrap();
+
+        let audio_query = synthesizer
+            .create_audio_query("これはテストです", StyleId::new(302))
+            .unwrap();
+
+        let expected_wav = synthesizer
+            .synthesis(&audio_query, StyleId::new(302))
+            .perform()
+            .unwrap();
+
+        let actual_wav_iter = synthesizer
+            .streaming_synthesis(&audio_query, StyleId::new(302))
+            .perform()
+            .unwrap()
+            .collect::<Vec<_>>()
             .into_iter()
             .map(|chunk| chunk.unwrap())
             .collect::<Vec<_>>()
