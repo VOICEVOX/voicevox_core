@@ -1676,9 +1676,9 @@ pub(crate) mod blocking {
     };
 
     use super::{
-        AccelerationMode, AsInner as _, AssumeSingleTasked, AudioFeature, InitializeOptions, Inner,
-        InnerRefWithoutTextAnalyzer, LoadVoiceModelOptions, StreamingSynthesisOptions,
-        SynthesisOptions, TtsOptions,
+        AccelerationMode, AsInner as _, AssumeSingleTasked, AudioFeature, DEFAULT_SAMPLING_RATE,
+        InitializeOptions, Inner, InnerRefWithoutTextAnalyzer, LoadVoiceModelOptions,
+        StreamingSynthesisOptions, SynthesisOptions, TtsOptions,
     };
 
     /// 音声シンセサイザ。
@@ -2667,9 +2667,13 @@ pub(crate) mod blocking {
             let offset_frames =
                 (self.options.start_offset * AudioFeature::FRAME_RATE).round_ties_even() as usize;
             let render_frames = audio_feature.frame_length() - offset_frames;
-            let render_pcm_length = render_frames * 256;
+            let render_wave_length = render_frames * 256;
             let output_sampling_rate = self.audio_query.output_sampling_rate.get().get();
             let output_stereo = self.audio_query.output_stereo;
+            let num_channels: u16 = if output_stereo { 2 } else { 1 };
+            let repeat_count: u32 =
+                (output_sampling_rate / DEFAULT_SAMPLING_RATE) * num_channels as u32;
+            let render_pcm_length = (render_wave_length as u32 * repeat_count * 2) as usize;
             Ok(SynthesisStream {
                 synthesizer: Arc::downgrade(self.synthesizer),
                 audio_feature,
@@ -2768,9 +2772,9 @@ pub(crate) mod nonblocking {
     };
 
     use super::{
-        AccelerationMode, AsInner as _, AssumeBlockable, AudioFeature, FrameSynthesisOptions,
-        InitializeOptions, Inner, InnerRefWithoutTextAnalyzer, LoadVoiceModelOptions,
-        StreamingSynthesisOptions, SynthesisOptions, TtsOptions,
+        AccelerationMode, AsInner as _, AssumeBlockable, AudioFeature, DEFAULT_SAMPLING_RATE,
+        FrameSynthesisOptions, InitializeOptions, Inner, InnerRefWithoutTextAnalyzer,
+        LoadVoiceModelOptions, StreamingSynthesisOptions, SynthesisOptions, TtsOptions,
     };
 
     /// 音声シンセサイザ。
@@ -3578,9 +3582,13 @@ pub(crate) mod nonblocking {
             let offset_frames =
                 (self.options.start_offset * AudioFeature::FRAME_RATE).round_ties_even() as usize;
             let render_frames = audio_feature.frame_length() - offset_frames;
-            let render_pcm_length = render_frames * 256;
+            let render_wave_length = render_frames * 256;
             let output_sampling_rate = self.audio_query.output_sampling_rate.get().get();
             let output_stereo = self.audio_query.output_stereo;
+            let num_channels: u16 = if output_stereo { 2 } else { 1 };
+            let repeat_count: u32 =
+                (output_sampling_rate / DEFAULT_SAMPLING_RATE) * num_channels as u32;
+            let render_pcm_length = (render_wave_length as u32 * repeat_count * 2) as usize;
             Ok(SynthesisStream {
                 synthesizer: Arc::downgrade(self.synthesizer),
                 audio_feature,
@@ -3697,7 +3705,9 @@ mod tests {
 
     use super::{AccelerationMode, AsInner as _, DEFAULT_HEAVY_INFERENCE_CANCELLABLE};
     use crate::{
-        AccentPhrase, FramePhoneme, Note, NoteId, Result, Score, StyleId, asyncs::BlockingThreadPool, blocking::synthesizer, engine::talk::Mora, macros::tests::assert_debug_fmt_eq, numerics::non_zero,
+        AccentPhrase, FramePhoneme, Note, NoteId, Result, Score, StyleId,
+        asyncs::BlockingThreadPool, blocking::synthesizer, engine::talk::Mora,
+        macros::tests::assert_debug_fmt_eq, numerics::non_zero,
     };
     use ::test_util::OPEN_JTALK_DIC_DIR;
     use futures_lite::StreamExt;
