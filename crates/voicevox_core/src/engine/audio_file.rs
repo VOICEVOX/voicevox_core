@@ -107,7 +107,7 @@ pub fn wav_header_from_s16le(pcm_length: usize, sampling_rate: u32, is_stereo: b
 #[cfg_attr(doc, doc(alias = "voicevox_wav_from_s16le"))]
 pub fn wav_from_s16le(pcm: &[u8], sampling_rate: u32, is_stereo: bool) -> Vec<u8> {
     let wave_size = pcm.len() + 44;
-    let buf: Vec<u8> = Vec::with_capacity(wave_size as usize);
+    let buf: Vec<u8> = Vec::with_capacity(wave_size);
     let mut cur = Cursor::new(buf);
 
     cur.write_all(&wav_header_from_s16le(pcm.len(), sampling_rate, is_stereo))
