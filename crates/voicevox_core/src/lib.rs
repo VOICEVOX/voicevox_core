@@ -486,7 +486,7 @@ pub use self::{
                 UserDictWord, UserDictWordBuilder, UserDictWordPriority, UserDictWordType,
             },
         },
-        wav_from_s16le,
+        wav_from_s16le, wav_header_from_s16le,
     },
     error::{Error, ErrorKind},
     result::Result,

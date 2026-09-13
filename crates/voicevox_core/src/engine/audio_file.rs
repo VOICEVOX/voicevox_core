@@ -71,17 +71,18 @@ impl FrameAudioQuery {
     }
 }
 
-/// 16bit PCMにヘッダを付加しWAVフォーマットのバイナリを生成する。
-#[cfg_attr(doc, doc(alias = "voicevox_wav_from_s16le"))]
-pub fn wav_from_s16le(pcm: &[u8], sampling_rate: u32, is_stereo: bool) -> Vec<u8> {
+/// 16bit PCMのバイト長に対応したWAVヘッダーの生成
+#[cfg_attr(doc, doc(alias = "voicevox_wav_header_from_s16le"))]
+pub fn wav_header_from_s16le(pcm_length: usize, sampling_rate: u32, is_stereo: bool) -> Vec<u8> {
     let num_channels: u16 = if is_stereo { 2 } else { 1 };
     let bit_depth: u16 = 16;
     let block_size: u16 = bit_depth * num_channels / 8;
 
-    let bytes_size = pcm.len() as u32;
-    let wave_size = bytes_size + 44;
+    let bytes_size = pcm_length as u32;
+    let header_size = 44;
+    let wave_size = header_size + bytes_size;
 
-    let buf: Vec<u8> = Vec::with_capacity(wave_size as usize);
+    let buf: Vec<u8> = Vec::with_capacity(header_size as usize);
     let mut cur = Cursor::new(buf);
 
     cur.write_all("RIFF".as_bytes()).unwrap();
@@ -99,6 +100,18 @@ pub fn wav_from_s16le(pcm: &[u8], sampling_rate: u32, is_stereo: bool) -> Vec<u8
     cur.write_all(&bit_depth.to_le_bytes()).unwrap();
     cur.write_all("data".as_bytes()).unwrap();
     cur.write_all(&bytes_size.to_le_bytes()).unwrap();
+    cur.into_inner()
+}
+
+/// 16bit PCMにヘッダを付加しWAVフォーマットのバイナリを生成する。
+#[cfg_attr(doc, doc(alias = "voicevox_wav_from_s16le"))]
+pub fn wav_from_s16le(pcm: &[u8], sampling_rate: u32, is_stereo: bool) -> Vec<u8> {
+    let wave_size = pcm.len() + 44;
+    let buf: Vec<u8> = Vec::with_capacity(wave_size as usize);
+    let mut cur = Cursor::new(buf);
+
+    cur.write_all(&wav_header_from_s16le(pcm.len(), sampling_rate, is_stereo))
+        .unwrap();
     cur.write_all(pcm).unwrap();
     cur.into_inner()
 }
