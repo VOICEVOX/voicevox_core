@@ -1663,6 +1663,8 @@ impl From<Vec<AccentPhrase>> for AudioQuery {
 pub(crate) mod blocking {
     use std::{
         fmt::{self, Debug},
+        iter::{Peekable, StepBy},
+        ops::Range,
         sync::{Arc, Weak},
     };
 
@@ -2227,8 +2229,7 @@ pub(crate) mod blocking {
     pub struct SynthesisStream<T> {
         synthesizer: Weak<Synthesizer<T>>,
         audio_feature: AudioFeature,
-        cursor: usize,
-        segment_frames: usize,
+        cursor: Peekable<StepBy<Range<usize>>>,
         header: Vec<u8>,
     }
 
@@ -2236,31 +2237,34 @@ pub(crate) mod blocking {
         type Item = crate::Result<Vec<u8>>;
 
         fn next(&mut self) -> Option<Self::Item> {
-            if self.cursor >= self.audio_feature.frame_length() {
-                return None;
-            }
-            let next_cursor = std::cmp::min(
-                self.cursor + self.segment_frames,
-                self.audio_feature.frame_length(),
-            );
-            let pcm = match self
-                .synthesizer
-                .upgrade()
-                .unwrap_or_else(|| todo!())
-                .0
-                .render(&self.audio_feature, self.cursor..next_cursor)
-                .block_on()
-            {
-                Ok(pcm) => pcm,
-                Err(e) => return Some(Err(e)),
-            };
-            self.cursor = next_cursor;
-            if self.header.is_empty() {
-                Some(Ok(pcm))
-            } else {
-                let pcm_with_header = [self.header.clone(), pcm].concat();
+            // まずヘッダーが残っていればそれを返す
+            if !self.header.is_empty() {
+                let header = self.header.clone();
                 self.header.clear();
-                Some(Ok(pcm_with_header))
+                return Some(Ok(header));
+            }
+            // カーソルをひとつ進め、終了するか次のPCMデータを生成する
+            match self.cursor.next() {
+                None => None,
+                Some(start_frame) => {
+                    let end_frame = match self.cursor.peek() {
+                        Some(&val) => val,
+                        None => self.audio_feature.frame_length(),
+                    };
+
+                    let pcm = match self
+                        .synthesizer
+                        .upgrade()
+                        .unwrap_or_else(|| todo!())
+                        .0
+                        .render(&self.audio_feature, start_frame..end_frame)
+                        .block_on()
+                    {
+                        Ok(pcm) => pcm,
+                        Err(e) => return Some(Err(e)),
+                    };
+                    Some(Ok(pcm))
+                }
             }
         }
     }
@@ -2666,7 +2670,10 @@ pub(crate) mod blocking {
                 .block_on()?;
             let offset_frames =
                 (self.options.start_offset * AudioFeature::FRAME_RATE).round_ties_even() as usize;
-            let render_frames = audio_feature.frame_length() - offset_frames;
+            let full_frames = audio_feature.frame_length();
+            let segment_frames =
+                (self.options.segment_length * AudioFeature::FRAME_RATE).round_ties_even() as usize;
+            let render_frames = full_frames - offset_frames;
             let render_wave_length = render_frames * 256;
             let output_sampling_rate = self.audio_query.output_sampling_rate.get().get();
             let output_stereo = self.audio_query.output_stereo;
@@ -2677,9 +2684,9 @@ pub(crate) mod blocking {
             Ok(SynthesisStream {
                 synthesizer: Arc::downgrade(self.synthesizer),
                 audio_feature,
-                cursor: offset_frames,
-                segment_frames: (self.options.segment_length * AudioFeature::FRAME_RATE)
-                    .round_ties_even() as usize,
+                cursor: (offset_frames..full_frames)
+                    .step_by(segment_frames)
+                    .peekable(),
                 header: wav_header_from_s16le(
                     render_pcm_length,
                     output_sampling_rate,
@@ -2756,6 +2763,8 @@ pub(crate) mod blocking {
 pub(crate) mod nonblocking {
     use std::{
         fmt::{self, Debug},
+        iter::{Peekable, StepBy},
+        ops::Range,
         pin::Pin,
         sync::{Arc, Weak},
         task::{Context, Poll},
@@ -3300,18 +3309,12 @@ pub(crate) mod nonblocking {
         }
     }
 
-    pub struct PendingPcm {
-        next_cursor: usize,
-        future: BoxFuture<'static, crate::Result<Vec<u8>>>,
-    }
     pub struct SynthesisStream<T> {
         synthesizer: Weak<Synthesizer<T>>,
         audio_feature: AudioFeature,
-        cursor: usize,
-        segment_frames: usize,
+        cursor: Peekable<StepBy<Range<usize>>>,
         header: Vec<u8>,
-        pending_pcm: Option<PendingPcm>,
-        // pending_pcm: Option<BoxFuture<'static, crate::Result<Vec<u8>>>>,
+        pending_pcm: Option<BoxFuture<'static, crate::Result<Vec<u8>>>>,
     }
 
     impl<T: Send + Sync + 'static> Stream for SynthesisStream<T> {
@@ -3327,31 +3330,29 @@ pub(crate) mod nonblocking {
             loop {
                 // 処理中のPCMデータがあればそれを返す
                 if let Some(pending) = self.pending_pcm.as_mut() {
-                    let result = match pending.future.as_mut().poll(cx) {
+                    let result = match pending.as_mut().poll(cx) {
                         Poll::Pending => return Poll::Pending,
                         Poll::Ready(result) => result,
                     };
-                    self.cursor = pending.next_cursor;
                     self.pending_pcm = None;
                     return Poll::Ready(Some(result));
                 }
-                // 終了するか、次のPCMデータを生成する
-                if self.cursor >= self.audio_feature.frame_length() {
-                    return Poll::Ready(None);
+                // カーソルをひとつ進め、終了するか次のPCMデータを生成する
+                match self.cursor.next() {
+                    None => return Poll::Ready(None),
+                    Some(start_frame) => {
+                        let end_frame = match self.cursor.peek() {
+                            Some(&val) => val,
+                            None => self.audio_feature.frame_length(),
+                        };
+                        let synthesizer = self.synthesizer.upgrade().unwrap_or_else(|| todo!());
+                        let inner = synthesizer.0.without_text_analyzer_cloned();
+                        let audio_feature = self.audio_feature.clone();
+                        let range = start_frame..end_frame;
+                        self.pending_pcm =
+                            Some(async move { inner.render(&audio_feature, range).await }.boxed());
+                    }
                 }
-                let next_cursor = std::cmp::min(
-                    self.cursor + self.segment_frames,
-                    self.audio_feature.frame_length(),
-                );
-                let synthesizer = self.synthesizer.upgrade().unwrap_or_else(|| todo!());
-                let inner = synthesizer.0.without_text_analyzer_cloned();
-                let audio_feature = self.audio_feature.clone();
-                let range = self.cursor..next_cursor;
-
-                self.pending_pcm = Some(PendingPcm {
-                    next_cursor,
-                    future: async move { inner.render(&audio_feature, range).await }.boxed(),
-                });
             }
         }
     }
@@ -3594,7 +3595,10 @@ pub(crate) mod nonblocking {
                 .await?;
             let offset_frames =
                 (self.options.start_offset * AudioFeature::FRAME_RATE).round_ties_even() as usize;
-            let render_frames = audio_feature.frame_length() - offset_frames;
+            let segment_frames =
+                (self.options.segment_length * AudioFeature::FRAME_RATE).round_ties_even() as usize;
+            let full_frames = audio_feature.frame_length();
+            let render_frames = full_frames - offset_frames;
             let render_wave_length = render_frames * 256;
             let output_sampling_rate = self.audio_query.output_sampling_rate.get().get();
             let output_stereo = self.audio_query.output_stereo;
@@ -3605,9 +3609,9 @@ pub(crate) mod nonblocking {
             Ok(SynthesisStream {
                 synthesizer: Arc::downgrade(self.synthesizer),
                 audio_feature,
-                cursor: offset_frames,
-                segment_frames: (self.options.segment_length * AudioFeature::FRAME_RATE)
-                    .round_ties_even() as usize,
+                cursor: (offset_frames..full_frames)
+                    .step_by(segment_frames)
+                    .peekable(),
                 header: wav_header_from_s16le(
                     render_pcm_length,
                     output_sampling_rate,
