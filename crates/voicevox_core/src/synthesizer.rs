@@ -3326,28 +3326,28 @@ pub(crate) mod nonblocking {
                 self.header.clear();
                 return Poll::Ready(Some(Ok(header)));
             }
-            loop {
-                // 処理中のPCMデータがあればそれを返す
-                if let Some(pending) = &mut self.pending_pcm {
-                    let result = ready!(pending.poll(cx));
-                    self.pending_pcm = None;
-                    return Poll::Ready(Some(result));
-                }
-                // カーソルをひとつ進め、終了するか次のPCMデータを生成する
-                match self.cursor.next() {
-                    None => return Poll::Ready(None),
-                    Some(start_frame) => {
-                        let end_frame = match self.cursor.peek() {
-                            Some(&val) => val,
-                            None => self.audio_feature.frame_length(),
-                        };
-                        let synthesizer = self.synthesizer.upgrade().unwrap_or_else(|| todo!());
-                        let inner = synthesizer.0.without_text_analyzer_cloned();
-                        let audio_feature = self.audio_feature.clone();
-                        let range = start_frame..end_frame;
-                        self.pending_pcm =
-                            Some(async move { inner.render(&audio_feature, range).await }.boxed());
-                    }
+            // 処理中のPCMデータがあればそれを返す
+            if let Some(pending) = &mut self.pending_pcm {
+                let result = ready!(pending.poll(cx));
+                self.pending_pcm = None;
+                return Poll::Ready(Some(result));
+            }
+            // カーソルをひとつ進め、終了するか次のPCMデータを生成する
+            match self.cursor.next() {
+                None => Poll::Ready(None),
+                Some(start_frame) => {
+                    let end_frame = match self.cursor.peek() {
+                        Some(&val) => val,
+                        None => self.audio_feature.frame_length(),
+                    };
+                    let synthesizer = self.synthesizer.upgrade().unwrap_or_else(|| todo!());
+                    let inner = synthesizer.0.without_text_analyzer_cloned();
+                    let audio_feature = self.audio_feature.clone();
+                    let range = start_frame..end_frame;
+                    self.pending_pcm =
+                        Some(async move { inner.render(&audio_feature, range).await }.boxed());
+                    cx.waker().wake_by_ref();
+                    Poll::Pending
                 }
             }
         }
