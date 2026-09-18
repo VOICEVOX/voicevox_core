@@ -3319,6 +3319,16 @@ pub(crate) mod nonblocking {
     impl<T: Send + Sync + 'static> Stream for SynthesisStream<T> {
         type Item = crate::Result<Vec<u8>>;
 
+        fn size_hint(&self) -> (usize, Option<usize>) {
+            let pcm_chunks = self.cursor.len();
+            if self.header.is_empty() {
+                (pcm_chunks, Some(pcm_chunks))
+            } else {
+                // ヘッダーがある場合はそれも含める
+                (pcm_chunks + 1, Some(pcm_chunks + 1))
+            }
+        }
+
         fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
             // まずヘッダーが残っていればそれを返す
             if !self.header.is_empty() {
@@ -3724,6 +3734,7 @@ mod tests {
         numerics::non_zero,
     };
     use ::test_util::OPEN_JTALK_DIC_DIR;
+    use futures_core::Stream;
     use futures_lite::StreamExt;
     use itertools::Itertools as _;
     use rstest::rstest;
@@ -4611,7 +4622,7 @@ mod tests {
             .await
             .unwrap();
 
-        let actual_wav_iter = synthesizer
+        let actual_wav = synthesizer
             .streaming_synthesis(&audio_query, StyleId::new(302))
             .perform()
             .await
@@ -4625,7 +4636,7 @@ mod tests {
             .flatten()
             .collect::<Vec<_>>();
 
-        assert_eq!(expected_wav, actual_wav_iter);
+        assert_eq!(expected_wav, actual_wav);
     }
 
     #[rstest]
@@ -4652,7 +4663,7 @@ mod tests {
             .perform()
             .unwrap();
 
-        let actual_wav_iter = synthesizer
+        let actual_wav = synthesizer
             .streaming_synthesis(&audio_query, StyleId::new(302))
             .perform()
             .unwrap()
@@ -4664,6 +4675,50 @@ mod tests {
             .flatten()
             .collect::<Vec<_>>();
 
-        assert_eq!(expected_wav, actual_wav_iter);
+        assert_eq!(expected_wav, actual_wav);
+    }
+
+    #[rstest]
+    #[tokio::test]
+    async fn nonblocking_streaming_synthesis_correct_hint() {
+        let synthesizer = super::nonblocking::Synthesizer::builder(
+            crate::nonblocking::Onnxruntime::from_test_util_data()
+                .await
+                .unwrap(),
+        )
+        .text_analyzer(
+            crate::nonblocking::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
+                .await
+                .unwrap(),
+        )
+        .acceleration_mode(AccelerationMode::Cpu)
+        .build()
+        .unwrap();
+        let synthesizer = Arc::new(synthesizer);
+
+        let model = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
+        synthesizer.load_voice_model(model).perform().await.unwrap();
+
+        let audio_query = synthesizer
+            .create_audio_query("これはテストです", StyleId::new(302))
+            .await
+            .unwrap();
+
+        let mut wav_stream = synthesizer
+            .streaming_synthesis(&audio_query, StyleId::new(302))
+            .perform()
+            .await
+            .unwrap();
+
+        let size_hint = wav_stream.size_hint();
+        assert_eq!(size_hint.1, Some(size_hint.0));
+
+        let mut expected_count = size_hint.0 as i32;
+        while let Some(Ok(_)) = wav_stream.next().await {
+            expected_count -= 1;
+            assert_eq!(expected_count, wav_stream.size_hint().0 as i32);
+            assert_eq!(expected_count, wav_stream.size_hint().1.unwrap() as i32);
+        }
+        assert_eq!(expected_count, 0);
     }
 }
