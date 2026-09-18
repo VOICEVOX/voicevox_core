@@ -2236,12 +2236,10 @@ pub(crate) mod blocking {
         type Item = crate::Result<Vec<u8>>;
 
         fn size_hint(&self) -> (usize, Option<usize>) {
-            if self.header.is_empty() {
-                (self.cursor.len(), Some(self.cursor.len()))
-            } else {
-                // ヘッダーが残っている場合はそれを含める
-                (self.cursor.len() + 1, Some(self.cursor.len() + 1))
-            }
+            // ヘッダーが残っている場合はそれを含める
+            let lower = usize::from(!self.header.is_empty()) + self.cursor.len();
+            // Errを返す場合も考慮して、上限は不明とする
+            (lower, None)
         }
 
         fn next(&mut self) -> Option<Self::Item> {
@@ -3324,13 +3322,10 @@ pub(crate) mod nonblocking {
         type Item = crate::Result<Vec<u8>>;
 
         fn size_hint(&self) -> (usize, Option<usize>) {
-            let pcm_chunks = self.cursor.len();
-            if self.header.is_empty() {
-                (pcm_chunks, Some(pcm_chunks))
-            } else {
-                // ヘッダーが残っていればそれも含める
-                (pcm_chunks + 1, Some(pcm_chunks + 1))
-            }
+            // ヘッダーが残っている場合はそれを含める
+            let lower = usize::from(!self.header.is_empty()) + self.cursor.len();
+            // Errを返す場合も考慮して、上限は不明とする
+            (lower, None)
         }
 
         fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
@@ -4715,13 +4710,11 @@ mod tests {
             .unwrap();
 
         let size_hint = wav_stream.size_hint();
-        assert_eq!(size_hint.1, Some(size_hint.0));
 
         let mut expected_count = size_hint.0 as i32;
         while let Some(Ok(_)) = wav_stream.next().await {
             expected_count -= 1;
             assert_eq!(expected_count, wav_stream.size_hint().0 as i32);
-            assert_eq!(expected_count, wav_stream.size_hint().1.unwrap() as i32);
         }
         assert_eq!(expected_count, 0);
     }
@@ -4752,13 +4745,11 @@ mod tests {
             .unwrap();
 
         let size_hint = wav_stream.size_hint();
-        assert_eq!(size_hint.1, Some(size_hint.0));
 
         let mut expected_count = size_hint.0 as i32;
         while let Some(Ok(_)) = wav_stream.next() {
             expected_count -= 1;
             assert_eq!(expected_count, wav_stream.size_hint().0 as i32);
-            assert_eq!(expected_count, wav_stream.size_hint().1.unwrap() as i32);
         }
         assert_eq!(expected_count, 0);
     }
