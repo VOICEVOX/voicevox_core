@@ -42,7 +42,7 @@ use crate::{
         voice_model,
     },
     engine::{
-        DEFAULT_SAMPLING_RATE, IteratorExt as _, PcmOptions, PhonemeCode,
+        DEFAULT_SAMPLING_RATE, IteratorExt as _, PcmOptions, PhonemeCode, s16le_wav_prefix,
         song::{
             self,
             interpret::{ConsonantLengthsFeature, PhonemeFeature, SfDecoderFeature},
@@ -1674,13 +1674,12 @@ pub(crate) mod blocking {
     use crate::{
         AccentPhrase, AudioQuery, FrameAudioQuery, OnExistingVoiceModelId, Score, StyleId,
         VoiceModelId, VoiceModelMeta, asyncs::SingleTasked, future::FutureExt as _,
-        wav_header_from_s16le,
     };
 
     use super::{
         AccelerationMode, AsInner as _, AssumeSingleTasked, AudioFeature, DEFAULT_SAMPLING_RATE,
         InitializeOptions, Inner, InnerRefWithoutTextAnalyzer, LoadVoiceModelOptions,
-        StreamingSynthesisOptions, SynthesisOptions, TtsOptions,
+        StreamingSynthesisOptions, SynthesisOptions, TtsOptions, s16le_wav_prefix,
     };
 
     /// 音声シンセサイザ。
@@ -2694,11 +2693,7 @@ pub(crate) mod blocking {
                 synthesizer: Arc::downgrade(self.synthesizer),
                 audio_feature,
                 cursor: (offset_frames..full_frames).step_by(segment_frames),
-                header: wav_header_from_s16le(
-                    render_pcm_length,
-                    output_sampling_rate,
-                    output_stereo,
-                ),
+                header: s16le_wav_prefix(render_pcm_length, output_sampling_rate, output_stereo),
             })
         }
     }
@@ -2784,13 +2779,14 @@ pub(crate) mod nonblocking {
 
     use crate::{
         AccentPhrase, AudioQuery, FrameAudioQuery, OnExistingVoiceModelId, Result, Score, StyleId,
-        VoiceModelId, VoiceModelMeta, asyncs::BlockingThreadPool, wav_header_from_s16le,
+        VoiceModelId, VoiceModelMeta, asyncs::BlockingThreadPool,
     };
 
     use super::{
         AccelerationMode, AsInner as _, AssumeBlockable, AudioFeature, DEFAULT_SAMPLING_RATE,
         FrameSynthesisOptions, InitializeOptions, Inner, InnerRefWithoutTextAnalyzer,
         LoadVoiceModelOptions, StreamingSynthesisOptions, SynthesisOptions, TtsOptions,
+        s16le_wav_prefix,
     };
 
     /// 音声シンセサイザ。
@@ -3630,11 +3626,7 @@ pub(crate) mod nonblocking {
                 synthesizer: Arc::downgrade(self.synthesizer),
                 audio_feature,
                 cursor: (offset_frames..full_frames).step_by(segment_frames),
-                header: wav_header_from_s16le(
-                    render_pcm_length,
-                    output_sampling_rate,
-                    output_stereo,
-                ),
+                header: s16le_wav_prefix(render_pcm_length, output_sampling_rate, output_stereo),
                 pending_pcm: None,
             })
         }

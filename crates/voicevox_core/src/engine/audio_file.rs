@@ -71,9 +71,8 @@ impl FrameAudioQuery {
     }
 }
 
-/// 16bit PCMのバイト長に対応したWAVヘッダーの生成
-#[cfg_attr(doc, doc(alias = "voicevox_wav_header_from_s16le"))]
-pub fn wav_header_from_s16le(pcm_length: usize, sampling_rate: u32, is_stereo: bool) -> Vec<u8> {
+/// 16bit PCMのバイト長に対応したWAVファイルの先頭部分を作成する。
+pub(crate) fn s16le_wav_prefix(pcm_length: usize, sampling_rate: u32, is_stereo: bool) -> Vec<u8> {
     let num_channels: u16 = if is_stereo { 2 } else { 1 };
     let bit_depth: u16 = 16;
     let block_size: u16 = bit_depth * num_channels / 8;
@@ -110,7 +109,7 @@ pub fn wav_from_s16le(pcm: &[u8], sampling_rate: u32, is_stereo: bool) -> Vec<u8
     let buf: Vec<u8> = Vec::with_capacity(wave_size);
     let mut cur = Cursor::new(buf);
 
-    cur.write_all(&wav_header_from_s16le(pcm.len(), sampling_rate, is_stereo))
+    cur.write_all(&s16le_wav_prefix(pcm.len(), sampling_rate, is_stereo))
         .unwrap();
     cur.write_all(pcm).unwrap();
     cur.into_inner()
