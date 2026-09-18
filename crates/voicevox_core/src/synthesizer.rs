@@ -1664,7 +1664,7 @@ pub(crate) mod blocking {
     use std::{
         fmt::{self, Debug},
         iter::{Peekable, StepBy},
-        ops::Range,
+        mem,
         sync::{Arc, Weak},
     };
 
@@ -2229,7 +2229,7 @@ pub(crate) mod blocking {
     pub struct SynthesisStream<T> {
         synthesizer: Weak<Synthesizer<T>>,
         audio_feature: AudioFeature,
-        cursor: Peekable<StepBy<Range<usize>>>,
+        cursor: Peekable<StepBy<std::ops::Range<usize>>>,
         header: Vec<u8>,
     }
 
@@ -2238,9 +2238,8 @@ pub(crate) mod blocking {
 
         fn next(&mut self) -> Option<Self::Item> {
             // まずヘッダーが残っていればそれを返す
-            if !self.header.is_empty() {
-                let header = self.header.clone();
-                self.header.clear();
+            let header = mem::take(&mut self.header);
+            if !header.is_empty() {
                 return Some(Ok(header));
             }
             // カーソルをひとつ進め、終了するか次のPCMデータを生成する
@@ -2771,8 +2770,8 @@ pub(crate) mod nonblocking {
     };
 
     use easy_ext::ext;
-    use futures_core::{Stream, future::BoxFuture};
-    use futures_lite::FutureExt;
+    use futures_core::{Stream, future::BoxFuture, ready};
+    use futures_lite::FutureExt as _;
     use typed_floats::{NonNaNFinite, PositiveFinite};
 
     use crate::{
@@ -3329,11 +3328,8 @@ pub(crate) mod nonblocking {
             }
             loop {
                 // 処理中のPCMデータがあればそれを返す
-                if let Some(pending) = self.pending_pcm.as_mut() {
-                    let result = match pending.as_mut().poll(cx) {
-                        Poll::Pending => return Poll::Pending,
-                        Poll::Ready(result) => result,
-                    };
+                if let Some(pending) = &mut self.pending_pcm {
+                    let result = ready!(pending.poll(cx));
                     self.pending_pcm = None;
                     return Poll::Ready(Some(result));
                 }
