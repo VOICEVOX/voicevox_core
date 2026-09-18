@@ -1663,7 +1663,7 @@ impl From<Vec<AccentPhrase>> for AudioQuery {
 pub(crate) mod blocking {
     use std::{
         fmt::{self, Debug},
-        iter::{Peekable, StepBy},
+        iter::StepBy,
         mem,
         sync::{Arc, Weak},
     };
@@ -2229,12 +2229,21 @@ pub(crate) mod blocking {
     pub struct SynthesisStream<T> {
         synthesizer: Weak<Synthesizer<T>>,
         audio_feature: AudioFeature,
-        cursor: Peekable<StepBy<std::ops::Range<usize>>>,
+        cursor: StepBy<std::ops::Range<usize>>,
         header: Vec<u8>,
     }
 
     impl<T> Iterator for SynthesisStream<T> {
         type Item = crate::Result<Vec<u8>>;
+
+        fn size_hint(&self) -> (usize, Option<usize>) {
+            if self.header.is_empty() {
+                (self.cursor.len(), Some(self.cursor.len()))
+            } else {
+                // ヘッダーが残っている場合はそれを含める
+                (self.cursor.len() + 1, Some(self.cursor.len() + 1))
+            }
+        }
 
         fn next(&mut self) -> Option<Self::Item> {
             // まずヘッダーが残っていればそれを返す
@@ -2242,15 +2251,14 @@ pub(crate) mod blocking {
             if !header.is_empty() {
                 return Some(Ok(header));
             }
-            // カーソルをひとつ進め、終了するか次のPCMデータを生成する
-            match self.cursor.next() {
+            // 終了するか次のPCMデータを生成する
+            let mut tmp_cursor = self.cursor.clone();
+            match tmp_cursor.next() {
                 None => None,
                 Some(start_frame) => {
-                    let end_frame = match self.cursor.peek() {
-                        Some(&val) => val,
-                        None => self.audio_feature.frame_length(),
-                    };
-
+                    let end_frame = tmp_cursor
+                        .next()
+                        .unwrap_or_else(|| self.audio_feature.frame_length());
                     let pcm = match self
                         .synthesizer
                         .upgrade()
@@ -2262,6 +2270,8 @@ pub(crate) mod blocking {
                         Ok(pcm) => pcm,
                         Err(e) => return Some(Err(e)),
                     };
+                    // 処理に成功したのでPCMを返し、カーソルをひとつ進める
+                    self.cursor.next();
                     Some(Ok(pcm))
                 }
             }
@@ -2683,9 +2693,7 @@ pub(crate) mod blocking {
             Ok(SynthesisStream {
                 synthesizer: Arc::downgrade(self.synthesizer),
                 audio_feature,
-                cursor: (offset_frames..full_frames)
-                    .step_by(segment_frames)
-                    .peekable(),
+                cursor: (offset_frames..full_frames).step_by(segment_frames),
                 header: wav_header_from_s16le(
                     render_pcm_length,
                     output_sampling_rate,
@@ -2762,8 +2770,8 @@ pub(crate) mod blocking {
 pub(crate) mod nonblocking {
     use std::{
         fmt::{self, Debug},
-        iter::{Peekable, StepBy},
-        ops::Range,
+        iter::StepBy,
+        mem,
         pin::Pin,
         sync::{Arc, Weak},
         task::{Context, Poll},
@@ -3311,7 +3319,7 @@ pub(crate) mod nonblocking {
     pub struct SynthesisStream<T> {
         synthesizer: Weak<Synthesizer<T>>,
         audio_feature: AudioFeature,
-        cursor: Peekable<StepBy<Range<usize>>>,
+        cursor: StepBy<std::ops::Range<usize>>,
         header: Vec<u8>,
         pending_pcm: Option<BoxFuture<'static, crate::Result<Vec<u8>>>>,
     }
@@ -3324,32 +3332,38 @@ pub(crate) mod nonblocking {
             if self.header.is_empty() {
                 (pcm_chunks, Some(pcm_chunks))
             } else {
-                // ヘッダーがある場合はそれも含める
+                // ヘッダーが残っていればそれも含める
                 (pcm_chunks + 1, Some(pcm_chunks + 1))
             }
         }
 
         fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
             // まずヘッダーが残っていればそれを返す
-            if !self.header.is_empty() {
-                let header = self.header.clone();
-                self.header.clear();
+            let header = mem::take(&mut self.header);
+            if !header.is_empty() {
                 return Poll::Ready(Some(Ok(header)));
             }
-            // 処理中のPCMデータがあればそれを返す
+            // 処理中のPCMデータがあればそれをpollする
             if let Some(pending) = &mut self.pending_pcm {
                 let result = ready!(pending.poll(cx));
+                // 処理が完了しているので結果を返す
                 self.pending_pcm = None;
-                return Poll::Ready(Some(result));
+                let pcm = match result {
+                    Ok(pcm) => pcm,
+                    Err(err) => return Poll::Ready(Some(Err(err))),
+                };
+                // PCMデータの生成に成功したのでカーソルをひとつ進める
+                self.cursor.next();
+                return Poll::Ready(Some(Ok(pcm)));
             }
-            // カーソルをひとつ進め、終了するか次のPCMデータを生成する
-            match self.cursor.next() {
+            // 終了するか次のPCMデータを生成する
+            let mut tmp_cursor = self.cursor.clone();
+            match tmp_cursor.next() {
                 None => Poll::Ready(None),
                 Some(start_frame) => {
-                    let end_frame = match self.cursor.peek() {
-                        Some(&val) => val,
-                        None => self.audio_feature.frame_length(),
-                    };
+                    let end_frame = tmp_cursor
+                        .next()
+                        .unwrap_or_else(|| self.audio_feature.frame_length());
                     let synthesizer = self.synthesizer.upgrade().unwrap_or_else(|| todo!());
                     let inner = synthesizer.0.without_text_analyzer_cloned();
                     let audio_feature = self.audio_feature.clone();
@@ -3615,9 +3629,7 @@ pub(crate) mod nonblocking {
             Ok(SynthesisStream {
                 synthesizer: Arc::downgrade(self.synthesizer),
                 audio_feature,
-                cursor: (offset_frames..full_frames)
-                    .step_by(segment_frames)
-                    .peekable(),
+                cursor: (offset_frames..full_frames).step_by(segment_frames),
                 header: wav_header_from_s16le(
                     render_pcm_length,
                     output_sampling_rate,
@@ -4715,6 +4727,43 @@ mod tests {
 
         let mut expected_count = size_hint.0 as i32;
         while let Some(Ok(_)) = wav_stream.next().await {
+            expected_count -= 1;
+            assert_eq!(expected_count, wav_stream.size_hint().0 as i32);
+            assert_eq!(expected_count, wav_stream.size_hint().1.unwrap() as i32);
+        }
+        assert_eq!(expected_count, 0);
+    }
+
+    #[rstest]
+    #[tokio::test]
+    async fn blocking_streaming_synthesis_correct_hint() {
+        let synthesizer = super::blocking::Synthesizer::builder(
+            crate::blocking::Onnxruntime::from_test_util_data().unwrap(),
+        )
+        .text_analyzer(crate::blocking::OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap())
+        .acceleration_mode(AccelerationMode::Cpu)
+        .build()
+        .unwrap();
+
+        let synthesizer = Arc::new(synthesizer);
+
+        let model = &crate::blocking::VoiceModelFile::sample().unwrap();
+        synthesizer.load_voice_model(model).perform().unwrap();
+
+        let audio_query = synthesizer
+            .create_audio_query("これはテストです", StyleId::new(302))
+            .unwrap();
+
+        let mut wav_stream = synthesizer
+            .streaming_synthesis(&audio_query, StyleId::new(302))
+            .perform()
+            .unwrap();
+
+        let size_hint = wav_stream.size_hint();
+        assert_eq!(size_hint.1, Some(size_hint.0));
+
+        let mut expected_count = size_hint.0 as i32;
+        while let Some(Ok(_)) = wav_stream.next() {
             expected_count -= 1;
             assert_eq!(expected_count, wav_stream.size_hint().0 as i32);
             assert_eq!(expected_count, wav_stream.size_hint().1.unwrap() as i32);
