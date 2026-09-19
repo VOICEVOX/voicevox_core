@@ -114,7 +114,7 @@ pub(crate) mod blocking {
     use indexmap::IndexMap;
     use uuid::Uuid;
 
-    use crate::{Result, asyncs::SingleTasked, future::FutureExt as _};
+    use crate::{Result, assert::assert_send_sync, asyncs::SingleTasked, future::FutureExt as _};
 
     use super::{super::word::UserDictWord, Inner};
 
@@ -186,6 +186,8 @@ pub(crate) mod blocking {
             self.0.to_mecab_format()
         }
     }
+
+    assert_send_sync!(self::UserDictWord);
 }
 
 pub(crate) mod nonblocking {
@@ -194,7 +196,7 @@ pub(crate) mod nonblocking {
     use indexmap::IndexMap;
     use uuid::Uuid;
 
-    use crate::{Result, asyncs::BlockingThreadPool};
+    use crate::{Result, assert::assert_send_sync, asyncs::BlockingThreadPool};
 
     use super::{super::word::UserDictWord, Inner};
 
@@ -264,4 +266,6 @@ pub(crate) mod nonblocking {
             self.0.to_mecab_format()
         }
     }
+
+    assert_send_sync!(self::UserDictWord);
 }

@@ -18,6 +18,7 @@ use typed_floats::{NonNaNFinite, PositiveFinite, tf32};
 use crate::{
     AccentPhrase, AudioQuery, OnExistingVoiceModelId, Result, StyleId, VoiceModelId,
     VoiceModelMeta,
+    assert::assert_send_sync,
     asyncs::{Async, BlockingThreadPool, SingleTasked},
     collections::{NonEmptyIterator as _, NonEmptySlice, NonEmptyVec},
     core::{
@@ -253,6 +254,7 @@ impl AudioFeature {
     }
 }
 
+assert_send_sync!(AudioFeature);
 const _: () = assert!(AudioFeature::FRAME_RATE == (DEFAULT_SAMPLING_RATE as f64) / 256.0);
 
 #[derive(derive_more::Debug)]
@@ -1673,7 +1675,8 @@ pub(crate) mod blocking {
 
     use crate::{
         AccentPhrase, AudioQuery, FrameAudioQuery, OnExistingVoiceModelId, Score, StyleId,
-        VoiceModelId, VoiceModelMeta, asyncs::SingleTasked, future::FutureExt as _,
+        VoiceModelId, VoiceModelMeta, assert::assert_send_sync, asyncs::SingleTasked,
+        future::FutureExt as _,
     };
 
     use super::{
@@ -2225,6 +2228,8 @@ pub(crate) mod blocking {
         }
     }
 
+    assert_send_sync!(for<T: ..> self::Synthesizer<T>);
+
     pub struct SynthesisStream<T> {
         synthesizer: Weak<Synthesizer<T>>,
         audio_feature: AudioFeature,
@@ -2274,6 +2279,8 @@ pub(crate) mod blocking {
             }
         }
     }
+
+    assert_send_sync!(for<T: ..> SynthesisStream<T>);
 
     impl<T> self::Synthesizer<T> {
         /// AudioQueryから直接WAVフォーマットで音声波形をストリーミング生成する。
@@ -2771,13 +2778,13 @@ pub(crate) mod nonblocking {
     };
 
     use easy_ext::ext;
-    use futures_core::{Stream, future::BoxFuture, ready};
+    use futures_core::{Stream, ready};
     use futures_lite::FutureExt as _;
     use typed_floats::{NonNaNFinite, PositiveFinite};
 
     use crate::{
         AccentPhrase, AudioQuery, FrameAudioQuery, OnExistingVoiceModelId, Result, Score, StyleId,
-        VoiceModelId, VoiceModelMeta, asyncs::BlockingThreadPool,
+        VoiceModelId, VoiceModelMeta, assert::assert_send_sync, asyncs::BlockingThreadPool,
     };
 
     use super::{
@@ -3310,13 +3317,17 @@ pub(crate) mod nonblocking {
         }
     }
 
+    assert_send_sync!(for<T: ..> self::Synthesizer<T>);
+
     pub struct SynthesisStream<T> {
         synthesizer: Weak<Synthesizer<T>>,
         audio_feature: AudioFeature,
         cursor: StepBy<std::ops::Range<usize>>,
         header: Vec<u8>,
-        pending_pcm: Option<BoxFuture<'static, crate::Result<Vec<u8>>>>,
+        pending_pcm: Option<BoxSyncFuture<'static, crate::Result<Vec<u8>>>>,
     }
+
+    type BoxSyncFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + Sync + 'a>>;
 
     impl<T> Stream for SynthesisStream<T> {
         type Item = crate::Result<Vec<u8>>;
@@ -3359,14 +3370,17 @@ pub(crate) mod nonblocking {
                     let inner = synthesizer.0.without_text_analyzer_cloned();
                     let audio_feature = self.audio_feature.clone();
                     let range = start_frame..end_frame;
-                    self.pending_pcm =
-                        Some(async move { inner.render(&audio_feature, range).await }.boxed());
+                    self.pending_pcm = Some(Box::pin(async move {
+                        inner.render(&audio_feature, range).await
+                    }));
                     cx.waker().wake_by_ref();
                     Poll::Pending
                 }
             }
         }
     }
+
+    assert_send_sync!(for<T: ..> SynthesisStream<T>);
 
     impl<T: crate::nonblocking::TextAnalyzer> self::Synthesizer<T> {
         /// 日本語のテキストからAccentPhrase (アクセント句)の配列を生成する。

@@ -442,6 +442,7 @@ pub mod __doc {
     pub mod Serde対応 {}
 }
 
+mod assert;
 mod asyncs;
 mod collections;
 mod convert;
