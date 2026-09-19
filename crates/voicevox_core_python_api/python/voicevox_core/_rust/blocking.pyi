@@ -16,7 +16,7 @@ if TYPE_CHECKING:
         UserDictWord,
         VoiceModelId,
     )
-    from voicevox_core._rust import AudioFeature
+    from voicevox_core._rust import AudioFeature, SynthesisStream
 
 class VoiceModelFile:
     """
@@ -490,6 +490,30 @@ class Synthesizer:
         Returns
         -------
         WAVデータ。
+        """
+        ...
+    def streaming_synthesis(
+        self,
+        audio_query: AudioQuery,
+        style_id: StyleId | int,
+        *,
+        enable_interrogative_upspeak: bool = True,
+    ) -> SynthesisStream:
+        """
+        :class:`AudioQuery` からストリーミングで音声合成する。
+
+        Parameters
+        ----------
+        audio_query
+            :class:`AudioQuery` 。
+        style_id
+            スタイルID。
+        enable_interrogative_upspeak
+            疑問文の調整を有効にするかどうか。
+
+        Returns
+        -------
+        WAVデータを分割して返すイテレータ。
         """
         ...
     def tts_from_kana(
