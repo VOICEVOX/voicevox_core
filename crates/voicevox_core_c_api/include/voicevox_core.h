@@ -90,6 +90,17 @@
 #error "`VOICEVOX_LINK_ONNXRUNTIME` or `VOICEVOX_LOAD_ONNXRUNTIME` cannot be enabled at the same time"
 #endif
 
+#if defined(_MSC_VER)
+#define VOICEVOX_DEPRECATED(note) __declspec(deprecated(note))
+#elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L ||              \
+    defined(__cplusplus) && __cplusplus >= 201402L
+#define VOICEVOX_DEPRECATED(note) [[deprecated(note)]]
+#elif defined(__GNUC__) || defined(__clang__)
+#define VOICEVOX_DEPRECATED(note) __attribute__((deprecated(note)))
+#else
+#define VOICEVOX_DEPRECATED(note)
+#endif
+
 /**
  * ハードウェアアクセラレーションモードを設定する設定値。
  *
@@ -2005,13 +2016,7 @@ void voicevox_string_free(char *string);
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-#if defined(_MSC_VER)
-__declspec(deprecated("use 'voicevox_string_free' instead"))
-#elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L ||              defined(__cplusplus) && __cplusplus >= 201402L
-[[deprecated("use 'voicevox_string_free' instead")]]
-#elif defined(__GNUC__) || defined(__clang__)
-__attribute__((deprecated("use 'voicevox_string_free' instead")))
-#endif
+VOICEVOX_DEPRECATED("use 'voicevox_string_free' instead")
 void voicevox_json_free(char *json);
 
 /**
@@ -2062,13 +2067,7 @@ void voicevox_bytes_free(uint8_t *bytes);
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-#if defined(_MSC_VER)
-__declspec(deprecated("use 'voicevox_bytes_free' instead"))
-#elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L ||              defined(__cplusplus) && __cplusplus >= 201402L
-[[deprecated("use 'voicevox_bytes_free' instead")]]
-#elif defined(__GNUC__) || defined(__clang__)
-__attribute__((deprecated("use 'voicevox_bytes_free' instead")))
-#endif
+VOICEVOX_DEPRECATED("use 'voicevox_bytes_free' instead")
 void voicevox_wav_free(uint8_t *wav);
 
 /**
@@ -2287,5 +2286,7 @@ void voicevox_user_dict_delete(struct VoicevoxUserDict *user_dict);
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
+
+#undef VOICEVOX_DEPRECATED
 
 #endif  /* VOICEVOX_CORE_INCLUDE_GUARD */

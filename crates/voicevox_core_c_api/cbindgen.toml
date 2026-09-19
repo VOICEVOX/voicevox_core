@@ -70,8 +70,10 @@ header = """
  * - voicevox_coreをアンロードする場合、voicevox_coreが生成したポインタが有効であり続けることは保証されない。
  *   </dd>
  * </dl>
- */"""
-include_guard = "VOICEVOX_CORE_INCLUDE_GUARD"
+ */
+
+#ifndef VOICEVOX_CORE_INCLUDE_GUARD
+#define VOICEVOX_CORE_INCLUDE_GUARD"""
 no_includes = true
 include_version = true
 cpp_compat = true
@@ -92,7 +94,23 @@ after_includes = """
 
 #if defined(VOICEVOX_LINK_ONNXRUNTIME) && defined(VOICEVOX_LOAD_ONNXRUNTIME)
 #error "`VOICEVOX_LINK_ONNXRUNTIME` or `VOICEVOX_LOAD_ONNXRUNTIME` cannot be enabled at the same time"
+#endif
+
+#if defined(_MSC_VER)
+#define VOICEVOX_DEPRECATED(note) __declspec(deprecated(note))
+#elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L ||              \\
+    defined(__cplusplus) && __cplusplus >= 201402L
+#define VOICEVOX_DEPRECATED(note) [[deprecated(note)]]
+#elif defined(__GNUC__) || defined(__clang__)
+#define VOICEVOX_DEPRECATED(note) __attribute__((deprecated(note)))
+#else
+#define VOICEVOX_DEPRECATED(note)
 #endif"""
+trailer = """
+#undef VOICEVOX_DEPRECATED
+
+#endif  /* VOICEVOX_CORE_INCLUDE_GUARD */
+"""
 
 # Code Style Options
 
@@ -105,16 +123,8 @@ prefix = """
 #ifdef _WIN32
 __declspec(dllimport)
 #endif"""
-# deprecatedな関数が２個以上に増えるならマクロ化する
 deprecated_with_note = """
-#if defined(_MSC_VER)
-__declspec(deprecated({}))
-#elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L ||              \
-    defined(__cplusplus) && __cplusplus >= 201402L
-[[deprecated({})]]
-#elif defined(__GNUC__) || defined(__clang__)
-__attribute__((deprecated({})))
-#endif"""
+VOICEVOX_DEPRECATED({})"""
 args = "vertical"
 
 [enum]
