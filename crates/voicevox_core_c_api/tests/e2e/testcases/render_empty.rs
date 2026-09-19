@@ -149,7 +149,7 @@ impl assert_cdylib::TestCase for TestCase {
                 )
             });
             // SAFETY: `accent_phrases` is valid and is no longer used.
-            unsafe { lib.voicevox_json_free(accent_phrases) };
+            unsafe { lib.voicevox_string_free(accent_phrases) };
             // SAFETY: `voicevox_synthesizer_replace_phoneme_length` initializes
             // `next_accent_phrases` if succeeded.
             unsafe { next_accent_phrases.assume_init() }
@@ -168,7 +168,7 @@ impl assert_cdylib::TestCase for TestCase {
                 )
             });
             // SAFETY: `accent_phrases` is valid and is no longer used.
-            unsafe { lib.voicevox_json_free(accent_phrases) };
+            unsafe { lib.voicevox_string_free(accent_phrases) };
             // SAFETY: `voicevox_synthesizer_replace_mora_pitch` initializes
             // `next_accent_phrases` if succeeded.
             unsafe { next_accent_phrases.assume_init() }
@@ -237,11 +237,11 @@ impl assert_cdylib::TestCase for TestCase {
 
         // This should emit a warning.
         // SAFETY: no longer used.
-        unsafe { lib.voicevox_wav_free(pcm) };
+        unsafe { lib.voicevox_bytes_free(pcm) };
 
         // SAFETY: they are valid and is no longer used.
-        unsafe { lib.voicevox_json_free(accent_phrases) };
-        unsafe { lib.voicevox_json_free(audio_query) };
+        unsafe { lib.voicevox_string_free(accent_phrases) };
+        unsafe { lib.voicevox_string_free(audio_query) };
 
         // SAFETY: these functions have no safety requirements.
         unsafe { lib.voicevox_voice_model_file_delete(model) };
