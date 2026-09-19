@@ -103,7 +103,7 @@ macro_rules! deprecated_fn_impl {
                 "'{}' is deprecated. use '{}' instead",
                 $deprecated_fn_name,
                 stringify!($imp),
-            )
+            );
         });
 
         $imp($($args)*)
