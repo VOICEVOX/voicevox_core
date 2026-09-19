@@ -2225,6 +2225,7 @@ pub(crate) mod blocking {
         }
     }
 
+    #[derive(Debug)]
     pub struct SynthesisStream<T> {
         synthesizer: Weak<Synthesizer<T>>,
         audio_feature: AudioFeature,
@@ -3316,6 +3317,21 @@ pub(crate) mod nonblocking {
         cursor: StepBy<std::ops::Range<usize>>,
         header: Vec<u8>,
         pending_pcm: Option<BoxFuture<'static, crate::Result<Vec<u8>>>>,
+    }
+
+    impl<T> Debug for SynthesisStream<T> {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            f.debug_struct("SynthesisStream")
+                .field("synthesizer", &self.synthesizer)
+                .field("audio_feature", &self.audio_feature)
+                .field("cursor", &self.cursor)
+                .field("header", &self.header)
+                .field(
+                    "pending_pcm",
+                    &self.pending_pcm.as_ref().map(|_| "Some(...)"),
+                )
+                .finish()
+        }
     }
 
     impl<T> Stream for SynthesisStream<T> {
