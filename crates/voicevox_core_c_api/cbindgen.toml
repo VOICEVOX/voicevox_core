@@ -77,7 +77,7 @@ header = """
 no_includes = true
 include_version = true
 cpp_compat = true
-after_includes = """
+after_includes = '''
 #ifdef __cplusplus
 #include <cstdint>
 #else // __cplusplus
@@ -98,14 +98,14 @@ after_includes = """
 
 #if defined(_MSC_VER)
 #define VOICEVOX_DEPRECATED(note) __declspec(deprecated(note))
-#elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L ||              \\
+#elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L ||              \
     defined(__cplusplus) && __cplusplus >= 201402L
 #define VOICEVOX_DEPRECATED(note) [[deprecated(note)]]
 #elif defined(__GNUC__) || defined(__clang__)
 #define VOICEVOX_DEPRECATED(note) __attribute__((deprecated(note)))
 #else
 #define VOICEVOX_DEPRECATED(note)
-#endif"""
+#endif'''
 trailer = """
 #undef VOICEVOX_DEPRECATED
 
