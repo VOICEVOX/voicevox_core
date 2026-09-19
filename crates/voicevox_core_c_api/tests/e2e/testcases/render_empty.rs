@@ -237,7 +237,7 @@ impl assert_cdylib::TestCase for TestCase {
 
         // This should emit a warning.
         // SAFETY: no longer used.
-        unsafe { lib.voicevox_wav_free(pcm) };
+        unsafe { lib.voicevox_bytes_free(pcm) };
 
         // SAFETY: they are valid and is no longer used.
         unsafe { lib.voicevox_json_free(accent_phrases) };

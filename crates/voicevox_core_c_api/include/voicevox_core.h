@@ -1563,7 +1563,7 @@ struct VoicevoxSynthesisOptions voicevox_make_default_synthesis_options(void);
 /**
  * AudioQueryから音声合成を行う。
  *
- * 生成したWAVデータを解放するには ::voicevox_wav_free を使う。
+ * 生成したWAVデータを解放するには ::voicevox_bytes_free を使う。
  *
  * @param [in] synthesizer 音声シンセサイザ
  * @param [in] audio_query_json AudioQueryのJSON文字列
@@ -1640,7 +1640,7 @@ uintptr_t voicevox_audio_feature_frame_length(const struct VoicevoxAudioFeature 
  *
  * 生成されたPCMデータが`0`バイトのとき、`output_pcm_length`には`0`が、`output_pcm`には ::voicevox_empty_bytes が書き込まれる。
  *
- * 生成した`1`バイト以上のPCMデータを解放するには ::voicevox_wav_free を使う。
+ * 生成した`1`バイト以上のPCMデータを解放するには ::voicevox_bytes_free を使う。
  *
  * @param [in] synthesizer 音声シンセサイザ
  * @param [in] audio_feature 音声合成用の中間表現
@@ -1698,7 +1698,7 @@ struct VoicevoxTtsOptions voicevox_make_default_tts_options(void);
 /**
  * AquesTalk風記法から音声合成を行う。
  *
- * 生成したWAVデータを解放するには ::voicevox_wav_free を使う。
+ * 生成したWAVデータを解放するには ::voicevox_bytes_free を使う。
  *
  * @param [in] synthesizer
  * @param [in] kana AquesTalk風記法
@@ -1730,7 +1730,7 @@ VoicevoxResultCode voicevox_synthesizer_tts_from_kana(const struct VoicevoxSynth
 /**
  * 日本語テキストから音声合成を行う。
  *
- * 生成したWAVデータを解放するには ::voicevox_wav_free を使う。
+ * 生成したWAVデータを解放するには ::voicevox_bytes_free を使う。
  *
  * ::voicevox_synthesizer_create_audio_query と ::voicevox_synthesizer_synthesis
  * が一体になったショートハンド。詳細は[テキスト音声合成の流れ]を参照。
@@ -1897,7 +1897,7 @@ VoicevoxResultCode voicevox_synthesizer_create_sing_frame_volume(const struct Vo
  *
  * [歌唱音声合成]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/song.md
  *
- * 生成したWAVデータを解放するには ::voicevox_wav_free を使う。
+ * 生成したWAVデータを解放するには ::voicevox_bytes_free を使う。
  *
  * @param [in] synthesizer 音声シンセサイザ
  * @param [in] frame_audio_query_json [`FrameAudioQuery`型]を表すJSON
@@ -1973,9 +1973,33 @@ __declspec(dllimport)
 void voicevox_json_free(char *json);
 
 /**
- * WAVデータを解放する。
+ * バイト列を解放する。
  *
  * ::voicevox_empty_bytes に対しては警告のログを出す。
+ *
+ * @param [in] bytes 解放するバイト列。nullable
+ *
+ * \safety{
+ * - `bytes`がヌルポインタでないならば、以下のAPIで得られたポインタでなくてはいけない。
+ *     - ::voicevox_synthesizer_render
+ *     - ::voicevox_synthesizer_synthesis
+ *     - ::voicevox_synthesizer_tts
+ *     - ::voicevox_synthesizer_tts_from_kana
+ *     - ::voicevox_synthesizer_frame_synthesis
+ *     - ::voicevox_wav_from_s16le
+ * - `bytes`がヌルポインタでも ::voicevox_empty_bytes でもないならば、<a href="#voicevox-core-safety">読み込みと書き込みについて有効</a>でなければならない。
+ * - `bytes`がヌルポインタでも ::voicevox_empty_bytes でもないならば、以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。
+ * }
+ *
+ * \no-orig-impl{voicevox_bytes_free}
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+void voicevox_bytes_free(uint8_t *bytes);
+
+/**
+ * ::voicevox_bytes_free の別名。非推奨。
  *
  * @param [in] wav 解放するWAVデータ。nullable
  *
@@ -1995,6 +2019,13 @@ void voicevox_json_free(char *json);
  */
 #ifdef _WIN32
 __declspec(dllimport)
+#endif
+#if defined(_MSC_VER)
+__declspec(deprecated("use 'voicevox_bytes_free' instead"))
+#elif defined(__cplusplus) && __cplusplus >= 201402L || defined(DOXYGEN)
+[[deprecated("use 'voicevox_bytes_free' instead")]]
+#elif defined(__GNUC__) || defined(__clang__)
+__attribute__((deprecated("use 'voicevox_bytes_free' instead")))
 #endif
 void voicevox_wav_free(uint8_t *wav);
 

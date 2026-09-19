@@ -18,11 +18,11 @@ impl assert_cdylib::TestCase for TestCase {
         // SAFETY: The safety contract must be upheld by the caller.
         let lib = unsafe { CApi::from_library(lib) }?;
 
-        // SAFETY: `voicevox_json_free`, `voicevox_wav_free`, `voicevox_open_jtalk_rc_delete`,
+        // SAFETY: `voicevox_json_free`, `voicevox_bytes_free`, `voicevox_open_jtalk_rc_delete`,
         // `voicevox_synthesizer_delete`, `voicevox_voice_model_file_delete`, and
         // `voicevox_user_dict_delete` have no safety requirements.
         unsafe { lib.voicevox_json_free(ptr::null_mut()) };
-        unsafe { lib.voicevox_wav_free(ptr::null_mut()) };
+        unsafe { lib.voicevox_bytes_free(ptr::null_mut()) };
         unsafe { lib.voicevox_open_jtalk_rc_delete(ptr::null_mut()) };
         unsafe { lib.voicevox_synthesizer_delete(ptr::null_mut()) };
         unsafe { lib.voicevox_voice_model_file_delete(ptr::null_mut()) };

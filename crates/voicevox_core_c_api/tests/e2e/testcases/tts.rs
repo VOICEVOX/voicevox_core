@@ -485,11 +485,11 @@ impl assert_cdylib::TestCase for TestCase {
         unsafe { lib.voicevox_synthesizer_delete(synthesizer) };
 
         // SAFETY: These `wav`s are valid, and are no longer used.
-        unsafe { lib.voicevox_wav_free(wav1) };
-        unsafe { lib.voicevox_wav_free(wav2) };
-        unsafe { lib.voicevox_wav_free(wav3) };
-        unsafe { lib.voicevox_wav_free(wav4) };
-        unsafe { lib.voicevox_wav_free(wav5) };
+        unsafe { lib.voicevox_bytes_free(wav1) };
+        unsafe { lib.voicevox_bytes_free(wav2) };
+        unsafe { lib.voicevox_bytes_free(wav3) };
+        unsafe { lib.voicevox_bytes_free(wav4) };
+        unsafe { lib.voicevox_bytes_free(wav5) };
 
         return Ok(());
 

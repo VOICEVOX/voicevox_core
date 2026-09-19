@@ -93,6 +93,23 @@ fn init_logger_once() {
     }
 }
 
+macro_rules! deprecated_fn_impl {
+    ($deprecated_fn_name:literal, $imp:ident($($args:tt)*)) => {{
+        init_logger_once();
+
+        static WARNING: std::sync::Once = std::sync::Once::new();
+        WARNING.call_once(|| {
+            tracing::warn!(
+                "'{}' is deprecated. use '{}' instead",
+                $deprecated_fn_name,
+                stringify!($imp),
+            )
+        });
+
+        $imp($($args)*)
+    }};
+}
+
 // TODO: https://github.com/mozilla/cbindgen/issues/927
 //#[cfg(feature = "load-onnxruntime")]
 //pub const VOICEVOX_ONNXRUNTIME_LIB_RECOMMENDED_NAME: &CStr = ..;
@@ -1609,7 +1626,7 @@ pub extern "C" fn voicevox_make_default_synthesis_options() -> VoicevoxSynthesis
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// AudioQueryから音声合成を行う。
 ///
-/// 生成したWAVデータを解放するには ::voicevox_wav_free を使う。
+/// 生成したWAVデータを解放するには ::voicevox_bytes_free を使う。
 ///
 /// @param [in] synthesizer 音声シンセサイザ
 /// @param [in] audio_query_json AudioQueryのJSON文字列
@@ -1729,13 +1746,13 @@ pub extern "C" fn voicevox_audio_feature_frame_length(
     audio_feature.frame_length()
 }
 
-// FIXME: voicevox_wav_freeをvoicevox_bytes_freeに改名
+// FIXME: voicevox_bytes_freeをvoicevox_bytes_freeに改名
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// ::VoicevoxAudioFeature の一部区間から、16bit PCMで音声波形を生成する。
 ///
 /// 生成されたPCMデータが`0`バイトのとき、`output_pcm_length`には`0`が、`output_pcm`には ::voicevox_empty_bytes が書き込まれる。
 ///
-/// 生成した`1`バイト以上のPCMデータを解放するには ::voicevox_wav_free を使う。
+/// 生成した`1`バイト以上のPCMデータを解放するには ::voicevox_bytes_free を使う。
 ///
 /// @param [in] synthesizer 音声シンセサイザ
 /// @param [in] audio_feature 音声合成用の中間表現
@@ -1811,7 +1828,7 @@ pub extern "C" fn voicevox_make_default_tts_options() -> VoicevoxTtsOptions {
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// AquesTalk風記法から音声合成を行う。
 ///
-/// 生成したWAVデータを解放するには ::voicevox_wav_free を使う。
+/// 生成したWAVデータを解放するには ::voicevox_bytes_free を使う。
 ///
 /// @param [in] synthesizer
 /// @param [in] kana AquesTalk風記法
@@ -1859,7 +1876,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts_from_kana(
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// 日本語テキストから音声合成を行う。
 ///
-/// 生成したWAVデータを解放するには ::voicevox_wav_free を使う。
+/// 生成したWAVデータを解放するには ::voicevox_bytes_free を使う。
 ///
 /// ::voicevox_synthesizer_create_audio_query と ::voicevox_synthesizer_synthesis
 /// が一体になったショートハンド。詳細は[テキスト音声合成の流れ]を参照。
@@ -2107,7 +2124,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_sing_frame_volume(
 ///
 /// [歌唱音声合成]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/song.md
 ///
-/// 生成したWAVデータを解放するには ::voicevox_wav_free を使う。
+/// 生成したWAVデータを解放するには ::voicevox_bytes_free を使う。
 ///
 /// @param [in] synthesizer 音声シンセサイザ
 /// @param [in] frame_audio_query_json [`FrameAudioQuery`型]を表すJSON
@@ -2200,11 +2217,34 @@ pub unsafe extern "C" fn voicevox_json_free(json: *mut c_char) {
     }
 }
 
-// FIXME: voicevox_synthesizer_renderで確保するPCMデータの管理にも使うため、voicevox_wav_freeをvoicevox_bytes_freeに改名
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
-/// WAVデータを解放する。
+/// バイト列を解放する。
 ///
 /// ::voicevox_empty_bytes に対しては警告のログを出す。
+///
+/// @param [in] bytes 解放するバイト列。nullable
+///
+/// \safety{
+/// - `bytes`がヌルポインタでないならば、以下のAPIで得られたポインタでなくてはいけない。
+///     - ::voicevox_synthesizer_render
+///     - ::voicevox_synthesizer_synthesis
+///     - ::voicevox_synthesizer_tts
+///     - ::voicevox_synthesizer_tts_from_kana
+///     - ::voicevox_synthesizer_frame_synthesis
+///     - ::voicevox_wav_from_s16le
+/// - `bytes`がヌルポインタでも ::voicevox_empty_bytes でもないならば、<a href="#voicevox-core-safety">読み込みと書き込みについて有効</a>でなければならない。
+/// - `bytes`がヌルポインタでも ::voicevox_empty_bytes でもないならば、以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。
+/// }
+///
+/// \no-orig-impl{voicevox_bytes_free}
+#[unsafe(no_mangle)]
+pub extern "C" fn voicevox_bytes_free(bytes: *mut u8) {
+    init_logger_once();
+    U8_SLICE_OWNER.drop_for(bytes);
+}
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// ::voicevox_bytes_free の別名。非推奨。
 ///
 /// @param [in] wav 解放するWAVデータ。nullable
 ///
@@ -2222,9 +2262,9 @@ pub unsafe extern "C" fn voicevox_json_free(json: *mut c_char) {
 ///
 /// \no-orig-impl{voicevox_wav_free}
 #[unsafe(no_mangle)]
+#[deprecated(note = "use 'voicevox_bytes_free' instead")]
 pub extern "C" fn voicevox_wav_free(wav: *mut u8) {
-    init_logger_once();
-    U8_SLICE_OWNER.drop_for(wav);
+    deprecated_fn_impl!("voicevox_wav_free", voicevox_bytes_free(wav))
 }
 
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
