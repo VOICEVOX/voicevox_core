@@ -109,7 +109,8 @@ __declspec(dllimport)
 deprecated_with_note = """
 #if defined(_MSC_VER)
 __declspec(deprecated({}))
-#elif defined(__cplusplus) && __cplusplus >= 201402L || defined(DOXYGEN)
+#elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L ||              \
+    defined(__cplusplus) && __cplusplus >= 201402L
 [[deprecated({})]]
 #elif defined(__GNUC__) || defined(__clang__)
 __attribute__((deprecated({})))

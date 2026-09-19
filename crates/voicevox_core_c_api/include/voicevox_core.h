@@ -2022,7 +2022,7 @@ __declspec(dllimport)
 #endif
 #if defined(_MSC_VER)
 __declspec(deprecated("use 'voicevox_bytes_free' instead"))
-#elif defined(__cplusplus) && __cplusplus >= 201402L || defined(DOXYGEN)
+#elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L ||              defined(__cplusplus) && __cplusplus >= 201402L
 [[deprecated("use 'voicevox_bytes_free' instead")]]
 #elif defined(__GNUC__) || defined(__clang__)
 __attribute__((deprecated("use 'voicevox_bytes_free' instead")))
