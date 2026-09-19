@@ -101,7 +101,7 @@ int main() {
   PlaySound((LPCTSTR)output_wav, nullptr, SND_MEMORY);
 
   std::wcout << L"音声データの開放" << std::endl;
-  voicevox_wav_free(output_wav);
+  voicevox_bytes_free(output_wav);
 
   voicevox_synthesizer_delete(synthesizer);
 }

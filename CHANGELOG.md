@@ -19,7 +19,12 @@
 
 ### Added
 
-- ストリーミングトーク機能が追加されます ([#851], [#854], [#864], [#867], [#879], [#918], [#972], [#1319], [#1363], [#1371], [#1376], [#1400], [#1401], [#1419], [#1418], [#1420], [#1421], [#1423], [#1422], [#1426], [#1430], [#1431], [#1437], [#1432], [#1439])。
+- ストリーミングトーク機能が追加されます ([#851], [#854], [#864], [#867], [#879], [#918], [#972], [#1319], [#1363], [#1371], [#1376], [#1400], [#1401], [#1419], [#1418], [#1420], [#1421], [#1423], [#1422], [#1426], [#1430], [#1431], [#1437], [#1432], [#1439], [#1441])。
+- \[C\] `voicevox_json_free`の代わりに<code>voicevox\_**string**\_free</code>が、`voicevox_wav_free`の代わりに<code>voicevox\_**bytes**\_free</code>が追加されます ([#1441])。
+
+### Deprecated
+
+- \[C\] `voicevox_json_free`と`voicevox_wav_free`は非推奨になります。代わりに`voicevox_string_free`と`voicevox_bytes_free`をご利用ください ([#1441])。
 
 ### Fixed
 
@@ -1563,6 +1568,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1432]: https://github.com/VOICEVOX/voicevox_core/pull/1432
 [#1437]: https://github.com/VOICEVOX/voicevox_core/pull/1437
 [#1439]: https://github.com/VOICEVOX/voicevox_core/pull/1439
+[#1441]: https://github.com/VOICEVOX/voicevox_core/pull/1441
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
