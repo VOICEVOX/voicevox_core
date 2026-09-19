@@ -192,7 +192,7 @@ impl assert_cdylib::TestCase for TestCase {
             });
 
             // SAFETY: `audio_query` is valid and is no longer used.
-            unsafe { lib.voicevox_json_free(audio_query) };
+            unsafe { lib.voicevox_string_free(audio_query) };
 
             // SAFETY: `voicevox_synthesizer_synthesis` initializes `wav_length` and `wav` if
             // succeeded.
@@ -235,7 +235,7 @@ impl assert_cdylib::TestCase for TestCase {
                     )
                 });
                 // SAFETY: `accent_phrases` is valid and is no longer used.
-                unsafe { lib.voicevox_json_free(accent_phrases) };
+                unsafe { lib.voicevox_string_free(accent_phrases) };
                 // SAFETY: `voicevox_audio_query_create_from_accent_phrases` initializes
                 // `audio_query` if succeeded.
                 unsafe { audio_query.assume_init() }
@@ -260,7 +260,7 @@ impl assert_cdylib::TestCase for TestCase {
             });
 
             // SAFETY: `audio_query` is valid and is no longer used.
-            unsafe { lib.voicevox_json_free(audio_query) };
+            unsafe { lib.voicevox_string_free(audio_query) };
 
             // SAFETY: `voicevox_synthesizer_synthesis` initializes `wav_length` and `wav` if
             // succeeded.
@@ -305,7 +305,7 @@ impl assert_cdylib::TestCase for TestCase {
                     )
                 });
                 // SAFETY: `accent_phrases` is valid and is no longer used.
-                unsafe { lib.voicevox_json_free(accent_phrases) };
+                unsafe { lib.voicevox_string_free(accent_phrases) };
                 // SAFETY: `voicevox_synthesizer_replace_mora_data` initializes
                 // `next_accent_phrases` if succeeded.
                 unsafe { next_accent_phrases.assume_init() }
@@ -322,7 +322,7 @@ impl assert_cdylib::TestCase for TestCase {
                     )
                 });
                 // SAFETY: `accent_phrases` is valid and is no longer used.
-                unsafe { lib.voicevox_json_free(accent_phrases) };
+                unsafe { lib.voicevox_string_free(accent_phrases) };
                 // SAFETY: `voicevox_audio_query_create_from_accent_phrases` initializes
                 // `audio_query` if succeeded.
                 unsafe { audio_query.assume_init() }
@@ -347,7 +347,7 @@ impl assert_cdylib::TestCase for TestCase {
             });
 
             // SAFETY: `audio_query` is valid and is no longer used.
-            unsafe { lib.voicevox_json_free(audio_query) };
+            unsafe { lib.voicevox_string_free(audio_query) };
 
             // SAFETY: `voicevox_synthesizer_synthesis` initializes `wav_length` and `wav` if
             // succeeded.
@@ -392,7 +392,7 @@ impl assert_cdylib::TestCase for TestCase {
                     )
                 });
                 // SAFETY: `accent_phrases` is valid and is no longer used.
-                unsafe { lib.voicevox_json_free(accent_phrases) };
+                unsafe { lib.voicevox_string_free(accent_phrases) };
                 // SAFETY: `voicevox_synthesizer_replace_phoneme_length` initializes
                 // `next_accent_phrases` if succeeded.
                 unsafe { next_accent_phrases.assume_init() }
@@ -411,7 +411,7 @@ impl assert_cdylib::TestCase for TestCase {
                     )
                 });
                 // SAFETY: `accent_phrases` is valid and is no longer used.
-                unsafe { lib.voicevox_json_free(accent_phrases) };
+                unsafe { lib.voicevox_string_free(accent_phrases) };
                 // SAFETY: `voicevox_synthesizer_replace_mora_pitch` initializes
                 // `next_accent_phrases` if succeeded.
                 unsafe { next_accent_phrases.assume_init() }
@@ -428,7 +428,7 @@ impl assert_cdylib::TestCase for TestCase {
                     )
                 });
                 // SAFETY: `accent_phrases` is valid and is no longer used.
-                unsafe { lib.voicevox_json_free(accent_phrases) };
+                unsafe { lib.voicevox_string_free(accent_phrases) };
                 // SAFETY: `voicevox_audio_query_create_from_accent_phrases` initializes
                 // `audio_query` if succeeded.
                 unsafe { audio_query.assume_init() }
@@ -453,7 +453,7 @@ impl assert_cdylib::TestCase for TestCase {
             });
 
             // SAFETY: `audio_query` is valid and is no longer used.
-            unsafe { lib.voicevox_json_free(audio_query) };
+            unsafe { lib.voicevox_string_free(audio_query) };
 
             // SAFETY: `voicevox_synthesizer_synthesis` initializes `wav_length` and `wav` if
             // succeeded.
@@ -500,7 +500,7 @@ impl assert_cdylib::TestCase for TestCase {
                     )
                 });
                 // SAFETY: `accent_phrases` is valid and is no longer used.
-                unsafe { lib.voicevox_json_free(accent_phrases) };
+                unsafe { lib.voicevox_string_free(accent_phrases) };
                 // SAFETY: `voicevox_synthesizer_replace_phoneme_length` initializes
                 // `next_accent_phrases` if succeeded.
                 unsafe { next_accent_phrases.assume_init() }
@@ -519,7 +519,7 @@ impl assert_cdylib::TestCase for TestCase {
                     )
                 });
                 // SAFETY: `accent_phrases` is valid and is no longer used.
-                unsafe { lib.voicevox_json_free(accent_phrases) };
+                unsafe { lib.voicevox_string_free(accent_phrases) };
                 // SAFETY: `voicevox_synthesizer_replace_mora_pitch` initializes
                 // `next_accent_phrases` if succeeded.
                 unsafe { next_accent_phrases.assume_init() }
@@ -536,7 +536,7 @@ impl assert_cdylib::TestCase for TestCase {
                     )
                 });
                 // SAFETY: `accent_phrases` is valid and is no longer used.
-                unsafe { lib.voicevox_json_free(accent_phrases) };
+                unsafe { lib.voicevox_string_free(accent_phrases) };
                 // SAFETY: `voicevox_audio_query_create_from_accent_phrases` initializes
                 // `audio_query` if succeeded.
                 unsafe { audio_query.assume_init() }
@@ -596,7 +596,7 @@ impl assert_cdylib::TestCase for TestCase {
             };
 
             // SAFETY: `audio_query` and `pcm` are valid and is no longer used.
-            unsafe { lib.voicevox_json_free(audio_query) };
+            unsafe { lib.voicevox_string_free(audio_query) };
             unsafe { lib.voicevox_bytes_free(pcm) };
 
             // SAFETY: `voicevox_audio_feature_delete` has no safety requirements.

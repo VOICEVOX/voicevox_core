@@ -729,7 +729,7 @@ VoicevoxResultCode voicevox_open_jtalk_rc_use_user_dict(const struct OpenJtalkRc
 /**
  * 日本語のテキストを解析する。
  *
- * 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
+ * 生成したJSON文字列を解放するには ::voicevox_string_free を使う。
  *
  * @param [in] open_jtalk Open JTalkのオブジェクト
  * @param [in] text UTF-8の日本語テキスト
@@ -791,7 +791,7 @@ const char *voicevox_get_version(void);
 /**
  * AccentPhraseの配列からAudioQueryを作る。
  *
- * 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
+ * 生成したJSON文字列を解放するには ::voicevox_string_free を使う。
  *
  * @param [in] accent_phrases_json AccentPhraseの配列のJSON文字列
  * @param [out] output_accent_phrases_json 生成先
@@ -1093,7 +1093,7 @@ void voicevox_voice_model_file_id(const struct VoicevoxVoiceModelFile *model,
 /**
  * ::VoicevoxVoiceModelFile からメタ情報を取得する。
  *
- * JSONの解放は ::voicevox_json_free で行う。
+ * JSONの解放は ::voicevox_string_free で行う。
  *
  * @param [in] model 音声モデル
  *
@@ -1263,7 +1263,7 @@ bool voicevox_synthesizer_is_loaded_voice_model(const struct VoicevoxSynthesizer
 /**
  * 今読み込んでいる音声モデルのメタ情報を、JSONで取得する。
  *
- * JSONの解放は ::voicevox_json_free で行う。
+ * JSONの解放は ::voicevox_string_free で行う。
  *
  * @param [in] synthesizer 音声シンセサイザ
  *
@@ -1279,7 +1279,7 @@ char *voicevox_synthesizer_create_metas_json(const struct VoicevoxSynthesizer *s
 /**
  * ONNX Runtimeとして利用可能なデバイスの情報を、JSONで取得する。
  *
- * JSONの解放は ::voicevox_json_free で行う。
+ * JSONの解放は ::voicevox_string_free で行う。
  *
  * あくまでONNX Runtimeが対応しているデバイスの情報であることに注意。GPUが使える環境ではなかったとしても`cuda`や`dml`は`true`を示しうる。
  *
@@ -1311,7 +1311,7 @@ VoicevoxResultCode voicevox_onnxruntime_create_supported_devices_json(const stru
 /**
  * AquesTalk風記法から、AudioQueryをJSONとして生成する。
  *
- * 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
+ * 生成したJSON文字列を解放するには ::voicevox_string_free を使う。
  *
  * @param [in] synthesizer 音声シンセサイザ
  * @param [in] kana AquesTalk風記法
@@ -1347,7 +1347,7 @@ VoicevoxResultCode voicevox_synthesizer_create_audio_query_from_kana(const struc
 /**
  * 日本語テキストから、AudioQueryをJSONとして生成する。
  *
- * 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
+ * 生成したJSON文字列を解放するには ::voicevox_string_free を使う。
  *
  * ::voicevox_synthesizer_create_accent_phrases と ::voicevox_audio_query_create_from_accent_phrases
  * が一体になったショートハンド。詳細は[テキスト音声合成の流れ]を参照。
@@ -1388,7 +1388,7 @@ VoicevoxResultCode voicevox_synthesizer_create_audio_query(const struct Voicevox
 /**
  * AquesTalk風記法から、AccentPhrase (アクセント句)の配列をJSON形式で生成する。
  *
- * 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
+ * 生成したJSON文字列を解放するには ::voicevox_string_free を使う。
  *
  * @param [in] synthesizer 音声シンセサイザ
  * @param [in] kana AquesTalk風記法
@@ -1425,7 +1425,7 @@ VoicevoxResultCode voicevox_synthesizer_create_accent_phrases_from_kana(const st
 /**
  * 日本語テキストから、AccentPhrase (アクセント句)の配列をJSON形式で生成する。
  *
- * 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
+ * 生成したJSON文字列を解放するには ::voicevox_string_free を使う。
  *
  * ::voicevox_open_jtalk_rc_analyze と ::voicevox_synthesizer_replace_mora_data
  * が一体になったショートハンド。詳細は[テキスト音声合成の流れ]を参照。
@@ -1466,7 +1466,7 @@ VoicevoxResultCode voicevox_synthesizer_create_accent_phrases(const struct Voice
 /**
  * AccentPhraseの配列の音高・音素長を、特定の声で生成しなおす。
  *
- * 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
+ * 生成したJSON文字列を解放するには ::voicevox_string_free を使う。
  *
  * ::voicevox_synthesizer_replace_phoneme_length と ::voicevox_synthesizer_replace_mora_pitch
  * が一体になったショートハンド。詳細は[テキスト音声合成の流れ]を参照。
@@ -1498,7 +1498,7 @@ VoicevoxResultCode voicevox_synthesizer_replace_mora_data(const struct VoicevoxS
 /**
  * AccentPhraseの配列の音素長を、特定の声で生成しなおす。
  *
- * 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
+ * 生成したJSON文字列を解放するには ::voicevox_string_free を使う。
  *
  * @param [in] synthesizer 音声シンセサイザ
  * @param [in] accent_phrases_json AccentPhraseの配列のJSON文字列
@@ -1525,7 +1525,7 @@ VoicevoxResultCode voicevox_synthesizer_replace_phoneme_length(const struct Voic
 /**
  * AccentPhraseの配列の音高を、特定の声で生成しなおす。
  *
- * 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
+ * 生成したJSON文字列を解放するには ::voicevox_string_free を使う。
  *
  * @param [in] synthesizer 音声シンセサイザ
  * @param [in] accent_phrases_json AccentPhraseの配列のJSON文字列
@@ -1771,7 +1771,7 @@ VoicevoxResultCode voicevox_synthesizer_tts(const struct VoicevoxSynthesizer *sy
  *
  * [歌唱音声合成]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/song.md
  *
- * 生成したJSONを解放するには ::voicevox_json_free を使う。
+ * 生成したJSONを解放するには ::voicevox_string_free を使う。
  *
  * @param [in] synthesizer 音声シンセサイザ
  * @param [in] score_json [`Score`型]を表すJSON
@@ -1825,7 +1825,7 @@ VoicevoxResultCode voicevox_synthesizer_create_sing_frame_audio_query(const stru
  *
  * [歌唱音声合成]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/song.md
  *
- * 生成したJSONを解放するには ::voicevox_json_free を使う。
+ * 生成したJSONを解放するには ::voicevox_string_free を使う。
  *
  * @param [in] synthesizer 音声シンセサイザ
  * @param [in] score_json [`Score`型]を表すJSON
@@ -1861,7 +1861,7 @@ VoicevoxResultCode voicevox_synthesizer_create_sing_frame_f0(const struct Voicev
  *
  * [歌唱音声合成]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/song.md
  *
- * 生成したJSONを解放するには ::voicevox_json_free を使う。
+ * 生成したJSONを解放するには ::voicevox_string_free を使う。
  *
  * @param [in] synthesizer 音声シンセサイザ
  * @param [in] score_json [`Score`型]を表すJSON
@@ -1938,7 +1938,42 @@ VoicevoxResultCode voicevox_synthesizer_frame_synthesis(const struct VoicevoxSyn
                                                         uint8_t **output_wav);
 
 /**
- * JSON文字列を解放する。
+ * 文字列を解放する。
+ *
+ * @param [in] string 解放する文字列。nullable
+ *
+ * \safety{
+ * - `string`がヌルポインタでないならば、以下のAPIで得られたポインタでなくてはいけない。
+ *     - ::voicevox_audio_query_create_from_accent_phrases
+ *     - ::voicevox_onnxruntime_create_supported_devices_json
+ *     - ::voicevox_voice_model_file_create_metas_json
+ *     - ::voicevox_open_jtalk_rc_analyze
+ *     - ::voicevox_synthesizer_create_metas_json
+ *     - ::voicevox_synthesizer_create_audio_query
+ *     - ::voicevox_synthesizer_create_audio_query_from_kana
+ *     - ::voicevox_synthesizer_create_accent_phrases
+ *     - ::voicevox_synthesizer_create_accent_phrases_from_kana
+ *     - ::voicevox_synthesizer_replace_mora_data
+ *     - ::voicevox_synthesizer_replace_phoneme_length
+ *     - ::voicevox_synthesizer_replace_mora_pitch
+ *     - ::voicevox_synthesizer_create_sing_frame_audio_query
+ *     - ::voicevox_synthesizer_create_sing_frame_f0
+ *     - ::voicevox_synthesizer_create_sing_frame_volume
+ *     - ::voicevox_user_dict_to_json
+ * - 文字列の長さは生成時より変更されていてはならない。
+ * - `string`がヌルポインタでないならば、<a href="#voicevox-core-safety">読み込みと書き込みについて有効</a>でなければならない。
+ * - `string`がヌルポインタでないならば、以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。
+ * }
+ *
+ * \no-orig-impl{voicevox_string_free}
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+void voicevox_string_free(char *string);
+
+/**
+ * ::voicevox_string_free の別名。非推奨。
  *
  * @param [in] json 解放するJSON文字列。nullable
  *
@@ -1969,6 +2004,13 @@ VoicevoxResultCode voicevox_synthesizer_frame_synthesis(const struct VoicevoxSyn
  */
 #ifdef _WIN32
 __declspec(dllimport)
+#endif
+#if defined(_MSC_VER)
+__declspec(deprecated("use 'voicevox_string_free' instead"))
+#elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L ||              defined(__cplusplus) && __cplusplus >= 201402L
+[[deprecated("use 'voicevox_string_free' instead")]]
+#elif defined(__GNUC__) || defined(__clang__)
+__attribute__((deprecated("use 'voicevox_string_free' instead")))
 #endif
 void voicevox_json_free(char *json);
 
@@ -2175,7 +2217,7 @@ VoicevoxResultCode voicevox_user_dict_remove_word(const struct VoicevoxUserDict 
 /**
  * ユーザー辞書の単語をJSON形式で出力する。
  *
- * 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
+ * 生成したJSON文字列を解放するには ::voicevox_string_free を使う。
  *
  * @param [in] user_dict ユーザー辞書
  * @param [out] output_json 出力先

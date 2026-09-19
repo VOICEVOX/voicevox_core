@@ -101,7 +101,7 @@ int main(int argc, char* argv[]) {
 
 cleanup:
   voicevox_bytes_free(wav);
-  voicevox_json_free(frame_audio_query);
+  voicevox_string_free(frame_audio_query);
   voicevox_voice_model_file_delete(model);
   voicevox_synthesizer_delete(synthesizer);
   voicevox_open_jtalk_rc_delete(openjtalk);
