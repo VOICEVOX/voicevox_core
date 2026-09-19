@@ -3318,7 +3318,7 @@ pub(crate) mod nonblocking {
         pending_pcm: Option<BoxFuture<'static, crate::Result<Vec<u8>>>>,
     }
 
-    impl<T: Send + Sync + 'static> Stream for SynthesisStream<T> {
+    impl<T> Stream for SynthesisStream<T> {
         type Item = crate::Result<Vec<u8>>;
 
         fn size_hint(&self) -> (usize, Option<usize>) {
