@@ -1,3 +1,4 @@
+from collections.abc import Iterator
 from os import PathLike
 from typing import TYPE_CHECKING, NoReturn, Union
 from uuid import UUID
@@ -181,6 +182,12 @@ class OpenJtalk:
             日本語のテキスト。
         """
         ...
+
+class SynthesisStream(Iterator[bytes]):
+    def __length_hint__(self) -> int: ...
+    def __iter__(self) -> "SynthesisStream": ...
+    def __next__(self) -> bytes: ...
+    def __repr__(self) -> str: ...
 
 class Synthesizer:
     """
