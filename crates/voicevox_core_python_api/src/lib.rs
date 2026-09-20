@@ -1011,7 +1011,8 @@ mod blocking {
             enable_interrogative_upspeak: bool,
             py: Python<'_>,
         ) -> PyResult<SynthesisStream> {
-            let stream = (&self.synthesizer)
+            let stream = self
+                .synthesizer
                 .read()?
                 .streaming_synthesis(&audio_query, StyleId::new(style_id))
                 .enable_interrogative_upspeak(enable_interrogative_upspeak)
@@ -1795,7 +1796,8 @@ mod asyncio {
             style_id: u32,
             enable_interrogative_upspeak: bool,
         ) -> PyResult<SynthesisStream> {
-            let stream = (&self.synthesizer)
+            let stream = self
+                .synthesizer
                 .read()?
                 .streaming_synthesis(&audio_query, StyleId::new(style_id))
                 .enable_interrogative_upspeak(enable_interrogative_upspeak)
