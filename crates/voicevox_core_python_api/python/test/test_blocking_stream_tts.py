@@ -22,6 +22,7 @@ def test_render(synthesizer: Synthesizer) -> None:
 
     assert wav1 == wav2
 
+
 def test_streaming_synthesis(synthesizer: Synthesizer) -> None:
     TEXT = "こんにちは？"
     STYLE_ID = 302
@@ -32,6 +33,7 @@ def test_streaming_synthesis(synthesizer: Synthesizer) -> None:
     wav2 = b"".join(wav_stream)
 
     assert wav1 == wav2
+
 
 @pytest.fixture
 def synthesizer() -> Synthesizer:

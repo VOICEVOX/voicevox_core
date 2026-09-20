@@ -10,7 +10,7 @@ import platform
 import conftest
 import pytest
 import pytest_asyncio
-from voicevox_core import AudioQuery, wav_from_s16le
+from voicevox_core import wav_from_s16le
 from voicevox_core.asyncio import Onnxruntime, OpenJtalk, Synthesizer, VoiceModelFile
 
 
@@ -29,6 +29,7 @@ async def test_render(synthesizer: Synthesizer) -> None:
 
     assert wav1 == wav2
 
+
 @pytest.mark.asyncio
 async def test_streaming_synthesis(synthesizer: Synthesizer) -> None:
     TEXT = "こんにちは？"
@@ -42,6 +43,7 @@ async def test_streaming_synthesis(synthesizer: Synthesizer) -> None:
         wav2 += chunk
 
     assert wav1 == wav2
+
 
 @pytest_asyncio.fixture
 async def synthesizer() -> Synthesizer:
