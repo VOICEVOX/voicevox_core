@@ -1518,9 +1518,22 @@ mod asyncio {
             slf
         }
 
-        // TODO: Help me
-        // async fn __anext__(&self) -> PyResult<Option::<Vec<u8>>> {
-        // }
+        // PyO3 0.27.2では`__anext__`で`&mut self`はできないので、迂回する。
+        // FIXME: PyO3 0.28.0では大丈夫になったらしいので、新しいPyO3を使う。
+        fn __anext__(slf: Bound<'_, Self>) -> PyResult<Bound<'_, PyAny>> {
+            slf.call_method0("_anext")
+        }
+        async fn _anext(&mut self) -> PyResult<Vec<u8>> {
+            use futures_lite::StreamExt as _;
+            use pyo3::exceptions::PyStopAsyncIteration;
+
+            let result = self.stream.try_next().await;
+            Python::attach(|py| {
+                result
+                    .into_py_result(py)?
+                    .ok_or_else(|| PyStopAsyncIteration::new_err(()))
+            })
+        }
     }
 
     #[pyclass(frozen)]
