@@ -3339,7 +3339,7 @@ pub(crate) mod nonblocking {
                 .field("header", &self.header)
                 .field(
                     "pending_pcm",
-                    &self.pending_pcm.as_ref().map(|_| "Some(...)"),
+                    &self.pending_pcm.as_ref().map(|_| format_args!("_")),
                 )
                 .finish()
         }
