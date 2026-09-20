@@ -1658,9 +1658,9 @@ mod asyncio {
             #[pyo3(from_py_with = crate::convert::from_audio_feature_range_start)] start: usize,
             #[pyo3(from_py_with = crate::convert::from_audio_feature_range_stop)] stop: usize,
         ) -> PyResult<Vec<u8>> {
-            let audio = audio.get().audio.clone();
+            let audio = &audio.get().audio;
             crate::convert::error_for_audio_feature_range(audio.frame_length(), start, stop)?;
-            let pcm = self.synthesizer.read()?.render(&audio, start..stop).await;
+            let pcm = self.synthesizer.read()?.render(audio, start..stop).await;
             Python::attach(|py| pcm.into_py_result(py))
         }
 
