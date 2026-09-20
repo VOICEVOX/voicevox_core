@@ -29,7 +29,8 @@ def test_streaming_synthesis(synthesizer: Synthesizer) -> None:
 
     wav1 = synthesizer.tts(TEXT, STYLE_ID)
 
-    wav_stream = synthesizer.streaming_synthesis(TEXT, STYLE_ID)
+    query = synthesizer.create_audio_query(TEXT, STYLE_ID)
+    wav_stream = synthesizer.streaming_synthesis(query, STYLE_ID)
     wav2 = b"".join(wav_stream)
 
     assert wav1 == wav2
