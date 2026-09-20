@@ -1479,8 +1479,7 @@ mod asyncio {
         }
     }
 
-    // FIXME: pending_pcmがSyncをもたないためunsendableが必要
-    #[pyclass(unsendable)]
+    #[pyclass]
     pub(crate) struct SynthesisStream {
         stream: voicevox_core::nonblocking::SynthesisStream<OwnedOpenJtalk>,
     }
