@@ -1,5 +1,6 @@
 use crate::{
     StyleId, StyleType, VoiceModelId,
+    assert::assert_send_sync,
     core::devices::DeviceAvailabilities,
     engine::{
         DEFAULT_SAMPLING_RATE,
@@ -30,6 +31,8 @@ impl From<E> for Error {
         Self(err.into())
     }
 }
+
+assert_send_sync!(Error);
 
 impl Error {
     /// 対応する[`ErrorKind`]を返す。

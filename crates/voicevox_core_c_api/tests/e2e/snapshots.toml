@@ -90,6 +90,12 @@ stderr.unix = '''
 last_error_message = "Statusが初期化されていません"
 stderr = ""
 
+[deprecated_fn_warnings]
+stderr = '''
+{timestamp}  WARN voicevox_core: 'voicevox_json_free' is deprecated. use 'voicevox_string_free' instead
+{timestamp}  WARN voicevox_core: 'voicevox_wav_free' is deprecated. use 'voicevox_bytes_free' instead
+'''
+
 [double_delete_openjtalk]
 stderr_matches_all = [
     '\n`OpenJtalkRc` \(0x[0-9a-f]{16}\)は既に破棄されています\n',
