@@ -17,7 +17,7 @@ if TYPE_CHECKING:
         UserDictWord,
         VoiceModelId,
     )
-    from voicevox_core._rust import AudioFeature, SynthesisStream
+    from voicevox_core._rust import AudioFeature
 
 class VoiceModelFile:
     """
