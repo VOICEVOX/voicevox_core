@@ -15,6 +15,22 @@ from voicevox_core.asyncio import Onnxruntime, OpenJtalk, Synthesizer, VoiceMode
 
 
 @pytest.mark.asyncio
+async def test_render(synthesizer: Synthesizer) -> None:
+    TEXT = "こんにちは？"
+    # `streaming_talk`に対応したスタイルを使用。voicevox_core/model/sample.vvm/metas.jsonを参照。
+    STYLE_ID = 302
+
+    wav1 = await synthesizer.tts(TEXT, STYLE_ID)
+
+    query = await synthesizer.create_audio_query(TEXT, STYLE_ID)
+    feat = await synthesizer.create_audio_feature(query, STYLE_ID)
+    pcm = await synthesizer.render(feat, 0, feat.frame_length)
+    wav2 = wav_from_s16le(pcm, query.output_sampling_rate, query.output_stereo)
+
+    assert wav1 == wav2
+
+
+@pytest.mark.asyncio
 async def test_streaming_synthesis(synthesizer: Synthesizer) -> None:
     TEXT = "こんにちは？"
     STYLE_ID = 302
