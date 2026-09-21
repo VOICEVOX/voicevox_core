@@ -54,6 +54,7 @@ fn rust(py: Python<'_>, module: &Bound<'_, PyModule>) -> PyResult<()> {
     blocking_module.add_class::<self::blocking::OpenJtalk>()?;
     blocking_module.add_class::<self::blocking::VoiceModelFile>()?;
     blocking_module.add_class::<self::blocking::UserDict>()?;
+    blocking_module.add_class::<self::blocking::SynthesisStream>()?;
     module.add_and_register_submodule(blocking_module)?;
 
     let asyncio_module = PyModule::new(py, "voicevox_core._rust.asyncio")?;
@@ -62,6 +63,7 @@ fn rust(py: Python<'_>, module: &Bound<'_, PyModule>) -> PyResult<()> {
     asyncio_module.add_class::<self::asyncio::OpenJtalk>()?;
     asyncio_module.add_class::<self::asyncio::VoiceModelFile>()?;
     asyncio_module.add_class::<self::asyncio::UserDict>()?;
+    asyncio_module.add_class::<self::asyncio::SynthesisStream>()?;
     module.add_and_register_submodule(asyncio_module)
 }
 
