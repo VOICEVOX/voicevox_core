@@ -30,6 +30,22 @@ async def test_render(synthesizer: Synthesizer) -> None:
     assert wav1 == wav2
 
 
+@pytest.mark.asyncio
+async def test_streaming_synthesis(synthesizer: Synthesizer) -> None:
+    TEXT = "こんにちは？"
+    STYLE_ID = 302
+
+    wav1 = await synthesizer.tts(TEXT, STYLE_ID)
+
+    query = await synthesizer.create_audio_query(TEXT, STYLE_ID)
+    wav_stream = await synthesizer.streaming_synthesis(query, STYLE_ID)
+    wav2 = b""
+    async for chunk in wav_stream:
+        wav2 += chunk
+
+    assert wav1 == wav2
+
+
 @pytest_asyncio.fixture
 async def synthesizer() -> Synthesizer:
     onnxruntime = await Onnxruntime.load_once(filename=conftest.onnxruntime_filename)

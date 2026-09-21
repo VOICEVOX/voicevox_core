@@ -2230,6 +2230,7 @@ pub(crate) mod blocking {
 
     assert_send_sync!(for<T: ..> self::Synthesizer<T>);
 
+    #[derive(Debug)]
     pub struct SynthesisStream<T> {
         synthesizer: Weak<Synthesizer<T>>,
         audio_feature: AudioFeature,
@@ -3351,6 +3352,21 @@ pub(crate) mod nonblocking {
     }
 
     type BoxSyncFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + Sync + 'a>>;
+
+    impl<T> Debug for SynthesisStream<T> {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            f.debug_struct("SynthesisStream")
+                .field("synthesizer", &self.synthesizer)
+                .field("audio_feature", &self.audio_feature)
+                .field("cursor", &self.cursor)
+                .field("header", &self.header)
+                .field(
+                    "pending_pcm",
+                    &self.pending_pcm.as_ref().map(|_| format_args!("_")),
+                )
+                .finish()
+        }
+    }
 
     impl<T> Stream for SynthesisStream<T> {
         type Item = crate::Result<Vec<u8>>;

@@ -54,6 +54,7 @@ fn rust(py: Python<'_>, module: &Bound<'_, PyModule>) -> PyResult<()> {
     blocking_module.add_class::<self::blocking::OpenJtalk>()?;
     blocking_module.add_class::<self::blocking::VoiceModelFile>()?;
     blocking_module.add_class::<self::blocking::UserDict>()?;
+    blocking_module.add_class::<self::blocking::SynthesisStream>()?;
     module.add_and_register_submodule(blocking_module)?;
 
     let asyncio_module = PyModule::new(py, "voicevox_core._rust.asyncio")?;
@@ -62,6 +63,7 @@ fn rust(py: Python<'_>, module: &Bound<'_, PyModule>) -> PyResult<()> {
     asyncio_module.add_class::<self::asyncio::OpenJtalk>()?;
     asyncio_module.add_class::<self::asyncio::VoiceModelFile>()?;
     asyncio_module.add_class::<self::asyncio::UserDict>()?;
+    asyncio_module.add_class::<self::asyncio::SynthesisStream>()?;
     module.add_and_register_submodule(asyncio_module)
 }
 
@@ -667,10 +669,55 @@ mod blocking {
         }
     }
 
+    #[pyclass]
+    pub(crate) struct SynthesisStream {
+        stream: voicevox_core::blocking::SynthesisStream<OwnedOpenJtalk>,
+    }
+
+    #[pymethods]
+    impl SynthesisStream {
+        #[new]
+        #[classmethod]
+        #[pyo3(signature = (*_args, **_kwargs))]
+        fn new(
+            _cls: Bound<'_, PyType>,
+            _args: Bound<'_, PyTuple>,
+            _kwargs: Option<Bound<'_, PyDict>>,
+        ) -> PyResult<Self> {
+            Err(PyTypeError::new_err((
+                "`SynthesisStream` does not have a constructor. Only \
+                 `Synthesizer.streaming_synthesis` can generate the instances.",
+            )))
+        }
+
+        fn __repr__(&self, py: Python<'_>) -> String {
+            let Self { stream: rust_api } = self;
+            let rust_api = PyString::new(py, &format!("{rust_api:?}"));
+            format!(
+                "<voicevox_core.blocking.{NAME} rust_api=<{rust_api:?}>>",
+                NAME = Self::NAME,
+            )
+        }
+
+        fn __length_hint__(&self) -> usize {
+            let Self { stream: rust_api } = self;
+            rust_api.size_hint().0
+        }
+
+        fn __iter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
+            slf
+        }
+
+        fn __next__(&mut self, py: Python<'_>) -> PyResult<Option<Vec<u8>>> {
+            let Self { stream: rust_api } = self;
+            rust_api.next().transpose().into_py_result(py)
+        }
+    }
+
     #[pyclass(frozen)]
     pub(crate) struct Synthesizer {
         synthesizer:
-            Closable<voicevox_core::blocking::Synthesizer<OwnedOpenJtalk>, Self, SingleTasked>,
+            Closable<Arc<voicevox_core::blocking::Synthesizer<OwnedOpenJtalk>>, Self, SingleTasked>,
     }
 
     #[pymethods]
@@ -698,7 +745,7 @@ mod blocking {
                 .build()
                 .into_py_result(py)?;
             Ok(Self {
-                synthesizer: Closable::new(inner),
+                synthesizer: Closable::new(inner.into()),
             })
         }
 
@@ -953,6 +1000,30 @@ mod blocking {
         }
 
         #[pyo3(signature=(
+            audio_query,
+            style_id,
+            *,
+            enable_interrogative_upspeak =
+                voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
+        ))]
+        fn streaming_synthesis(
+            &self,
+            #[pyo3(from_py_with = crate::convert::from_audio_query)] audio_query: AudioQuery,
+            style_id: u32,
+            enable_interrogative_upspeak: bool,
+            py: Python<'_>,
+        ) -> PyResult<SynthesisStream> {
+            let stream = self
+                .synthesizer
+                .read()?
+                .streaming_synthesis(&audio_query, StyleId::new(style_id))
+                .enable_interrogative_upspeak(enable_interrogative_upspeak)
+                .perform()
+                .into_py_result(py)?;
+            Ok(SynthesisStream { stream })
+        }
+
+        #[pyo3(signature=(
             kana,
             style_id,
             *,
@@ -1140,9 +1211,10 @@ mod asyncio {
     use std::{ffi::OsString, path::PathBuf, sync::Arc};
 
     use camino::Utf8PathBuf;
+    use futures_lite::{Stream, StreamExt as _};
     use pyo3::{
         Bound, IntoPyObject as _, Py, PyAny, PyErr, PyRef, PyResult, PyTypeInfo as _, Python,
-        exceptions::PyTypeError,
+        exceptions::{PyStopAsyncIteration, PyTypeError},
         pyclass, pymethods,
         sync::PyOnceLock,
         types::{IntoPyDict as _, PyAnyMethods as _, PyDict, PyList, PyString, PyTuple, PyType},
@@ -1409,10 +1481,66 @@ mod asyncio {
         }
     }
 
+    #[pyclass]
+    pub(crate) struct SynthesisStream {
+        stream: voicevox_core::nonblocking::SynthesisStream<OwnedOpenJtalk>,
+    }
+
+    #[pymethods]
+    impl SynthesisStream {
+        #[new]
+        #[classmethod]
+        #[pyo3(signature = (*_args, **_kwargs))]
+        fn new(
+            _cls: Bound<'_, PyType>,
+            _args: Bound<'_, PyTuple>,
+            _kwargs: Option<Bound<'_, PyDict>>,
+        ) -> PyResult<Self> {
+            Err(PyTypeError::new_err((
+                "`SynthesisStream` does not have a constructor. Only \
+                 `Synthesizer.streaming_synthesis` can generate the instances.",
+            )))
+        }
+
+        fn __repr__(&self, py: Python<'_>) -> String {
+            let Self { stream: rust_api } = self;
+            let rust_api = PyString::new(py, &format!("{rust_api:?}"));
+            format!(
+                "<voicevox_core.asyncio.{NAME} rust_api=<{rust_api:?}>>",
+                NAME = Self::NAME,
+            )
+        }
+
+        fn __length_hint__(&self) -> usize {
+            let Self { stream: rust_api } = self;
+            rust_api.size_hint().0
+        }
+
+        fn __aiter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
+            slf
+        }
+
+        // 現時点のPyO3（0.29.2）では`experimental-async`と`__anext__`を組み合わせることができないため、迂回する。
+        // https://github.com/PyO3/pyo3/issues/5773
+        // FIXME: 上記のissueを解決したリリースが出たらこのハックをやめる。
+        fn __anext__(slf: Bound<'_, Self>) -> PyResult<Bound<'_, PyAny>> {
+            slf.call_method0("_anext")
+        }
+        async fn _anext(&mut self) -> PyResult<Vec<u8>> {
+            let pcm = self
+                .stream
+                .try_next()
+                .await
+                .map(|pcm| pcm.ok_or_else(|| PyStopAsyncIteration::new_err(())));
+            Python::attach(|py| pcm.into_py_result(py)?)
+        }
+    }
+
     #[pyclass(frozen)]
     pub(crate) struct Synthesizer {
-        synthesizer:
-            Arc<Closable<voicevox_core::nonblocking::Synthesizer<OwnedOpenJtalk>, Self, Tokio>>,
+        synthesizer: Arc<
+            Closable<Arc<voicevox_core::nonblocking::Synthesizer<OwnedOpenJtalk>>, Self, Tokio>,
+        >,
     }
 
     #[pymethods]
@@ -1438,7 +1566,7 @@ mod asyncio {
                 .cpu_num_threads(cpu_num_threads)
                 .build();
             let synthesizer = Python::attach(|py| synthesizer.into_py_result(py))?;
-            let synthesizer = Closable::new(synthesizer).into();
+            let synthesizer = Closable::new(synthesizer.into()).into();
             Ok(Self { synthesizer })
         }
 
@@ -1688,6 +1816,30 @@ mod asyncio {
                 .perform()
                 .await;
             Python::attach(|py| wav.into_py_result(py))
+        }
+
+        #[pyo3(signature=(
+            audio_query,
+            style_id,
+            *,
+            enable_interrogative_upspeak =
+                voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
+        ))]
+        async fn streaming_synthesis(
+            &self,
+            #[pyo3(from_py_with = crate::convert::from_audio_query)] audio_query: AudioQuery,
+            style_id: u32,
+            enable_interrogative_upspeak: bool,
+        ) -> PyResult<SynthesisStream> {
+            let stream = self
+                .synthesizer
+                .read()?
+                .streaming_synthesis(&audio_query, StyleId::new(style_id))
+                .enable_interrogative_upspeak(enable_interrogative_upspeak)
+                .perform()
+                .await;
+            let stream = Python::attach(|py| stream.into_py_result(py))?;
+            Ok(SynthesisStream { stream })
         }
 
         #[pyo3(signature=(

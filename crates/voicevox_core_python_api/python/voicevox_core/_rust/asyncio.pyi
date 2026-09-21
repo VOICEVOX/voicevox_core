@@ -1,3 +1,4 @@
+from collections.abc import AsyncIterator
 from os import PathLike
 from typing import TYPE_CHECKING, NoReturn, Union
 from uuid import UUID
@@ -187,6 +188,13 @@ class OpenJtalk:
             日本語のテキスト。
         """
         ...
+
+class SynthesisStream(AsyncIterator[bytes]):
+    def __new__(cls, *args: object, **kwargs: object) -> NoReturn: ...
+    def __length_hint__(self) -> int: ...
+    def __aiter__(self) -> "SynthesisStream": ...
+    async def __anext__(self) -> bytes: ...
+    def __repr__(self) -> str: ...
 
 class Synthesizer:
     """
@@ -504,6 +512,30 @@ class Synthesizer:
         Returns
         -------
         WAVデータ。
+        """
+        ...
+    async def streaming_synthesis(
+        self,
+        audio_query: AudioQuery,
+        style_id: StyleId | int,
+        *,
+        enable_interrogative_upspeak: bool = True,
+    ) -> SynthesisStream:
+        """
+        :class:`AudioQuery` からストリーミングで音声合成する。
+
+        Parameters
+        ----------
+        audio_query
+            :class:`AudioQuery` 。
+        style_id
+            スタイルID。
+        enable_interrogative_upspeak
+            疑問文の調整を有効にするかどうか。
+
+        Returns
+        -------
+        WAVデータを分割して返すイテレータ。
         """
         ...
     async def tts_from_kana(
