@@ -14,6 +14,20 @@ Performance
 """
 
 # pyright: reportMissingModuleSource=false
-from ._rust.asyncio import Onnxruntime, OpenJtalk, SynthesisStream, Synthesizer, UserDict, VoiceModelFile
+from ._rust.asyncio import (
+    Onnxruntime,
+    OpenJtalk,
+    SynthesisStream,
+    Synthesizer,
+    UserDict,
+    VoiceModelFile,
+)
 
-__all__ = ["Onnxruntime", "OpenJtalk", "SynthesisStream", "Synthesizer", "UserDict", "VoiceModelFile"]
+__all__ = [
+    "Onnxruntime",
+    "OpenJtalk",
+    "SynthesisStream",
+    "Synthesizer",
+    "UserDict",
+    "VoiceModelFile",
+]
