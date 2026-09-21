@@ -1497,8 +1497,8 @@ mod asyncio {
             _kwargs: Option<Bound<'_, PyDict>>,
         ) -> PyResult<Self> {
             Err(PyTypeError::new_err((
-                "`SynthesisStream` does not have a normal constructor. Use \
-                 `Synthesizer.streaming_synthesis` to construct",
+                "`SynthesisStream` does not have a constructor. Only \
+                 `Synthesizer.streaming_synthesis` can generate the instances.",
             )))
         }
 
