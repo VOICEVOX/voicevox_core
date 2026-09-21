@@ -1211,10 +1211,10 @@ mod asyncio {
     use std::{ffi::OsString, path::PathBuf, sync::Arc};
 
     use camino::Utf8PathBuf;
-    use futures_lite::Stream;
+    use futures_lite::{Stream, StreamExt as _};
     use pyo3::{
         Bound, IntoPyObject as _, Py, PyAny, PyErr, PyRef, PyResult, PyTypeInfo as _, Python,
-        exceptions::PyTypeError,
+        exceptions::{PyStopAsyncIteration, PyTypeError},
         pyclass, pymethods,
         sync::PyOnceLock,
         types::{IntoPyDict as _, PyAnyMethods as _, PyDict, PyList, PyString, PyTuple, PyType},
@@ -1520,21 +1520,19 @@ mod asyncio {
             slf
         }
 
-        // PyO3 0.27.2では`__anext__`で`&mut self`はできないので、迂回する。
-        // FIXME: PyO3 0.28.0では大丈夫になったらしいので、新しいPyO3を使う。
+        // 現時点のPyO3（0.29.2）では`experimental-async`と`__anext__`を組み合わせることができないため、迂回する。
+        // https://github.com/PyO3/pyo3/issues/5773
+        // FIXME: 上記のissueを解決したリリースが出たらこのハックをやめる。
         fn __anext__(slf: Bound<'_, Self>) -> PyResult<Bound<'_, PyAny>> {
             slf.call_method0("_anext")
         }
         async fn _anext(&mut self) -> PyResult<Vec<u8>> {
-            use futures_lite::StreamExt as _;
-            use pyo3::exceptions::PyStopAsyncIteration;
-
-            let result = self.stream.try_next().await;
-            Python::attach(|py| {
-                result
-                    .into_py_result(py)?
-                    .ok_or_else(|| PyStopAsyncIteration::new_err(()))
-            })
+            let pcm = self
+                .stream
+                .try_next()
+                .await
+                .map(|pcm| pcm.ok_or_else(|| PyStopAsyncIteration::new_err(())));
+            Python::attach(|py| pcm.into_py_result(py)?)
         }
     }
 
