@@ -1228,7 +1228,7 @@ mod asyncio {
     };
 
     use crate::{
-        Closable, Tokio, VoiceModelFilePyFields,
+        AudioFeature, Closable, Tokio, VoiceModelFilePyFields,
         convert::{ToDataclass, VoicevoxCoreResultExt as _},
     };
 
@@ -1754,6 +1754,42 @@ mod asyncio {
                 .await
                 .map(Into::into);
             Python::attach(|py| phrases.into_py_result(py))
+        }
+
+        #[pyo3(signature=(
+            audio_query,
+            style_id,
+            *,
+            enable_interrogative_upspeak =
+                voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
+        ))]
+        async fn create_audio_feature(
+            &self,
+            #[pyo3(from_py_with = crate::convert::from_audio_query)] audio_query: AudioQuery,
+            style_id: u32,
+            enable_interrogative_upspeak: bool,
+        ) -> PyResult<AudioFeature> {
+            let audio = self
+                .synthesizer
+                .read()?
+                .create_audio_feature(&audio_query, StyleId::new(style_id))
+                .enable_interrogative_upspeak(enable_interrogative_upspeak)
+                .perform()
+                .await;
+            let audio = Python::attach(|py| audio.into_py_result(py))?;
+            Ok(AudioFeature { audio })
+        }
+
+        async fn render(
+            &self,
+            audio: Py<AudioFeature>,
+            #[pyo3(from_py_with = crate::convert::from_audio_feature_range_start)] start: usize,
+            #[pyo3(from_py_with = crate::convert::from_audio_feature_range_stop)] stop: usize,
+        ) -> PyResult<Vec<u8>> {
+            let audio = &audio.get().audio;
+            crate::convert::error_for_audio_feature_range(audio.frame_length(), start, stop)?;
+            let pcm = self.synthesizer.read()?.render(audio, start..stop).await;
+            Python::attach(|py| pcm.into_py_result(py))
         }
 
         #[pyo3(signature=(

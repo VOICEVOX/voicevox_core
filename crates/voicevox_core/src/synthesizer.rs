@@ -2893,6 +2893,29 @@ pub(crate) mod nonblocking {
             self.0.metas()
         }
 
+        /// AudioQueryから音声合成用の中間表現を生成する。
+        pub fn create_audio_feature<'a>(
+            &'a self,
+            audio_query: &'a AudioQuery,
+            style_id: StyleId,
+        ) -> CreateAudioFeature<'a> {
+            CreateAudioFeature {
+                synthesizer: self.0.without_text_analyzer(),
+                audio_query,
+                style_id,
+                options: Default::default(),
+            }
+        }
+
+        /// 中間表現から16bit PCMで音声波形を生成する。
+        pub async fn render(
+            &self,
+            audio: &AudioFeature,
+            range: impl Into<std::ops::Range<usize>>,
+        ) -> crate::Result<Vec<u8>> {
+            self.0.render(audio, range.into()).await
+        }
+
         /// AudioQueryから音声合成を行う。
         ///
         /// # Caveats
@@ -3581,6 +3604,29 @@ pub(crate) mod nonblocking {
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
     #[derive(Debug)]
+    pub struct CreateAudioFeature<'a> {
+        synthesizer: InnerRefWithoutTextAnalyzer<'a, BlockingThreadPool>,
+        audio_query: &'a AudioQuery,
+        style_id: StyleId,
+        options: SynthesisOptions<BlockingThreadPool>,
+    }
+
+    impl CreateAudioFeature<'_> {
+        pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
+            self.options.enable_interrogative_upspeak = enable_interrogative_upspeak;
+            self
+        }
+
+        /// 実行する。
+        pub async fn perform(self) -> crate::Result<AudioFeature> {
+            self.synthesizer
+                .create_audio_feature(self.audio_query, self.style_id, &self.options)
+                .await
+        }
+    }
+
+    #[must_use = "this is a builder. it does nothing until `perform`ed"]
+    #[derive(Debug)]
     pub struct Synthesis<'a> {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, BlockingThreadPool>,
         audio_query: &'a AudioQuery,
@@ -3760,7 +3806,7 @@ mod tests {
     use crate::{
         AccentPhrase, FramePhoneme, Note, NoteId, Result, Score, StyleId,
         asyncs::BlockingThreadPool, engine::talk::Mora, macros::tests::assert_debug_fmt_eq,
-        numerics::non_zero,
+        numerics::non_zero, wav_from_s16le,
     };
     use ::test_util::OPEN_JTALK_DIC_DIR;
     use futures_core::Stream;
@@ -4617,6 +4663,94 @@ mod tests {
                 lyric: lyric.parse().unwrap(),
             }
         }
+    }
+
+    #[rstest]
+    #[tokio::test]
+    async fn nonblocking_render_equivalent() {
+        let synthesizer = super::nonblocking::Synthesizer::builder(
+            crate::nonblocking::Onnxruntime::from_test_util_data()
+                .await
+                .unwrap(),
+        )
+        .text_analyzer(
+            crate::nonblocking::OpenJtalk::new(OPEN_JTALK_DIC_DIR)
+                .await
+                .unwrap(),
+        )
+        .acceleration_mode(AccelerationMode::Cpu)
+        .build()
+        .unwrap();
+        let synthesizer = Arc::new(synthesizer);
+
+        let model = &crate::nonblocking::VoiceModelFile::sample().await.unwrap();
+        synthesizer.load_voice_model(model).perform().await.unwrap();
+
+        let audio_query = synthesizer
+            .create_audio_query("これはテストです", StyleId::new(302))
+            .await
+            .unwrap();
+
+        let expected_wav = synthesizer
+            .synthesis(&audio_query, StyleId::new(302))
+            .perform()
+            .await
+            .unwrap();
+
+        let feat = synthesizer
+            .create_audio_feature(&audio_query, StyleId::new(302))
+            .perform()
+            .await
+            .unwrap();
+        let pcm = synthesizer
+            .render(&feat, 0..feat.frame_length())
+            .await
+            .unwrap();
+        let actual_wav = wav_from_s16le(
+            &pcm,
+            audio_query.output_sampling_rate.get().get(),
+            audio_query.output_stereo,
+        );
+
+        assert_eq!(expected_wav, actual_wav);
+    }
+
+    #[rstest]
+    #[tokio::test]
+    async fn blocking_render_equivalent() {
+        let synthesizer = super::blocking::Synthesizer::builder(
+            crate::blocking::Onnxruntime::from_test_util_data().unwrap(),
+        )
+        .text_analyzer(crate::blocking::OpenJtalk::new(OPEN_JTALK_DIC_DIR).unwrap())
+        .acceleration_mode(AccelerationMode::Cpu)
+        .build()
+        .unwrap();
+        let synthesizer = Arc::new(synthesizer);
+
+        let model = &crate::blocking::VoiceModelFile::sample().unwrap();
+        synthesizer.load_voice_model(model).perform().unwrap();
+
+        let audio_query = synthesizer
+            .create_audio_query("これはテストです", StyleId::new(302))
+            .unwrap();
+
+        let expected_wav = synthesizer
+            .synthesis(&audio_query, StyleId::new(302))
+            .perform()
+            .unwrap();
+
+        let feat = synthesizer
+            .create_audio_feature(&audio_query, StyleId::new(302))
+            .perform()
+            .unwrap();
+        let pcm = synthesizer.render(&feat, 0..feat.frame_length()).unwrap();
+        let actual_wav = wav_from_s16le(
+            &pcm,
+            audio_query.output_sampling_rate.get().get(),
+            audio_query.output_stereo,
+        );
+
+        assert_eq!(expected_wav, actual_wav);
     }
 
     #[rstest]
