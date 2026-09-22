@@ -704,13 +704,18 @@ mod blocking {
     }
 
     #[pyclass]
-    pub(crate) struct SynthesisStream {
-        inner: SynthesisStreamInner,
-        synthesizer_read_lock: Option<ReadLockThread>,
+    pub(crate) struct SynthesisStream(SynthesisStreamInner);
+
+    enum SynthesisStreamInner {
+        Some {
+            body: SynthesisStreamBody,
+            _synthesizer_read_lock: Option<ReadLockThread>,
+        },
+        Empty,
     }
 
     #[self_referencing]
-    struct SynthesisStreamInner {
+    struct SynthesisStreamBody {
         synthesizer: Arc<voicevox_core::blocking::Synthesizer<OwnedOpenJtalk>>,
 
         audio_query: AudioQuery,
@@ -737,16 +742,30 @@ mod blocking {
         }
 
         fn __repr__(&self, py: Python<'_>) -> String {
-            let rust_api = self.inner.borrow_stream();
-            let rust_api = PyString::new(py, &format!("{rust_api:?}"));
-            format!(
-                "<voicevox_core.blocking.{NAME} rust_api=<{rust_api:?}>>",
-                NAME = Self::NAME,
-            )
+            match &self.0 {
+                SynthesisStreamInner::Some { body, .. } => {
+                    let rust_api = body.borrow_stream();
+                    let rust_api = PyString::new(py, &format!("{rust_api:?}"));
+                    format!(
+                        "<voicevox_core.blocking.{NAME} rust_api=<{rust_api:?}>>",
+                        NAME = Self::NAME,
+                    )
+                }
+                SynthesisStreamInner::Empty => {
+                    format!(
+                        "<voicevox_core.blocking.{NAME} rust_api=None>",
+                        NAME = Self::NAME,
+                    )
+                }
+            }
         }
 
         fn __length_hint__(&self) -> usize {
-            let rust_api = self.inner.borrow_stream();
+            let body = match &self.0 {
+                SynthesisStreamInner::Some { body, .. } => body,
+                SynthesisStreamInner::Empty => return 0,
+            };
+            let rust_api = body.borrow_stream();
             rust_api.size_hint().0
         }
 
@@ -755,9 +774,13 @@ mod blocking {
         }
 
         fn __next__(&mut self, py: Python<'_>) -> PyResult<Option<Vec<u8>>> {
-            let pcm = self.inner.with_stream_mut(|rust_api| rust_api.next());
-            if pcm.is_none() {
-                self.synthesizer_read_lock = None;
+            let body = match &mut self.0 {
+                SynthesisStreamInner::Some { body, .. } => body,
+                SynthesisStreamInner::Empty => return Ok(None),
+            };
+            let pcm = body.with_stream_mut(|rust_api| rust_api.next());
+            if pcm.is_some() {
+                self.0 = SynthesisStreamInner::Empty;
             }
             pcm.transpose().into_py_result(py)
         }
@@ -1064,7 +1087,7 @@ mod blocking {
             py: Python<'_>,
         ) -> PyResult<SynthesisStream> {
             let synthesizer = slf.get().synthesizer.read()?.clone();
-            let inner = SynthesisStreamInner::try_new(
+            let body = SynthesisStreamBody::try_new(
                 synthesizer,
                 audio_query,
                 |synthesizer, audio_query| {
@@ -1075,10 +1098,10 @@ mod blocking {
                 },
             )
             .into_py_result(py)?;
-            Ok(SynthesisStream {
-                inner,
-                synthesizer_read_lock: Some(ReadLockThread::new(slf)),
-            })
+            Ok(SynthesisStream(SynthesisStreamInner::Some {
+                body,
+                _synthesizer_read_lock: Some(ReadLockThread::new(slf)),
+            }))
         }
 
         #[pyo3(signature=(
@@ -1282,7 +1305,7 @@ mod asyncio {
     use std::{ffi::OsString, path::PathBuf, sync::Arc};
 
     use camino::Utf8PathBuf;
-    use futures_lite::{Stream, StreamExt as _, future::poll_fn};
+    use futures_lite::{Stream, StreamExt as _};
     use ouroboros::self_referencing;
     use pyo3::{
         Bound, IntoPyObject as _, Py, PyAny, PyErr, PyRef, PyResult, PyTypeInfo as _, Python,
@@ -1554,13 +1577,18 @@ mod asyncio {
     }
 
     #[pyclass]
-    pub(crate) struct SynthesisStream {
-        inner: SynthesisStreamInner,
-        synthesizer_read_lock: Option<ReadLockThread>,
+    pub(crate) struct SynthesisStream(SynthesisStreamInner);
+
+    enum SynthesisStreamInner {
+        Some {
+            body: SynthesisStreamBody,
+            _synthesizer_read_lock: Option<ReadLockThread>,
+        },
+        Empty,
     }
 
     #[self_referencing]
-    struct SynthesisStreamInner {
+    struct SynthesisStreamBody {
         synthesizer: Arc<voicevox_core::nonblocking::Synthesizer<OwnedOpenJtalk>>,
 
         audio_query: AudioQuery,
@@ -1587,16 +1615,30 @@ mod asyncio {
         }
 
         fn __repr__(&self, py: Python<'_>) -> String {
-            let rust_api = self.inner.borrow_stream();
-            let rust_api = PyString::new(py, &format!("{rust_api:?}"));
-            format!(
-                "<voicevox_core.asyncio.{NAME} rust_api=<{rust_api:?}>>",
-                NAME = Self::NAME,
-            )
+            match &self.0 {
+                SynthesisStreamInner::Some { body, .. } => {
+                    let rust_api = body.borrow_stream();
+                    let rust_api = PyString::new(py, &format!("{rust_api:?}"));
+                    format!(
+                        "<voicevox_core.asyncio.{NAME} rust_api=<{rust_api:?}>>",
+                        NAME = Self::NAME,
+                    )
+                }
+                SynthesisStreamInner::Empty => {
+                    format!(
+                        "<voicevox_core.asyncio.{NAME} rust_api=None>",
+                        NAME = Self::NAME,
+                    )
+                }
+            }
         }
 
         fn __length_hint__(&self) -> usize {
-            let rust_api = self.inner.borrow_stream();
+            let body = match &self.0 {
+                SynthesisStreamInner::Some { body, .. } => body,
+                SynthesisStreamInner::Empty => return 0,
+            };
+            let rust_api = body.borrow_stream();
             rust_api.size_hint().0
         }
 
@@ -1611,13 +1653,16 @@ mod asyncio {
             slf.call_method0("_anext")
         }
         async fn _anext(&mut self) -> PyResult<Vec<u8>> {
-            let pcm = poll_fn(|cx| {
-                self.inner
-                    .with_stream_mut(|rust_api| rust_api.poll_next(cx))
+            let body = match &mut self.0 {
+                SynthesisStreamInner::Some { body, .. } => body,
+                SynthesisStreamInner::Empty => return Err(PyStopAsyncIteration::new_err(())),
+            };
+            let pcm = futures_lite::future::poll_fn(|cx| {
+                body.with_stream_mut(|rust_api| rust_api.poll_next(cx))
             })
             .await;
             if pcm.is_none() {
-                self.synthesizer_read_lock = None;
+                self.0 = SynthesisStreamInner::Empty;
             }
             let pcm = pcm
                 .transpose()
@@ -1922,7 +1967,7 @@ mod asyncio {
             enable_interrogative_upspeak: bool,
         ) -> PyResult<SynthesisStream> {
             let synthesizer = slf.get().synthesizer.read()?.clone();
-            let inner = SynthesisStreamInner::try_new_async_send(
+            let body = SynthesisStreamBody::try_new_async_send(
                 synthesizer,
                 audio_query,
                 |synthesizer, audio_query| {
@@ -1936,11 +1981,11 @@ mod asyncio {
                 },
             )
             .await;
-            let inner = Python::attach(|py| inner.into_py_result(py))?;
-            Ok(SynthesisStream {
-                inner,
-                synthesizer_read_lock: Some(ReadLockThread::new(slf)),
-            })
+            let body = Python::attach(|py| body.into_py_result(py))?;
+            Ok(SynthesisStream(SynthesisStreamInner::Some {
+                body,
+                _synthesizer_read_lock: Some(ReadLockThread::new(slf)),
+            }))
         }
 
         #[pyo3(signature=(
