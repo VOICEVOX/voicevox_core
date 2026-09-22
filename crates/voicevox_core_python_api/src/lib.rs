@@ -777,7 +777,7 @@ mod blocking {
                 SynthesisStreamInner::Empty => return Ok(None),
             };
             let pcm = body.with_stream_mut(|rust_api| rust_api.next());
-            if pcm.is_some() {
+            if pcm.is_none() {
                 self.0 = SynthesisStreamInner::Empty;
             }
             pcm.transpose().into_py_result(py)
