@@ -1667,7 +1667,6 @@ pub(crate) mod blocking {
         fmt::{self, Debug},
         iter::StepBy,
         mem,
-        sync::{Arc, Weak},
     };
 
     use easy_ext::ext;
@@ -2231,14 +2230,14 @@ pub(crate) mod blocking {
     assert_send_sync!(for<T: ..> self::Synthesizer<T>);
 
     #[derive(Debug)]
-    pub struct SynthesisStream<T> {
-        synthesizer: Weak<Synthesizer<T>>,
+    pub struct SynthesisStream<'a, T> {
+        synthesizer: &'a Synthesizer<T>,
         audio_feature: AudioFeature,
         cursor: StepBy<std::ops::Range<usize>>,
         header: Vec<u8>,
     }
 
-    impl<T> Iterator for SynthesisStream<T> {
+    impl<T> Iterator for SynthesisStream<'_, T> {
         type Item = crate::Result<Vec<u8>>;
 
         fn size_hint(&self) -> (usize, Option<usize>) {
@@ -2264,11 +2263,7 @@ pub(crate) mod blocking {
                         .unwrap_or_else(|| self.audio_feature.frame_length());
                     let pcm = match self
                         .synthesizer
-                        .upgrade()
-                        .unwrap_or_else(|| todo!())
-                        .0
                         .render(&self.audio_feature, start_frame..end_frame)
-                        .block_on()
                     {
                         Ok(pcm) => pcm,
                         Err(e) => return Some(Err(e)),
@@ -2281,13 +2276,13 @@ pub(crate) mod blocking {
         }
     }
 
-    assert_send_sync!(for<T: ..> SynthesisStream<T>);
+    assert_send_sync!(for<T: ..> SynthesisStream<'_, T>);
 
     impl<T> self::Synthesizer<T> {
         /// AudioQueryから直接WAVフォーマットで音声波形をストリーミング生成する。
         #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_streaming_synthesis"))]
         pub fn streaming_synthesis<'a>(
-            self: &'a Arc<Self>,
+            &'a self,
             audio_query: &'a AudioQuery,
             style_id: StyleId,
         ) -> StreamingSynthesis<'a, T> {
@@ -2652,7 +2647,7 @@ pub(crate) mod blocking {
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
     #[derive(Debug)]
     pub struct StreamingSynthesis<'a, T> {
-        synthesizer: &'a Arc<self::Synthesizer<T>>,
+        synthesizer: &'a self::Synthesizer<T>,
         audio_query: &'a AudioQuery,
         style_id: StyleId,
         options: StreamingSynthesisOptions<SingleTasked>,
@@ -2675,7 +2670,7 @@ pub(crate) mod blocking {
         }
 
         /// 実行する。
-        pub fn perform(self) -> crate::Result<SynthesisStream<T>> {
+        pub fn perform(self) -> crate::Result<SynthesisStream<'a, T>> {
             let audio_feature = self
                 .synthesizer
                 .0
@@ -2696,7 +2691,7 @@ pub(crate) mod blocking {
                 (output_sampling_rate / DEFAULT_SAMPLING_RATE) * num_channels as u32;
             let render_pcm_length = (render_wave_length as u32 * repeat_count * 2) as usize;
             Ok(SynthesisStream {
-                synthesizer: Arc::downgrade(self.synthesizer),
+                synthesizer: self.synthesizer,
                 audio_feature,
                 cursor: (offset_frames..full_frames).step_by(segment_frames),
                 header: s16le_wav_prefix(render_pcm_length, output_sampling_rate, output_stereo),
@@ -2774,7 +2769,7 @@ pub(crate) mod nonblocking {
         iter::StepBy,
         mem,
         pin::Pin,
-        sync::{Arc, Weak},
+        sync::Arc,
         task::{Context, Poll},
     };
 
@@ -3343,8 +3338,8 @@ pub(crate) mod nonblocking {
 
     assert_send_sync!(for<T: ..> self::Synthesizer<T>);
 
-    pub struct SynthesisStream<T> {
-        synthesizer: Weak<Synthesizer<T>>,
+    pub struct SynthesisStream<'a, T> {
+        synthesizer: &'a Synthesizer<T>,
         audio_feature: AudioFeature,
         cursor: StepBy<std::ops::Range<usize>>,
         header: Vec<u8>,
@@ -3353,10 +3348,10 @@ pub(crate) mod nonblocking {
 
     type BoxSyncFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + Sync + 'a>>;
 
-    impl<T> Debug for SynthesisStream<T> {
+    impl<T: Debug> Debug for SynthesisStream<'_, T> {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             f.debug_struct("SynthesisStream")
-                .field("synthesizer", &self.synthesizer)
+                .field("synthesizer", self.synthesizer)
                 .field("audio_feature", &self.audio_feature)
                 .field("cursor", &self.cursor)
                 .field("header", &self.header)
@@ -3368,7 +3363,7 @@ pub(crate) mod nonblocking {
         }
     }
 
-    impl<T> Stream for SynthesisStream<T> {
+    impl<T> Stream for SynthesisStream<'_, T> {
         type Item = crate::Result<Vec<u8>>;
 
         fn size_hint(&self) -> (usize, Option<usize>) {
@@ -3405,8 +3400,7 @@ pub(crate) mod nonblocking {
                     let end_frame = tmp_cursor
                         .next()
                         .unwrap_or_else(|| self.audio_feature.frame_length());
-                    let synthesizer = self.synthesizer.upgrade().unwrap_or_else(|| todo!());
-                    let inner = synthesizer.0.without_text_analyzer_cloned();
+                    let inner = self.synthesizer.0.without_text_analyzer_cloned();
                     let audio_feature = self.audio_feature.clone();
                     let range = start_frame..end_frame;
                     self.pending_pcm = Some(Box::pin(async move {
@@ -3419,7 +3413,7 @@ pub(crate) mod nonblocking {
         }
     }
 
-    assert_send_sync!(for<T: ..> SynthesisStream<T>);
+    assert_send_sync!(for<T: ..> SynthesisStream<'_, T>);
 
     impl<T: crate::nonblocking::TextAnalyzer> self::Synthesizer<T> {
         /// 日本語のテキストからAccentPhrase (アクセント句)の配列を生成する。
@@ -3661,7 +3655,7 @@ pub(crate) mod nonblocking {
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
     #[derive(Debug)]
     pub struct StreamingSynthesis<'a, T> {
-        synthesizer: &'a Arc<Synthesizer<T>>,
+        synthesizer: &'a Synthesizer<T>,
         audio_query: &'a AudioQuery,
         style_id: StyleId,
         options: StreamingSynthesisOptions<BlockingThreadPool>,
@@ -3674,7 +3668,7 @@ pub(crate) mod nonblocking {
         }
 
         /// 実行する。
-        pub async fn perform(self) -> crate::Result<SynthesisStream<T>> {
+        pub async fn perform(self) -> crate::Result<SynthesisStream<'a, T>> {
             let audio_feature = self
                 .synthesizer
                 .0
@@ -3694,7 +3688,7 @@ pub(crate) mod nonblocking {
                 (output_sampling_rate / DEFAULT_SAMPLING_RATE) * num_channels as u32;
             let render_pcm_length = (render_wave_length as u32 * repeat_count * 2) as usize;
             Ok(SynthesisStream {
-                synthesizer: Arc::downgrade(self.synthesizer),
+                synthesizer: self.synthesizer,
                 audio_feature,
                 cursor: (offset_frames..full_frames).step_by(segment_frames),
                 header: s16le_wav_prefix(render_pcm_length, output_sampling_rate, output_stereo),

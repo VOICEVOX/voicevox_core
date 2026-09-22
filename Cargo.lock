@@ -5173,6 +5173,7 @@ dependencies = [
  "log",
  "num-bigint",
  "num-traits",
+ "ouroboros",
  "pyo3",
  "pyo3-log",
  "ref-cast",

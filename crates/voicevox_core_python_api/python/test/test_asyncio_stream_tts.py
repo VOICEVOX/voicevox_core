@@ -28,6 +28,7 @@ async def test_render(synthesizer: Synthesizer) -> None:
     wav2 = wav_from_s16le(pcm, query.output_sampling_rate, query.output_stereo)
 
     assert wav1 == wav2
+    assert False
 
 
 @pytest.mark.asyncio
@@ -44,6 +45,7 @@ async def test_streaming_synthesis(synthesizer: Synthesizer) -> None:
         wav2 += chunk
 
     assert wav1 == wav2
+    assert False
 
 
 @pytest_asyncio.fixture
