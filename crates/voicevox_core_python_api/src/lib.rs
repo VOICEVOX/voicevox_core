@@ -828,8 +828,9 @@ mod blocking {
                 '_,
                 PyAny,
             >,
+            py: Python<'_>,
         ) {
-            self.close();
+            self.close(py);
         }
 
         #[getter]
@@ -1191,8 +1192,8 @@ mod blocking {
                 .into_py_result(py)
         }
 
-        fn close(&self) {
-            drop(self.synthesizer.close());
+        fn close(&self, py: Python<'_>) {
+            drop(py.detach(|| self.synthesizer.close()));
         }
     }
 
