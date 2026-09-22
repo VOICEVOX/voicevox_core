@@ -720,7 +720,7 @@ mod blocking {
 
         #[borrows(synthesizer)]
         #[covariant]
-        stream: voicevox_core::blocking::SynthesisStream<'this, OwnedOpenJtalk>,
+        stream: voicevox_core::blocking::SynthesisStream<'this>,
     }
 
     #[pymethods]
@@ -1587,7 +1587,7 @@ mod asyncio {
 
         #[borrows(synthesizer)]
         #[covariant]
-        stream: voicevox_core::nonblocking::SynthesisStream<'this, OwnedOpenJtalk>,
+        stream: voicevox_core::nonblocking::SynthesisStream<'this>,
     }
 
     #[pymethods]

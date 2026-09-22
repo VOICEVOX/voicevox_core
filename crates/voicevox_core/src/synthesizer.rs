@@ -399,15 +399,6 @@ impl<T, A: AsyncExt> Inner<T, A> {
         }
     }
 
-    fn without_text_analyzer_cloned(&self) -> Inner<(), A> {
-        Inner {
-            status: self.status.clone(),
-            text_analyzer: (),
-            use_gpu: self.use_gpu,
-            _marker: PhantomData,
-        }
-    }
-
     fn fill_debug_struct_body(&self, mut fmt: fmt::DebugStruct<'_, '_>) -> fmt::Result
     where
         T: Debug,
@@ -432,6 +423,15 @@ trait AsInner {
     fn status(&self) -> &Arc<Status<crate::blocking::Onnxruntime>>;
     fn text_analyzer(&self) -> &Self::TextAnalyzer;
     fn use_gpu(&self) -> bool;
+
+    fn without_text_analyzer_cloned(&self) -> Inner<(), Self::Async> {
+        Inner {
+            status: self.status().clone(),
+            text_analyzer: (),
+            use_gpu: self.use_gpu(),
+            _marker: PhantomData,
+        }
+    }
 
     fn onnxruntime(&self) -> &'static crate::blocking::Onnxruntime {
         self.status().rt
@@ -2230,14 +2230,14 @@ pub(crate) mod blocking {
     assert_send_sync!(for<T: ..> self::Synthesizer<T>);
 
     #[derive(Debug)]
-    pub struct SynthesisStream<'a, T> {
-        synthesizer: &'a Synthesizer<T>,
+    pub struct SynthesisStream<'a> {
+        synthesizer: InnerRefWithoutTextAnalyzer<'a, SingleTasked>,
         audio_feature: AudioFeature,
         cursor: StepBy<std::ops::Range<usize>>,
         header: Vec<u8>,
     }
 
-    impl<T> Iterator for SynthesisStream<'_, T> {
+    impl Iterator for SynthesisStream<'_> {
         type Item = crate::Result<Vec<u8>>;
 
         fn size_hint(&self) -> (usize, Option<usize>) {
@@ -2264,6 +2264,7 @@ pub(crate) mod blocking {
                     let pcm = match self
                         .synthesizer
                         .render(&self.audio_feature, start_frame..end_frame)
+                        .block_on()
                     {
                         Ok(pcm) => pcm,
                         Err(e) => return Some(Err(e)),
@@ -2276,7 +2277,7 @@ pub(crate) mod blocking {
         }
     }
 
-    assert_send_sync!(for<T: ..> SynthesisStream<'_, T>);
+    assert_send_sync!(SynthesisStream<'_>);
 
     impl<T> self::Synthesizer<T> {
         /// AudioQueryから直接WAVフォーマットで音声波形をストリーミング生成する。
@@ -2285,9 +2286,9 @@ pub(crate) mod blocking {
             &'synthesizer self,
             audio_query: &'audio_query AudioQuery,
             style_id: StyleId,
-        ) -> StreamingSynthesis<'synthesizer, 'audio_query, T> {
+        ) -> StreamingSynthesis<'synthesizer, 'audio_query> {
             StreamingSynthesis {
-                synthesizer: self,
+                synthesizer: self.0.without_text_analyzer(),
                 audio_query,
                 style_id,
                 options: Default::default(),
@@ -2646,14 +2647,14 @@ pub(crate) mod blocking {
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
     #[derive(Debug)]
-    pub struct StreamingSynthesis<'synthesizer, 'audio_query, T> {
-        synthesizer: &'synthesizer self::Synthesizer<T>,
+    pub struct StreamingSynthesis<'synthesizer, 'audio_query> {
+        synthesizer: InnerRefWithoutTextAnalyzer<'synthesizer, SingleTasked>,
         audio_query: &'audio_query AudioQuery,
         style_id: StyleId,
         options: StreamingSynthesisOptions<SingleTasked>,
     }
 
-    impl<'synthesizer, T> StreamingSynthesis<'synthesizer, '_, T> {
+    impl<'synthesizer> StreamingSynthesis<'synthesizer, '_> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.synthesis.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
@@ -2670,11 +2671,9 @@ pub(crate) mod blocking {
         }
 
         /// 実行する。
-        pub fn perform(self) -> crate::Result<SynthesisStream<'synthesizer, T>> {
+        pub fn perform(self) -> crate::Result<SynthesisStream<'synthesizer>> {
             let audio_feature = self
                 .synthesizer
-                .0
-                .without_text_analyzer_cloned()
                 .create_audio_feature(self.audio_query, self.style_id, &self.options.synthesis)
                 .block_on()?;
             let offset_frames =
@@ -2769,7 +2768,6 @@ pub(crate) mod nonblocking {
         iter::StepBy,
         mem,
         pin::Pin,
-        sync::Arc,
         task::{Context, Poll},
     };
 
@@ -2933,12 +2931,12 @@ pub(crate) mod nonblocking {
 
         /// AudioQueryから直接WAVフォーマットで音声波形をストリーミング生成する。
         pub fn streaming_synthesis<'synthesizer, 'audio_query>(
-            self: &'synthesizer Arc<Self>,
+            &'synthesizer self,
             audio_query: &'audio_query AudioQuery,
             style_id: StyleId,
-        ) -> StreamingSynthesis<'synthesizer, 'audio_query, T> {
+        ) -> StreamingSynthesis<'synthesizer, 'audio_query> {
             StreamingSynthesis {
-                synthesizer: self,
+                synthesizer: self.0.without_text_analyzer(),
                 audio_query,
                 style_id,
                 options: Default::default(),
@@ -3338,8 +3336,8 @@ pub(crate) mod nonblocking {
 
     assert_send_sync!(for<T: ..> self::Synthesizer<T>);
 
-    pub struct SynthesisStream<'a, T> {
-        synthesizer: &'a Synthesizer<T>,
+    pub struct SynthesisStream<'a> {
+        synthesizer: InnerRefWithoutTextAnalyzer<'a, BlockingThreadPool>,
         audio_feature: AudioFeature,
         cursor: StepBy<std::ops::Range<usize>>,
         header: Vec<u8>,
@@ -3348,10 +3346,10 @@ pub(crate) mod nonblocking {
 
     type BoxSyncFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + Sync + 'a>>;
 
-    impl<T: Debug> Debug for SynthesisStream<'_, T> {
+    impl Debug for SynthesisStream<'_> {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             f.debug_struct("SynthesisStream")
-                .field("synthesizer", self.synthesizer)
+                .field("synthesizer", &self.synthesizer)
                 .field("audio_feature", &self.audio_feature)
                 .field("cursor", &self.cursor)
                 .field("header", &self.header)
@@ -3363,7 +3361,7 @@ pub(crate) mod nonblocking {
         }
     }
 
-    impl<T> Stream for SynthesisStream<'_, T> {
+    impl Stream for SynthesisStream<'_> {
         type Item = crate::Result<Vec<u8>>;
 
         fn size_hint(&self) -> (usize, Option<usize>) {
@@ -3400,7 +3398,7 @@ pub(crate) mod nonblocking {
                     let end_frame = tmp_cursor
                         .next()
                         .unwrap_or_else(|| self.audio_feature.frame_length());
-                    let inner = self.synthesizer.0.without_text_analyzer_cloned();
+                    let inner = self.synthesizer.without_text_analyzer_cloned();
                     let audio_feature = self.audio_feature.clone();
                     let range = start_frame..end_frame;
                     self.pending_pcm = Some(Box::pin(async move {
@@ -3413,7 +3411,7 @@ pub(crate) mod nonblocking {
         }
     }
 
-    assert_send_sync!(for<T: ..> SynthesisStream<'_, T>);
+    assert_send_sync!(SynthesisStream<'_>);
 
     impl<T: crate::nonblocking::TextAnalyzer> self::Synthesizer<T> {
         /// 日本語のテキストからAccentPhrase (アクセント句)の配列を生成する。
@@ -3654,24 +3652,23 @@ pub(crate) mod nonblocking {
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
     #[derive(Debug)]
-    pub struct StreamingSynthesis<'synthesizer, 'audio_query, T> {
-        synthesizer: &'synthesizer Synthesizer<T>,
+    pub struct StreamingSynthesis<'synthesizer, 'audio_query> {
+        synthesizer: InnerRefWithoutTextAnalyzer<'synthesizer, BlockingThreadPool>,
         audio_query: &'audio_query AudioQuery,
         style_id: StyleId,
         options: StreamingSynthesisOptions<BlockingThreadPool>,
     }
 
-    impl<'synthesizer, T> StreamingSynthesis<'synthesizer, '_, T> {
+    impl<'synthesizer> StreamingSynthesis<'synthesizer, '_> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.synthesis.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
         }
 
         /// 実行する。
-        pub async fn perform(self) -> crate::Result<SynthesisStream<'synthesizer, T>> {
+        pub async fn perform(self) -> crate::Result<SynthesisStream<'synthesizer>> {
             let audio_feature = self
                 .synthesizer
-                .0
                 .create_audio_feature(self.audio_query, self.style_id, &self.options.synthesis)
                 .await?;
             let offset_frames =
