@@ -2281,11 +2281,11 @@ pub(crate) mod blocking {
     impl<T> self::Synthesizer<T> {
         /// AudioQueryから直接WAVフォーマットで音声波形をストリーミング生成する。
         #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_streaming_synthesis"))]
-        pub fn streaming_synthesis<'a>(
-            &'a self,
-            audio_query: &'a AudioQuery,
+        pub fn streaming_synthesis<'synthesizer, 'audio_query>(
+            &'synthesizer self,
+            audio_query: &'audio_query AudioQuery,
             style_id: StyleId,
-        ) -> StreamingSynthesis<'a, T> {
+        ) -> StreamingSynthesis<'synthesizer, 'audio_query, T> {
             StreamingSynthesis {
                 synthesizer: self,
                 audio_query,
@@ -2646,14 +2646,14 @@ pub(crate) mod blocking {
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
     #[derive(Debug)]
-    pub struct StreamingSynthesis<'a, T> {
-        synthesizer: &'a self::Synthesizer<T>,
-        audio_query: &'a AudioQuery,
+    pub struct StreamingSynthesis<'synthesizer, 'audio_query, T> {
+        synthesizer: &'synthesizer self::Synthesizer<T>,
+        audio_query: &'audio_query AudioQuery,
         style_id: StyleId,
         options: StreamingSynthesisOptions<SingleTasked>,
     }
 
-    impl<'a, T> StreamingSynthesis<'a, T> {
+    impl<'synthesizer, T> StreamingSynthesis<'synthesizer, '_, T> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.synthesis.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
@@ -2670,7 +2670,7 @@ pub(crate) mod blocking {
         }
 
         /// 実行する。
-        pub fn perform(self) -> crate::Result<SynthesisStream<'a, T>> {
+        pub fn perform(self) -> crate::Result<SynthesisStream<'synthesizer, T>> {
             let audio_feature = self
                 .synthesizer
                 .0
@@ -2932,11 +2932,11 @@ pub(crate) mod nonblocking {
         }
 
         /// AudioQueryから直接WAVフォーマットで音声波形をストリーミング生成する。
-        pub fn streaming_synthesis<'a>(
-            self: &'a Arc<Self>,
-            audio_query: &'a AudioQuery,
+        pub fn streaming_synthesis<'synthesizer, 'audio_query>(
+            self: &'synthesizer Arc<Self>,
+            audio_query: &'audio_query AudioQuery,
             style_id: StyleId,
-        ) -> StreamingSynthesis<'a, T> {
+        ) -> StreamingSynthesis<'synthesizer, 'audio_query, T> {
             StreamingSynthesis {
                 synthesizer: self,
                 audio_query,
@@ -3654,21 +3654,21 @@ pub(crate) mod nonblocking {
 
     #[must_use = "this is a builder. it does nothing until `perform`ed"]
     #[derive(Debug)]
-    pub struct StreamingSynthesis<'a, T> {
-        synthesizer: &'a Synthesizer<T>,
-        audio_query: &'a AudioQuery,
+    pub struct StreamingSynthesis<'synthesizer, 'audio_query, T> {
+        synthesizer: &'synthesizer Synthesizer<T>,
+        audio_query: &'audio_query AudioQuery,
         style_id: StyleId,
         options: StreamingSynthesisOptions<BlockingThreadPool>,
     }
 
-    impl<'a, T> StreamingSynthesis<'a, T> {
+    impl<'synthesizer, T> StreamingSynthesis<'synthesizer, '_, T> {
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.synthesis.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
         }
 
         /// 実行する。
-        pub async fn perform(self) -> crate::Result<SynthesisStream<'a, T>> {
+        pub async fn perform(self) -> crate::Result<SynthesisStream<'synthesizer, T>> {
             let audio_feature = self
                 .synthesizer
                 .0

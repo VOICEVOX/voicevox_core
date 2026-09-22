@@ -718,9 +718,7 @@ mod blocking {
     struct SynthesisStreamBody {
         synthesizer: Arc<voicevox_core::blocking::Synthesizer<OwnedOpenJtalk>>,
 
-        audio_query: AudioQuery,
-
-        #[borrows(synthesizer, audio_query)]
+        #[borrows(synthesizer)]
         #[covariant]
         stream: voicevox_core::blocking::SynthesisStream<'this, OwnedOpenJtalk>,
     }
@@ -1087,16 +1085,12 @@ mod blocking {
             py: Python<'_>,
         ) -> PyResult<SynthesisStream> {
             let synthesizer = slf.get().synthesizer.read()?.clone();
-            let body = SynthesisStreamBody::try_new(
-                synthesizer,
-                audio_query,
-                |synthesizer, audio_query| {
-                    synthesizer
-                        .streaming_synthesis(audio_query, StyleId::new(style_id))
-                        .enable_interrogative_upspeak(enable_interrogative_upspeak)
-                        .perform()
-                },
-            )
+            let body = SynthesisStreamBody::try_new(synthesizer, |synthesizer| {
+                synthesizer
+                    .streaming_synthesis(&audio_query, StyleId::new(style_id))
+                    .enable_interrogative_upspeak(enable_interrogative_upspeak)
+                    .perform()
+            })
             .into_py_result(py)?;
             Ok(SynthesisStream(SynthesisStreamInner::Some {
                 body,
@@ -1591,9 +1585,7 @@ mod asyncio {
     struct SynthesisStreamBody {
         synthesizer: Arc<voicevox_core::nonblocking::Synthesizer<OwnedOpenJtalk>>,
 
-        audio_query: AudioQuery,
-
-        #[borrows(synthesizer, audio_query)]
+        #[borrows(synthesizer)]
         #[covariant]
         stream: voicevox_core::nonblocking::SynthesisStream<'this, OwnedOpenJtalk>,
     }
@@ -1967,19 +1959,15 @@ mod asyncio {
             enable_interrogative_upspeak: bool,
         ) -> PyResult<SynthesisStream> {
             let synthesizer = slf.get().synthesizer.read()?.clone();
-            let body = SynthesisStreamBody::try_new_async_send(
-                synthesizer,
-                audio_query,
-                |synthesizer, audio_query| {
-                    Box::pin(async move {
-                        synthesizer
-                            .streaming_synthesis(audio_query, StyleId::new(style_id))
-                            .enable_interrogative_upspeak(enable_interrogative_upspeak)
-                            .perform()
-                            .await
-                    })
-                },
-            )
+            let body = SynthesisStreamBody::try_new_async_send(synthesizer, |synthesizer| {
+                Box::pin(async move {
+                    synthesizer
+                        .streaming_synthesis(&audio_query, StyleId::new(style_id))
+                        .enable_interrogative_upspeak(enable_interrogative_upspeak)
+                        .perform()
+                        .await
+                })
+            })
             .await;
             let body = Python::attach(|py| body.into_py_result(py))?;
             Ok(SynthesisStream(SynthesisStreamInner::Some {
