@@ -788,6 +788,32 @@ mod blocking {
             }
             pcm.map(Some)
         }
+
+        fn __enter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
+            slf
+        }
+
+        fn __exit__(
+            &mut self,
+            #[expect(unused_variables, reason = "`__exit__`としては必要")] exc_type: &Bound<
+                '_,
+                PyAny,
+            >,
+            #[expect(unused_variables, reason = "`__exit__`としては必要")] exc_value: &Bound<
+                '_,
+                PyAny,
+            >,
+            #[expect(unused_variables, reason = "`__exit__`としては必要")] traceback: &Bound<
+                '_,
+                PyAny,
+            >,
+        ) {
+            self.clear();
+        }
+
+        fn clear(&mut self) {
+            self.0 = SynthesisStreamInner::Empty;
+        }
     }
 
     #[pyclass(frozen)]
@@ -1669,6 +1695,32 @@ mod asyncio {
                 self.0 = SynthesisStreamInner::Empty;
             }
             pcm
+        }
+
+        fn __enter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
+            slf
+        }
+
+        fn __exit__(
+            &mut self,
+            #[expect(unused_variables, reason = "`__exit__`としては必要")] exc_type: &Bound<
+                '_,
+                PyAny,
+            >,
+            #[expect(unused_variables, reason = "`__exit__`としては必要")] exc_value: &Bound<
+                '_,
+                PyAny,
+            >,
+            #[expect(unused_variables, reason = "`__exit__`としては必要")] traceback: &Bound<
+                '_,
+                PyAny,
+            >,
+        ) {
+            self.clear();
+        }
+
+        fn clear(&mut self) {
+            self.0 = SynthesisStreamInner::Empty;
         }
     }
 
