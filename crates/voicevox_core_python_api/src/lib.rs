@@ -718,6 +718,7 @@ mod blocking {
     struct SynthesisStreamBody {
         synthesizer: Arc<voicevox_core::blocking::Synthesizer<OwnedOpenJtalk>>,
 
+        /// Invariant: Should not be empty.
         #[borrows(synthesizer)]
         #[covariant]
         stream: voicevox_core::blocking::SynthesisStream<'this>,
@@ -776,11 +777,14 @@ mod blocking {
                 SynthesisStreamInner::Some { body, .. } => body,
                 SynthesisStreamInner::Empty => return Ok(None),
             };
-            let pcm = body.with_stream_mut(|rust_api| rust_api.next());
-            if pcm.is_none() {
+            let pcm = body
+                .with_stream_mut(|rust_api| rust_api.next())
+                .expect("`stream` should be non empty while `SynthesisStreamInner::Some` is held")
+                .into_py_result(py);
+            if matches!(body.borrow_stream().size_hint(), (0, _)) {
                 self.0 = SynthesisStreamInner::Empty;
             }
-            pcm.transpose().into_py_result(py)
+            pcm.map(Some)
         }
     }
 
@@ -1092,9 +1096,12 @@ mod blocking {
                     .perform()
             })
             .into_py_result(py)?;
-            Ok(SynthesisStream(SynthesisStreamInner::Some {
-                body,
-                _synthesizer_read_lock: Some(ReadLockThread::new(slf)),
+            Ok(SynthesisStream(match body.borrow_stream().size_hint() {
+                (0, _) => SynthesisStreamInner::Empty,
+                _ => SynthesisStreamInner::Some {
+                    body,
+                    _synthesizer_read_lock: Some(ReadLockThread::new(slf)),
+                },
             }))
         }
 
@@ -1585,6 +1592,7 @@ mod asyncio {
     struct SynthesisStreamBody {
         synthesizer: Arc<voicevox_core::nonblocking::Synthesizer<OwnedOpenJtalk>>,
 
+        /// Invariant: Should not be empty.
         #[borrows(synthesizer)]
         #[covariant]
         stream: voicevox_core::nonblocking::SynthesisStream<'this>,
@@ -1652,14 +1660,13 @@ mod asyncio {
             let pcm = futures_lite::future::poll_fn(|cx| {
                 body.with_stream_mut(|rust_api| rust_api.poll_next(cx))
             })
-            .await;
-            if pcm.is_none() {
+            .await
+            .expect("`stream` should be non empty while `SynthesisStreamInner::Some` is held");
+            let pcm = Python::attach(|py| pcm.into_py_result(py));
+            if matches!(body.borrow_stream().size_hint(), (0, _)) {
                 self.0 = SynthesisStreamInner::Empty;
             }
-            let pcm = pcm
-                .transpose()
-                .map(|pcm| pcm.ok_or_else(|| PyStopAsyncIteration::new_err(())));
-            Python::attach(|py| pcm.into_py_result(py)?)
+            pcm
         }
     }
 
@@ -1970,9 +1977,12 @@ mod asyncio {
             })
             .await;
             let body = Python::attach(|py| body.into_py_result(py))?;
-            Ok(SynthesisStream(SynthesisStreamInner::Some {
-                body,
-                _synthesizer_read_lock: Some(ReadLockThread::new(slf)),
+            Ok(SynthesisStream(match body.borrow_stream().size_hint() {
+                (0, _) => SynthesisStreamInner::Empty,
+                _ => SynthesisStreamInner::Some {
+                    body,
+                    _synthesizer_read_lock: Some(ReadLockThread::new(slf)),
+                },
             }))
         }
 
