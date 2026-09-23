@@ -284,7 +284,9 @@ impl ReadLockThread {
 
         ::blocking::unblock(move || {
             // ロックできないならできないでよい
-            if let Ok(_maybe_lock) = T::get(&ob).closable().try_acquire_read_lock() {
+            if let Ok(lock) = T::get(&ob).closable().try_acquire_read_lock()
+                && matches!(*lock, MaybeClosed::Open(_))
+            {
                 let _ = rx.recv();
             }
         })
