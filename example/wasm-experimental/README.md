@@ -55,6 +55,7 @@ export CARGO_TARGET_WASM32_UNKNOWN_EMSCRIPTEN_RUSTFLAGS="\
 cargo +1.96.0 build \
   --package voicevox_core_wasm \
   --bin wasm_browser_api_example \
+  --features link-onnxruntime \
   --target wasm32-unknown-emscripten \
   --profile c-api
 ```
