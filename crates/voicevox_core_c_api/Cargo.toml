@@ -33,6 +33,7 @@ either.workspace = true
 libc.workspace = true
 ndarray.workspace = true
 parking_lot = { workspace = true, features = ["arc_lock"] }
+process_path.workspace = true
 ref-cast.workspace = true
 serde_json = { workspace = true, features = ["preserve_order"] }
 thiserror.workspace = true
@@ -41,10 +42,6 @@ tracing-subscriber = { workspace = true, features = ["env-filter"] }
 typed_floats = { workspace = true, features = ["serde"] }
 uuid.workspace = true
 voicevox_core.workspace = true
-
-# process_pathはemscriptenに対応していないため
-[target.'cfg(not(target_os = "emscripten"))'.dependencies]
-process_path.workspace = true
 
 [dev-dependencies]
 anyhow.workspace = true
