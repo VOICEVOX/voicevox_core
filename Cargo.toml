@@ -68,7 +68,7 @@ num-traits = "0.2.19"
 octocrab = "0.47.1" # RUSTSEC-2023-0071の回避も検証も面倒なため、0.47に留める
 once_cell = "1.21.3"
 open = "5.3.2"
-ort = { git = "https://github.com/pykeio/ort.git", rev = "94417081c47f47f5a7d6a92ce94bb38fda10019f", default-features = false } # pykeio/ort#546
+ort = { git = "https://github.com/yamachu/ort.git", rev = "58eec506d8438b1223daca8f9fbcb00bff61ae7c", default-features = false } # Emscripten C API support, 非同期版を止めるため
 ouroboros = "0.18.4"
 parking_lot = "0.12.1"
 parse-display = "0.8.2"

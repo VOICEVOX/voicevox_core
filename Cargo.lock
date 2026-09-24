@@ -2784,7 +2784,7 @@ checksum = "9f50d9b3dabb09ecd771ad0aa242ca6894994c130308ca3d7684634df8037391"
 [[package]]
 name = "ort"
 version = "2.0.0-rc.12"
-source = "git+https://github.com/pykeio/ort.git?rev=94417081c47f47f5a7d6a92ce94bb38fda10019f#94417081c47f47f5a7d6a92ce94bb38fda10019f"
+source = "git+https://github.com/yamachu/ort.git?rev=58eec506d8438b1223daca8f9fbcb00bff61ae7c#58eec506d8438b1223daca8f9fbcb00bff61ae7c"
 dependencies = [
  "libloading 0.9.0",
  "ndarray",
@@ -2796,7 +2796,7 @@ dependencies = [
 [[package]]
 name = "ort-sys"
 version = "2.0.0-rc.12"
-source = "git+https://github.com/pykeio/ort.git?rev=94417081c47f47f5a7d6a92ce94bb38fda10019f#94417081c47f47f5a7d6a92ce94bb38fda10019f"
+source = "git+https://github.com/yamachu/ort.git?rev=58eec506d8438b1223daca8f9fbcb00bff61ae7c#58eec506d8438b1223daca8f9fbcb00bff61ae7c"
 
 [[package]]
 name = "os_pipe"
