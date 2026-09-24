@@ -8,7 +8,7 @@ pub(super) trait FullcontextExtractor {
     fn extract_fullcontext(&self, text: &str) -> anyhow::Result<Vec<String>>;
 }
 
-#[cfg(all(target_os = "emscripten"))]
+#[cfg(target_os = "emscripten")]
 include!("open_jtalk.wasm.rs");
 
 #[cfg(not(target_os = "emscripten"))]
