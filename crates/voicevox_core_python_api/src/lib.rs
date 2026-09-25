@@ -36,6 +36,7 @@ fn rust(py: Python<'_>, module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_wrapped(wrap_pyfunction!(_audio_query_from_accent_phrases))?;
     module.add_wrapped(wrap_pyfunction!(_audio_query_from_json))?;
     module.add_wrapped(wrap_pyfunction!(_audio_query_to_json))?;
+    module.add_wrapped(wrap_pyfunction!(audio_query_frame_length))?;
     module.add_wrapped(wrap_pyfunction!(_validate_audio_query))?;
     module.add_wrapped(wrap_pyfunction!(_validate_accent_phrase))?;
     module.add_wrapped(wrap_pyfunction!(_validate_mora))?;
@@ -324,6 +325,18 @@ fn _audio_query_to_json(
     #[pyo3(from_py_with = convert::from_audio_query)] audio_query: AudioQuery,
 ) -> String {
     audio_query.to_json()
+}
+
+#[pyfunction]
+fn audio_query_frame_length(
+    #[pyo3(from_py_with = convert::from_audio_query)] audio_query: AudioQuery,
+    enable_interrogative_upspeak: bool,
+) -> usize {
+    audio_query
+        .frame_length()
+        .enable_interrogative_upspeak(enable_interrogative_upspeak)
+        .calculate()
+        .0
 }
 
 #[pyfunction]

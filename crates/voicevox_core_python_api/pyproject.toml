@@ -27,6 +27,7 @@ executionEnvironments = [{ root = "python/benches" }, { root = "python/test" }, 
 
 [tool.maturin]
 module-name = "voicevox_core._rust"
+exclude = ["voicevox_core/conftest.py"]
 bindings = "pyo3"
 python-source = "python"
 
@@ -51,3 +52,4 @@ pytest-asyncio = "0.21.0"
 pytest-codspeed = "4.2.0"
 black = "23.3.0"
 isort = "5.13.2"
+numpy = "2.2.6" # Python 3.10で動く最大バージョン

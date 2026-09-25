@@ -1,8 +1,14 @@
 //! [`AudioQuery`]から特徴量を取り出す処理を集めたもの。
 
+use std::{num::Saturating, ops::Add};
+
+use itertools::chain;
 use typed_floats::{NonNaNFinite, PositiveFinite, tf32};
 
-use crate::numerics::{non_nan_finite_f32, positive_finite_f32};
+use crate::{
+    AccentPhrase, AudioQuery, Mora,
+    numerics::{non_nan_finite_f32, positive_finite_f32},
+};
 
 use super::{
     super::{
@@ -12,6 +18,10 @@ use super::{
     },
     full_context_label::mora_to_text,
 };
+
+pub const DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK: bool = true;
+
+const FIX_VOWEL_LENGTH: PositiveFinite<f32> = positive_finite_f32!(0.15);
 
 pub(crate) fn initial_process<'query>(
     accent_phrases: &[ValidatedAccentPhrase<'query>],
@@ -78,6 +88,178 @@ pub(crate) fn split_mora(
     }
 
     (consonant_phoneme_list, vowel_phoneme_list, vowel_indexes)
+}
+
+impl AudioQuery {
+    /// 音声の総フレーム数を算出する。
+    ///
+    /// 音声の秒数は、フレーム数を[`FRAME_RATE`]で割った値で表せる。
+    ///
+    /// 算出方法は以下の通り。
+    ///
+    /// 1. 32-bit浮動小数点数の値として存在する以下の秒数を集める。
+    ///     - [`AudioQuery::pre_phoneme_length`]
+    ///     - [`AudioQuery::accent_phrases`]の要素ごとに
+    ///         - [`AccentPhrase::moras`]の要素ごとに
+    ///             - [`Mora::consonant_length`]
+    ///             - [`Mora::vowel_length`]
+    ///         - [`enable_interrogative_upspeak`]かつ[`AccentPhrase::is_interrogative`]かつ[`AccentPhrase::moras`]の最後の[`Mora::pitch`]が`0.0`以外のとき、`0.15`秒
+    ///         - [`AccentPhrase::pause_mora`]の[`Mora::consonant_length`]（通常はない）
+    ///         - [`AccentPhrase::pause_mora`]の[`Mora::vowel_length`]
+    ///     - [`AudioQuery::post_phoneme_length`]
+    /// 2. それぞれの秒数を`secs`として、対応するフレーム長を<code>((secs * [FRAME_RATE]).[round_ties_even()] / [speed_scale]).[round_ties_even()]</code>として算出する。
+    /// 3. 各フレーム長を足し合わせる。
+    ///
+    /// # Caveats
+    ///
+    /// `AudioQuery`に対応する音声の長さは将来的に変わる可能性がある。例えば、秒数を64-bit浮動小数点数として解釈しているVOICEVOX
+    /// ENGINEと挙動を揃える可能性がある。
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # fn main() -> anyhow::Result<()> {
+    /// # use pollster::FutureExt as _;
+    /// # use voicevox_core::{__internal::doctest_fixtures::IntoBlocking as _, StyleId};
+    /// #
+    /// # const WHATEVER_STYLE1: StyleId = StyleId(0);
+    /// # const WHATEVER_STYLE2: StyleId = StyleId(302);
+    /// #
+    /// # let synth =
+    /// #     voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+    /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
+    /// #         test_util::ONNXRUNTIME_DYLIB_PATH,
+    /// #         test_util::OPEN_JTALK_DIC_DIR,
+    /// #     )
+    /// #     .block_on()?
+    /// #     .into_blocking();
+    /// #
+    /// let query =
+    ///     &synth.create_audio_query("こんにちは、音声合成の世界へようこそ？", WHATEVER_STYLE1)?;
+    ///
+    /// assert_eq!(
+    ///     synth
+    ///         .create_audio_feature(query, WHATEVER_STYLE2)
+    ///         .perform()?
+    ///         .frame_length(),
+    ///     query.frame_length().calculate().0,
+    /// );
+    /// #
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// ```
+    /// # use voicevox_core::AudioQuery;
+    /// #
+    /// let mut query = AudioQuery::from(vec![]);
+    /// query.pre_phoneme_length = typed_floats::as_const!(PositiveFinite, f32, 3.3);
+    /// query.post_phoneme_length = typed_floats::as_const!(PositiveFinite, f32, 4.4);
+    /// query.speed_scale = typed_floats::as_const!(PositiveFinite, f32, 1.2);
+    ///
+    /// assert_eq!(
+    ///     // `speed_scale`, `pre_phoneme_length`
+    ///     to_frame_length(3.3, 1.2)
+    ///         // `speed_scale`, `consonant_length`, `vowel_length`, `is_interrogative`
+    ///         + 0
+    ///         // `speed_scale`, `post_phoneme_length`
+    ///         + to_frame_length(4.4, 1.2),
+    ///     query.frame_length().calculate().0,
+    /// );
+    ///
+    /// fn to_frame_length(secs: f32, speed_scale: f32) -> usize {
+    ///     ((secs * 93.75).round_ties_even() / speed_scale).round_ties_even() as _
+    /// }
+    /// ```
+    ///
+    /// ```
+    /// # use voicevox_core::AudioQuery;
+    /// #
+    /// use typed_floats::tf32;
+    ///
+    /// let mut query = AudioQuery::from(vec![]);
+    /// query.speed_scale = tf32::MIN_POSITIVE.into();
+    /// assert_eq!(usize::MAX, query.frame_length().calculate().0);
+    /// ```
+    ///
+    /// [`FRAME_RATE`]: crate::AudioFeature::FRAME_RATE
+    /// [`enable_interrogative_upspeak`]: AudioQueryFrameLength::enable_interrogative_upspeak
+    /// [FRAME_RATE]: crate::AudioFeature::FRAME_RATE
+    /// [round_ties_even()]: f64::round_ties_even
+    /// [speed_scale]: Self::speed_scale
+    pub fn frame_length(&self) -> AudioQueryFrameLength<'_> {
+        AudioQueryFrameLength {
+            audio_query: self,
+            enable_interrogative_upspeak: DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
+        }
+    }
+}
+
+fn f() {
+    assert_eq!(
+        // `speed_scale`, `pre_phoneme_length`
+        to_frame_length(3.3, 1.2)
+            // `speed_scale`, `consonant_length`, `vowel_length`, `is_interrogative`
+            + 0
+            // `speed_scale`, `post_phoneme_length`
+            + to_frame_length(4.4, 1.2),
+        query.frame_length().calculate().0,
+    );
+}
+
+/// [`AudioQuery::frame_length`]のビルダー。
+#[must_use = "this is a builder. it does nothing until `calculate`d"]
+#[derive(Debug)]
+pub struct AudioQueryFrameLength<'a> {
+    audio_query: &'a AudioQuery,
+    enable_interrogative_upspeak: bool,
+}
+
+impl AudioQueryFrameLength<'_> {
+    pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
+        self.enable_interrogative_upspeak = enable_interrogative_upspeak;
+        self
+    }
+
+    /// 音声の総フレーム数を算出する。
+    ///
+    /// 詳細は[`AudioQuery::frame_length`]を参照。
+    pub fn calculate(self) -> Saturating<usize> {
+        return chain!(
+            [self.audio_query.pre_phoneme_length],
+            self.audio_query.accent_phrases.iter().flat_map(
+                |AccentPhrase {
+                     moras,
+                     pause_mora,
+                     is_interrogative,
+                     ..
+                 }| chain!(
+                    lengths(moras),
+                    (self.enable_interrogative_upspeak
+                        && *is_interrogative
+                        && moras.last().is_some_and(|Mora { pitch, .. }| *pitch != 0.0))
+                    .then_some(FIX_VOWEL_LENGTH),
+                    lengths(pause_mora.as_ref()),
+                ),
+            ),
+            [self.audio_query.post_phoneme_length],
+        )
+        .map(|length| to_frame_length(length.get(), self.audio_query.speed_scale.get()))
+        .map(Saturating)
+        .fold(Saturating(0), Add::add); // TODO: Rust 1.91以降なら`Sum`を使える
+
+        fn lengths<'a>(
+            moras: impl IntoIterator<Item = &'a Mora>,
+        ) -> impl Iterator<Item = PositiveFinite<f32>> {
+            moras.into_iter().flat_map(
+                |&Mora {
+                     consonant_length,
+                     vowel_length,
+                     ..
+                 }| itertools::chain(consonant_length, [vowel_length]),
+            )
+        }
+    }
 }
 
 pub(crate) struct DecoderFeature {
@@ -161,17 +343,12 @@ impl ValidatedAudioQuery<'_> {
         let mut phoneme = Vec::new();
         let mut f0: Vec<f32> = Vec::new();
         {
-            const RATE: f32 = DEFAULT_SAMPLING_RATE as f32 / 256.;
             let mut sum_of_phoneme_length = 0;
             let mut count_of_f0 = 0;
             let mut vowel_indexes_index = 0;
 
             for (i, phoneme_length) in phoneme_length_list.iter().enumerate() {
-                // VOICEVOX ENGINEと挙動を合わせるため、四捨五入ではなく偶数丸めをする
-                //
-                // https://github.com/VOICEVOX/voicevox_engine/issues/552
-                let phoneme_length = ((*phoneme_length * RATE).round_ties_even() / speed_scale)
-                    .round_ties_even() as usize;
+                let phoneme_length = to_frame_length(*phoneme_length, speed_scale);
                 let phoneme_id = usize::from(phoneme_data_list[i]);
 
                 for _ in 0..phoneme_length {
@@ -228,7 +405,6 @@ impl ValidatedAudioQuery<'_> {
         fn make_interrogative_mora<'query>(
             last_mora: &ValidatedMora<'query>,
         ) -> ValidatedMora<'query> {
-            const FIX_VOWEL_LENGTH: PositiveFinite<f32> = positive_finite_f32!(0.15);
             const ADJUST_PITCH: NonNaNFinite<f32> = non_nan_finite_f32!(0.3);
             const MAX_PITCH: NonNaNFinite<f32> = non_nan_finite_f32!(6.5);
 
@@ -247,4 +423,12 @@ impl ValidatedAudioQuery<'_> {
             }
         }
     }
+}
+
+fn to_frame_length(secs: f32, speed_scale: f32) -> usize {
+    // VOICEVOX ENGINEと挙動を合わせるため、四捨五入ではなく偶数丸めをする
+    //
+    // https://github.com/VOICEVOX/voicevox_engine/issues/552
+    const RATE: f32 = DEFAULT_SAMPLING_RATE as f32 / 256.;
+    ((secs * RATE).round_ties_even() / speed_scale).round_ties_even() as _
 }

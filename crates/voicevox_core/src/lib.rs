@@ -486,7 +486,7 @@ pub use self::{
             validate::ensure_compatible,
         },
         talk::{
-            AccentPhrase, AudioQuery, Mora,
+            AccentPhrase, AudioQuery, AudioQueryFrameLength, Mora,
             user_dict::{
                 UserDictWord, UserDictWordBuilder, UserDictWordPriority, UserDictWordType,
             },
