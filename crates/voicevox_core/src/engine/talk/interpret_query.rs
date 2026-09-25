@@ -195,18 +195,6 @@ impl AudioQuery {
     }
 }
 
-fn f() {
-    assert_eq!(
-        // `speed_scale`, `pre_phoneme_length`
-        to_frame_length(3.3, 1.2)
-            // `speed_scale`, `consonant_length`, `vowel_length`, `is_interrogative`
-            + 0
-            // `speed_scale`, `post_phoneme_length`
-            + to_frame_length(4.4, 1.2),
-        query.frame_length().calculate().0,
-    );
-}
-
 /// [`AudioQuery::frame_length`]のビルダー。
 #[must_use = "this is a builder. it does nothing until `calculate`d"]
 #[derive(Debug)]
