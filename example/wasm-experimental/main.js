@@ -1,49 +1,79 @@
 const output = document.querySelector("#output");
 const player = document.querySelector("#player");
+const form = document.querySelector("#form");
+const textInput = document.querySelector("#text");
+const styleIdInput = document.querySelector("#style-id");
+const submit = document.querySelector("#submit");
 const worker = new Worker(new URL("./worker.js", import.meta.url));
+
+const log = (text) => {
+  output.textContent += `\n${text}`;
+};
+
+const isWav = (wav) =>
+  wav.byteLength >= 44 &&
+  new TextDecoder().decode(wav.subarray(0, 4)) === "RIFF" &&
+  new TextDecoder().decode(wav.subarray(8, 12)) === "WAVE";
+
+const play = (wav) => {
+  if (player.src) {
+    URL.revokeObjectURL(player.src);
+  }
+  player.src = URL.createObjectURL(new Blob([wav], { type: "audio/wav" }));
+  player.hidden = false;
+  player.play().catch(() => {
+    log("Autoplay was blocked; press play to listen");
+  });
+};
+
+form.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const text = textInput.value;
+  if (!text) {
+    return;
+  }
+  submit.disabled = true;
+  document.body.dataset.status = "running";
+  worker.postMessage({
+    type: "synthesize",
+    text,
+    styleId: Number(styleIdInput.value),
+  });
+});
 
 worker.addEventListener("message", ({ data }) => {
   if (data.type === "log") {
-    output.textContent += `\n${data.text}`;
+    log(data.text);
+  } else if (data.type === "ready") {
+    document.body.dataset.status = "ready";
+    log("Core is ready");
+    submit.disabled = false;
   } else if (data.type === "success") {
-    if (!(data.wav instanceof ArrayBuffer)) {
+    submit.disabled = false;
+    const wav = data.wav instanceof ArrayBuffer ? new Uint8Array(data.wav) : null;
+    if (!wav || wav.byteLength !== data.wavLength || !isWav(wav)) {
       document.body.dataset.status = "failed";
-      output.textContent += "\nWorker did not transfer the WAV buffer";
-      worker.terminate();
-      return;
-    }
-    const wav = new Uint8Array(data.wav);
-    const header = new TextDecoder().decode(wav.subarray(0, 4));
-    const format = new TextDecoder().decode(wav.subarray(8, 12));
-    if (
-      wav.byteLength !== data.wavLength ||
-      wav.byteLength < 44 ||
-      header !== "RIFF" ||
-      format !== "WAVE"
-    ) {
-      document.body.dataset.status = "failed";
-      output.textContent +=
-        "\nTransferred data is incomplete or not a WAV file";
-      worker.terminate();
+      log("Transferred data is incomplete or not a WAV file");
       return;
     }
     document.body.dataset.status = "passed";
-    output.textContent += `\n${data.text}; transferred ${wav.byteLength} bytes`;
-    player.src = URL.createObjectURL(new Blob([wav], { type: "audio/wav" }));
-    player.hidden = false;
-    player.play().catch(() => {
-      output.textContent += "\nAutoplay was blocked; press play to listen";
-    });
-    worker.terminate();
+    log(`${data.text}; transferred ${wav.byteLength} bytes`);
+    play(wav);
   } else if (data.type === "error") {
+    submit.disabled = false;
     document.body.dataset.status = "failed";
-    output.textContent += `\n${data.message}`;
+    log(data.message);
+  } else if (data.type === "fatal") {
+    submit.disabled = true;
+    document.body.dataset.status = "failed";
+    log(data.message);
     worker.terminate();
   }
 });
 
 worker.addEventListener("error", (event) => {
+  submit.disabled = true;
   document.body.dataset.status = "failed";
-  output.textContent += `\nWorker error: ${event.message}`;
+  log(`Worker error: ${event.message}`);
   worker.terminate();
 });
