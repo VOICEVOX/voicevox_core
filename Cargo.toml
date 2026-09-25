@@ -121,8 +121,8 @@ windows = "0.43.0"
 zip = "0.6.3"
 
 [workspace.dependencies.open_jtalk]
-git = "https://github.com/VOICEVOX/open_jtalk-rs.git"
-rev = "7c87b4227bb005b439a3ad473b48ce8975829576"
+git = "https://github.com/yamachu/open_jtalk-rs.git"
+rev = "7e560e1f2ed7eaf9f085d485ae0b7c468c3134be"
 
 # FIXME: iOS対応のpull request(https://github.com/wesleywiser/process_path/pull/16)がマージされる見込みが無いため
 [workspace.dependencies.process_path]

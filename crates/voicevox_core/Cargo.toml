@@ -61,6 +61,7 @@ ndarray.workspace = true
 num-bigint.workspace = true
 num-traits.workspace = true
 once_cell.workspace = true
+open_jtalk.workspace = true
 ort = { workspace = true, features = ["std", "ndarray", "tracing", "api-17", "alternative-backend"], default-features = false }
 ouroboros.workspace = true
 pastey.workspace = true
@@ -80,10 +81,6 @@ typed_floats = { workspace = true, features = ["serde"] }
 typeshare = { workspace = true, default-features = false }
 uuid = { workspace = true, features = ["v4", "serde"] }
 voicevox_core_macros.workspace = true
-
-# JavaScript(Browser)で別途対応するか、open_jtalk-rsでの対応が必要であるため、テストのために一旦依存から抜く
-[target.'cfg(not(target_os = "emscripten"))'.dependencies]
-open_jtalk.workspace = true
 
 [dev-dependencies]
 clap = { workspace = true, features = ["derive"] }
