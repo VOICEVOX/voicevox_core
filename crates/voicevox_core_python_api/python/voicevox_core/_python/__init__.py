@@ -491,7 +491,6 @@ class AudioQuery:
         _validate_audio_query(self)
 
     def frame_length(self, enable_interrogative_upspeak: bool = True) -> int:
-        # FIXME: dev dependencyとしてNumPyを持って来る
         """
         音声の総フレーム数を算出する。
 
