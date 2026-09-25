@@ -15,7 +15,7 @@ use crate::error::ErrorRepr;
 
 #[derive(thiserror::Error, Debug)]
 #[error("`{function}`の実行が失敗しました")]
-pub(crate) struct OpenjtalkFunctionError {
+struct OpenjtalkFunctionError {
     function: &'static str,
     #[source]
     source: Option<Text2MecabError>,
@@ -27,7 +27,7 @@ pub(crate) struct OpenjtalkFunctionError {
 ///
 /// - アクセント位置として`0`が存在する。
 /// - 母音部分に母音以外の音素が置かれている。
-pub(crate) trait FullcontextExtractor {
+pub(super) trait FullcontextExtractor {
     fn extract_fullcontext(&self, text: &str) -> anyhow::Result<Vec<String>>;
 }
 
@@ -190,6 +190,8 @@ pub(crate) mod blocking {
 
     use camino::Utf8Path;
 
+    use crate::assert::assert_send_sync;
+
     use super::Inner;
 
     use super::{
@@ -249,10 +251,14 @@ pub(crate) mod blocking {
                 .finish()
         }
     }
+
+    assert_send_sync!(self::OpenJtalk);
 }
 
 pub(crate) mod nonblocking {
     use camino::Utf8Path;
+
+    use crate::assert::assert_send_sync;
 
     use super::super::{AccentPhrase, extract_full_context_label};
 
@@ -302,6 +308,8 @@ pub(crate) mod nonblocking {
                 .map_err(Into::into)
         }
     }
+
+    assert_send_sync!(self::OpenJtalk);
 }
 
 #[cfg(test)]
