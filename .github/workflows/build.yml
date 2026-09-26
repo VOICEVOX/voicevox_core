@@ -441,7 +441,7 @@ jobs:
       - name: Set up Java
         uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
-          java-version: "17"
+          java-version: "25"
           distribution: "temurin"
       - name: Install cargo-binstall
         uses: taiki-e/install-action@3f74d7c16a4242f1c95561e98edc25d36adb4375 # v2.87.12
