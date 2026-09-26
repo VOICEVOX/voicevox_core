@@ -554,9 +554,8 @@ class AudioQuery:
         >>> from voicevox_core import AudioFeature
         >>>
         >>> def to_frame_length(secs: np.float32, speed_scale: np.float32) -> int:
-        ...     return int(
-        ...         ((secs * AudioFeature.FRAME_RATE).round() / speed_scale).round()
-        ...     )
+        ...     FRAME_RATE = np.float32(AudioFeature.FRAME_RATE)
+        ...     return int(((secs * FRAME_RATE).round() / speed_scale).round())
         >>>
         >>> query = AudioQuery.from_accent_phrases([])
         >>> query.speed_scale = 1.2
@@ -572,11 +571,9 @@ class AudioQuery:
         ...     + to_frame_length(np.float32(4.4), np.float32(1.2))
         ... )
 
-        >>> import numpy as np
-        >>>
         >>> query = AudioQuery.from_accent_phrases([])
-        >>> query.speed_scale = float(np.finfo(np.float32).tiny)
-        >>> assert query.frame_length() == np.iinfo(np.uintp).max
+        >>> query.speed_scale = 1e-20
+        >>> assert query.frame_length() == 0xffffffffffffffff  # 64-bit環境の場合
         """
         return audio_query_frame_length(self, enable_interrogative_upspeak)
 
