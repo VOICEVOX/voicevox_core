@@ -442,7 +442,7 @@ typedef struct VoicevoxInitializeOptions {
 /**
  * ::voicevox_audio_query_frame_length のオプション。
  *
- * \no-orig-impl{VoicevoxTtsOptions}
+ * \no-orig-impl{VoicevoxAudioQueryFrameLengthOptions}
  */
 typedef struct VoicevoxAudioQueryFrameLengthOptions {
   /**
@@ -914,15 +914,15 @@ struct VoicevoxAudioQueryFrameLengthOptions voicevox_make_default_audio_query_fr
  *     synth, query, WHATEVER_STYLE2, voicevox_make_default_synthesis_options(),
  *     &audio));
  *
- * size_t frame_length_of_audio_feature;
+ * size_t frame_length_of_audio_query;
  * TRY(voicevox_audio_query_frame_length(
  *     query, voicevox_make_default_audio_query_frame_length_options(),
- *     &frame_length_of_audio_feature));
+ *     &frame_length_of_audio_query));
  *
- * const size_t frame_length_of_audio_query =
+ * const size_t frame_length_of_audio_feature =
  *     voicevox_audio_feature_frame_length(audio);
  *
- * assert(frame_length_of_audio_feature == frame_length_of_audio_query);
+ * assert(frame_length_of_audio_query == frame_length_of_audio_feature);
  * ```
  *
  * ```c
