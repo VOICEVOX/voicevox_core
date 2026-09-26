@@ -1,7 +1,9 @@
 use std::{
+    convert::Infallible,
     marker::PhantomData,
     mem,
     ops::{Deref, DerefMut},
+    sync::Arc,
 };
 
 mod convert;
@@ -12,7 +14,7 @@ use easy_ext::ext;
 use log::{debug, warn};
 use macros::pyproject_project_version;
 use pyo3::{
-    Bound, Py, PyAny, PyResult, PyTypeInfo, Python, create_exception,
+    Bound, Py, PyAny, PyClass, PyResult, PyTypeInfo, Python, create_exception,
     exceptions::{PyException, PyKeyError, PyValueError},
     pyclass, pyfunction, pymethods, pymodule,
     types::{PyAnyMethods as _, PyList, PyModule, PyModuleMethods as _, PyString},
@@ -54,6 +56,7 @@ fn rust(py: Python<'_>, module: &Bound<'_, PyModule>) -> PyResult<()> {
     blocking_module.add_class::<self::blocking::OpenJtalk>()?;
     blocking_module.add_class::<self::blocking::VoiceModelFile>()?;
     blocking_module.add_class::<self::blocking::UserDict>()?;
+    blocking_module.add_class::<self::blocking::SynthesisStream>()?;
     module.add_and_register_submodule(blocking_module)?;
 
     let asyncio_module = PyModule::new(py, "voicevox_core._rust.asyncio")?;
@@ -62,6 +65,7 @@ fn rust(py: Python<'_>, module: &Bound<'_, PyModule>) -> PyResult<()> {
     asyncio_module.add_class::<self::asyncio::OpenJtalk>()?;
     asyncio_module.add_class::<self::asyncio::VoiceModelFile>()?;
     asyncio_module.add_class::<self::asyncio::UserDict>()?;
+    asyncio_module.add_class::<self::asyncio::SynthesisStream>()?;
     module.add_and_register_submodule(asyncio_module)
 }
 
@@ -120,22 +124,21 @@ exceptions! {
 #[derive(derive_more::Debug)]
 #[debug("{content:?}")]
 struct Closable<T, C: PyTypeInfo, A: Async> {
-    content: A::RwLock<MaybeClosed<T>>,
+    content: Arc<A::RwLock<MaybeClosed<T>>>,
     marker: PhantomData<(C, A)>,
 }
 
 impl<T, C: PyTypeInfo, A: Async> Closable<T, C, A> {
     fn new(content: T) -> Self {
         Self {
-            content: MaybeClosed::Open(content).into(),
+            content: Arc::new(MaybeClosed::Open(content).into()),
             marker: PhantomData,
         }
     }
 
     fn read(&self) -> PyResult<impl Deref<Target = T>> {
         let lock = self
-            .content
-            .try_read_()
+            .try_acquire_read_lock()
             .map_err(|_| PyValueError::new_err(format!("The `{}` is being closed", C::NAME)))?;
 
         voicevox_core::__internal::interop::raii::try_map_guard(lock, |lock| match &**lock {
@@ -145,6 +148,10 @@ impl<T, C: PyTypeInfo, A: Async> Closable<T, C, A> {
                 C::NAME,
             ))),
         })
+    }
+
+    fn try_acquire_read_lock(&self) -> Result<impl Deref<Target = MaybeClosed<T>>, ()> {
+        self.content.try_read_()
     }
 
     async fn close_(&self) -> Option<T> {
@@ -265,6 +272,36 @@ impl VoiceModelFilePyFields {
         let ret = ret.add(metas.bind(py).repr()?)?;
         ret.cast_into::<PyString>().map_err(Into::into)
     }
+}
+
+struct ReadLockThread {
+    _guard: std::sync::mpsc::SyncSender<Infallible>,
+}
+
+impl ReadLockThread {
+    fn new<T: HasClosable>(ob: Py<T>) -> Self {
+        let (tx, rx) = std::sync::mpsc::sync_channel(1);
+
+        ::blocking::unblock(move || {
+            // ロックできないならできないでよい
+            if let Ok(lock) = T::get(&ob).closable().try_acquire_read_lock()
+                && matches!(*lock, MaybeClosed::Open(_))
+            {
+                let _ = rx.recv();
+            }
+        })
+        .detach();
+
+        Self { _guard: tx }
+    }
+}
+
+trait HasClosable: PyClass + Sync {
+    type Item;
+    type Async: Async;
+
+    fn get(ob: &Py<Self>) -> &Self;
+    fn closable(&self) -> &Closable<Self::Item, Self, Self::Async>;
 }
 
 #[pyclass(frozen)]
@@ -401,6 +438,7 @@ mod blocking {
     use std::{ffi::OsString, path::PathBuf, sync::Arc};
 
     use camino::Utf8PathBuf;
+    use ouroboros::self_referencing;
     use pyo3::{
         Bound, IntoPyObject as _, Py, PyAny, PyRef, PyResult, PyTypeInfo as _, Python,
         exceptions::PyTypeError,
@@ -417,7 +455,7 @@ mod blocking {
     };
 
     use crate::{
-        AudioFeature, Closable, SingleTasked, VoiceModelFilePyFields,
+        AudioFeature, Closable, HasClosable, ReadLockThread, SingleTasked, VoiceModelFilePyFields,
         convert::{ToDataclass, VoicevoxCoreResultExt as _},
     };
 
@@ -659,7 +697,7 @@ mod blocking {
 
     #[derive(derive_more::Debug)]
     #[debug("{:?}", _0.get())]
-    struct OwnedOpenJtalk(Py<OpenJtalk>);
+    pub(crate) struct OwnedOpenJtalk(Py<OpenJtalk>);
 
     impl voicevox_core::blocking::TextAnalyzer for OwnedOpenJtalk {
         fn analyze(&self, text: &str) -> anyhow::Result<Vec<AccentPhrase>> {
@@ -667,10 +705,121 @@ mod blocking {
         }
     }
 
+    #[pyclass]
+    pub(crate) struct SynthesisStream(SynthesisStreamInner);
+
+    enum SynthesisStreamInner {
+        Some {
+            body: SynthesisStreamBody,
+            _synthesizer_read_lock: Option<ReadLockThread>,
+        },
+        Empty,
+    }
+
+    #[self_referencing]
+    struct SynthesisStreamBody {
+        synthesizer: Arc<voicevox_core::blocking::Synthesizer<OwnedOpenJtalk>>,
+
+        /// Invariant: Should not be empty.
+        #[borrows(synthesizer)]
+        #[covariant]
+        stream: voicevox_core::blocking::SynthesisStream<'this>,
+    }
+
+    #[pymethods]
+    impl SynthesisStream {
+        #[new]
+        #[classmethod]
+        #[pyo3(signature = (*_args, **_kwargs))]
+        fn new(
+            _cls: Bound<'_, PyType>,
+            _args: Bound<'_, PyTuple>,
+            _kwargs: Option<Bound<'_, PyDict>>,
+        ) -> PyResult<Self> {
+            Err(PyTypeError::new_err((
+                "`SynthesisStream` does not have a constructor. Only \
+                 `Synthesizer.streaming_synthesis` can generate the instances.",
+            )))
+        }
+
+        fn __repr__(&self, py: Python<'_>) -> String {
+            match &self.0 {
+                SynthesisStreamInner::Some { body, .. } => {
+                    let rust_api = body.borrow_stream();
+                    let rust_api = PyString::new(py, &format!("{rust_api:?}"));
+                    format!(
+                        "<voicevox_core.blocking.{NAME} rust_api=<{rust_api:?}>>",
+                        NAME = Self::NAME,
+                    )
+                }
+                SynthesisStreamInner::Empty => {
+                    format!(
+                        "<voicevox_core.blocking.{NAME} rust_api=None>",
+                        NAME = Self::NAME,
+                    )
+                }
+            }
+        }
+
+        fn __length_hint__(&self) -> usize {
+            let body = match &self.0 {
+                SynthesisStreamInner::Some { body, .. } => body,
+                SynthesisStreamInner::Empty => return 0,
+            };
+            let rust_api = body.borrow_stream();
+            rust_api.size_hint().0
+        }
+
+        fn __iter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
+            slf
+        }
+
+        fn __next__(&mut self, py: Python<'_>) -> PyResult<Option<Vec<u8>>> {
+            let body = match &mut self.0 {
+                SynthesisStreamInner::Some { body, .. } => body,
+                SynthesisStreamInner::Empty => return Ok(None),
+            };
+            let pcm = body
+                .with_stream_mut(|rust_api| rust_api.next())
+                .expect("`stream` should be non empty while `SynthesisStreamInner::Some` is held")
+                .into_py_result(py);
+            if matches!(body.borrow_stream().size_hint(), (0, _)) {
+                self.0 = SynthesisStreamInner::Empty;
+            }
+            pcm.map(Some)
+        }
+
+        fn __enter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
+            slf
+        }
+
+        fn __exit__(
+            &mut self,
+            #[expect(unused_variables, reason = "`__exit__`としては必要")] exc_type: &Bound<
+                '_,
+                PyAny,
+            >,
+            #[expect(unused_variables, reason = "`__exit__`としては必要")] exc_value: &Bound<
+                '_,
+                PyAny,
+            >,
+            #[expect(unused_variables, reason = "`__exit__`としては必要")] traceback: &Bound<
+                '_,
+                PyAny,
+            >,
+        ) {
+            self.clear();
+        }
+
+        fn clear(&mut self) {
+            self.0 = SynthesisStreamInner::Empty;
+        }
+    }
+
     #[pyclass(frozen)]
     pub(crate) struct Synthesizer {
         synthesizer:
-            Closable<voicevox_core::blocking::Synthesizer<OwnedOpenJtalk>, Self, SingleTasked>,
+            Closable<Arc<voicevox_core::blocking::Synthesizer<OwnedOpenJtalk>>, Self, SingleTasked>,
     }
 
     #[pymethods]
@@ -698,7 +847,7 @@ mod blocking {
                 .build()
                 .into_py_result(py)?;
             Ok(Self {
-                synthesizer: Closable::new(inner),
+                synthesizer: Closable::new(inner.into()),
             })
         }
 
@@ -732,8 +881,9 @@ mod blocking {
                 '_,
                 PyAny,
             >,
+            py: Python<'_>,
         ) {
-            self.close();
+            self.close(py);
         }
 
         #[getter]
@@ -953,6 +1103,37 @@ mod blocking {
         }
 
         #[pyo3(signature=(
+            audio_query,
+            style_id,
+            *,
+            enable_interrogative_upspeak =
+                voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
+        ))]
+        fn streaming_synthesis(
+            slf: Py<Self>,
+            #[pyo3(from_py_with = crate::convert::from_audio_query)] audio_query: AudioQuery,
+            style_id: u32,
+            enable_interrogative_upspeak: bool,
+            py: Python<'_>,
+        ) -> PyResult<SynthesisStream> {
+            let synthesizer = slf.get().synthesizer.read()?.clone();
+            let body = SynthesisStreamBody::try_new(synthesizer, |synthesizer| {
+                synthesizer
+                    .streaming_synthesis(&audio_query, StyleId::new(style_id))
+                    .enable_interrogative_upspeak(enable_interrogative_upspeak)
+                    .perform()
+            })
+            .into_py_result(py)?;
+            Ok(SynthesisStream(match body.borrow_stream().size_hint() {
+                (0, _) => SynthesisStreamInner::Empty,
+                _ => SynthesisStreamInner::Some {
+                    body,
+                    _synthesizer_read_lock: Some(ReadLockThread::new(slf)),
+                },
+            }))
+        }
+
+        #[pyo3(signature=(
             kana,
             style_id,
             *,
@@ -1063,8 +1244,21 @@ mod blocking {
                 .into_py_result(py)
         }
 
-        fn close(&self) {
-            drop(self.synthesizer.close());
+        fn close(&self, py: Python<'_>) {
+            drop(py.detach(|| self.synthesizer.close()));
+        }
+    }
+
+    impl HasClosable for Synthesizer {
+        type Item = Arc<voicevox_core::blocking::Synthesizer<OwnedOpenJtalk>>;
+        type Async = SingleTasked;
+
+        fn get(ob: &Py<Self>) -> &Self {
+            ob.get()
+        }
+
+        fn closable(&self) -> &Closable<Self::Item, Self, Self::Async> {
+            &self.synthesizer
         }
     }
 
@@ -1140,9 +1334,11 @@ mod asyncio {
     use std::{ffi::OsString, path::PathBuf, sync::Arc};
 
     use camino::Utf8PathBuf;
+    use futures_lite::{Stream, StreamExt as _};
+    use ouroboros::self_referencing;
     use pyo3::{
         Bound, IntoPyObject as _, Py, PyAny, PyErr, PyRef, PyResult, PyTypeInfo as _, Python,
-        exceptions::PyTypeError,
+        exceptions::{PyStopAsyncIteration, PyTypeError},
         pyclass, pymethods,
         sync::PyOnceLock,
         types::{IntoPyDict as _, PyAnyMethods as _, PyDict, PyList, PyString, PyTuple, PyType},
@@ -1156,7 +1352,7 @@ mod asyncio {
     };
 
     use crate::{
-        Closable, Tokio, VoiceModelFilePyFields,
+        AudioFeature, Closable, HasClosable, ReadLockThread, Tokio, VoiceModelFilePyFields,
         convert::{ToDataclass, VoicevoxCoreResultExt as _},
     };
 
@@ -1401,7 +1597,7 @@ mod asyncio {
 
     #[derive(derive_more::Debug)]
     #[debug("{:?}", _0.get())]
-    struct OwnedOpenJtalk(Py<OpenJtalk>);
+    pub(crate) struct OwnedOpenJtalk(Py<OpenJtalk>);
 
     impl voicevox_core::nonblocking::TextAnalyzer for OwnedOpenJtalk {
         async fn analyze(&self, text: &str) -> anyhow::Result<Vec<AccentPhrase>> {
@@ -1409,10 +1605,130 @@ mod asyncio {
         }
     }
 
+    #[pyclass]
+    pub(crate) struct SynthesisStream(SynthesisStreamInner);
+
+    enum SynthesisStreamInner {
+        Some {
+            body: SynthesisStreamBody,
+            _synthesizer_read_lock: Option<ReadLockThread>,
+        },
+        Empty,
+    }
+
+    #[self_referencing]
+    struct SynthesisStreamBody {
+        synthesizer: Arc<voicevox_core::nonblocking::Synthesizer<OwnedOpenJtalk>>,
+
+        /// Invariant: Should not be empty.
+        #[borrows(synthesizer)]
+        #[covariant]
+        stream: voicevox_core::nonblocking::SynthesisStream<'this>,
+    }
+
+    #[pymethods]
+    impl SynthesisStream {
+        #[new]
+        #[classmethod]
+        #[pyo3(signature = (*_args, **_kwargs))]
+        fn new(
+            _cls: Bound<'_, PyType>,
+            _args: Bound<'_, PyTuple>,
+            _kwargs: Option<Bound<'_, PyDict>>,
+        ) -> PyResult<Self> {
+            Err(PyTypeError::new_err((
+                "`SynthesisStream` does not have a constructor. Only \
+                 `Synthesizer.streaming_synthesis` can generate the instances.",
+            )))
+        }
+
+        fn __repr__(&self, py: Python<'_>) -> String {
+            match &self.0 {
+                SynthesisStreamInner::Some { body, .. } => {
+                    let rust_api = body.borrow_stream();
+                    let rust_api = PyString::new(py, &format!("{rust_api:?}"));
+                    format!(
+                        "<voicevox_core.asyncio.{NAME} rust_api=<{rust_api:?}>>",
+                        NAME = Self::NAME,
+                    )
+                }
+                SynthesisStreamInner::Empty => {
+                    format!(
+                        "<voicevox_core.asyncio.{NAME} rust_api=None>",
+                        NAME = Self::NAME,
+                    )
+                }
+            }
+        }
+
+        fn __length_hint__(&self) -> usize {
+            let body = match &self.0 {
+                SynthesisStreamInner::Some { body, .. } => body,
+                SynthesisStreamInner::Empty => return 0,
+            };
+            let rust_api = body.borrow_stream();
+            rust_api.size_hint().0
+        }
+
+        fn __aiter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
+            slf
+        }
+
+        // 現時点のPyO3（0.29.2）では`experimental-async`と`__anext__`を組み合わせることができないため、迂回する。
+        // https://github.com/PyO3/pyo3/issues/5773
+        // FIXME: 上記のissueを解決したリリースが出たらこのハックをやめる。
+        fn __anext__(slf: Bound<'_, Self>) -> PyResult<Bound<'_, PyAny>> {
+            slf.call_method0("_anext")
+        }
+        async fn _anext(&mut self) -> PyResult<Vec<u8>> {
+            let body = match &mut self.0 {
+                SynthesisStreamInner::Some { body, .. } => body,
+                SynthesisStreamInner::Empty => return Err(PyStopAsyncIteration::new_err(())),
+            };
+            let pcm = futures_lite::future::poll_fn(|cx| {
+                body.with_stream_mut(|rust_api| rust_api.poll_next(cx))
+            })
+            .await
+            .expect("`stream` should be non empty while `SynthesisStreamInner::Some` is held");
+            let pcm = Python::attach(|py| pcm.into_py_result(py));
+            if matches!(body.borrow_stream().size_hint(), (0, _)) {
+                self.0 = SynthesisStreamInner::Empty;
+            }
+            pcm
+        }
+
+        fn __enter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
+            slf
+        }
+
+        fn __exit__(
+            &mut self,
+            #[expect(unused_variables, reason = "`__exit__`としては必要")] exc_type: &Bound<
+                '_,
+                PyAny,
+            >,
+            #[expect(unused_variables, reason = "`__exit__`としては必要")] exc_value: &Bound<
+                '_,
+                PyAny,
+            >,
+            #[expect(unused_variables, reason = "`__exit__`としては必要")] traceback: &Bound<
+                '_,
+                PyAny,
+            >,
+        ) {
+            self.clear();
+        }
+
+        fn clear(&mut self) {
+            self.0 = SynthesisStreamInner::Empty;
+        }
+    }
+
     #[pyclass(frozen)]
     pub(crate) struct Synthesizer {
-        synthesizer:
-            Arc<Closable<voicevox_core::nonblocking::Synthesizer<OwnedOpenJtalk>, Self, Tokio>>,
+        synthesizer: Arc<
+            Closable<Arc<voicevox_core::nonblocking::Synthesizer<OwnedOpenJtalk>>, Self, Tokio>,
+        >,
     }
 
     #[pymethods]
@@ -1438,7 +1754,7 @@ mod asyncio {
                 .cpu_num_threads(cpu_num_threads)
                 .build();
             let synthesizer = Python::attach(|py| synthesizer.into_py_result(py))?;
-            let synthesizer = Closable::new(synthesizer).into();
+            let synthesizer = Closable::new(synthesizer.into()).into();
             Ok(Self { synthesizer })
         }
 
@@ -1634,6 +1950,42 @@ mod asyncio {
             *,
             enable_interrogative_upspeak =
                 voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
+        ))]
+        async fn create_audio_feature(
+            &self,
+            #[pyo3(from_py_with = crate::convert::from_audio_query)] audio_query: AudioQuery,
+            style_id: u32,
+            enable_interrogative_upspeak: bool,
+        ) -> PyResult<AudioFeature> {
+            let audio = self
+                .synthesizer
+                .read()?
+                .create_audio_feature(&audio_query, StyleId::new(style_id))
+                .enable_interrogative_upspeak(enable_interrogative_upspeak)
+                .perform()
+                .await;
+            let audio = Python::attach(|py| audio.into_py_result(py))?;
+            Ok(AudioFeature { audio })
+        }
+
+        async fn render(
+            &self,
+            audio: Py<AudioFeature>,
+            #[pyo3(from_py_with = crate::convert::from_audio_feature_range_start)] start: usize,
+            #[pyo3(from_py_with = crate::convert::from_audio_feature_range_stop)] stop: usize,
+        ) -> PyResult<Vec<u8>> {
+            let audio = &audio.get().audio;
+            crate::convert::error_for_audio_feature_range(audio.frame_length(), start, stop)?;
+            let pcm = self.synthesizer.read()?.render(audio, start..stop).await;
+            Python::attach(|py| pcm.into_py_result(py))
+        }
+
+        #[pyo3(signature=(
+            audio_query,
+            style_id,
+            *,
+            enable_interrogative_upspeak =
+                voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
             cancellable = voicevox_core::__internal::interop::DEFAULT_HEAVY_INFERENCE_CANCELLABLE,
         ))]
         async fn synthesis(
@@ -1652,6 +2004,40 @@ mod asyncio {
                 .perform()
                 .await;
             Python::attach(|py| wav.into_py_result(py))
+        }
+
+        #[pyo3(signature=(
+            audio_query,
+            style_id,
+            *,
+            enable_interrogative_upspeak =
+                voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
+        ))]
+        async fn streaming_synthesis(
+            slf: Py<Self>,
+            #[pyo3(from_py_with = crate::convert::from_audio_query)] audio_query: AudioQuery,
+            style_id: u32,
+            enable_interrogative_upspeak: bool,
+        ) -> PyResult<SynthesisStream> {
+            let synthesizer = slf.get().synthesizer.read()?.clone();
+            let body = SynthesisStreamBody::try_new_async_send(synthesizer, |synthesizer| {
+                Box::pin(async move {
+                    synthesizer
+                        .streaming_synthesis(&audio_query, StyleId::new(style_id))
+                        .enable_interrogative_upspeak(enable_interrogative_upspeak)
+                        .perform()
+                        .await
+                })
+            })
+            .await;
+            let body = Python::attach(|py| body.into_py_result(py))?;
+            Ok(SynthesisStream(match body.borrow_stream().size_hint() {
+                (0, _) => SynthesisStreamInner::Empty,
+                _ => SynthesisStreamInner::Some {
+                    body,
+                    _synthesizer_read_lock: Some(ReadLockThread::new(slf)),
+                },
+            }))
         }
 
         #[pyo3(signature=(
@@ -1791,6 +2177,19 @@ mod asyncio {
                 blocking::unblock(|| drop(this)).await;
             }
             Ok(())
+        }
+    }
+
+    impl HasClosable for Synthesizer {
+        type Item = Arc<voicevox_core::nonblocking::Synthesizer<OwnedOpenJtalk>>;
+        type Async = Tokio;
+
+        fn get(ob: &Py<Self>) -> &Self {
+            ob.get()
+        }
+
+        fn closable(&self) -> &Closable<Self::Item, Self, Self::Async> {
+            &self.synthesizer
         }
     }
 

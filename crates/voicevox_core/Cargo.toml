@@ -49,6 +49,7 @@ easy-ext.workspace = true
 educe.workspace = true
 enum-map = { workspace = true, features = ["serde"] }
 fs-err.workspace = true
+futures-core.workspace = true
 futures-io.workspace = true
 futures-lite.workspace = true
 futures-util = { workspace = true, features = ["io"] }

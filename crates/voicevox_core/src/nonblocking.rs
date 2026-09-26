@@ -23,7 +23,7 @@ pub use crate::{
         open_jtalk::nonblocking::OpenJtalk, text_analyzer::nonblocking::TextAnalyzer,
         user_dict::dict::nonblocking::UserDict,
     },
-    synthesizer::nonblocking::Synthesizer,
+    synthesizer::nonblocking::{SynthesisStream, Synthesizer},
 };
 
 pub mod onnxruntime {
@@ -34,6 +34,7 @@ pub mod onnxruntime {
 
 pub mod synthesizer {
     pub use crate::synthesizer::nonblocking::{
-        Builder, FrameSynthesis, LoadVoiceModel, Synthesis, Tts, TtsFromKana,
+        Builder, CreateAudioFeature, FrameSynthesis, LoadVoiceModel, StreamingSynthesis, Synthesis,
+        Tts, TtsFromKana,
     };
 }

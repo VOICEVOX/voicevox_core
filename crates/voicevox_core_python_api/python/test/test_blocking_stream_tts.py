@@ -8,7 +8,7 @@ from voicevox_core import wav_from_s16le
 from voicevox_core.blocking import Onnxruntime, OpenJtalk, Synthesizer, VoiceModelFile
 
 
-def test(synthesizer: Synthesizer) -> None:
+def test_render(synthesizer: Synthesizer) -> None:
     TEXT = "こんにちは？"
     # `streaming_talk`に対応したスタイルを使用。voicevox_core/model/sample.vvm/metas.jsonを参照。
     STYLE_ID = 302
@@ -19,6 +19,19 @@ def test(synthesizer: Synthesizer) -> None:
     feat = synthesizer.create_audio_feature(query, STYLE_ID)
     pcm = synthesizer.render(feat, 0, feat.frame_length)
     wav2 = wav_from_s16le(pcm, query.output_sampling_rate, query.output_stereo)
+
+    assert wav1 == wav2
+
+
+def test_streaming_synthesis(synthesizer: Synthesizer) -> None:
+    TEXT = "こんにちは？"
+    STYLE_ID = 302
+
+    wav1 = synthesizer.tts(TEXT, STYLE_ID)
+
+    query = synthesizer.create_audio_query(TEXT, STYLE_ID)
+    wav_stream = synthesizer.streaming_synthesis(query, STYLE_ID)
+    wav2 = b"".join(wav_stream)
 
     assert wav1 == wav2
 

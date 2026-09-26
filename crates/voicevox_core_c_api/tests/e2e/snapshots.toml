@@ -90,6 +90,12 @@ stderr.unix = '''
 last_error_message = "Statusが初期化されていません"
 stderr = ""
 
+[deprecated_fn_warnings]
+stderr = '''
+{timestamp}  WARN voicevox_core: 'voicevox_json_free' is deprecated. use 'voicevox_string_free' instead
+{timestamp}  WARN voicevox_core: 'voicevox_wav_free' is deprecated. use 'voicevox_bytes_free' instead
+'''
+
 [double_delete_openjtalk]
 stderr_matches_all = [
     '\n`OpenJtalkRc` \(0x[0-9a-f]{16}\)は既に破棄されています\n',
@@ -160,6 +166,17 @@ result_messages.33 = "無効なFrameAudioQueryです"
 result_messages.34 = "無効なFramePhonemeです"
 stderr = ''
 
+[render_empty]
+stderr.windows = '''
+{windows-video-cards}
+{timestamp}  INFO voicevox_core::synthesizer: CPUを利用します
+{timestamp}  WARN voicevox_core::slice_owner: `voicevox_empty_bytes`を解放することはできません
+'''
+stderr.unix = '''
+{timestamp}  INFO voicevox_core::synthesizer: CPUを利用します
+{timestamp}  WARN voicevox_core::slice_owner: `voicevox_empty_bytes`を解放することはできません
+'''
+
 [simple_tts]
 output."こんにちは、音声合成の世界へようこそ".wav_length = 176172
 stderr.windows = '''
@@ -172,6 +189,16 @@ stderr.unix = '''
 
 [song]
 output.phoneme_lengths = [13, 2, 39, 6, 40, 5, 45, 15]
+stderr.windows = '''
+{windows-video-cards}
+{timestamp}  INFO voicevox_core::synthesizer: CPUを利用します
+'''
+stderr.unix = '''
+{timestamp}  INFO voicevox_core::synthesizer: CPUを利用します
+'''
+
+[streaming_talk]
+output."こんにちは、音声合成の世界へようこそ".wav_length = 186412
 stderr.windows = '''
 {windows-video-cards}
 {timestamp}  INFO voicevox_core::synthesizer: CPUを利用します

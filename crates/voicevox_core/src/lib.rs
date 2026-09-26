@@ -363,7 +363,9 @@ pub mod __doc {
     /// | `voicevox_make_default_load_voice_model_options` | 〃 |
     /// | `voicevox_make_default_synthesis_options` | 〃 |
     /// | `voicevox_make_default_tts_options` | 〃 |
-    /// | `voicevox_json_free` | [Rustのデストラクタ機構]があるため |
+    /// | `voicevox_string_free` | [Rustのデストラクタ機構]があるため |
+    /// | `voicevox_json_free` | 〃 |
+    /// | `voicevox_bytes_free` | 〃 |
     /// | `voicevox_wav_free` | 〃 |
     /// | `voicevox_open_jtalk_rc_delete` | 〃 |
     /// | `voicevox_synthesizer_delete` | 〃 |
@@ -383,7 +385,9 @@ pub mod __doc {
         "voicevox_make_default_initialize_options",
         "voicevox_make_default_synthesis_options",
         "voicevox_make_default_tts_options",
+        "voicevox_string_free",
         "voicevox_json_free",
+        "voicevox_bytes_free",
         "voicevox_wav_free",
         "voicevox_open_jtalk_rc_delete",
         "voicevox_synthesizer_delete",
@@ -452,6 +456,7 @@ pub mod __doc {
     pub mod Serde対応 {}
 }
 
+mod assert;
 mod asyncs;
 mod collections;
 mod convert;

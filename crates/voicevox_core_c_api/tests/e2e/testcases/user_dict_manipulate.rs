@@ -43,7 +43,7 @@ impl assert_cdylib::TestCase for TestCase {
                 .to_string();
 
             // SAFETY: `json` is valid and is no longer used.
-            unsafe { lib.voicevox_json_free(json.assume_init()) };
+            unsafe { lib.voicevox_string_free(json.assume_init()) };
 
             serde_json::from_str::<serde_json::Value>(&ret).expect("invalid json");
 

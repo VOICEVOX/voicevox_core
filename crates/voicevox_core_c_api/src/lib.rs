@@ -21,7 +21,7 @@ use self::helpers::{
 };
 use self::object::{CApiObject, CApiObjectPtrExt as _};
 use self::result_code::VoicevoxResultCode;
-use self::slice_owner::U8_SLICE_OWNER;
+use self::slice_owner::{SliceElement, U8_SLICE_OWNER};
 use anstream::{AutoStream, stream::RawStream};
 use c_impls::{
     VoicevoxAudioFeaturePtrExt as _, VoicevoxSynthesizerPtrExt as _,
@@ -93,11 +93,35 @@ fn init_logger_once() {
     }
 }
 
+macro_rules! deprecated_fn_impl {
+    ($deprecated_fn_name:literal, $imp:ident($($args:tt)*)) => {{
+        init_logger_once();
+
+        static WARNING: std::sync::Once = std::sync::Once::new();
+        WARNING.call_once(|| {
+            tracing::warn!(
+                "'{}' is deprecated. use '{}' instead",
+                $deprecated_fn_name,
+                stringify!($imp),
+            );
+        });
+
+        $imp($($args)*)
+    }};
+}
+
 // TODO: https://github.com/mozilla/cbindgen/issues/927
 //#[cfg(feature = "load-onnxruntime")]
 //pub const VOICEVOX_ONNXRUNTIME_LIB_RECOMMENDED_NAME: &CStr = ..;
 //#[cfg(feature = "load-onnxruntime")]
 //pub const VOICEVOX_ONNXRUNTIME_LIB_RECOMMENDED_VERSION: &CStr = ..;
+
+// ドキュメントでの説明を円滑にするためだけに存在。この変数自体がユーザーからアクセスしづらいことについては許容する。
+/// このライブラリにおいて、空の`uint8_t`の配列を表すポインタ。
+///
+/// このポインタが指す先は未初期化の値であり、読み書きされるべきではない。
+#[unsafe(no_mangle)]
+pub static voicevox_empty_bytes: &MaybeUninit<u8> = SliceElement::REF_FOR_EMPTY;
 
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// 必要なONNX Runtime 1.xの最小マイナーバージョンを取得する。
@@ -393,7 +417,7 @@ pub extern "C" fn voicevox_open_jtalk_rc_use_user_dict(
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// 日本語のテキストを解析する。
 ///
-/// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
+/// 生成したJSON文字列を解放するには ::voicevox_string_free を使う。
 ///
 /// @param [in] open_jtalk Open JTalkのオブジェクト
 /// @param [in] text UTF-8の日本語テキスト
@@ -527,7 +551,7 @@ pub extern "C" fn voicevox_get_version() -> *const c_char {
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// AccentPhraseの配列からAudioQueryを作る。
 ///
-/// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
+/// 生成したJSON文字列を解放するには ::voicevox_string_free を使う。
 ///
 /// @param [in] accent_phrases_json AccentPhraseの配列のJSON文字列
 /// @param [out] output_accent_phrases_json 生成先
@@ -808,8 +832,10 @@ pub unsafe extern "C" fn voicevox_ensure_compatible(
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// signed 16-bit little endianのPCMデータからWAV形式のバイナリを生成する。
 ///
+/// `pcm`がヌルならクラッシュする。
+///
 /// @param [in] pcm_length PCMデータのバイト長
-/// @param [in] pcm PCMデータ
+/// @param [in] pcm PCMデータ。非ヌル
 /// @param [in] sampling_rate サンプリングレート
 /// @param [in] is_stereo ステレオかどうか
 /// @param [out] output_wav_length 出力のバイト長
@@ -818,7 +844,7 @@ pub unsafe extern "C" fn voicevox_ensure_compatible(
 /// @returns 結果コード
 ///
 /// \safety{
-/// - `pcm`は長さ`pcm_length`にわたって<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+/// - `pcm_length > 0`のとき、`pcm`は長さ`pcm_length`にわたって<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// - `output_wav_length`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// - `output_wav`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
@@ -834,7 +860,20 @@ pub unsafe extern "C" fn voicevox_wav_from_s16le(
     output_wav: NonNull<NonNull<u8>>,
 ) {
     init_logger_once();
-    // SAFETY: The safety contract must be upheld by the caller.
+    if pcm.is_null() {
+        panic!(
+            "`pcm`は非ヌルのポインタでなくてはなりません{}",
+            match pcm_length {
+                0 =>
+                    ": `pcm_length`が`0`のときは`voicevox_empty_bytes`か、\
+                     適当な非ヌルのポインタを渡してください",
+                _ => "",
+            },
+        );
+    }
+    // SAFETY:
+    // - We have denied null.
+    // - The safety contract must be upheld by the caller.
     let pcm = unsafe { std::slice::from_raw_parts(pcm, pcm_length) };
     let wav = voicevox_core::wav_from_s16le(pcm, sampling_rate, is_stereo);
     // SAFETY: The safety contract must be upheld by the caller.
@@ -931,7 +970,7 @@ pub unsafe extern "C" fn voicevox_voice_model_file_id(
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// ::VoicevoxVoiceModelFile からメタ情報を取得する。
 ///
-/// JSONの解放は ::voicevox_json_free で行う。
+/// JSONの解放は ::voicevox_string_free で行う。
 ///
 /// @param [in] model 音声モデル
 ///
@@ -1143,7 +1182,7 @@ pub extern "C" fn voicevox_synthesizer_is_loaded_voice_model(
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// 今読み込んでいる音声モデルのメタ情報を、JSONで取得する。
 ///
-/// JSONの解放は ::voicevox_json_free で行う。
+/// JSONの解放は ::voicevox_string_free で行う。
 ///
 /// @param [in] synthesizer 音声シンセサイザ
 ///
@@ -1162,7 +1201,7 @@ pub extern "C" fn voicevox_synthesizer_create_metas_json(
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// ONNX Runtimeとして利用可能なデバイスの情報を、JSONで取得する。
 ///
-/// JSONの解放は ::voicevox_json_free で行う。
+/// JSONの解放は ::voicevox_string_free で行う。
 ///
 /// あくまでONNX Runtimeが対応しているデバイスの情報であることに注意。GPUが使える環境ではなかったとしても`cuda`や`dml`は`true`を示しうる。
 ///
@@ -1207,7 +1246,7 @@ pub unsafe extern "C" fn voicevox_onnxruntime_create_supported_devices_json(
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// AquesTalk風記法から、AudioQueryをJSONとして生成する。
 ///
-/// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
+/// 生成したJSON文字列を解放するには ::voicevox_string_free を使う。
 ///
 /// @param [in] synthesizer 音声シンセサイザ
 /// @param [in] kana AquesTalk風記法
@@ -1261,7 +1300,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query_from_kana(
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// 日本語テキストから、AudioQueryをJSONとして生成する。
 ///
-/// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
+/// 生成したJSON文字列を解放するには ::voicevox_string_free を使う。
 ///
 /// ::voicevox_synthesizer_create_accent_phrases と ::voicevox_audio_query_create_from_accent_phrases
 /// が一体になったショートハンド。詳細は[テキスト音声合成の流れ]を参照。
@@ -1320,7 +1359,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_audio_query(
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// AquesTalk風記法から、AccentPhrase (アクセント句)の配列をJSON形式で生成する。
 ///
-/// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
+/// 生成したJSON文字列を解放するには ::voicevox_string_free を使う。
 ///
 /// @param [in] synthesizer 音声シンセサイザ
 /// @param [in] kana AquesTalk風記法
@@ -1373,7 +1412,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases_from_kana(
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// 日本語テキストから、AccentPhrase (アクセント句)の配列をJSON形式で生成する。
 ///
-/// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
+/// 生成したJSON文字列を解放するには ::voicevox_string_free を使う。
 ///
 /// ::voicevox_open_jtalk_rc_analyze と ::voicevox_synthesizer_replace_mora_data
 /// が一体になったショートハンド。詳細は[テキスト音声合成の流れ]を参照。
@@ -1430,7 +1469,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_accent_phrases(
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// AccentPhraseの配列の音高・音素長を、特定の声で生成しなおす。
 ///
-/// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
+/// 生成したJSON文字列を解放するには ::voicevox_string_free を使う。
 ///
 /// ::voicevox_synthesizer_replace_phoneme_length と ::voicevox_synthesizer_replace_mora_pitch
 /// が一体になったショートハンド。詳細は[テキスト音声合成の流れ]を参照。
@@ -1479,7 +1518,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_mora_data(
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// AccentPhraseの配列の音素長を、特定の声で生成しなおす。
 ///
-/// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
+/// 生成したJSON文字列を解放するには ::voicevox_string_free を使う。
 ///
 /// @param [in] synthesizer 音声シンセサイザ
 /// @param [in] accent_phrases_json AccentPhraseの配列のJSON文字列
@@ -1523,7 +1562,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_replace_phoneme_length(
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// AccentPhraseの配列の音高を、特定の声で生成しなおす。
 ///
-/// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
+/// 生成したJSON文字列を解放するには ::voicevox_string_free を使う。
 ///
 /// @param [in] synthesizer 音声シンセサイザ
 /// @param [in] accent_phrases_json AccentPhraseの配列のJSON文字列
@@ -1587,7 +1626,7 @@ pub extern "C" fn voicevox_make_default_synthesis_options() -> VoicevoxSynthesis
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// AudioQueryから音声合成を行う。
 ///
-/// 生成したWAVデータを解放するには ::voicevox_wav_free を使う。
+/// 生成したWAVデータを解放するには ::voicevox_bytes_free を使う。
 ///
 /// @param [in] synthesizer 音声シンセサイザ
 /// @param [in] audio_query_json AudioQueryのJSON文字列
@@ -1707,11 +1746,13 @@ pub extern "C" fn voicevox_audio_feature_frame_length(
     audio_feature.frame_length()
 }
 
-// FIXME: voicevox_wav_freeをvoicevox_bytes_freeに改名
+// FIXME: voicevox_bytes_freeをvoicevox_bytes_freeに改名
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// ::VoicevoxAudioFeature の一部区間から、16bit PCMで音声波形を生成する。
 ///
-/// 生成したPCMデータを解放するには ::voicevox_wav_free を使う。
+/// 生成されたPCMデータが`0`バイトのとき、`output_pcm_length`には`0`が、`output_pcm`には ::voicevox_empty_bytes が書き込まれる。
+///
+/// 生成した`1`バイト以上のPCMデータを解放するには ::voicevox_bytes_free を使う。
 ///
 /// @param [in] synthesizer 音声シンセサイザ
 /// @param [in] audio_feature 音声合成用の中間表現
@@ -1787,7 +1828,7 @@ pub extern "C" fn voicevox_make_default_tts_options() -> VoicevoxTtsOptions {
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// AquesTalk風記法から音声合成を行う。
 ///
-/// 生成したWAVデータを解放するには ::voicevox_wav_free を使う。
+/// 生成したWAVデータを解放するには ::voicevox_bytes_free を使う。
 ///
 /// @param [in] synthesizer
 /// @param [in] kana AquesTalk風記法
@@ -1835,7 +1876,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts_from_kana(
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// 日本語テキストから音声合成を行う。
 ///
-/// 生成したWAVデータを解放するには ::voicevox_wav_free を使う。
+/// 生成したWAVデータを解放するには ::voicevox_bytes_free を使う。
 ///
 /// ::voicevox_synthesizer_create_audio_query と ::voicevox_synthesizer_synthesis
 /// が一体になったショートハンド。詳細は[テキスト音声合成の流れ]を参照。
@@ -1892,7 +1933,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_tts(
 ///
 /// [歌唱音声合成]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/song.md
 ///
-/// 生成したJSONを解放するには ::voicevox_json_free を使う。
+/// 生成したJSONを解放するには ::voicevox_string_free を使う。
 ///
 /// @param [in] synthesizer 音声シンセサイザ
 /// @param [in] score_json [`Score`型]を表すJSON
@@ -1969,7 +2010,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_sing_frame_audio_query(
 ///
 /// [歌唱音声合成]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/song.md
 ///
-/// 生成したJSONを解放するには ::voicevox_json_free を使う。
+/// 生成したJSONを解放するには ::voicevox_string_free を使う。
 ///
 /// @param [in] synthesizer 音声シンセサイザ
 /// @param [in] score_json [`Score`型]を表すJSON
@@ -2026,7 +2067,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_sing_frame_f0(
 ///
 /// [歌唱音声合成]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/song.md
 ///
-/// 生成したJSONを解放するには ::voicevox_json_free を使う。
+/// 生成したJSONを解放するには ::voicevox_string_free を使う。
 ///
 /// @param [in] synthesizer 音声シンセサイザ
 /// @param [in] score_json [`Score`型]を表すJSON
@@ -2083,7 +2124,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_sing_frame_volume(
 ///
 /// [歌唱音声合成]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/song.md
 ///
-/// 生成したWAVデータを解放するには ::voicevox_wav_free を使う。
+/// 生成したWAVデータを解放するには ::voicevox_bytes_free を使う。
 ///
 /// @param [in] synthesizer 音声シンセサイザ
 /// @param [in] frame_audio_query_json [`FrameAudioQuery`型]を表すJSON
@@ -2139,7 +2180,45 @@ pub unsafe extern "C" fn voicevox_synthesizer_frame_synthesis(
 }
 
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
-/// JSON文字列を解放する。
+/// 文字列を解放する。
+///
+/// @param [in] string 解放する文字列。nullable
+///
+/// \safety{
+/// - `string`がヌルポインタでないならば、以下のAPIで得られたポインタでなくてはいけない。
+///     - ::voicevox_audio_query_create_from_accent_phrases
+///     - ::voicevox_onnxruntime_create_supported_devices_json
+///     - ::voicevox_voice_model_file_create_metas_json
+///     - ::voicevox_open_jtalk_rc_analyze
+///     - ::voicevox_synthesizer_create_metas_json
+///     - ::voicevox_synthesizer_create_audio_query
+///     - ::voicevox_synthesizer_create_audio_query_from_kana
+///     - ::voicevox_synthesizer_create_accent_phrases
+///     - ::voicevox_synthesizer_create_accent_phrases_from_kana
+///     - ::voicevox_synthesizer_replace_mora_data
+///     - ::voicevox_synthesizer_replace_phoneme_length
+///     - ::voicevox_synthesizer_replace_mora_pitch
+///     - ::voicevox_synthesizer_create_sing_frame_audio_query
+///     - ::voicevox_synthesizer_create_sing_frame_f0
+///     - ::voicevox_synthesizer_create_sing_frame_volume
+///     - ::voicevox_user_dict_to_json
+/// - 文字列の長さは生成時より変更されていてはならない。
+/// - `string`がヌルポインタでないならば、<a href="#voicevox-core-safety">読み込みと書き込みについて有効</a>でなければならない。
+/// - `string`がヌルポインタでないならば、以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。
+/// }
+///
+/// \no-orig-impl{voicevox_string_free}
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn voicevox_string_free(string: *mut c_char) {
+    init_logger_once();
+    if let Some(string) = C_STRING_DROP_CHECKER.check(string) {
+        // SAFETY: The safety contract must be upheld by the caller.
+        drop(unsafe { CString::from_raw(string.as_ptr()) });
+    }
+}
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// ::voicevox_string_free の別名。非推奨。
 ///
 /// @param [in] json 解放するJSON文字列。nullable
 ///
@@ -2168,35 +2247,60 @@ pub unsafe extern "C" fn voicevox_synthesizer_frame_synthesis(
 ///
 /// \no-orig-impl{voicevox_json_free}
 #[unsafe(no_mangle)]
+#[deprecated(note = "use 'voicevox_string_free' instead")]
 pub unsafe extern "C" fn voicevox_json_free(json: *mut c_char) {
-    init_logger_once();
-    if let Some(json) = C_STRING_DROP_CHECKER.check(json) {
-        // SAFETY: The safety contract must be upheld by the caller.
-        drop(unsafe { CString::from_raw(json.as_ptr()) });
-    }
+    // SAFETY: The safety contract must be upheld by the caller.
+    unsafe { deprecated_fn_impl!("voicevox_json_free", voicevox_string_free(json)) }
 }
 
-// FIXME: voicevox_synthesizer_renderで確保するPCMデータの管理にも使うため、voicevox_wav_freeをvoicevox_bytes_freeに改名
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
-/// WAVデータを解放する。
+/// バイト列を解放する。
+///
+/// ::voicevox_empty_bytes に対しては警告のログを出す。
+///
+/// @param [in] bytes 解放するバイト列。nullable
+///
+/// \safety{
+/// - `bytes`がヌルポインタでないならば、以下のAPIで得られたポインタでなくてはいけない。
+///     - ::voicevox_synthesizer_render
+///     - ::voicevox_synthesizer_synthesis
+///     - ::voicevox_synthesizer_tts
+///     - ::voicevox_synthesizer_tts_from_kana
+///     - ::voicevox_synthesizer_frame_synthesis
+///     - ::voicevox_wav_from_s16le
+/// - `bytes`がヌルポインタでも ::voicevox_empty_bytes でもないならば、<a href="#voicevox-core-safety">読み込みと書き込みについて有効</a>でなければならない。
+/// - `bytes`がヌルポインタでも ::voicevox_empty_bytes でもないならば、以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。
+/// }
+///
+/// \no-orig-impl{voicevox_bytes_free}
+#[unsafe(no_mangle)]
+pub extern "C" fn voicevox_bytes_free(bytes: *mut u8) {
+    init_logger_once();
+    U8_SLICE_OWNER.drop_for(bytes);
+}
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// ::voicevox_bytes_free の別名。非推奨。
 ///
 /// @param [in] wav 解放するWAVデータ。nullable
 ///
 /// \safety{
 /// - `wav`がヌルポインタでないならば、以下のAPIで得られたポインタでなくてはいけない。
+///     - ::voicevox_synthesizer_render
 ///     - ::voicevox_synthesizer_synthesis
 ///     - ::voicevox_synthesizer_tts
 ///     - ::voicevox_synthesizer_tts_from_kana
 ///     - ::voicevox_synthesizer_frame_synthesis
-/// - `wav`がヌルポインタでないならば、<a href="#voicevox-core-safety">読み込みと書き込みについて有効</a>でなければならない。
-/// - `wav`がヌルポインタでないならば、以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。
+///     - ::voicevox_wav_from_s16le
+/// - `wav`がヌルポインタでも ::voicevox_empty_bytes でもないならば、<a href="#voicevox-core-safety">読み込みと書き込みについて有効</a>でなければならない。
+/// - `wav`がヌルポインタでも ::voicevox_empty_bytes でもないならば、以後<b>ダングリングポインタ</b>(_dangling pointer_)として扱われなくてはならない。
 /// }
 ///
 /// \no-orig-impl{voicevox_wav_free}
 #[unsafe(no_mangle)]
+#[deprecated(note = "use 'voicevox_bytes_free' instead")]
 pub extern "C" fn voicevox_wav_free(wav: *mut u8) {
-    init_logger_once();
-    U8_SLICE_OWNER.drop_for(wav);
+    deprecated_fn_impl!("voicevox_wav_free", voicevox_bytes_free(wav))
 }
 
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
@@ -2438,7 +2542,7 @@ pub extern "C" fn voicevox_user_dict_remove_word(
 // FIXME: infallibleなので、`char*`を戻り値にしてもよいはず
 /// ユーザー辞書の単語をJSON形式で出力する。
 ///
-/// 生成したJSON文字列を解放するには ::voicevox_json_free を使う。
+/// 生成したJSON文字列を解放するには ::voicevox_string_free を使う。
 ///
 /// @param [in] user_dict ユーザー辞書
 /// @param [out] output_json 出力先

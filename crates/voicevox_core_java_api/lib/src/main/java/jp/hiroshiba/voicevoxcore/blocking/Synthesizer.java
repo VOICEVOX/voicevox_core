@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.UUID;
 import jp.hiroshiba.voicevoxcore.AccelerationMode;
 import jp.hiroshiba.voicevoxcore.AccentPhrase;
+import jp.hiroshiba.voicevoxcore.AudioFeature;
 import jp.hiroshiba.voicevoxcore.AudioQuery;
 import jp.hiroshiba.voicevoxcore.CharacterMeta;
 import jp.hiroshiba.voicevoxcore.FrameAudioQuery;
@@ -293,6 +294,39 @@ public final class Synthesizer {
   }
 
   /**
+   * {@link AudioQuery} から音声合成用の中間表現を生成する。
+   *
+   * @param audioQuery {@link AudioQuery}。
+   * @param styleId スタイルID。
+   * @return {@link CreateAudioFeatureConfigurator}。
+   * @see CreateAudioFeatureConfigurator#perform
+   */
+  @Nonnull
+  public CreateAudioFeatureConfigurator createAudioFeature(AudioQuery audioQuery, int styleId) {
+    return new CreateAudioFeatureConfigurator(this, audioQuery, styleId);
+  }
+
+  /**
+   * 音声合成用の中間表現から指定区間の16-bit PCM音声を生成する。
+   *
+   * @param audioFeature 音声合成用の中間表現。
+   * @param startInclusive 開始フレーム番号。
+   * @param endExclusive 終了フレーム番号（この番号は含まれない）。
+   * @return 16-bit PCM音声データ。
+   * @throws RunModelException 推論に失敗した場合。
+   */
+  @Nonnull
+  public byte[] render(AudioFeature audioFeature, long startInclusive, long endExclusive)
+      throws RunModelException {
+    if (startInclusive < 0
+        || endExclusive < startInclusive
+        || endExclusive > audioFeature.getFrameLength()) {
+      throw new IllegalArgumentException("range");
+    }
+    return rsRender(audioFeature, startInclusive, endExclusive);
+  }
+
+  /**
    * AquesTalk風記法をもとに音声合成を実行するためのオブジェクトを生成する。
    *
    * @param kana AquesTalk風記法。
@@ -479,6 +513,13 @@ public final class Synthesizer {
   private native byte[] rsSynthesis(
       String queryJson, int styleId, boolean enableInterrogativeUpspeak) throws RunModelException;
 
+  private native AudioFeature rsCreateAudioFeature(
+      String queryJson, int styleId, boolean enableInterrogativeUpspeak) throws RunModelException;
+
+  @Nonnull
+  private native byte[] rsRender(AudioFeature audioFeature, long startInclusive, long endExclusive)
+      throws RunModelException;
+
   @Nonnull
   private native byte[] rsTtsFromKana(String kana, int styleId, boolean enableInterrogativeUpspeak)
       throws RunModelException;
@@ -641,6 +682,48 @@ public final class Synthesizer {
       }
       String queryJson = Convert.jsonFromQueryLike(this.audioQuery, "不正なAudioQueryです");
       return synthesizer.rsSynthesis(queryJson, this.styleId, this.interrogativeUpspeak);
+    }
+  }
+
+  /** {@link Synthesizer#createAudioFeature} のオプション。 */
+  public final class CreateAudioFeatureConfigurator {
+    private Synthesizer synthesizer;
+    private AudioQuery audioQuery;
+    private int styleId;
+    private boolean interrogativeUpspeak;
+
+    private CreateAudioFeatureConfigurator(
+        Synthesizer synthesizer, AudioQuery audioQuery, int styleId) {
+      if (!Utils.isU32(styleId)) {
+        throw new IllegalArgumentException("styleId");
+      }
+      this.synthesizer = synthesizer;
+      this.audioQuery = audioQuery;
+      this.styleId = styleId;
+    }
+
+    /**
+     * 疑問文の調整を有効にするかどうか。
+     *
+     * @param interrogativeUpspeak 疑問文の調整を有効にするかどうか。
+     * @return {@link CreateAudioFeatureConfigurator}。
+     */
+    @Nonnull
+    public CreateAudioFeatureConfigurator interrogativeUpspeak(boolean interrogativeUpspeak) {
+      this.interrogativeUpspeak = interrogativeUpspeak;
+      return this;
+    }
+
+    /**
+     * 音声合成用の中間表現を生成する。
+     *
+     * @return 音声合成用の中間表現。
+     * @throws RunModelException 推論に失敗した場合。
+     */
+    @Nonnull
+    public AudioFeature perform() throws RunModelException {
+      String queryJson = Convert.jsonFromQueryLike(this.audioQuery, "不正なAudioQueryです");
+      return synthesizer.rsCreateAudioFeature(queryJson, this.styleId, this.interrogativeUpspeak);
     }
   }
 

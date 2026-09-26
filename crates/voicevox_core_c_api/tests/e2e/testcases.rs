@@ -1,5 +1,6 @@
 mod compatible_engine;
 mod compatible_engine_load_model_before_initialize;
+mod deprecated_fn_warnings;
 mod double_delete_openjtalk;
 mod double_delete_synthesizer;
 mod double_delete_user_dict;
@@ -7,8 +8,10 @@ mod double_delete_voice_model_file;
 mod ensure_compatible;
 mod free_for_null;
 mod global_info;
+mod render_empty;
 mod simple_tts;
 mod song;
+mod streaming_talk;
 mod synthesizer_new_output_json;
 mod tts;
 mod user_dict_load;

@@ -81,7 +81,7 @@ impl assert_cdylib::TestCase for TestCase {
             )?;
 
             // SAFETY: `supported_devices` is valid and is no longer used.
-            unsafe { lib.voicevox_json_free(supported_devices) };
+            unsafe { lib.voicevox_string_free(supported_devices) };
         }
 
         for result_code in [

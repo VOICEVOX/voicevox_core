@@ -6,9 +6,10 @@ use crate::{
 use jni::{
     JNIEnv,
     objects::{JObject, JString},
-    sys::{jboolean, jint, jobject},
+    sys::{jboolean, jint, jlong, jobject},
 };
 use std::{borrow::Cow, sync::Arc};
+use voicevox_core::AudioFeature;
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
@@ -539,6 +540,91 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
         let j_bytes = env.byte_array_from_slice(&wave)?;
 
         Ok(j_bytes.into_raw())
+    })
+}
+
+// SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+#[unsafe(no_mangle)]
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rsCreateAudioFeature<
+    'local,
+>(
+    env: JNIEnv<'local>,
+    this: JObject<'local>,
+    query_json: JString<'local>,
+    style_id: jint,
+    enable_interrogative_upspeak: jboolean,
+) -> jobject {
+    throw_if_err(env, std::ptr::null_mut(), |env| {
+        let audio_query: String = env.get_string(&query_json)?.into();
+        let audio_query: voicevox_core::AudioQuery = query_from_json(&audio_query)?;
+        let style_id = style_id as u32;
+
+        let internal = unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.blocking.Synthesizer.handle` must correspond to
+            //   `Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>`.
+            type RustField =
+                Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>;
+            env.get_rust_field::<_, _, RustField>(&this, "handle")
+        }?
+        .clone();
+
+        let audio_feature_internal = internal
+            .create_audio_feature(&audio_query, voicevox_core::StyleId::new(style_id))
+            .enable_interrogative_upspeak(enable_interrogative_upspeak != 0)
+            .perform()?
+            .into();
+
+        let audio_feature_class = env.find_class(object!("AudioFeature"))?;
+        let audio_feature = env.new_object(audio_feature_class, "()V", &[])?;
+        unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.AudioFeature.handle` must correspond to
+            //   `Arc<voicevox_core::AudioFeature>`.
+            type RustField = Arc<AudioFeature>;
+            env.set_rust_field::<_, _, RustField>(&audio_feature, "handle", audio_feature_internal)
+        }?;
+        Ok(audio_feature.into_raw())
+    })
+}
+
+// SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+#[unsafe(no_mangle)]
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rsRender<'local>(
+    env: JNIEnv<'local>,
+    this: JObject<'local>,
+    audio_feature: JObject<'local>,
+    start_inclusive: jlong,
+    end_exclusive: jlong,
+) -> jobject {
+    throw_if_err(env, std::ptr::null_mut(), |env| {
+        let internal = unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.blocking.Synthesizer.handle` must correspond to
+            //   `Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>`.
+            type RustField =
+                Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>;
+            env.get_rust_field::<_, _, RustField>(&this, "handle")
+        }?
+        .clone();
+        let audio_feature = unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.AudioFeature.handle` must correspond to
+            //   `Arc<voicevox_core::AudioFeature>`.
+            type RustField = Arc<AudioFeature>;
+            env.get_rust_field::<_, _, RustField>(&audio_feature, "handle")
+        }?
+        .clone();
+        let pcm = internal.render(
+            &audio_feature,
+            start_inclusive as usize..end_exclusive as usize,
+        )?;
+
+        Ok(env.byte_array_from_slice(&pcm)?.into_raw())
     })
 }
 
