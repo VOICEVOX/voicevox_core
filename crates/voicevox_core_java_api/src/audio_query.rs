@@ -5,7 +5,7 @@ use easy_ext::ext;
 use jni::{
     JNIEnv,
     objects::{JClass, JObject, JString, JValueGen},
-    sys::jstring,
+    sys::{jboolean, jlong, jstring},
 };
 use voicevox_core::{
     __internal::interop::Validate, AccentPhrase, AudioQuery, FrameAudioQuery, FramePhoneme, Mora,
@@ -26,6 +26,25 @@ extern "system" fn Java_jp_hiroshiba_voicevoxcore_AudioQuery_rsFromAccentPhrases
         let query = serde_json::to_string(query).expect("should not fail");
         let query = env.new_string(query)?;
         Ok(query.into_raw())
+    })
+}
+
+// SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+#[unsafe(no_mangle)]
+extern "system" fn Java_jp_hiroshiba_voicevoxcore_AudioQuery_rsFrameLength(
+    env: JNIEnv<'_>,
+    this: JObject<'_>,
+    enable_interrogative_upspeak: jboolean,
+) -> jlong {
+    throw_if_err(env, 0, |env| {
+        let query = AudioQuery::from_java(env, this)?;
+        Ok(query
+            .frame_length()
+            .enable_interrogative_upspeak(enable_interrogative_upspeak != 0)
+            .calculate()
+            .0
+            .try_into()
+            .unwrap_or(jlong::MAX))
     })
 }
 

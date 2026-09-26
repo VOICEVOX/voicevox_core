@@ -523,7 +523,8 @@ class AudioQuery:
            |audio-query-frame-length-round-ties-even|_ とする。この関数はPythonの
            |audio-query-frame-length-round|_ や |audio-query-frame-length-numpy-round|_
            と同様、IEEE 754の ``roundToIntegralTiesToEven``
-           演算を行う。また乗算と除算も32-bit浮動小数点数上で行う。
+           演算を行う。 :attr:`speed_scale`
+           も32-bit浮動小数点数として解釈し、乗算と除算も32-bit浮動小数点数上で行う。
         3. 各フレーム長を足し合わせる。
 
         .. |audio-query-frame-length-round-ties-even| replace:: Rustの ``f32::round_ties_even``
