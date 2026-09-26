@@ -571,6 +571,8 @@ jobs:
   download_test:
     needs: [config, set_tag_name]
     if: needs.config.outputs.mode == 'draft-release'
+    permissions:
+      contents: write
     uses: ./.github/workflows/download_test.yml
     with:
       version: ${{ inputs.version }}
