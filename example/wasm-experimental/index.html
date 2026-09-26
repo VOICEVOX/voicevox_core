@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>VOICEVOX Core WebAssembly browser example</title>
+  </head>
+  <body data-status="loading">
+    <form id="form">
+      <textarea id="text" rows="3" cols="40">これはテストです</textarea>
+      <br />
+      <label>
+        Style ID
+        <input id="style-id" type="number" min="0" value="302" />
+      </label>
+      <button id="submit" type="submit" disabled>合成</button>
+    </form>
+    <audio id="player" controls hidden></audio>
+    <pre id="output">Waiting for the WebAssembly Worker...</pre>
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

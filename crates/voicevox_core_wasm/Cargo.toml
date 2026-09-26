@@ -1,0 +1,19 @@
+[package]
+name = "voicevox_core_wasm"
+version.workspace = true
+edition.workspace = true
+publish = false
+rust-version.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "wasm_browser_api_example"
+path = "src/main.rs"
+required-features = ["link-onnxruntime"]
+
+[features]
+link-onnxruntime = ["voicevox_core/link-onnxruntime"]
+
+[dependencies]
+anyhow.workspace = true
+voicevox_core.workspace = true

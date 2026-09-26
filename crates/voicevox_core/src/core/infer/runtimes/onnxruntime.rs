@@ -455,13 +455,32 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
     fn run_blocking(
         OnnxruntimeRunContext { sess, inputs }: Self::RunContext,
     ) -> anyhow::Result<Vec<OutputTensor>> {
-        extract_outputs(&sess.lock_blocking().run(inputs)?)
+        #[cfg(target_os = "emscripten")]
+        let mut sess = sess
+            .try_lock()
+            .ok_or_else(|| anyhow!("the ONNX Runtime session is already locked"))?;
+
+        #[cfg(not(target_os = "emscripten"))]
+        let mut sess = sess.lock_blocking();
+
+        extract_outputs(&sess.run(inputs)?)
     }
 
     async fn run_async(
         OnnxruntimeRunContext { sess, inputs }: Self::RunContext,
         cancellable: bool,
     ) -> anyhow::Result<Vec<OutputTensor>> {
+        #[cfg(target_os = "emscripten")]
+        {
+            let mut sess = sess.lock().await;
+            if cancellable {
+                extract_outputs(&sess.run_with_options(inputs, &RunOptions::new()?)?)
+            } else {
+                extract_outputs(&sess.run(inputs)?)
+            }
+        }
+
+        #[cfg(not(target_os = "emscripten"))]
         if cancellable {
             extract_outputs(
                 &sess
