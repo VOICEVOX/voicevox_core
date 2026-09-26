@@ -184,6 +184,7 @@ impl AudioQuery {
     /// [FRAME_RATE]: crate::AudioFeature::FRAME_RATE
     /// [round_ties_even()]: f64::round_ties_even
     /// [speed_scale]: Self::speed_scale
+    #[cfg_attr(doc, doc(alias = "voicevox_audio_query_frame_length"))]
     pub fn frame_length(&self) -> AudioQueryFrameLength<'_> {
         AudioQueryFrameLength {
             audio_query: self,

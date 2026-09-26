@@ -344,6 +344,7 @@ pub mod __doc {
     /// | `VoicevoxInitializeOptions` | 〃 |
     /// | `VoicevoxSynthesisOptions` | 〃 |
     /// | `VoicevoxTtsOptions` | 〃 |
+    /// | `voicevox_make_default_audio_query_frame_length_options` | 〃 |
     /// | `voicevox_make_default_load_onnxruntime_options` | 〃 |
     /// | `voicevox_make_default_initialize_options` | 〃 |
     /// | `voicevox_make_default_load_voice_model_options` | 〃 |
@@ -367,6 +368,7 @@ pub mod __doc {
         "VoicevoxInitializeOptions",
         "VoicevoxSynthesisOptions",
         "VoicevoxTtsOptions",
+        "voicevox_make_default_audio_query_frame_length_options",
         "voicevox_make_default_load_onnxruntime_options",
         "voicevox_make_default_initialize_options",
         "voicevox_make_default_synthesis_options",
