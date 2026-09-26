@@ -114,10 +114,12 @@ public final class AudioQuery {
    *             </ul>
    *         <li>{@link #postPhonemeLength}
    *       </ul>
-   *   <li>それぞれの秒数を{@code secs}として、対応するフレーム長を<code>rint(rint(secs * {@link
-   *       AudioFeature#FRAME_RATE}) / {@link #speedScale})</code>として算出する。ここで{@code rint}は{@link
-   *       Math#rint(double) Math.rint}と同様、IEEE 754の{@code
-   *       roundToIntegralTiesToEven}演算を行うものとする。{@link
+   *   <li>それぞれの秒数を{@code secs}として、対応するフレーム長を<code>roundTiesEven(roundTiesEven(secs * {@link
+   *       AudioFeature#FRAME_RATE}) / {@link #speedScale})</code>として算出する。ここで{@code
+   *       roundTiesEven}は<a
+   *       href="https://doc.rust-lang.org/stable/std/primitive.f32.html#method.round_ties_even">Rustの{@code
+   *       f32::round_ties_even}</a>であり、{@link Math#rint(double) Math.rint}と同様IEEE 754の{@code
+   *       roundToIntegralTiesToEven}演算を行う。{@link
    *       #speedScale}も32-bit浮動小数点数として解釈し、乗算と除算も32-bit浮動小数点数上で行う。
    *   <li>各フレーム長を足し合わせる。
    * </ol>
@@ -137,9 +139,9 @@ public final class AudioQuery {
    * <pre>{@code
    * void main() {
    *   AudioQuery query = AudioQuery.fromAccentPhrases(Arrays.asList());
+   *   query.speedScale = 1.2;
    *   query.prePhonemeLength = 3.3;
    *   query.postPhonemeLength = 4.4;
-   *   query.speedScale = 1.2;
    *
    *   assert query.frameLength().calculate()
    *       // `speed_scale`, `pre_phoneme_length`
@@ -161,7 +163,7 @@ public final class AudioQuery {
    * }</pre>
    *
    * <pre>{@code
-   * AudioQuery query = new AudioQuery();
+   * AudioQuery query = AudioQuery.fromAccentPhrases(Arrays.asList());
    * query.speedScale = Float.MIN_NORMAL;
    * assert query.frameLength().calculate() == Long.MAX_VALUE; // 64-bit環境の場合
    * }</pre>

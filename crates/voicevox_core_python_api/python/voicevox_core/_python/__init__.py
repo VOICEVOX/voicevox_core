@@ -520,9 +520,9 @@ class AudioQuery:
         2. それぞれの秒数を ``secs`` として、対応するフレーム長を
            ``round_ties_even(round_ties_even(secs * AudioFeature.FRAME_RATE) / speed_scale)``
            として算出する。ここで ``round_ties_even`` は
-           |audio-query-frame-length-round-ties-even|_ とする。この関数はPythonの
+           |audio-query-frame-length-round-ties-even|_ であり、
            |audio-query-frame-length-round|_ や |audio-query-frame-length-numpy-round|_
-           と同様、IEEE 754の ``roundToIntegralTiesToEven``
+           と同様IEEE 754の ``roundToIntegralTiesToEven``
            演算を行う。 :attr:`speed_scale`
            も32-bit浮動小数点数として解釈し、乗算と除算も32-bit浮動小数点数上で行う。
         3. 各フレーム長を足し合わせる。
@@ -559,9 +559,9 @@ class AudioQuery:
         ...     )
         >>>
         >>> query = AudioQuery.from_accent_phrases([])
+        >>> query.speed_scale = 1.2
         >>> query.pre_phoneme_length = 3.3
         >>> query.post_phoneme_length = 4.4
-        >>> query.speed_scale = 1.2
         >>>
         >>> assert query.frame_length() == (
         ...     # speed_scale, pre_phoneme_length

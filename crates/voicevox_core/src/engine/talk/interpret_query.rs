@@ -150,9 +150,9 @@ impl AudioQuery {
     /// # use voicevox_core::AudioQuery;
     /// #
     /// let mut query = AudioQuery::from(vec![]);
+    /// query.speed_scale = typed_floats::as_const!(PositiveFinite, f32, 1.2);
     /// query.pre_phoneme_length = typed_floats::as_const!(PositiveFinite, f32, 3.3);
     /// query.post_phoneme_length = typed_floats::as_const!(PositiveFinite, f32, 4.4);
-    /// query.speed_scale = typed_floats::as_const!(PositiveFinite, f32, 1.2);
     ///
     /// assert_eq!(
     ///     // `speed_scale`, `pre_phoneme_length`
