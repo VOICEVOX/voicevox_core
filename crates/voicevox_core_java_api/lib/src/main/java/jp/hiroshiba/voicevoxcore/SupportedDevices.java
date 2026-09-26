@@ -7,7 +7,7 @@ import jakarta.annotation.Nonnull;
 /**
  * ONNX Runtime利用可能なデバイスの情報。
  *
- * <p>あくまでONNX Runtimeが対応しているデバイスの情報であることに注意。GPUが使える環境ではなかったとしても {@link #cuda} や {@link #dml} は
+ * <p>あくまでONNX Runtimeが対応しているデバイスの情報であることに注意。GPUが使える環境ではなかったとしても {@link #cuda} や {@link #dml} や {@link #openvino} は
  * {@code true} を示しうる。
  *
  * <p>現在この型はGSONに対応しているが、将来的には <a href="https://github.com/VOICEVOX/voicevox_core/issues/984"
@@ -50,14 +50,27 @@ public final class SupportedDevices implements Cloneable {
   @Nonnull
   public final boolean dml;
 
+  /**
+   * OpenVINOが利用可能。
+   *
+   * <p>ONNX Runtimeの <a href=
+   * "https://onnxruntime.ai/docs/execution-providers/OpenVINO-ExecutionProvider.html"
+   * target="_blank">OpenVINOExecutionProvider</a>に対応する。 必要な環境についてはそちらを参照。
+   */
+  @SerializedName("openvino")
+  @Expose
+  @Nonnull
+  public final boolean openvino;
+
   private SupportedDevices() {
     throw new UnsupportedOperationException("You cannot deserialize `SupportedDevices`");
   }
 
-  private SupportedDevices(boolean cpu, boolean cuda, boolean dml) {
+  private SupportedDevices(boolean cpu, boolean cuda, boolean dml, boolean openvino) {
     this.cpu = cpu;
     this.cuda = cuda;
     this.dml = dml;
+    this.openvino = openvino;
   }
 
   @Override
@@ -66,11 +79,11 @@ public final class SupportedDevices implements Cloneable {
       return false;
     }
     SupportedDevices other = (SupportedDevices) obj;
-    return cpu == other.cpu && cuda == other.cuda && dml == other.dml;
+    return cpu == other.cpu && cuda == other.cuda && dml == other.dml && openvino == other.openvino;
   }
 
   @Override
   public SupportedDevices clone() {
-    return new SupportedDevices(cpu, cuda, dml);
+    return new SupportedDevices(cpu, cuda, dml, openvino);
   }
 }
