@@ -946,7 +946,7 @@ struct VoicevoxAudioQueryFrameLengthOptions voicevox_make_default_audio_query_fr
  *                        "  \"prePhonemeLength\": 3.3,\n"
  *                        "  \"postPhonemeLength\": 4.4,\n"
  *                        "  \"outputSamplingRate\": 24000,\n"
- *                        "  \"outputStereo\": false"
+ *                        "  \"outputStereo\": false\n"
  *                        "}\n";
  *
  *   size_t frame_length;
@@ -955,11 +955,12 @@ struct VoicevoxAudioQueryFrameLengthOptions voicevox_make_default_audio_query_fr
  *       &frame_length));
  *
  *   assert(frame_length ==
- *          // speed_scale, pre_phoneme_length
+ *          // `speed_scale`, `pre_phoneme_length`
  *          to_frame_length(3.3f, 1.2f)
- *              // speed_scale, consonant_length, vowel_length, is_interrogative
+ *              // `speed_scale`, `consonant_length`, `vowel_length`,
+ *              // `is_interrogative`
  *              + 0
- *              // speed_scale, post_phoneme_length
+ *              // `speed_scale`, `post_phoneme_length`
  *              + to_frame_length(4.4f, 1.2f));
  *
  *   // …
@@ -967,25 +968,25 @@ struct VoicevoxAudioQueryFrameLengthOptions voicevox_make_default_audio_query_fr
  * ```
  *
  * ```c
- *  // speed_scale = FLT_MIN
- *  const char *kQuery = "{\n"
- *                       "  \"accent_phrases\": [],\n"
- *                       "  \"speedScale\": 1.1754943508222875e-38,\n"
- *                       "  \"pitchScale\": 0.0,\n"
- *                       "  \"intonationScale\": 1.0,\n"
- *                       "  \"volumeScale\": 1.0,\n"
- *                       "  \"prePhonemeLength\": 0.1,\n"
- *                       "  \"postPhonemeLength\": 0.1,\n"
- *                       "  \"outputSamplingRate\": 24000,\n"
- *                       "  \"outputStereo\": false"
- *                       "}\n";
+ * // speed_scale = FLT_MIN
+ * const char *kQuery = "{\n"
+ *                      "  \"accent_phrases\": [],\n"
+ *                      "  \"speedScale\": 1.1754943508222875e-38,\n"
+ *                      "  \"pitchScale\": 0.0,\n"
+ *                      "  \"intonationScale\": 1.0,\n"
+ *                      "  \"volumeScale\": 1.0,\n"
+ *                      "  \"prePhonemeLength\": 0.1,\n"
+ *                      "  \"postPhonemeLength\": 0.1,\n"
+ *                      "  \"outputSamplingRate\": 24000,\n"
+ *                      "  \"outputStereo\": false\n"
+ *                      "}\n";
  *
- *  size_t frame_length;
- *  TRY(voicevox_audio_query_frame_length(
- *      kQuery, voicevox_make_default_audio_query_frame_length_options(),
- *      &frame_length));
+ * size_t frame_length;
+ * TRY(voicevox_audio_query_frame_length(
+ *     kQuery, voicevox_make_default_audio_query_frame_length_options(),
+ *     &frame_length));
  *
- *  assert(frame_length == SIZE_MAX);
+ * assert(frame_length == SIZE_MAX);
  * ```
  * }
  *
