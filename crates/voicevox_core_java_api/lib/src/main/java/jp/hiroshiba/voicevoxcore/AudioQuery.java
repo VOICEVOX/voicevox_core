@@ -105,7 +105,7 @@ public final class AudioQuery {
    *                     <li>{@link Mora#consonantLength}
    *                     <li>{@link Mora#vowelLength}
    *                   </ul>
-   *               <li>{@link FrameLengthConfigurator#interrogativeUpspeak
+   *               <li>{@link FrameLengthConfigurator#interrogativeUpspeak(boolean)
    *                   interrogativeUpspeak}が{@code true}かつ{@link
    *                   AccentPhrase#isInterrogative}かつ{@link AccentPhrase#moras}の最後の{@link
    *                   Mora#pitch}が{@code 0.0}以外のとき、{@code 0.15}秒

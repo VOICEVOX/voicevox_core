@@ -365,7 +365,7 @@ pub mod __doc {
     /// [C API]: https://voicevox.github.io/voicevox_core/apis/c_api/voicevox__core_8h.html
     /// [Rustのデストラクタ機構]: https://doc.rust-lang.org/reference/destructors.html
     #[doc(alias(
-        "VoicevoxAudioQueryFrameLengthOption",
+        "VoicevoxAudioQueryFrameLengthOptions",
         "VoicevoxLoadOnnxruntimeOptions",
         "VoicevoxInitializeOptions",
         "VoicevoxSynthesisOptions",
