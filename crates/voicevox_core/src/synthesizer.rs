@@ -51,8 +51,9 @@ use crate::{
             validate::{ValidatedNote, ValidatedScore},
         },
         talk::{
-            DecoderFeature, LengthedPhoneme, ValidatedAccentPhrase, ValidatedMora, create_kana,
-            initial_process, parse_kana, split_mora,
+            DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK, DecoderFeature, LengthedPhoneme,
+            ValidatedAccentPhrase, ValidatedMora, create_kana, initial_process, parse_kana,
+            split_mora,
         },
         to_s16le_pcm, wav_from_s16le,
     },
@@ -62,7 +63,6 @@ use crate::{
 };
 
 pub const DEFAULT_CPU_NUM_THREADS: u16 = 0;
-pub const DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK: bool = true;
 pub const DEFAULT_HEAVY_INFERENCE_CANCELLABLE: bool =
     <BlockingThreadPool as infer::AsyncExt>::DEFAULT_HEAVY_INFERENCE_CANCELLABLE;
 

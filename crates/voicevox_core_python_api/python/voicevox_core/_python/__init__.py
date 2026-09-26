@@ -490,7 +490,7 @@ class AudioQuery:
         """
         _validate_audio_query(self)
 
-    def frame_length(self, enable_interrogative_upspeak: bool = True) -> int:
+    def frame_length(self, *, enable_interrogative_upspeak: bool = True) -> int:
         """
         音声の総フレーム数を算出する。
 
@@ -529,7 +529,7 @@ class AudioQuery:
 
         .. |audio-query-frame-length-round-ties-even| replace:: Rustの ``f32::round_ties_even``
         .. _audio-query-frame-length-round-ties-even: https://doc.rust-lang.org/std/primitive.f32.html#method.round_ties_even
-        .. |audio-query-frame-length-round| replace:: ``__builtins__.round``
+        .. |audio-query-frame-length-round| replace:: ``builtins.round``
         .. _audio-query-frame-length-round: https://docs.python.org/3/library/functions.html#round
         .. |audio-query-frame-length-numpy-round| replace:: ``np.round``
         .. _audio-query-frame-length-numpy-round: https://numpy.org/doc/stable/reference/generated/numpy.round.html

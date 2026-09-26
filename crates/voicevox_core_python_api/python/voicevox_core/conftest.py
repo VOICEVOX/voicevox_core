@@ -6,7 +6,7 @@ import pytest
 from .blocking import Onnxruntime, OpenJtalk, Synthesizer, VoiceModelFile
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(scope="session", autouse=True)
 def setup_for_doctests(doctest_namespace: dict[str, object]):
     # FIXME: <../test/conftest.py>のコピペになっているので共通化、
     # というよりfixture化する。

@@ -340,7 +340,8 @@ pub mod __doc {
     ///
     /// | | 理由 |
     /// | :- | :- |
-    /// | `VoicevoxLoadOnnxruntimeOptions` | ビルダースタイルであるため |
+    /// | `VoicevoxAudioQueryFrameLengthOptions` | ビルダースタイルであるため |
+    /// | `VoicevoxLoadOnnxruntimeOptions` | 〃 |
     /// | `VoicevoxInitializeOptions` | 〃 |
     /// | `VoicevoxSynthesisOptions` | 〃 |
     /// | `VoicevoxTtsOptions` | 〃 |
@@ -364,6 +365,7 @@ pub mod __doc {
     /// [C API]: https://voicevox.github.io/voicevox_core/apis/c_api/voicevox__core_8h.html
     /// [Rustのデストラクタ機構]: https://doc.rust-lang.org/reference/destructors.html
     #[doc(alias(
+        "VoicevoxAudioQueryFrameLengthOption",
         "VoicevoxLoadOnnxruntimeOptions",
         "VoicevoxInitializeOptions",
         "VoicevoxSynthesisOptions",
