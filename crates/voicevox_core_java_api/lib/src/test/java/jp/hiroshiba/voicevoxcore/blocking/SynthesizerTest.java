@@ -235,6 +235,9 @@ class SynthesizerTest extends TestUtils {
 
     AudioQuery query = synthesizer.createAudioQuery(TEXT, STYLE_ID);
     AudioFeature audioFeature = synthesizer.createAudioFeature(query, STYLE_ID).perform();
+
+    assertEquals(query.frameLength().calculate(), audioFeature.getFrameLength());
+
     byte[] pcm = synthesizer.render(audioFeature, 0, audioFeature.getFrameLength());
     byte[] wav2 = wavFromS16le(pcm, query.outputSamplingRate, query.outputStereo);
 
