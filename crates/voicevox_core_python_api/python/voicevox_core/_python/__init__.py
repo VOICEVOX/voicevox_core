@@ -520,10 +520,10 @@ class AudioQuery:
         2. それぞれの秒数を ``secs`` として、対応するフレーム長を
            ``round_ties_even(round_ties_even(secs * AudioFeature.FRAME_RATE) / speed_scale)``
            として算出する。ここで ``round_ties_even`` は
-           |audio-query-frame-length-round-ties-even|_ とする。これはPythonの
+           |audio-query-frame-length-round-ties-even|_ とする。この関数はPythonの
            |audio-query-frame-length-round|_ や |audio-query-frame-length-numpy-round|_
-           と同様、IEEE
-           754のroundTiesToEvenに従う。また乗算と除算も32-bit浮動小数点数として実行する。
+           と同様、IEEE 754の ``roundToIntegralTowardNegative``
+           演算を行う。また乗算と除算も32-bit浮動小数点数上で行う。
         3. 各フレーム長を足し合わせる。
 
         .. |audio-query-frame-length-round-ties-even| replace:: Rustの ``f32::round_ties_even``
