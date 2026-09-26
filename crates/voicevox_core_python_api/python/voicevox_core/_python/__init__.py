@@ -545,10 +545,9 @@ class AudioQuery:
         >>> query = synth.create_audio_query(
         ...     "こんにちは、音声合成の世界へようこそ？", WHATEVER_STYLE1
         ... )
-        >>> assert (
-        ...     query.frame_length()
-        ...     == synth.create_audio_feature(query, WHATEVER_STYLE2).frame_length
-        ... )
+        >>> audio = synth.create_audio_feature(query, WHATEVER_STYLE2)
+        >>>
+        >>> assert query.frame_length() == audio.frame_length
 
         >>> import numpy as np
         >>> from voicevox_core import AudioFeature
