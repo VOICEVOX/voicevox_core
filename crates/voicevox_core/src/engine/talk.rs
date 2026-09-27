@@ -7,10 +7,13 @@ pub(crate) mod text;
 pub(crate) mod text_analyzer;
 pub(crate) mod user_dict;
 
-pub use self::audio_query::{AccentPhrase, AudioQuery, Mora};
 pub(crate) use self::audio_query::{
     LengthedPhoneme, ValidatedAccentPhrase, ValidatedAudioQuery, ValidatedMora,
 };
 use self::full_context_label::extract_full_context_label;
 pub(crate) use self::interpret_query::{DecoderFeature, initial_process, split_mora};
 pub(crate) use self::kana_parser::{KanaParseError, create_kana, parse_kana};
+pub use self::{
+    audio_query::{AccentPhrase, AudioQuery, Mora},
+    interpret_query::{AudioQueryFrameLength, DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK},
+};

@@ -19,9 +19,10 @@ use thiserror::Error;
 use tracing::error;
 
 use crate::{
-    VoicevoxAccelerationMode, VoicevoxInitializeOptions, VoicevoxLoadVoiceModelOptions,
-    VoicevoxOnExistingVoiceModelId, VoicevoxSynthesisOptions, VoicevoxTtsOptions,
-    VoicevoxUserDictWord, VoicevoxUserDictWordType, result_code::VoicevoxResultCode,
+    VoicevoxAccelerationMode, VoicevoxAudioQueryFrameLengthOptions, VoicevoxInitializeOptions,
+    VoicevoxLoadVoiceModelOptions, VoicevoxOnExistingVoiceModelId, VoicevoxSynthesisOptions,
+    VoicevoxTtsOptions, VoicevoxUserDictWord, VoicevoxUserDictWordType,
+    result_code::VoicevoxResultCode,
 };
 
 pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxResultCode {
@@ -243,6 +244,15 @@ impl From<voicevox_core::OnExistingVoiceModelId> for VoicevoxOnExistingVoiceMode
             Reload => Self::VOICEVOX_ON_EXISTING_VOICE_MODEL_ID_RELOAD,
             Skip => Self::VOICEVOX_ON_EXISTING_VOICE_MODEL_ID_SKIP,
             _ => unreachable!(),
+        }
+    }
+}
+
+impl Default for VoicevoxAudioQueryFrameLengthOptions {
+    fn default() -> Self {
+        Self {
+            enable_interrogative_upspeak:
+                voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
         }
     }
 }

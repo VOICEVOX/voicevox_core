@@ -440,6 +440,18 @@ typedef struct VoicevoxInitializeOptions {
 } VoicevoxInitializeOptions;
 
 /**
+ * ::voicevox_audio_query_frame_length のオプション。
+ *
+ * \no-orig-impl{VoicevoxAudioQueryFrameLengthOptions}
+ */
+typedef struct VoicevoxAudioQueryFrameLengthOptions {
+  /**
+   * [`AccentPhrase::is_interrogative`](../rust_api/voicevox_core/struct.AccentPhrase.html#structfield.is_interrogative)を認識するかどうか
+   */
+  bool enable_interrogative_upspeak;
+} VoicevoxAudioQueryFrameLengthOptions;
+
+/**
  * ::voicevox_synthesizer_load_voice_model のオプション。
  *
  * \no-orig-impl{VoicevoxLoadVoiceModelOptions}
@@ -819,6 +831,178 @@ __declspec(dllimport)
 #endif
 VoicevoxResultCode voicevox_audio_query_create_from_accent_phrases(const char *accent_phrases_json,
                                                                    char **output_audio_query_json);
+
+/**
+ * デフォルトの `voicevox_audio_query_frame_length` のオプションを生成する。
+ *
+ * @return デフォルト値が設定された `voicevox_audio_query_frame_length` のオプション
+ *
+ * \no-orig-impl{voicevox_make_default_audio_query_frame_length_options}
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+struct VoicevoxAudioQueryFrameLengthOptions voicevox_make_default_audio_query_frame_length_options(void);
+
+/**
+ * 音声の総フレーム数を算出する。
+ *
+ * 音声の秒数は、フレーム数を[`93.75`]で割った値で表せる。
+ *
+ * 算出した値は[`SIZE_MAX`]で飽和する。算出方法は以下の通り。
+ *
+ * 1. 以下の秒数を32-bit浮動小数点数として解釈して集める。
+ *     - [`AudioQuery::pre_phoneme_length`]
+ *     - [`AudioQuery::accent_phrases`]の要素ごとに
+ *         - [`AccentPhrase::moras`]の要素ごとに
+ *             - [`Mora::consonant_length`]
+ *             - [`Mora::vowel_length`]
+ *         - ::VoicevoxAudioQueryFrameLengthOptions::enable_interrogative_upspeak
+ *           かつ[`AccentPhrase::is_interrogative`]かつ`moras`の最後の[`Mora::pitch`]が`0.0`以外のとき、`0.15`秒
+ *         - [`AccentPhrase::pause_mora`]の`Mora::consonant_length`（通常はない）
+ *         - `AccentPhrase::pause_mora`の`Mora::vowel_length`
+ *     - [`AudioQuery::post_phoneme_length`]
+ * 2. それぞれの秒数を`secs`として、対応するフレーム長を`round_ties_even(round_ties_even(secs * 93.75f) / speed_scale)`として算出する。ここで`round_ties_even`は[Rustの`f32::round_ties_even`]であり、libmの[`roundevenf(3)`]と同様IEEE 754の`roundToIntegralTiesToEven`演算を行う。[`AudioQuery::speed_scale`]も32-bit浮動小数点数として解釈し、乗算と除算も32-bit浮動小数点数上で行う。
+ * 3. 各フレーム長を足し合わせる。
+ *
+ * `AudioQuery`に対応する音声の長さは将来的に変わる可能性がある。例えば、秒数を64-bit浮動小数点数として解釈しているVOICEVOX
+ * ENGINEと挙動を揃える可能性がある。
+ *
+ * [`93.75`]: ../rust_api/voicevox_core/struct.AudioFeature.html#associatedconstant.FRAME_RATE
+ * [`SIZE_MAX`]: https://en.cppreference.com/c/types/limits
+ * [`AudioQuery::pre_phoneme_length`]: ../rust_api/voicevox_core/struct.AudioQuery.html#structfield.pre_phoneme_length
+ * [`AudioQuery::accent_phrases`]: ../rust_api/voicevox_core/struct.AudioQuery.html#structfield.accent_phrases
+ * [`AccentPhrase::moras`]: ../rust_api/voicevox_core/struct.AccentPhrase.html#structfield.moras
+ * [`Mora::consonant_length`]: ../rust_api/voicevox_core/struct.Mora.html#structfield.consonant_length
+ * [`Mora::vowel_length`]: ../rust_api/voicevox_core/struct.Mora.html#structfield.vowel_length
+ * [`AccentPhrase::is_interrogative`]: ../rust_api/voicevox_core/struct.AccentPhrase.html#structfield.is_interrogative
+ * [`Mora::pitch`]: ../rust_api/voicevox_core/struct.Mora.html#structfield.pitch
+ * [`AccentPhrase::pause_mora`]: ../rust_api/voicevox_core/struct.AccentPhrase.html#structfield.pause_mora
+ * [`AudioQuery::post_phoneme_length`]: ../rust_api/voicevox_core/struct.AudioQuery.html#structfield.post_phoneme_length
+ * [Rustの`f32::round_ties_even`]: https://doc.rust-lang.org/stable/std/primitive.f32.html#method.round_ties_even
+ * [`roundevenf(3)`]: https://en.cppreference.com/w/c/numeric/math/roundeven
+ * [`AudioQuery::speed_scale`]: ../rust_api/voicevox_core/struct.AudioQuery.html#structfield.speed_scale
+ *
+ * @param [in] audio_query_json `AudioQuery`型のJSON
+ * @param [in] options オプション
+ * @param [out] output_frame_length 算出した総フレーム数の出力先
+ *
+ * @returns 成功時には ::VOICEVOX_RESULT_OK 、失敗時には ::VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR または ::VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR
+ *
+ * \examples{
+ * ```c
+ * char *query = NULL;
+ * VoicevoxAudioFeature *audio = NULL;
+ *
+ * VoicevoxResultCode voicevox_result = VOICEVOX_RESULT_OK;
+ *
+ * #define TRY(result)                                                            \
+ *   do {                                                                         \
+ *     voicevox_result = result;                                                  \
+ *     if (voicevox_result != VOICEVOX_RESULT_OK) {                               \
+ *       goto cleanup;                                                            \
+ *     }                                                                          \
+ *   } while (0)
+ * ```
+ *
+ * ```c
+ * TRY(voicevox_synthesizer_create_audio_query(
+ *     synth, "こんにちは、音声合成の世界へようこそ？", WHATEVER_STYLE1,
+ *     &query));
+ *
+ * TRY(voicevox_synthesizer_create_audio_feature(
+ *     synth, query, WHATEVER_STYLE2, voicevox_make_default_synthesis_options(),
+ *     &audio));
+ *
+ * size_t frame_length_of_audio_query;
+ * TRY(voicevox_audio_query_frame_length(
+ *     query, voicevox_make_default_audio_query_frame_length_options(),
+ *     &frame_length_of_audio_query));
+ *
+ * const size_t frame_length_of_audio_feature =
+ *     voicevox_audio_feature_frame_length(audio);
+ *
+ * assert(frame_length_of_audio_query == frame_length_of_audio_feature);
+ * ```
+ *
+ * ```c
+ * size_t to_frame_length(float secs, float speed_scale) {
+ *   const float kFrameRate = 93.75f;
+ *   return roundevenf(roundevenf(secs * kFrameRate) / speed_scale);
+ * }
+ *
+ * int main(void) {
+ *   // …
+ *
+ *   // speed_scale         = 1.2f
+ *   // pre_phoneme_length  = 3.3f
+ *   // post_phoneme_length = 4.4f
+ *   const char *kQuery = "{\n"
+ *                        "  \"accent_phrases\": [],\n"
+ *                        "  \"speedScale\": 1.2,\n"
+ *                        "  \"pitchScale\": 0.0,\n"
+ *                        "  \"intonationScale\": 1.0,\n"
+ *                        "  \"volumeScale\": 1.0,\n"
+ *                        "  \"prePhonemeLength\": 3.3,\n"
+ *                        "  \"postPhonemeLength\": 4.4,\n"
+ *                        "  \"outputSamplingRate\": 24000,\n"
+ *                        "  \"outputStereo\": false\n"
+ *                        "}\n";
+ *
+ *   size_t frame_length;
+ *   TRY(voicevox_audio_query_frame_length(
+ *       kQuery, voicevox_make_default_audio_query_frame_length_options(),
+ *       &frame_length));
+ *
+ *   assert(frame_length ==
+ *          // `speed_scale`, `pre_phoneme_length`
+ *          to_frame_length(3.3f, 1.2f)
+ *              // `speed_scale`, `consonant_length`, `vowel_length`,
+ *              // `is_interrogative`
+ *              + 0
+ *              // `speed_scale`, `post_phoneme_length`
+ *              + to_frame_length(4.4f, 1.2f));
+ *
+ *   // …
+ * }
+ * ```
+ *
+ * ```c
+ * // speed_scale = FLT_MIN
+ * const char *kQuery = "{\n"
+ *                      "  \"accent_phrases\": [],\n"
+ *                      "  \"speedScale\": 1.1754943508222875e-38,\n"
+ *                      "  \"pitchScale\": 0.0,\n"
+ *                      "  \"intonationScale\": 1.0,\n"
+ *                      "  \"volumeScale\": 1.0,\n"
+ *                      "  \"prePhonemeLength\": 0.1,\n"
+ *                      "  \"postPhonemeLength\": 0.1,\n"
+ *                      "  \"outputSamplingRate\": 24000,\n"
+ *                      "  \"outputStereo\": false\n"
+ *                      "}\n";
+ *
+ * size_t frame_length;
+ * TRY(voicevox_audio_query_frame_length(
+ *     kQuery, voicevox_make_default_audio_query_frame_length_options(),
+ *     &frame_length));
+ *
+ * assert(frame_length == SIZE_MAX);
+ * ```
+ * }
+ *
+ * \safety{
+ * - `audio_query_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+ * - `output_frame_length`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+ * }
+ *
+ * \orig-impl{voicevox_audio_query_frame_length}
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_audio_query_frame_length(const char *audio_query_json,
+                                                     struct VoicevoxAudioQueryFrameLengthOptions options,
+                                                     uintptr_t *output_frame_length);
 
 /**
  * 与えられたJSONが`AudioQuery`型として不正であるときエラーを返す。

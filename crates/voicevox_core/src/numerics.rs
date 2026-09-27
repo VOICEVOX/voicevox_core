@@ -17,6 +17,7 @@ macro_rules! non_zero {
 #[cfg(test)]
 pub(crate) use non_zero;
 
+/// FIXME: [`typed_floats::as_const!`]に置き換える。
 macro_rules! non_nan_finite_f32 {
     ($value:literal $(,)?) => {{
         const VALUE: typed_floats::NonNaNFinite<f32> =
@@ -31,6 +32,7 @@ macro_rules! non_nan_finite_f32 {
 
 pub(crate) use non_nan_finite_f32;
 
+/// FIXME: [`typed_floats::as_const!`]に置き換える。
 macro_rules! positive_finite_f32 {
     ($value:literal $(,)?) => {{
         const VALUE: typed_floats::PositiveFinite<f32> =

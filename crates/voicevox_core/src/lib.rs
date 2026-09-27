@@ -354,10 +354,12 @@ pub mod __doc {
     ///
     /// | | 理由 |
     /// | :- | :- |
-    /// | `VoicevoxLoadOnnxruntimeOptions` | ビルダースタイルであるため |
+    /// | `VoicevoxAudioQueryFrameLengthOptions` | ビルダースタイルであるため |
+    /// | `VoicevoxLoadOnnxruntimeOptions` | 〃 |
     /// | `VoicevoxInitializeOptions` | 〃 |
     /// | `VoicevoxSynthesisOptions` | 〃 |
     /// | `VoicevoxTtsOptions` | 〃 |
+    /// | `voicevox_make_default_audio_query_frame_length_options` | 〃 |
     /// | `voicevox_make_default_load_onnxruntime_options` | 〃 |
     /// | `voicevox_make_default_initialize_options` | 〃 |
     /// | `voicevox_make_default_load_voice_model_options` | 〃 |
@@ -377,10 +379,12 @@ pub mod __doc {
     /// [C API]: https://voicevox.github.io/voicevox_core/apis/c_api/voicevox__core_8h.html
     /// [Rustのデストラクタ機構]: https://doc.rust-lang.org/reference/destructors.html
     #[doc(alias(
+        "VoicevoxAudioQueryFrameLengthOptions",
         "VoicevoxLoadOnnxruntimeOptions",
         "VoicevoxInitializeOptions",
         "VoicevoxSynthesisOptions",
         "VoicevoxTtsOptions",
+        "voicevox_make_default_audio_query_frame_length_options",
         "voicevox_make_default_load_onnxruntime_options",
         "voicevox_make_default_initialize_options",
         "voicevox_make_default_synthesis_options",
@@ -500,7 +504,7 @@ pub use self::{
             validate::ensure_compatible,
         },
         talk::{
-            AccentPhrase, AudioQuery, Mora,
+            AccentPhrase, AudioQuery, AudioQueryFrameLength, Mora,
             user_dict::{
                 UserDictWord, UserDictWordBuilder, UserDictWordPriority, UserDictWordType,
             },
