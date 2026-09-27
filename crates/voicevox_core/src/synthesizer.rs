@@ -127,7 +127,7 @@ struct StreamingSynthesisOptions<A: infer::AsyncExt> {
 
 // FIXME: 受理する範囲についてテストを書く
 impl<A: infer::AsyncExt> StreamingSynthesisOptions<A> {
-    /// `enable_interrogative_upspeak`、`start_offset`, `segment_length`が[`AudioQuery::frame_length`]に対して受理してよければフレーム数に変換し、そうでなればパニックする。
+    /// `start_offset`, `segment_length`が[`AudioQuery::frame_length`]に対して受理してよければフレーム数に変換し、そうでなければパニックする。
     ///
     /// # Panics
     ///
@@ -145,8 +145,8 @@ impl<A: infer::AsyncExt> StreamingSynthesisOptions<A> {
             start_offset_in_frames.round_ties_even() as _
         } else {
             panic!(
-                "`start_offset` in frames must be positive and must not exceed the length of \
-                 `AudioFeature` ({frame_length} frames; approx. {} seconds)",
+                "`start_offset` in frames must be positive and must not exceed the length of the \
+                 audio ({frame_length} frames; approx. {} seconds)",
                 (frame_length as f64 / AudioFeature::FRAME_RATE) as f32,
             );
         };
@@ -154,15 +154,14 @@ impl<A: infer::AsyncExt> StreamingSynthesisOptions<A> {
         #[expect(clippy::cast_nan_to_int)]
         const _: () = assert!(f64::NAN as usize == 0);
         const _: () = assert!(-1.0 as usize == 0);
-        let segment_length_in_frame = (to_frame_length(self.segment_length_in_secs)
-            .round_ties_even() as usize)
-            .try_into()
-            .unwrap_or_else(|_| {
-                panic!(
-                    "`segment_length * {FRAME_RATE}` must be greater than `0.5`",
-                    FRAME_RATE = AudioFeature::FRAME_RATE,
-                );
-            });
+        let Ok(segment_length_in_frame) =
+            (to_frame_length(self.segment_length_in_secs).round_ties_even() as usize).try_into()
+        else {
+            panic!(
+                "`segment_length * {FRAME_RATE}` must be greater than `0.5`",
+                FRAME_RATE = AudioFeature::FRAME_RATE,
+            );
+        };
 
         return (
             start_offset_in_frames,
@@ -2837,7 +2836,7 @@ pub(crate) mod blocking {
     }
 
     impl<'synthesizer> StreamingSynthesis<'synthesizer, '_> {
-        /// [`AccentPhrase::is_interrogative`].を考慮するかどうか。
+        /// [`AccentPhrase::is_interrogative`]を考慮するかどうか。
         ///
         /// この値を`false`にすることにより<code>[start_offset] * [FRAME_RATE]</code>が[`AudioQuery::frame_length`]を超過する場合、[実行]時にパニックする。
         ///
@@ -4010,7 +4009,7 @@ pub(crate) mod nonblocking {
     }
 
     impl<'synthesizer> StreamingSynthesis<'synthesizer, '_> {
-        /// [`AccentPhrase::is_interrogative`].を考慮するかどうか。
+        /// [`AccentPhrase::is_interrogative`]を考慮するかどうか。
         ///
         /// この値を`false`にすることにより<code>[start_offset] * [FRAME_RATE]</code>が[`AudioQuery::frame_length`]を超過する場合、[実行]時にパニックする。
         ///
