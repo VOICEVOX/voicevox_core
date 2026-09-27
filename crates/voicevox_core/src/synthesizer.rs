@@ -10,6 +10,7 @@ use futures_util::TryFutureExt as _;
 use std::{
     fmt::{self, Debug},
     marker::PhantomData,
+    num::NonZero,
     sync::Arc,
 };
 use tracing::info;
@@ -120,16 +121,67 @@ impl<A: infer::AsyncExt> Default for FrameSynthesisOptions<A> {
 #[debug(bound(A::Cancellable: Debug))]
 struct StreamingSynthesisOptions<A: infer::AsyncExt> {
     synthesis: SynthesisOptions<A>,
-    start_offset: f64,
-    segment_length: f64,
+    start_offset_in_secs: f64,
+    segment_length_in_secs: f64,
+}
+
+// FIXME: 受理する範囲についてテストを書く
+impl<A: infer::AsyncExt> StreamingSynthesisOptions<A> {
+    /// `enable_interrogative_upspeak`、`start_offset`, `segment_length`が[`AudioQuery::frame_length`]に対して受理してよければフレーム数に変換し、そうでなればパニックする。
+    ///
+    /// # Panics
+    ///
+    /// - <code>[start_offset_in_secs] * [FRAME_RATE]</code>が`0.0`以上[`AudioQuery::frame_length`]以下でなければパニックする。
+    /// - <code>[segment_length_in_secs] * [FRAME_RATE]</code>が`0.5`を超えていなければパニックする。
+    ///
+    /// [FRAME_RATE]: AudioFeature::FRAME_RATE
+    /// [start_offset_in_secs]: Self::start_offset_in_secs
+    /// [segment_length_in_secs]: Self::segment_length_in_secs
+    #[track_caller]
+    fn validate(self, frame_length: usize) -> (usize, NonZero<usize>, SynthesisOptions<A>) {
+        let start_offset_in_frames = to_frame_length(self.start_offset_in_secs);
+        let start_offset_in_frames = if ((0.)..=frame_length as _).contains(&start_offset_in_frames)
+        {
+            start_offset_in_frames.round_ties_even() as _
+        } else {
+            panic!(
+                "`start_offset` in frames must be positive and must not exceed the length of \
+                 `AudioFeature` ({frame_length} frames; approx. {} seconds)",
+                (frame_length as f64 / AudioFeature::FRAME_RATE) as f32,
+            );
+        };
+
+        #[expect(clippy::cast_nan_to_int)]
+        const _: () = assert!(f64::NAN as usize == 0);
+        const _: () = assert!(-1.0 as usize == 0);
+        let segment_length_in_frame = (to_frame_length(self.segment_length_in_secs)
+            .round_ties_even() as usize)
+            .try_into()
+            .unwrap_or_else(|_| {
+                panic!(
+                    "`segment_length * {FRAME_RATE}` must be greater than `0.5`",
+                    FRAME_RATE = AudioFeature::FRAME_RATE,
+                );
+            });
+
+        return (
+            start_offset_in_frames,
+            segment_length_in_frame,
+            self.synthesis,
+        );
+
+        const fn to_frame_length(secs: f64) -> f64 {
+            secs * AudioFeature::FRAME_RATE
+        }
+    }
 }
 
 impl<A: infer::AsyncExt> Default for StreamingSynthesisOptions<A> {
     fn default() -> Self {
         Self {
             synthesis: SynthesisOptions::default(),
-            start_offset: 0.0,
-            segment_length: 3.0,
+            start_offset_in_secs: 0.0,
+            segment_length_in_secs: 3.0,
         }
     }
 }
@@ -1822,6 +1874,153 @@ pub(crate) mod blocking {
             }
         }
 
+        /// AudioQueryから直接WAVフォーマットで音声波形をストリーミング生成する。
+        ///
+        /// # Examples
+        ///
+        /// ```
+        /// # fn main() -> anyhow::Result<()> {
+        /// # use pollster::FutureExt as _;
+        /// # use voicevox_core::__internal::doctest_fixtures::IntoBlocking as _;
+        /// #
+        /// # let synth =
+        /// #     &voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+        /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
+        /// #         test_util::ONNXRUNTIME_DYLIB_PATH,
+        /// #         test_util::OPEN_JTALK_DIC_DIR,
+        /// #     )
+        /// #     .block_on()?
+        /// #     .into_blocking();
+        /// #
+        /// use itertools::Itertools as _;
+        /// use voicevox_core::{AudioFeature, AudioQuery, StyleId, blocking::Synthesizer};
+        ///
+        /// # const STYLE_ID: StyleId = StyleId(302);
+        /// # let query = &AudioQuery::from_accent_phrases(vec![]);
+        /// #
+        /// const _: StyleId = STYLE_ID;
+        /// let _: &Synthesizer<_> = synth;
+        /// let _: &AudioQuery = query;
+        ///
+        /// let wav = synth
+        ///     .streaming_synthesis(query, STYLE_ID)
+        ///     .perform()?
+        ///     .process_results(|chunks| chunks.concat())?;
+        /// #
+        /// # Ok(())
+        /// # }
+        /// ```
+        ///
+        /// ```
+        /// # fn main() -> anyhow::Result<()> {
+        /// # use itertools::Itertools as _;
+        /// # use pollster::FutureExt as _;
+        /// # use voicevox_core::{
+        /// #    __internal::doctest_fixtures::IntoBlocking as _, AudioFeature, AudioQuery, StyleId,
+        /// # };
+        /// #
+        /// # let synth =
+        /// #     &voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+        /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
+        /// #         test_util::ONNXRUNTIME_DYLIB_PATH,
+        /// #         test_util::OPEN_JTALK_DIC_DIR,
+        /// #     )
+        /// #     .block_on()?
+        /// #     .into_blocking();
+        /// #
+        /// # const STYLE_ID: StyleId = StyleId(302);
+        /// # let query = &AudioQuery::from_accent_phrases(vec![]);
+        /// #
+        /// use std::mem;
+        ///
+        /// let frame_length = query.frame_length().calculate().0;
+        /// let num_channels = if query.output_stereo { 2 } else { 1 };
+        ///
+        /// if frame_length < 2 {
+        ///     unimplemented!();
+        /// }
+        ///
+        /// let [wav_header, segment1, segment2] = synth
+        ///     .streaming_synthesis(query, STYLE_ID)
+        ///     .segment_length((frame_length as f64 + 0.5) / AudioFeature::FRAME_RATE / 2.) // ２分割
+        ///     .perform()?
+        ///     .collect::<Result<Vec<_>, _>>()?
+        ///     .try_into()
+        ///     .unwrap();
+        ///
+        /// assert_eq!(44, wav_header.len());
+        /// assert_eq!(
+        ///     frame_length * usize::from(num_channels) * 256 * mem::size_of::<i16>(),
+        ///     segment1.len() + segment2.len(),
+        /// );
+        ///
+        /// macro_rules! wav_prop {
+        ///     (_[$offset:literal.._] as $ty:ty) => {
+        ///         <$ty>::from_le_bytes(*wav_header[$offset..].first_chunk().unwrap())
+        ///     };
+        /// }
+        ///
+        /// assert_eq!(*b"fmt ", wav_header[12..][..4]);
+        /// assert_eq!((20..36).len() as u32, wav_prop!(_[16.._] as u32)); // 拡張なし
+        /// assert_eq!(1, wav_prop!(_[20.._] as u16)); // `WAVE_FORMAT_PCM`
+        /// assert_eq!(num_channels, wav_prop!(_[22.._] as u16));
+        /// assert_eq!(
+        ///     query.output_sampling_rate.get().get(),
+        ///     wav_prop!(_[24.._] as u32),
+        /// );
+        /// assert_eq!(16, wav_prop!(_[34.._] as u16)); // 16-bit
+        ///
+        /// assert_eq!(*b"data", wav_header[36..][..4]);
+        /// assert_eq!(
+        ///     segment1.len() + segment2.len(),
+        ///     wav_prop!(_[40.._] as u32) as usize,
+        /// );
+        /// #
+        /// # Ok(())
+        /// # }
+        /// ```
+        ///
+        /// ```should_panic
+        /// # fn main() -> anyhow::Result<()> {
+        /// # use pollster::FutureExt as _;
+        /// # use voicevox_core::{
+        /// #    __internal::doctest_fixtures::IntoBlocking as _, AudioFeature, AudioQuery, StyleId,
+        /// # };
+        /// #
+        /// # let synth =
+        /// #     &voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+        /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
+        /// #         test_util::ONNXRUNTIME_DYLIB_PATH,
+        /// #         test_util::OPEN_JTALK_DIC_DIR,
+        /// #     )
+        /// #     .block_on()?
+        /// #     .into_blocking();
+        /// #
+        /// # const STYLE_ID: StyleId = StyleId(302);
+        /// # let query = &AudioQuery::from_accent_phrases(vec![]);
+        /// #
+        /// let _ = synth
+        ///     .streaming_synthesis(query, STYLE_ID)
+        ///     .segment_length(0.5 / AudioFeature::FRAME_RATE) // 0.005333333333333333
+        ///     .perform();
+        /// #
+        /// # Ok(())
+        /// # }
+        /// ```
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_streaming_synthesis"))]
+        pub fn streaming_synthesis<'synthesizer, 'audio_query>(
+            &'synthesizer self,
+            audio_query: &'audio_query AudioQuery,
+            style_id: StyleId,
+        ) -> StreamingSynthesis<'synthesizer, 'audio_query> {
+            StreamingSynthesis {
+                synthesizer: self.0.without_text_analyzer(),
+                audio_query,
+                style_id,
+                options: Default::default(),
+            }
+        }
+
         /// AquesTalk風記法からAccentPhrase (アクセント句)の配列を生成する。
         ///
         /// # Example
@@ -2279,23 +2478,6 @@ pub(crate) mod blocking {
 
     assert_send_sync!(SynthesisStream<'_>);
 
-    impl<T> self::Synthesizer<T> {
-        /// AudioQueryから直接WAVフォーマットで音声波形をストリーミング生成する。
-        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_streaming_synthesis"))]
-        pub fn streaming_synthesis<'synthesizer, 'audio_query>(
-            &'synthesizer self,
-            audio_query: &'audio_query AudioQuery,
-            style_id: StyleId,
-        ) -> StreamingSynthesis<'synthesizer, 'audio_query> {
-            StreamingSynthesis {
-                synthesizer: self.0.without_text_analyzer(),
-                audio_query,
-                style_id,
-                options: Default::default(),
-            }
-        }
-    }
-
     impl<T: crate::blocking::TextAnalyzer> self::Synthesizer<T> {
         /// 日本語のテキストからAccentPhrase (アクセント句)の配列を生成する。
         ///
@@ -2655,32 +2837,72 @@ pub(crate) mod blocking {
     }
 
     impl<'synthesizer> StreamingSynthesis<'synthesizer, '_> {
+        /// [`AccentPhrase::is_interrogative`].を考慮するかどうか。
+        ///
+        /// この値を`false`にすることにより<code>[start_offset] * [FRAME_RATE]</code>が[`AudioQuery::frame_length`]を超過する場合、[実行]時にパニックする。
+        ///
+        /// [FRAME_RATE]: AudioFeature::FRAME_RATE
+        /// [start_offset]: Self::start_offset
+        /// [実行]: Self::perform
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.synthesis.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
         }
 
+        /// 音声の開始位置。
+        ///
+        /// <code>[start_offset] * [FRAME_RATE]</code>が`0.0`以上[`AudioQuery::frame_length`]以下でなければ[実行]時にパニックする。`AudioQuery::frame_length`の値は[`enable_interrogative_upspeak`]により変わることに注意。
+        ///
+        /// [FRAME_RATE]: AudioFeature::FRAME_RATE
+        /// [start_offset]: Self::start_offset
+        /// [実行]: Self::perform
+        /// [`enable_interrogative_upspeak`]: Self::enable_interrogative_upspeak
         pub fn start_offset(mut self, start_offset: f64) -> Self {
-            self.options.start_offset = start_offset;
+            self.options.start_offset_in_secs = start_offset;
             self
         }
 
+        /// 一度に合成する音声の長さ。
+        ///
+        /// <code>[segment_length] * [FRAME_RATE]</code>が`0.5`を超えていなければ[実行]時にパニックする。
+        ///
+        /// [FRAME_RATE]: AudioFeature::FRAME_RATE
+        /// [segment_length]: Self::segment_length
+        /// [実行]: Self::perform
         pub fn segment_length(mut self, segment_length: f64) -> Self {
-            self.options.segment_length = segment_length;
+            self.options.segment_length_in_secs = segment_length;
             self
         }
 
         /// 実行する。
+        ///
+        /// 詳細は[`Synthesizer::streaming_synthesis`]を参照。
+        ///
+        /// # Panics
+        ///
+        /// - <code>[start_offset] * [FRAME_RATE]</code>が`0.0`以上[`AudioQuery::frame_length`]以下でなければパニックする。
+        /// - <code>[segment_length] * [FRAME_RATE]</code>が`0.5`を超えていなければパニックする。
+        ///
+        /// [`enable_interrogative_upspeak`]により`AudioQuery::frame_length`が変わることに注意。
+        ///
+        /// [FRAME_RATE]: AudioFeature::FRAME_RATE
+        /// [start_offset]: Self::start_offset
+        /// [segment_length]: Self::segment_length
+        /// [`enable_interrogative_upspeak`]: Self::enable_interrogative_upspeak
         pub fn perform(self) -> crate::Result<SynthesisStream<'synthesizer>> {
+            let frame_length = self
+                .audio_query
+                .frame_length()
+                .enable_interrogative_upspeak(self.options.synthesis.enable_interrogative_upspeak)
+                .calculate()
+                .0;
+            let (offset_frames, segment_frames, synthesis_opts) =
+                self.options.validate(frame_length);
             let audio_feature = self
                 .synthesizer
-                .create_audio_feature(self.audio_query, self.style_id, &self.options.synthesis)
+                .create_audio_feature(self.audio_query, self.style_id, &synthesis_opts)
                 .block_on()?;
-            let offset_frames =
-                (self.options.start_offset * AudioFeature::FRAME_RATE).round_ties_even() as usize;
             let full_frames = audio_feature.frame_length();
-            let segment_frames =
-                (self.options.segment_length * AudioFeature::FRAME_RATE).round_ties_even() as usize;
             let render_frames = full_frames - offset_frames;
             let render_wave_length = render_frames * 256;
             let output_sampling_rate = self.audio_query.output_sampling_rate.get().get();
@@ -2692,7 +2914,7 @@ pub(crate) mod blocking {
             Ok(SynthesisStream {
                 synthesizer: self.synthesizer,
                 audio_feature,
-                cursor: (offset_frames..full_frames).step_by(segment_frames),
+                cursor: (offset_frames..full_frames).step_by(segment_frames.get()),
                 header: s16le_wav_prefix(render_pcm_length, output_sampling_rate, output_stereo),
             })
         }
@@ -2930,6 +3152,134 @@ pub(crate) mod nonblocking {
         }
 
         /// AudioQueryから直接WAVフォーマットで音声波形をストリーミング生成する。
+        ///
+        /// # Examples
+        ///
+        /// ```
+        /// # #[pollster::main]
+        /// # async fn main() -> anyhow::Result<()> {
+        /// # let synth =
+        /// #     &voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+        /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
+        /// #         test_util::ONNXRUNTIME_DYLIB_PATH,
+        /// #         test_util::OPEN_JTALK_DIC_DIR,
+        /// #     )
+        /// #     .await?;
+        /// #
+        /// use futures_util::TryStreamExt as _;
+        /// use voicevox_core::{AudioFeature, AudioQuery, StyleId, nonblocking::Synthesizer};
+        ///
+        /// # const STYLE_ID: StyleId = StyleId(302);
+        /// # let query = &AudioQuery::from_accent_phrases(vec![]);
+        /// #
+        /// const _: StyleId = STYLE_ID;
+        /// let _: &Synthesizer<_> = synth;
+        /// let _: &AudioQuery = query;
+        ///
+        /// let wav = synth
+        ///     .streaming_synthesis(query, STYLE_ID)
+        ///     .perform()
+        ///     .await?
+        ///     .try_concat()
+        ///     .await?;
+        /// #
+        /// # Ok(())
+        /// # }
+        /// ```
+        ///
+        /// ```
+        /// # #[pollster::main]
+        /// # async fn main() -> anyhow::Result<()> {
+        /// # use futures_util::TryStreamExt as _;
+        /// # use voicevox_core::{AudioFeature, AudioQuery, StyleId};
+        /// #
+        /// # let synth =
+        /// #     &voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+        /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
+        /// #         test_util::ONNXRUNTIME_DYLIB_PATH,
+        /// #         test_util::OPEN_JTALK_DIC_DIR,
+        /// #     )
+        /// #     .await?;
+        /// #
+        /// # const STYLE_ID: StyleId = StyleId(302);
+        /// # let query = &AudioQuery::from_accent_phrases(vec![]);
+        /// #
+        /// use std::mem;
+        ///
+        /// let frame_length = query.frame_length().calculate().0;
+        /// let num_channels = if query.output_stereo { 2 } else { 1 };
+        ///
+        /// if frame_length < 2 {
+        ///     unimplemented!();
+        /// }
+        ///
+        /// let [wav_header, segment1, segment2] = synth
+        ///     .streaming_synthesis(query, STYLE_ID)
+        ///     .segment_length((frame_length as f64 + 0.5) / AudioFeature::FRAME_RATE / 2.) // ２分割
+        ///     .perform()
+        ///     .await?
+        ///     .try_collect::<Vec<_>>()
+        ///     .await?
+        ///     .try_into()
+        ///     .unwrap();
+        ///
+        /// assert_eq!(44, wav_header.len());
+        /// assert_eq!(
+        ///     frame_length * usize::from(num_channels) * 256 * mem::size_of::<i16>(),
+        ///     segment1.len() + segment2.len(),
+        /// );
+        ///
+        /// macro_rules! wav_prop {
+        ///     (_[$offset:literal.._] as $ty:ty) => {
+        ///         <$ty>::from_le_bytes(*wav_header[$offset..].first_chunk().unwrap())
+        ///     };
+        /// }
+        ///
+        /// assert_eq!(*b"fmt ", wav_header[12..][..4]);
+        /// assert_eq!((20..36).len() as u32, wav_prop!(_[16.._] as u32)); // 拡張なし
+        /// assert_eq!(1, wav_prop!(_[20.._] as u16)); // `WAVE_FORMAT_PCM`
+        /// assert_eq!(num_channels, wav_prop!(_[22.._] as u16));
+        /// assert_eq!(
+        ///     query.output_sampling_rate.get().get(),
+        ///     wav_prop!(_[24.._] as u32),
+        /// );
+        /// assert_eq!(16, wav_prop!(_[34.._] as u16)); // 16-bit
+        ///
+        /// assert_eq!(*b"data", wav_header[36..][..4]);
+        /// assert_eq!(
+        ///     segment1.len() + segment2.len(),
+        ///     wav_prop!(_[40.._] as u32) as usize,
+        /// );
+        /// #
+        /// # Ok(())
+        /// # }
+        /// ```
+        ///
+        /// ```should_panic
+        /// # #[pollster::main]
+        /// # async fn main() -> anyhow::Result<()> {
+        /// # use voicevox_core::{AudioFeature, AudioQuery, StyleId};
+        /// #
+        /// # let synth =
+        /// #     &voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+        /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
+        /// #         test_util::ONNXRUNTIME_DYLIB_PATH,
+        /// #         test_util::OPEN_JTALK_DIC_DIR,
+        /// #     )
+        /// #     .await?;
+        /// #
+        /// # const STYLE_ID: StyleId = StyleId(302);
+        /// # let query = &AudioQuery::from_accent_phrases(vec![]);
+        /// #
+        /// let _ = synth
+        ///     .streaming_synthesis(query, STYLE_ID)
+        ///     .segment_length(0.5 / AudioFeature::FRAME_RATE) // 0.005333333333333333
+        ///     .perform()
+        ///     .await;
+        /// #
+        /// # Ok(())
+        /// # }
+        /// ```
         pub fn streaming_synthesis<'synthesizer, 'audio_query>(
             &'synthesizer self,
             audio_query: &'audio_query AudioQuery,
@@ -3660,21 +4010,71 @@ pub(crate) mod nonblocking {
     }
 
     impl<'synthesizer> StreamingSynthesis<'synthesizer, '_> {
+        /// [`AccentPhrase::is_interrogative`].を考慮するかどうか。
+        ///
+        /// この値を`false`にすることにより<code>[start_offset] * [FRAME_RATE]</code>が[`AudioQuery::frame_length`]を超過する場合、[実行]時にパニックする。
+        ///
+        /// [FRAME_RATE]: AudioFeature::FRAME_RATE
+        /// [start_offset]: Self::start_offset
+        /// [実行]: Self::perform
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.synthesis.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
         }
 
+        /// 音声の開始位置。
+        ///
+        /// <code>[start_offset] * [FRAME_RATE]</code>が`0.0`以上[`AudioQuery::frame_length`]以下でなければ[実行]時にパニックする。`AudioQuery::frame_length`の値は[`enable_interrogative_upspeak`]により変わることに注意。
+        ///
+        /// [FRAME_RATE]: AudioFeature::FRAME_RATE
+        /// [start_offset]: Self::start_offset
+        /// [実行]: Self::perform
+        /// [`enable_interrogative_upspeak`]: Self::enable_interrogative_upspeak
+        pub fn start_offset(mut self, start_offset: f64) -> Self {
+            self.options.start_offset_in_secs = start_offset;
+            self
+        }
+
+        /// 一度に合成する音声の長さ。
+        ///
+        /// <code>[segment_length] * [FRAME_RATE]</code>が`0.5`を超えていなければ[実行]時にパニックする。
+        ///
+        /// [FRAME_RATE]: AudioFeature::FRAME_RATE
+        /// [segment_length]: Self::segment_length
+        /// [実行]: Self::perform
+        pub fn segment_length(mut self, segment_length: f64) -> Self {
+            self.options.segment_length_in_secs = segment_length;
+            self
+        }
+
         /// 実行する。
+        ///
+        /// 詳細は[`Synthesizer::streaming_synthesis`]を参照。
+        ///
+        /// # Panics
+        ///
+        /// - <code>[start_offset] * [FRAME_RATE]</code>が`0.0`以上[`AudioQuery::frame_length`]以下でなければパニックする。
+        /// - <code>[segment_length] * [FRAME_RATE]</code>が`0.5`を超えていなければパニックする。
+        ///
+        /// `AudioQuery::frame_length`の値は[`enable_interrogative_upspeak`]により変わることに注意。
+        ///
+        /// [FRAME_RATE]: AudioFeature::FRAME_RATE
+        /// [start_offset]: Self::start_offset
+        /// [segment_length]: Self::segment_length
+        /// [`enable_interrogative_upspeak`]: Self::enable_interrogative_upspeak
         pub async fn perform(self) -> crate::Result<SynthesisStream<'synthesizer>> {
+            let frame_length = self
+                .audio_query
+                .frame_length()
+                .enable_interrogative_upspeak(self.options.synthesis.enable_interrogative_upspeak)
+                .calculate()
+                .0;
+            let (offset_frames, segment_frames, synthesis_opts) =
+                self.options.validate(frame_length);
             let audio_feature = self
                 .synthesizer
-                .create_audio_feature(self.audio_query, self.style_id, &self.options.synthesis)
+                .create_audio_feature(self.audio_query, self.style_id, &synthesis_opts)
                 .await?;
-            let offset_frames =
-                (self.options.start_offset * AudioFeature::FRAME_RATE).round_ties_even() as usize;
-            let segment_frames =
-                (self.options.segment_length * AudioFeature::FRAME_RATE).round_ties_even() as usize;
             let full_frames = audio_feature.frame_length();
             let render_frames = full_frames - offset_frames;
             let render_wave_length = render_frames * 256;
@@ -3687,7 +4087,7 @@ pub(crate) mod nonblocking {
             Ok(SynthesisStream {
                 synthesizer: self.synthesizer,
                 audio_feature,
-                cursor: (offset_frames..full_frames).step_by(segment_frames),
+                cursor: (offset_frames..full_frames).step_by(segment_frames.get()),
                 header: s16le_wav_prefix(render_pcm_length, output_sampling_rate, output_stereo),
                 pending_pcm: None,
             })
