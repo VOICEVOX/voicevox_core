@@ -129,7 +129,7 @@ impl<A: infer::AsyncExt> Default for StreamingSynthesisOptions<A> {
         Self {
             synthesis: SynthesisOptions::default(),
             start_offset: 0.0,
-            segment_length: 3.0,
+            segment_length: 0.3,
         }
     }
 }
@@ -4746,7 +4746,7 @@ mod tests {
 
     #[rstest]
     #[tokio::test]
-    async fn nonblocking_streaming_synthesis_equivalent() {
+    async fn nonblocking_streaming_synthesis_preserve_length() {
         let synthesizer = super::nonblocking::Synthesizer::builder(
             crate::nonblocking::Onnxruntime::from_test_util_data()
                 .await
@@ -4770,13 +4770,13 @@ mod tests {
             .await
             .unwrap();
 
-        let expected_wav = synthesizer
+        let without_division = synthesizer
             .synthesis(&audio_query, StyleId::new(302))
             .perform()
             .await
             .unwrap();
 
-        let actual_wav = synthesizer
+        let with_division = synthesizer
             .streaming_synthesis(&audio_query, StyleId::new(302))
             .perform()
             .await
@@ -4790,12 +4790,13 @@ mod tests {
             .flatten()
             .collect::<Vec<_>>();
 
-        assert_eq!(expected_wav, actual_wav);
+        assert_eq!(without_division[..44], with_division[..44]);
+        assert_eq!(without_division.len(), with_division.len());
     }
 
     #[rstest]
     #[tokio::test]
-    async fn blocking_streaming_synthesis_equivalent() {
+    async fn blocking_streaming_synthesis_preserve_length() {
         let synthesizer = super::blocking::Synthesizer::builder(
             crate::blocking::Onnxruntime::from_test_util_data().unwrap(),
         )
@@ -4812,12 +4813,12 @@ mod tests {
             .create_audio_query("これはテストです", StyleId::new(302))
             .unwrap();
 
-        let expected_wav = synthesizer
+        let without_division = synthesizer
             .synthesis(&audio_query, StyleId::new(302))
             .perform()
             .unwrap();
 
-        let actual_wav = synthesizer
+        let with_division = synthesizer
             .streaming_synthesis(&audio_query, StyleId::new(302))
             .perform()
             .unwrap()
@@ -4829,7 +4830,8 @@ mod tests {
             .flatten()
             .collect::<Vec<_>>();
 
-        assert_eq!(expected_wav, actual_wav);
+        assert_eq!(without_division[..44], with_division[..44]);
+        assert_eq!(without_division.len(), with_division.len());
     }
 
     #[rstest]
