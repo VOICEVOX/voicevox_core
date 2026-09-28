@@ -129,7 +129,7 @@ impl<A: infer::AsyncExt> Default for StreamingSynthesisOptions<A> {
         Self {
             synthesis: SynthesisOptions::default(),
             start_offset: 0.0,
-            segment_length: 3.0,
+            segment_length: 0.3,
         }
     }
 }
