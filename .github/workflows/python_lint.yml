@@ -34,7 +34,7 @@ jobs:
           poetry lock
           git diff --exit-code
       - name: Install dependencies
-        run: poetry install --with test
+        run: poetry install --with examples --with test
       - name: Check code style for voicevox_core_python_api
         run: |
           black --check .
@@ -44,3 +44,4 @@ jobs:
         run: |
           black --check --diff .
           isort --check --diff --profile black .
+      # FIXME: Pyrightも動かす
