@@ -182,7 +182,8 @@ async def main() -> None:
         )
         if estimated_remaining_playback < 0.0:
             logger.warning(
-                "Synthesis exceeded the audio duration by %.3f seconds!",
+                "Synthesis exceeded the audio duration by %.3f seconds. "
+                "Consider setting larger `--segment-length`",
                 -estimated_remaining_playback,
             )
         await asyncio.sleep(max(0.0, estimated_remaining_playback + 0.1))
