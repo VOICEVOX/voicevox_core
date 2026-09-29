@@ -14,8 +14,10 @@ from argparse import ArgumentParser
 from pathlib import Path
 
 from sounddevice import RawOutputStream
-from voicevox_core import AccelerationMode
+from voicevox_core import AccelerationMode, AudioFeature
 from voicevox_core.asyncio import Onnxruntime, OpenJtalk, Synthesizer, VoiceModelFile
+
+FRAME_RATE = AudioFeature.FRAME_RATE  # TODO: #1449
 
 
 @dataclasses.dataclass
@@ -122,6 +124,7 @@ async def main() -> None:
 
     logger.info("%s", f"Creating an AudioQuery from {args.text!r}")
     audio_query = await synthesizer.create_audio_query(args.text, args.style_id)
+    assert audio_query.output_sampling_rate == FRAME_RATE * 256.0
 
     logger.info("%s", f"Preparing the stream with {audio_query}")
 
@@ -148,10 +151,11 @@ async def main() -> None:
     # assert val_at(34, "<H") == 16  # 16-bit
     # assert val_at(36, "4s") == b"data"
     # assert val_at(40, "<I") == (
+    #     # `audio_query.output_sampling_rate == FRAME_RATE * 256`の場合
     #     audio_query.frame_length()
     #     * (2 if audio_query.output_stereo else 1)
     #     * 256
-    #     * struct.calcsize("H")
+    #     * struct.calcsize("h")
     # )
 
     logger.info("Starting the real time synthesis")
@@ -176,8 +180,7 @@ async def main() -> None:
         estimated_remaining_playback = (
             audio_query.frame_length()
             * (2 if audio_query.output_stereo else 1)
-            * 256
-            / audio_query.output_sampling_rate
+            / FRAME_RATE
             - (time.time_ns() - rendering_started) / 10**9
         )
         if estimated_remaining_playback < 0.0:
