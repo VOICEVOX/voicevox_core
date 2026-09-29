@@ -9,6 +9,7 @@ import dataclasses
 import logging
 import multiprocessing
 import operator
+import time
 from argparse import ArgumentParser
 from pathlib import Path
 
@@ -163,6 +164,7 @@ async def main() -> None:
         dtype="int16",
         latency=args.segment_length + 0.1,
     ) as out:
+        rendering_started = time.time_ns()
         async for segment in stream:
             out.write(segment)
             num_wrote_segments += 1
@@ -171,7 +173,19 @@ async def main() -> None:
                 "Appended a PCM segment to the buffer "
                 f"({num_wrote_segments}/{num_total_segments})",
             )
-        await asyncio.sleep(args.segment_length + 0.2)
+        estimated_remaining_playback = (
+            audio_query.frame_length()
+            * (2 if audio_query.output_stereo else 1)
+            * 256
+            / audio_query.output_sampling_rate
+            - (time.time_ns() - rendering_started) / 10**9
+        )
+        if estimated_remaining_playback < 0.0:
+            logger.warning(
+                "Synthesis exceeded the audio duration by %.3f seconds!",
+                -estimated_remaining_playback,
+            )
+        await asyncio.sleep(max(0.0, estimated_remaining_playback + 0.1))
 
 
 if __name__ == "__main__":
