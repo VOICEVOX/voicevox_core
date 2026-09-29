@@ -23,6 +23,7 @@ use anyhow::{Context as _, anyhow, bail, ensure};
 use duplicate::duplicate_item;
 use ndarray::{Array, Dimension};
 use ort::{
+    AsPointer,
     environment::Environment,
     ep::{
         CPUExecutionProvider, CUDAExecutionProvider, DirectMLExecutionProvider,
@@ -194,11 +195,81 @@ fn setup(
 
     let env = Environment::current()?;
 
+    // セッション間で共有するメモリアロケーターを登録する
+    let mut provider_name_and_devices = vec![(
+        CPUExecutionProvider::default().name(),
+        ort::memory::AllocationDevice::CPU,
+    )];
+    let cuda_ep = CUDAExecutionProvider::default();
+    if cuda_ep.is_available()? {
+        provider_name_and_devices.push((cuda_ep.name(), ort::memory::AllocationDevice::CUDA));
+    }
+    let env_ptr = env.ptr().cast_mut();
+    // NOTE: `CreateAndRegisterAllocatorV2`で`CUDAExecutionProvider`指定時に`arena_cfg`がnullだとsegfaultするためデフォルト値で作成する
+    let arena_cfg = ArenaCfg::new()?;
+    for (provider, device) in provider_name_and_devices {
+        let provider_type = std::ffi::CString::new(provider)?;
+        // NOTE: GPU番号を0で決め打ちしているため https://github.com/VOICEVOX/voicevox_core/issues/1196 の実装を阻害する
+        let mem_info = ort::memory::MemoryInfo::new(
+            device,
+            0,
+            ort::memory::AllocatorType::Arena,
+            ort::memory::MemoryType::Default,
+        )?;
+        unsafe {
+            // SAFETY:
+            // - `env` is valid OrtEnv pointer for reads and writes.
+            // - `provider_type` is valid C string pointer.
+            // - `mem_info` is valid OrtMemoryInfo pointer.
+            // - `arena_cfg` is valid OrtArenaCfg pointer.
+            // - `provider_options_keys` is null, which is valid.
+            // - `provider_options_values` is null, which is valid.
+            // - `num_keys` is 0, which is valid.
+            ort::Error::result_from_status((ort::api().CreateAndRegisterAllocatorV2)(
+                env_ptr,
+                provider_type.as_ptr(),
+                mem_info.ptr(),
+                arena_cfg.0,
+                std::ptr::null(),
+                std::ptr::null(),
+                0,
+            ))?;
+        }
+    }
+
     // `Environment`の数がゼロだとC API側で謎のdouble freeが起きてSEGVするため、プロセスの終了までゼロにならないようワークアラウンド。
     // TODO: このワークアラウンドによる microsoft/onnxruntime#24579 の可能性が否定しきれないため要調査。
     mem::forget(env);
 
     Ok(())
+}
+
+struct ArenaCfg(pub *mut ort::sys::OrtArenaCfg);
+impl ArenaCfg {
+    // TODO: 必要に応じて設定を追加できるようにする
+    pub fn new() -> anyhow::Result<Self> {
+        let mut ptr = std::ptr::dangling_mut();
+        // SAFETY:
+        // - `arena_config_keys` is null, which is valid.
+        // - `arena_config_values` is null, which is valid.
+        // - `num_keys` is 0, which is valid.
+        // - `out` is valid for writes.
+        unsafe {
+            ort::Error::result_from_status((ort::api().CreateArenaCfgV2)(
+                std::ptr::null(),
+                std::ptr::null(),
+                0,
+                &mut ptr,
+            ))?;
+        }
+        Ok(Self(ptr))
+    }
+}
+impl Drop for ArenaCfg {
+    fn drop(&mut self) {
+        // SAFETY: `arena_cfg` is valid OrtArenaCfg pointer. do not use it after this call.
+        unsafe { (ort::api().ReleaseArenaCfg)(self.0) }
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -288,6 +359,8 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
             LazyLock::new(|| ort::info().starts_with("VOICEVOX ORT Build Info: "));
 
         let mut builder = ort::session::Session::builder()?
+            .with_env_allocators()
+            .map_err(ort::Error::<()>::from)?
             .with_optimization_level(GraphOptimizationLevel::Level1)
             .map_err(ort::Error::<()>::from)?
             .with_intra_threads(options.cpu_num_threads.into())
