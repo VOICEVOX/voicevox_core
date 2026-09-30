@@ -22,6 +22,8 @@ from ._python import (  # noqa: F401
     VoiceModelId,
 )
 from ._rust import (  # noqa: F401
+    FRAME_RATE,
+    WAVE_SAMPLES_PER_FRAME,
     AnalyzeTextError,
     AudioFeature,
     GetSupportedDevicesError,
@@ -53,6 +55,8 @@ from ._rust import (  # noqa: F401
 from . import asyncio, blocking  # noqa: F401 isort: skip
 
 __all__ = [
+    "FRAME_RATE",
+    "WAVE_SAMPLES_PER_FRAME",
     "__version__",
     "AccelerationMode",
     "AccentPhrase",

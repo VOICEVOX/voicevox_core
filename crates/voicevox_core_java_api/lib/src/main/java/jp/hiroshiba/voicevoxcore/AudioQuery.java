@@ -90,7 +90,7 @@ public final class AudioQuery {
   /**
    * 音声の総フレーム数を算出する。
    *
-   * <p>音声の秒数は、フレーム数を{@link AudioFeature#FRAME_RATE}で割った値で表せる。
+   * <p>音声の秒数は、フレーム数を{@link Frames#FRAME_RATE FRAME_RATE}で割った値で表せる。
    *
    * <p>算出した値は32-bit環境では2<sup>32</sup>-1、64-bit環境では{@link Long#MAX_VALUE}で飽和する。算出方法は以下の通り。
    *
@@ -115,7 +115,7 @@ public final class AudioQuery {
    *         <li>{@link #postPhonemeLength}
    *       </ul>
    *   <li>それぞれの秒数を{@code secs}として、対応するフレーム長を<code>roundTiesEven(roundTiesEven(secs * {@link
-   *       AudioFeature#FRAME_RATE}) / {@link #speedScale})</code>として算出する。ここで{@code
+   *       Frames#FRAME_RATE FRAME_RATE}) / {@link #speedScale})</code>として算出する。ここで{@code
    *       roundTiesEven}は<a
    *       href="https://doc.rust-lang.org/stable/std/primitive.f32.html#method.round_ties_even">Rustの{@code
    *       f32::round_ties_even}</a>であり、{@link Math#rint(double) Math.rint}と同様IEEE 754の{@code
@@ -153,7 +153,7 @@ public final class AudioQuery {
    * }
    *
    * private static long toFrameLength(float secs, float speedScale) {
-   *   final float FRAME_RATE = (float) AudioFeature.FRAME_RATE;
+   *   final float FRAME_RATE = (float) Frames.FRAME_RATE;
    *   return (long) roundevenf(roundevenf(secs * FRAME_RATE) / speedScale);
    * }
    *

@@ -9,29 +9,32 @@ from voicevox_core._rust import AudioFeature
 
 
 def test_audio_feature() -> None:
-    REAL = (AudioFeature.FRAME_RATE,)
-    stub = extract_audio_feature_const(
+    REAL = (voicevox_core.FRAME_RATE, voicevox_core.WAVE_SAMPLES_PER_FRAME)
+    stub = extract_module_consts(
         Path("./python/voicevox_core/_rust/__init__.pyi"),
     )
     assert stub == REAL
 
 
-def extract_audio_feature_const(pyi: Path) -> tuple[float]:
+def extract_module_consts(pyi: Path) -> tuple[object, object]:
     module = ast.parse(pyi.read_text(encoding="utf-8"))
-    class_def = next(
-        stmt
-        for stmt in module.body
-        if isinstance(stmt, ClassDef) and stmt.name == "AudioFeature"
-    )
     frame_rate_value = next(
         eval(ast.unparse(stmt.value))
-        for stmt in class_def.body
+        for stmt in module.body
         if isinstance(stmt, AnnAssign)
         and isinstance(stmt.target, Name)
         and stmt.target.id == "FRAME_RATE"
         and stmt.value
     )
-    return (frame_rate_value,)
+    wave_samples_per_frame_value = next(
+        eval(ast.unparse(stmt.value))
+        for stmt in module.body
+        if isinstance(stmt, AnnAssign)
+        and isinstance(stmt.target, Name)
+        and stmt.target.id == "WAVE_SAMPLES_PER_FRAME"
+        and stmt.value
+    )
+    return (frame_rate_value, wave_samples_per_frame_value)
 
 
 def test_blocking_and_asyncio() -> None:

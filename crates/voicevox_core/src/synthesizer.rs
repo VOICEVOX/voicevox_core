@@ -255,7 +255,6 @@ impl AudioFeature {
 }
 
 assert_send_sync!(AudioFeature);
-const _: () = assert!(AudioFeature::FRAME_RATE == (DEFAULT_SAMPLING_RATE as f64) / 256.0);
 
 #[derive(derive_more::Debug)]
 struct Inner<T, A: Async> {
@@ -1673,8 +1672,8 @@ pub(crate) mod blocking {
     use typed_floats::{NonNaNFinite, PositiveFinite};
 
     use crate::{
-        AccentPhrase, AudioQuery, FrameAudioQuery, OnExistingVoiceModelId, Score, StyleId,
-        VoiceModelId, VoiceModelMeta, assert::assert_send_sync, asyncs::SingleTasked,
+        AccentPhrase, AudioQuery, FRAME_RATE, FrameAudioQuery, OnExistingVoiceModelId, Score,
+        StyleId, VoiceModelId, VoiceModelMeta, assert::assert_send_sync, asyncs::SingleTasked,
         future::FutureExt as _,
     };
 
@@ -2676,11 +2675,10 @@ pub(crate) mod blocking {
                 .synthesizer
                 .create_audio_feature(self.audio_query, self.style_id, &self.options.synthesis)
                 .block_on()?;
-            let offset_frames =
-                (self.options.start_offset * AudioFeature::FRAME_RATE).round_ties_even() as usize;
+            let offset_frames = (self.options.start_offset * FRAME_RATE).round_ties_even() as usize;
             let full_frames = audio_feature.frame_length();
             let segment_frames =
-                (self.options.segment_length * AudioFeature::FRAME_RATE).round_ties_even() as usize;
+                (self.options.segment_length * FRAME_RATE).round_ties_even() as usize;
             let render_frames = full_frames - offset_frames;
             let render_wave_length = render_frames * 256;
             let output_sampling_rate = self.audio_query.output_sampling_rate.get().get();
@@ -2777,8 +2775,9 @@ pub(crate) mod nonblocking {
     use typed_floats::{NonNaNFinite, PositiveFinite};
 
     use crate::{
-        AccentPhrase, AudioQuery, FrameAudioQuery, OnExistingVoiceModelId, Result, Score, StyleId,
-        VoiceModelId, VoiceModelMeta, assert::assert_send_sync, asyncs::BlockingThreadPool,
+        AccentPhrase, AudioQuery, FRAME_RATE, FrameAudioQuery, OnExistingVoiceModelId, Result,
+        Score, StyleId, VoiceModelId, VoiceModelMeta, assert::assert_send_sync,
+        asyncs::BlockingThreadPool,
     };
 
     use super::{
@@ -3671,10 +3670,9 @@ pub(crate) mod nonblocking {
                 .synthesizer
                 .create_audio_feature(self.audio_query, self.style_id, &self.options.synthesis)
                 .await?;
-            let offset_frames =
-                (self.options.start_offset * AudioFeature::FRAME_RATE).round_ties_even() as usize;
+            let offset_frames = (self.options.start_offset * FRAME_RATE).round_ties_even() as usize;
             let segment_frames =
-                (self.options.segment_length * AudioFeature::FRAME_RATE).round_ties_even() as usize;
+                (self.options.segment_length * FRAME_RATE).round_ties_even() as usize;
             let full_frames = audio_feature.frame_length();
             let render_frames = full_frames - offset_frames;
             let render_wave_length = render_frames * 256;
