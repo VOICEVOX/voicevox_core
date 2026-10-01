@@ -111,6 +111,27 @@ macro_rules! deprecated_fn_impl {
     }};
 }
 
+/// フレームレート。
+///
+/// 音声の秒数は<code>[frame_length] / FRAME_RATE</code>で表せる。
+///
+/// \note
+/// この定数は将来的に削除される可能性がある。例えば、<code><a href="../rust_api/voicevox_core/struct.StyleMeta.html">StyleMeta</a>::frame_rate</code>というフィールドに置き換えられる可能性がある。
+///
+/// \orig-impl{VOICEVOX_FRAME_RATE}
+///
+/// [frame_length]: ../rust_api/voicevox_core/struct.AudioQuery.html#method.frame_length
+pub const VOICEVOX_FRAME_RATE: f64 = 93.75;
+
+const _: () = assert!(VOICEVOX_FRAME_RATE == voicevox_core::FRAME_RATE);
+
+/// １フレームから生成されるPCMのサンプル数。
+///
+/// \orig-impl{VOICEVOX_WAVE_SAMPLES_PER_FRAME}
+pub const VOICEVOX_WAVE_SAMPLES_PER_FRAME: u16 = 256;
+
+const _: () = assert!(VOICEVOX_WAVE_SAMPLES_PER_FRAME == voicevox_core::WAVE_SAMPLES_PER_FRAME);
+
 // TODO: https://github.com/mozilla/cbindgen/issues/927
 //#[cfg(feature = "load-onnxruntime")]
 //pub const VOICEVOX_ONNXRUNTIME_LIB_RECOMMENDED_NAME: &CStr = ..;
@@ -547,6 +568,28 @@ pub extern "C" fn voicevox_get_version() -> *const c_char {
     } else {
         panic!("`$CARGO_PKG_VERSION` should be a SemVer, so it should not contain `\\0`");
     };
+}
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// ::VOICEVOX_FRAME_RATE を返す。
+///
+/// @return ::VOICEVOX_FRAME_RATE
+///
+/// \orig-impl{voicevox_get_frame_rate}
+#[unsafe(no_mangle)]
+pub const extern "C" fn voicevox_get_frame_rate() -> f64 {
+    VOICEVOX_FRAME_RATE
+}
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// ::VOICEVOX_WAVE_SAMPLES_PER_FRAME を返す。
+///
+/// @return ::VOICEVOX_WAVE_SAMPLES_PER_FRAME
+///
+/// \orig-impl{voicevox_get_wave_samples_per_frame}
+#[unsafe(no_mangle)]
+pub const extern "C" fn voicevox_get_wave_samples_per_frame() -> u16 {
+    VOICEVOX_WAVE_SAMPLES_PER_FRAME
 }
 
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない

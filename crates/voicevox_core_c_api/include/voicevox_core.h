@@ -102,6 +102,27 @@
 #endif
 
 /**
+ * フレームレート。
+ *
+ * 音声の秒数は<code>[frame_length] / FRAME_RATE</code>で表せる。
+ *
+ * \note
+ * この定数は将来的に削除される可能性がある。例えば、<code><a href="../rust_api/voicevox_core/struct.StyleMeta.html">StyleMeta</a>::frame_rate</code>というフィールドに置き換えられる可能性がある。
+ *
+ * \orig-impl{VOICEVOX_FRAME_RATE}
+ *
+ * [frame_length]: ../rust_api/voicevox_core/struct.AudioQuery.html#method.frame_length
+ */
+#define VOICEVOX_FRAME_RATE 93.75
+
+/**
+ * １フレームから生成されるPCMのサンプル数。
+ *
+ * \orig-impl{VOICEVOX_WAVE_SAMPLES_PER_FRAME}
+ */
+#define VOICEVOX_WAVE_SAMPLES_PER_FRAME 256
+
+/**
  * ハードウェアアクセラレーションモードを設定する設定値。
  *
  * \orig-impl{VoicevoxAccelerationMode}
@@ -810,6 +831,30 @@ struct VoicevoxInitializeOptions voicevox_make_default_initialize_options(void);
 __declspec(dllimport)
 #endif
 const char *voicevox_get_version(void);
+
+/**
+ * ::VOICEVOX_FRAME_RATE を返す。
+ *
+ * @return ::VOICEVOX_FRAME_RATE
+ *
+ * \orig-impl{voicevox_get_frame_rate}
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+double voicevox_get_frame_rate(void);
+
+/**
+ * ::VOICEVOX_WAVE_SAMPLES_PER_FRAME を返す。
+ *
+ * @return ::VOICEVOX_WAVE_SAMPLES_PER_FRAME
+ *
+ * \orig-impl{voicevox_get_wave_samples_per_frame}
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+uint16_t voicevox_get_wave_samples_per_frame(void);
 
 /**
  * AccentPhraseの配列からAudioQueryを作る。
