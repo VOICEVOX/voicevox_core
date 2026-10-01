@@ -551,7 +551,7 @@ class AudioQuery:
         >>> assert query.frame_length() == audio.frame_length
 
         >>> import numpy as np
-        >>> from voicevox_core import FRAME_RATE, AudioFeature
+        >>> from voicevox_core import FRAME_RATE
         >>>
         >>> def to_frame_length(secs: np.float32, speed_scale: np.float32) -> int:
         ...     return int(((secs * FRAME_RATE).round() / speed_scale).round())

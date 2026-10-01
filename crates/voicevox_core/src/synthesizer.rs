@@ -248,9 +248,6 @@ pub struct AudioFeature {
 }
 
 impl AudioFeature {
-    /// フレームレート。全体の秒数は`frame_length() / FRAME_RATE`で表せる。
-    pub const FRAME_RATE: f64 = 93.75;
-
     /// workaround paddingを除いた音声特徴量のフレーム数。
     pub fn frame_length(&self) -> usize {
         self.internal_state.nrows() - 2 * MARGIN

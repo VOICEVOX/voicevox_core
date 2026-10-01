@@ -113,14 +113,12 @@ macro_rules! deprecated_fn_impl {
 
 /// フレームレート。
 ///
-/// 音声の秒数は<code>[frame_length] / FRAME_RATE</code>で表せる。
+/// 音声の秒数は`frame_length / FRAME_RATE`で表せる。
 ///
 /// \note
 /// この定数は将来的に削除される可能性がある。例えば、<code><a href="../rust_api/voicevox_core/struct.StyleMeta.html">StyleMeta</a>::frame_rate</code>というフィールドに置き換えられる可能性がある。
 ///
 /// \orig-impl{VOICEVOX_FRAME_RATE}
-///
-/// [frame_length]: ../rust_api/voicevox_core/struct.AudioQuery.html#method.frame_length
 pub const VOICEVOX_FRAME_RATE: f64 = 93.75;
 
 const _: () = assert!(VOICEVOX_FRAME_RATE == voicevox_core::FRAME_RATE);
@@ -655,7 +653,7 @@ pub extern "C" fn voicevox_make_default_audio_query_frame_length_options()
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// 音声の総フレーム数を算出する。
 ///
-/// 音声の秒数は、フレーム数を[`93.75`]で割った値で表せる。
+/// 音声の秒数は、フレーム数を ::VOICEVOX_FRAME_RATE で割った値で表せる。
 ///
 /// 算出した値は[`SIZE_MAX`]で飽和する。算出方法は以下の通り。
 ///
@@ -670,13 +668,12 @@ pub extern "C" fn voicevox_make_default_audio_query_frame_length_options()
 ///         - [`AccentPhrase::pause_mora`]の`Mora::consonant_length`（通常はない）
 ///         - `AccentPhrase::pause_mora`の`Mora::vowel_length`
 ///     - [`AudioQuery::post_phoneme_length`]
-/// 2. それぞれの秒数を`secs`として、対応するフレーム長を`round_ties_even(round_ties_even(secs * 93.75f) / speed_scale)`として算出する。ここで`round_ties_even`は[Rustの`f32::round_ties_even`]であり、libmの[`roundevenf(3)`]と同様IEEE 754の`roundToIntegralTiesToEven`演算を行う。[`AudioQuery::speed_scale`]も32-bit浮動小数点数として解釈し、乗算と除算も32-bit浮動小数点数上で行う。
+/// 2. それぞれの秒数を`secs`として、対応するフレーム長を`round_ties_even(round_ties_even(secs * (float) VOICEVOX_FRAME_RATE) / speed_scale)`として算出する。ここで`round_ties_even`は[Rustの`f32::round_ties_even`]であり、libmの[`roundevenf(3)`]と同様IEEE 754の`roundToIntegralTiesToEven`演算を行う。[`AudioQuery::speed_scale`]も32-bit浮動小数点数として解釈し、乗算と除算も32-bit浮動小数点数上で行う。
 /// 3. 各フレーム長を足し合わせる。
 ///
 /// `AudioQuery`に対応する音声の長さは将来的に変わる可能性がある。例えば、秒数を64-bit浮動小数点数として解釈しているVOICEVOX
 /// ENGINEと挙動を揃える可能性がある。
 ///
-/// [`93.75`]: ../rust_api/voicevox_core/struct.AudioFeature.html#associatedconstant.FRAME_RATE
 /// [`SIZE_MAX`]: https://en.cppreference.com/c/types/limits
 /// [`AudioQuery::pre_phoneme_length`]: ../rust_api/voicevox_core/struct.AudioQuery.html#structfield.pre_phoneme_length
 /// [`AudioQuery::accent_phrases`]: ../rust_api/voicevox_core/struct.AudioQuery.html#structfield.accent_phrases
@@ -735,7 +732,7 @@ pub extern "C" fn voicevox_make_default_audio_query_frame_length_options()
 ///
 /// ```c
 /// size_t to_frame_length(float secs, float speed_scale) {
-///   const float kFrameRate = 93.75f;
+///   const float kFrameRate = (float)VOICEVOX_FRAME_RATE;
 ///   return roundevenf(roundevenf(secs * kFrameRate) / speed_scale);
 /// }
 ///

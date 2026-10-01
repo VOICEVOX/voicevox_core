@@ -5,10 +5,9 @@ from ast import AnnAssign, ClassDef, Constant, Name
 from pathlib import Path
 
 import voicevox_core
-from voicevox_core._rust import AudioFeature
 
 
-def test_audio_feature() -> None:
+def test_module() -> None:
     REAL = (voicevox_core.FRAME_RATE, voicevox_core.WAVE_SAMPLES_PER_FRAME)
     stub = extract_module_consts(
         Path("./python/voicevox_core/_rust/__init__.pyi"),
