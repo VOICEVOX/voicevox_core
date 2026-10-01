@@ -4,7 +4,7 @@ use assert_cmd::assert::AssertResult;
 use indoc::indoc;
 use libloading::Library;
 use serde::{Deserialize, Serialize};
-use test_util::c_api::{self, CApi, VoicevoxResultCode};
+use test_util::c_api::{self, CApi, VOICEVOX_FRAME_RATE, VoicevoxResultCode};
 
 use crate::assert_cdylib::{self, Utf8Output, case};
 
@@ -59,8 +59,10 @@ impl assert_cdylib::TestCase for TestCase {
             unsafe { frame_length.assume_init() }
         };
 
-        let to_frame_length =
-            |secs: f32| ((secs * 93.75).round_ties_even() / 1.2).round_ties_even() as usize;
+        let to_frame_length = |secs: f32| {
+            ((secs * (VOICEVOX_FRAME_RATE as f32)).round_ties_even() / 1.2).round_ties_even()
+                as usize
+        };
         std::assert_eq!(
             to_frame_length(3.3) + to_frame_length(4.4) + to_frame_length(5.5),
             frame_length,

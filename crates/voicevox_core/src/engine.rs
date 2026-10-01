@@ -2,6 +2,7 @@
 
 mod acoustic_feature_extractor;
 mod audio_file;
+pub(crate) mod frame;
 mod mora_mappings;
 mod ndarray;
 mod sampling_rate;

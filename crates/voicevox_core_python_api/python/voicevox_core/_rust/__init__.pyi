@@ -14,8 +14,21 @@ if TYPE_CHECKING:
 
 __version__: str
 
+FRAME_RATE: float = 93.75
+"""
+フレームレート。
+
+音声の秒数は ``frame_length / FRAME_RATE`` で表せる。
+
+.. note::
+
+    この定数は将来的に削除される可能性がある。例えば、 ``StyleMeta.frame_rate`` というフィールドに置き換えられる可能性がある。
+"""
+
+WAVE_SAMPLES_PER_FRAME: int = 256
+"""１フレームから生成されるPCMのサンプル数。"""
+
 class AudioFeature:
-    FRAME_RATE: float = 24000 / 256
     @property
     def frame_length(self) -> int: ...
     def __repr__(self) -> str: ...

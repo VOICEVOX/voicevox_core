@@ -10,7 +10,7 @@ import platform
 import conftest
 import pytest
 import pytest_asyncio
-from voicevox_core import Note, NoteId, Score, StyleId
+from voicevox_core import WAVE_SAMPLES_PER_FRAME, Note, NoteId, Score, StyleId
 from voicevox_core.asyncio import Onnxruntime, OpenJtalk, Synthesizer, VoiceModelFile
 
 
@@ -64,7 +64,10 @@ async def test(synthesizer: Synthesizer) -> None:
 
     assert wav.startswith(b"RIFF")
     assert (
-        NUM_TOTAL_FRAMES * 256 * 2 * (1 + frame_audio_query.output_stereo)
+        NUM_TOTAL_FRAMES
+        * WAVE_SAMPLES_PER_FRAME
+        * 2
+        * (1 + frame_audio_query.output_stereo)
         == int.from_bytes(wav[4:8], "little") - 36
     )
     assert wav[8:16] == b"WAVEfmt "
