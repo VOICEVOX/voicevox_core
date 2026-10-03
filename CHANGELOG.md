@@ -29,6 +29,7 @@
 
 ### Fixed
 
+- \[macOS\] ダウンローダーを含め、リリースされるバイナリがビルドされるときに`MACOSX_DEPLOYMENT_TARGET`が適切に設定されるようになります。従来は一部の依存ライブラリだけ`xcrun --show-sdk-version`の値でビルドされてしまっていたため、古いmacOSでダウンローダーや`OpenJtalk`が動かない可能性がありました ([#1438])。
 - \[Python\] `VoiceModelFile.open`が送出する`InvalidModelFormatError`が、`voicevox_core`モジュールにて適切に公開されます ([#1429])。
 
 ## [0.17.0] - 2026-08-14 (+09:00)
@@ -1569,6 +1570,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1432]: https://github.com/VOICEVOX/voicevox_core/pull/1432
 [#1433]: https://github.com/VOICEVOX/voicevox_core/pull/1433
 [#1437]: https://github.com/VOICEVOX/voicevox_core/pull/1437
+[#1438]: https://github.com/VOICEVOX/voicevox_core/pull/1438
 [#1439]: https://github.com/VOICEVOX/voicevox_core/pull/1439
 [#1441]: https://github.com/VOICEVOX/voicevox_core/pull/1441
 [#1442]: https://github.com/VOICEVOX/voicevox_core/pull/1442

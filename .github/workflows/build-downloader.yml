@@ -100,6 +100,10 @@ jobs:
       - name: Set version
         run: cargo set-version ${{ needs.config.outputs.version }} --exclude voicevox_core_python_api --exclude xtask
 
+      - name: set MACOSX_DEPLOYMENT_TARGET
+        if: endsWith(matrix.target, '-apple-darwin')
+        run: rustc --target=${{ matrix.target }} --print=deployment-target >> "$GITHUB_ENV"
+
       - name: Build downloader
         run: cargo build -v --release -p downloader --target ${{ matrix.target }}
 

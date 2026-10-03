@@ -290,7 +290,10 @@ jobs:
             sed -i_ 's/version = "\(0\.0\.0\)"/version = "'$version'"/' ./crates/voicevox_core_python_api/pyproject.toml
           fi
       - name: cache target
-        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2        uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+      - name: set MACOSX_DEPLOYMENT_TARGET
+        if: endsWith(matrix.target, '-apple-darwin')
+        run: rustc --target=${{ matrix.target }} --print=deployment-target >> "$GITHUB_ENV"
       - name: build voicevox_core_c_api
         shell: bash
         run: |
