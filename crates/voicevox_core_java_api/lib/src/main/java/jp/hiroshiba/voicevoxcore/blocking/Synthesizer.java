@@ -645,7 +645,7 @@ public final class Synthesizer {
     private Synthesizer synthesizer;
     private AudioQuery audioQuery;
     private int styleId;
-    private boolean interrogativeUpspeak;
+    private boolean interrogativeUpspeak; // FIXME: デフォルトで`false`になってしまっている！
 
     private SynthesisConfigurator(Synthesizer synthesizer, AudioQuery audioQuery, int styleId) {
       if (!Utils.isU32(styleId)) {
@@ -690,7 +690,7 @@ public final class Synthesizer {
     private Synthesizer synthesizer;
     private AudioQuery audioQuery;
     private int styleId;
-    private boolean interrogativeUpspeak;
+    private boolean interrogativeUpspeak; // FIXME: デフォルトで`false`になってしまっている！
 
     private CreateAudioFeatureConfigurator(
         Synthesizer synthesizer, AudioQuery audioQuery, int styleId) {
@@ -732,7 +732,7 @@ public final class Synthesizer {
     private Synthesizer synthesizer;
     private String kana;
     private int styleId;
-    private boolean interrogativeUpspeak;
+    private boolean interrogativeUpspeak; // FIXME: デフォルトで`false`になってしまっている！
 
     private TtsFromKanaConfigurator(Synthesizer synthesizer, String kana, int styleId) {
       if (!Utils.isU32(styleId)) {
@@ -775,7 +775,7 @@ public final class Synthesizer {
     private Synthesizer synthesizer;
     private String text;
     private int styleId;
-    private boolean interrogativeUpspeak;
+    private boolean interrogativeUpspeak; // FIXME: デフォルトで`false`になってしまっている！
 
     private TtsConfigurator(Synthesizer synthesizer, String text, int styleId) {
       if (!Utils.isU32(styleId)) {

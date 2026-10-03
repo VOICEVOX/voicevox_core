@@ -60,7 +60,7 @@ Options:
 ❯ # TODO: ダウンロード物の構成が変わったため色々壊れているはず
 ❯ # Linuxの場合
 ❯ ./gradlew run --args="--vvm ../../crates/test_util/data/model/sample.vvm --onnxruntime ../../crates/test_util/data/lib/libonnxruntime.so.1.17.3"
-Inititalizing: AUTO, ../../crates/test_util/data/lib/libonnxruntime.so.1.17.3, ./open_jtalk_dic_utf_8-1.11
+Initializing: AUTO, ../../crates/test_util/data/lib/libonnxruntime.so.1.17.3, ./open_jtalk_dic_utf_8-1.11
 Loading: ../../crates/test_util/data/model/sample.vvm
 Creating an AudioQuery from the text: この音声は、ボイスボックスを使用して、出力されています。
 Synthesizing...

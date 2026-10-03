@@ -1,3 +1,4 @@
+from collections.abc import AsyncIterator
 from os import PathLike
 from typing import TYPE_CHECKING, NoReturn, Union
 from uuid import UUID
@@ -16,6 +17,7 @@ if TYPE_CHECKING:
         UserDictWord,
         VoiceModelId,
     )
+    from voicevox_core._rust import AudioFeature
 
 class VoiceModelFile:
     """
@@ -185,6 +187,18 @@ class OpenJtalk:
         text
             日本語のテキスト。
         """
+        ...
+
+class SynthesisStream(AsyncIterator[bytes]):
+    def __new__(cls, *args: object, **kwargs: object) -> NoReturn: ...
+    def __length_hint__(self) -> int: ...
+    def __aiter__(self) -> "SynthesisStream": ...
+    async def __anext__(self) -> bytes: ...
+    def __repr__(self) -> str: ...
+    def __enter__(self) -> "SynthesisStream": ...
+    def __exit__(self, exc_type, exc_value, traceback) -> None: ...
+    def clear(self) -> None:
+        """このイテレータの要素をすべて捨てて空にする。"""
         ...
 
 class Synthesizer:
@@ -427,6 +441,53 @@ class Synthesizer:
             スタイルID。
         """
         ...
+    async def create_audio_feature(
+        self,
+        audio_query: AudioQuery,
+        style_id: StyleId | int,
+        *,
+        enable_interrogative_upspeak: bool = True,
+    ) -> AudioFeature:
+        """
+        :class:`AudioQuery` から中間表現である :class:`AudioFeature` を生成する。
+
+        Parameters
+        ----------
+        audio_query
+            :class:`AudioQuery` 。
+        style_id
+            スタイルID。
+        enable_interrogative_upspeak
+            疑問文の調整を有効にするかどうか。
+
+        Returns
+        -------
+        :class:`AudioFeature` 。
+        """
+        ...
+    async def render(
+        self,
+        audio: AudioFeature,
+        start: int,
+        stop: int,
+    ) -> bytes:
+        """
+        :class:`AudioFeature` からPCM形式の音声バイナリを生成する。
+
+        Parameters
+        ----------
+        audio_feature
+            :class:`AudioFeature` 。
+        start
+            生成範囲の始端（このフレームを含む）。
+        stop
+            生成範囲の終端（このフレームは含まれない）。
+
+        Returns
+        -------
+        signed 16-bit little endianのPCMデータ。
+        """
+        ...
     async def synthesis(
         self,
         audio_query: AudioQuery,
@@ -456,6 +517,30 @@ class Synthesizer:
         Returns
         -------
         WAVデータ。
+        """
+        ...
+    async def streaming_synthesis(
+        self,
+        audio_query: AudioQuery,
+        style_id: StyleId | int,
+        *,
+        enable_interrogative_upspeak: bool = True,
+    ) -> SynthesisStream:
+        """
+        :class:`AudioQuery` からストリーミングで音声合成する。
+
+        Parameters
+        ----------
+        audio_query
+            :class:`AudioQuery` 。
+        style_id
+            スタイルID。
+        enable_interrogative_upspeak
+            疑問文の調整を有効にするかどうか。
+
+        Returns
+        -------
+        WAVデータを分割して返すイテレータ。
         """
         ...
     async def tts_from_kana(

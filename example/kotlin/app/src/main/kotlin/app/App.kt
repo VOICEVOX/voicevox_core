@@ -33,7 +33,7 @@ fun main(args: Array<String>) {
 
   parser.parse(args)
 
-  println("Inititalizing: ${mode}, ${onnxruntime}, ${dictDir}")
+  println("Initializing: ${mode}, ${onnxruntime}, ${dictDir}")
   val ort = Onnxruntime.loadOnce().filename(onnxruntime).perform()
   val openJtalk = OpenJtalk(dictDir)
   val synthesizer =

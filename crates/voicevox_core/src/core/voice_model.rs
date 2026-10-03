@@ -574,7 +574,9 @@ pub(crate) mod blocking {
         path::Path,
     };
 
-    use crate::{VoiceModelMeta, asyncs::SingleTasked, future::FutureExt as _};
+    use crate::{
+        VoiceModelMeta, assert::assert_send_sync, asyncs::SingleTasked, future::FutureExt as _,
+    };
 
     use super::{Inner, VoiceModelId};
 
@@ -622,6 +624,8 @@ pub(crate) mod blocking {
             self.0.fill_debug_struct_body(fmt)
         }
     }
+
+    assert_send_sync!(VoiceModelFile);
 }
 
 pub(crate) mod nonblocking {
@@ -630,7 +634,7 @@ pub(crate) mod nonblocking {
         path::Path,
     };
 
-    use crate::{Result, VoiceModelMeta, asyncs::BlockingThreadPool};
+    use crate::{Result, VoiceModelMeta, assert::assert_send_sync, asyncs::BlockingThreadPool};
 
     use super::{Inner, VoiceModelId};
 
@@ -682,6 +686,8 @@ pub(crate) mod nonblocking {
             self.0.fill_debug_struct_body(fmt)
         }
     }
+
+    assert_send_sync!(VoiceModelFile);
 }
 
 #[cfg(test)]

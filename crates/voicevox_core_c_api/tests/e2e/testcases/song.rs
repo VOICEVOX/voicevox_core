@@ -296,10 +296,10 @@ impl assert_cdylib::TestCase for TestCase {
         unsafe { lib.voicevox_synthesizer_delete(synthesizer) };
 
         // SAFETY: These data are valid, and are no longer used.
-        unsafe { lib.voicevox_json_free(frame_audio_query_json) };
-        unsafe { lib.voicevox_json_free(f0s) };
-        unsafe { lib.voicevox_json_free(volumes) };
-        unsafe { lib.voicevox_wav_free(wav) };
+        unsafe { lib.voicevox_string_free(frame_audio_query_json) };
+        unsafe { lib.voicevox_string_free(f0s) };
+        unsafe { lib.voicevox_string_free(volumes) };
+        unsafe { lib.voicevox_bytes_free(wav) };
 
         return Ok(());
 

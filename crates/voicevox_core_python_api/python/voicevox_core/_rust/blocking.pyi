@@ -1,3 +1,4 @@
+from collections.abc import Iterator
 from os import PathLike
 from typing import TYPE_CHECKING, NoReturn, Union
 from uuid import UUID
@@ -180,6 +181,18 @@ class OpenJtalk:
         text
             日本語のテキスト。
         """
+        ...
+
+class SynthesisStream(Iterator[bytes]):
+    def __new__(cls, *args: object, **kwargs: object) -> NoReturn: ...
+    def __length_hint__(self) -> int: ...
+    def __iter__(self) -> "SynthesisStream": ...
+    def __next__(self) -> bytes: ...
+    def __repr__(self) -> str: ...
+    def __enter__(self) -> "SynthesisStream": ...
+    def __exit__(self, exc_type, exc_value, traceback) -> None: ...
+    def clear(self) -> None:
+        """このイテレータの要素をすべて捨てて空にする。"""
         ...
 
 class Synthesizer:
@@ -490,6 +503,30 @@ class Synthesizer:
         Returns
         -------
         WAVデータ。
+        """
+        ...
+    def streaming_synthesis(
+        self,
+        audio_query: AudioQuery,
+        style_id: StyleId | int,
+        *,
+        enable_interrogative_upspeak: bool = True,
+    ) -> SynthesisStream:
+        """
+        :class:`AudioQuery` からストリーミングで音声合成する。
+
+        Parameters
+        ----------
+        audio_query
+            :class:`AudioQuery` 。
+        style_id
+            スタイルID。
+        enable_interrogative_upspeak
+            疑問文の調整を有効にするかどうか。
+
+        Returns
+        -------
+        WAVデータを分割して返すイテレータ。
         """
         ...
     def tts_from_kana(

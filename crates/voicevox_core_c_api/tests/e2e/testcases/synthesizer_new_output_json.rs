@@ -130,7 +130,7 @@ impl assert_cdylib::TestCase for TestCase {
             let metas_json = serde_json::to_string_pretty(metas_json).unwrap();
 
             // SAFETY: `raw` is valid and is no longer used.
-            unsafe { lib.voicevox_json_free(raw) }
+            unsafe { lib.voicevox_string_free(raw) }
 
             metas_json
         };

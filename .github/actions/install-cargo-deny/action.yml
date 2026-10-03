@@ -5,7 +5,7 @@ runs:
   using: composite
   steps:
     - name: Install cargo-binstall
-      uses: taiki-e/install-action@58e862542551f667fa44c8a2a4a1d64ad477c96a # v2.75.17
+      uses: taiki-e/install-action@3f74d7c16a4242f1c95561e98edc25d36adb4375 # v2.87.12
       with:
         tool: cargo-binstall
     - name: Install cargo-deny

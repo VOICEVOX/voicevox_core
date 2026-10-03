@@ -239,7 +239,7 @@
 //!
 //! ユーザーガイドの[テキスト音声合成の流れ]を参照。
 //!
-//! 以下の`wav1`から`wav4`はすべて同一となる。
+//! 以下の`wav1`から`wav6`はすべて同一となる。
 //!
 //! [テキスト音声合成の流れ]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/tts-process.md
 //!
@@ -259,7 +259,7 @@
 //! #   #[cfg(false)]
 //!     const TEXT: &str = _;
 //! #
-//! #   const STYLE_ID: StyleId = StyleId(0);
+//! #   const STYLE_ID: StyleId = StyleId(302);
 //! #   #[cfg(false)]
 //!     const STYLE_ID: StyleId = _;
 //!
@@ -291,7 +291,21 @@
 //!         synth.synthesis(&query, STYLE_ID).perform()?
 //!     };
 //!
-//!     assert_eq!(1, HashSet::from([wav1, wav2, wav3, wav4, wav5]).len());
+//!     let wav6 = {
+//!         let phrases = synth.text_analyzer().analyze(TEXT)?;
+//!         let phrases = synth.replace_phoneme_length(&phrases, STYLE_ID)?;
+//!         let phrases = synth.replace_mora_pitch(&phrases, STYLE_ID)?;
+//!         let query = AudioQuery::from(phrases);
+//!         let feat = synth.create_audio_feature(&query, STYLE_ID).perform()?;
+//!         let pcm = synth.render(&feat, 0..feat.frame_length())?;
+//!         voicevox_core::wav_from_s16le(
+//!             &pcm,
+//!             query.output_sampling_rate.get().get(),
+//!             query.output_stereo,
+//!         )
+//!     };
+//!
+//!     assert_eq!(1, HashSet::from([wav1, wav2, wav3, wav4, wav5, wav6]).len());
 //!     Ok(())
 //! }
 //! #
@@ -340,16 +354,20 @@ pub mod __doc {
     ///
     /// | | 理由 |
     /// | :- | :- |
-    /// | `VoicevoxLoadOnnxruntimeOptions` | ビルダースタイルであるため |
+    /// | `VoicevoxAudioQueryFrameLengthOptions` | ビルダースタイルであるため |
+    /// | `VoicevoxLoadOnnxruntimeOptions` | 〃 |
     /// | `VoicevoxInitializeOptions` | 〃 |
     /// | `VoicevoxSynthesisOptions` | 〃 |
     /// | `VoicevoxTtsOptions` | 〃 |
+    /// | `voicevox_make_default_audio_query_frame_length_options` | 〃 |
     /// | `voicevox_make_default_load_onnxruntime_options` | 〃 |
     /// | `voicevox_make_default_initialize_options` | 〃 |
     /// | `voicevox_make_default_load_voice_model_options` | 〃 |
     /// | `voicevox_make_default_synthesis_options` | 〃 |
     /// | `voicevox_make_default_tts_options` | 〃 |
-    /// | `voicevox_json_free` | [Rustのデストラクタ機構]があるため |
+    /// | `voicevox_string_free` | [Rustのデストラクタ機構]があるため |
+    /// | `voicevox_json_free` | 〃 |
+    /// | `voicevox_bytes_free` | 〃 |
     /// | `voicevox_wav_free` | 〃 |
     /// | `voicevox_open_jtalk_rc_delete` | 〃 |
     /// | `voicevox_synthesizer_delete` | 〃 |
@@ -361,15 +379,19 @@ pub mod __doc {
     /// [C API]: https://voicevox.github.io/voicevox_core/apis/c_api/voicevox__core_8h.html
     /// [Rustのデストラクタ機構]: https://doc.rust-lang.org/reference/destructors.html
     #[doc(alias(
+        "VoicevoxAudioQueryFrameLengthOptions",
         "VoicevoxLoadOnnxruntimeOptions",
         "VoicevoxInitializeOptions",
         "VoicevoxSynthesisOptions",
         "VoicevoxTtsOptions",
+        "voicevox_make_default_audio_query_frame_length_options",
         "voicevox_make_default_load_onnxruntime_options",
         "voicevox_make_default_initialize_options",
         "voicevox_make_default_synthesis_options",
         "voicevox_make_default_tts_options",
+        "voicevox_string_free",
         "voicevox_json_free",
+        "voicevox_bytes_free",
         "voicevox_wav_free",
         "voicevox_open_jtalk_rc_delete",
         "voicevox_synthesizer_delete",
@@ -438,6 +460,7 @@ pub mod __doc {
     pub mod Serde対応 {}
 }
 
+mod assert;
 mod asyncs;
 mod collections;
 mod convert;
@@ -481,7 +504,7 @@ pub use self::{
             validate::ensure_compatible,
         },
         talk::{
-            AccentPhrase, AudioQuery, Mora,
+            AccentPhrase, AudioQuery, AudioQueryFrameLength, Mora,
             user_dict::{
                 UserDictWord, UserDictWordBuilder, UserDictWordPriority, UserDictWordType,
             },

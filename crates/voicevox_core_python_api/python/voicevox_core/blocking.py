@@ -4,6 +4,7 @@
 from ._rust.blocking import (
     Onnxruntime,
     OpenJtalk,
+    SynthesisStream,
     Synthesizer,
     UserDict,
     VoiceModelFile,
@@ -12,6 +13,7 @@ from ._rust.blocking import (
 __all__ = [
     "Onnxruntime",
     "OpenJtalk",
+    "SynthesisStream",
     "Synthesizer",
     "UserDict",
     "VoiceModelFile",

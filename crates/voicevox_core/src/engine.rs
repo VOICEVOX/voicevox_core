@@ -11,7 +11,7 @@ pub(crate) mod validate;
 
 pub(crate) use self::{
     acoustic_feature_extractor::PhonemeCode,
-    audio_file::{PcmOptions, to_s16le_pcm},
+    audio_file::{PcmOptions, s16le_wav_prefix, to_s16le_pcm},
     ndarray::IteratorExt,
     sampling_rate::DEFAULT_SAMPLING_RATE,
 };

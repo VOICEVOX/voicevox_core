@@ -190,6 +190,8 @@ pub(crate) mod blocking {
 
     use camino::Utf8Path;
 
+    use crate::assert::assert_send_sync;
+
     use super::Inner;
 
     use super::{
@@ -249,10 +251,14 @@ pub(crate) mod blocking {
                 .finish()
         }
     }
+
+    assert_send_sync!(self::OpenJtalk);
 }
 
 pub(crate) mod nonblocking {
     use camino::Utf8Path;
+
+    use crate::assert::assert_send_sync;
 
     use super::super::{AccentPhrase, extract_full_context_label};
 
@@ -302,6 +308,8 @@ pub(crate) mod nonblocking {
                 .map_err(Into::into)
         }
     }
+
+    assert_send_sync!(self::OpenJtalk);
 }
 
 #[cfg(test)]

@@ -2174,9 +2174,12 @@ dependencies = [
 
 [[package]]
 name = "indoc"
-version = "2.0.5"
+version = "2.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b248f5224d1d606005e02c97f5aa4e88eeb230488bcc03bc9ca4d7991399f2b5"
+checksum = "79cf5c93f93228cf8efb3ba362535fb11199ac548a09ce117c9b1adc3030d706"
+dependencies = [
+ "rustversion",
+]
 
 [[package]]
 name = "inventory"
@@ -5011,6 +5014,7 @@ dependencies = [
  "educe",
  "enum-map",
  "fs-err",
+ "futures-core",
  "futures-io",
  "futures-lite",
  "futures-util",
@@ -5097,6 +5101,7 @@ dependencies = [
  "educe",
  "either",
  "indexmap 2.13.0",
+ "indoc",
  "inventory",
  "itertools 0.10.5",
  "libc",
@@ -5172,6 +5177,7 @@ dependencies = [
  "log",
  "num-bigint",
  "num-traits",
+ "ouroboros",
  "pyo3",
  "pyo3-log",
  "ref-cast",

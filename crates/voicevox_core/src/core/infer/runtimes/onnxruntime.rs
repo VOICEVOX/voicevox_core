@@ -553,7 +553,7 @@ fn extract_outputs(
 pub(crate) mod blocking {
     use ref_cast::{RefCastCustom, ref_cast_custom};
 
-    use crate::SupportedDevices;
+    use crate::{SupportedDevices, assert::assert_send_sync};
 
     use super::{super::super::InferenceRuntime, Inner};
 
@@ -727,6 +727,7 @@ pub(crate) mod blocking {
     const _: () = assert!(
         Onnxruntime::LIB_MAX_SUPPORTED_MINOR_VERSION == super::LIB_MAX_SUPPORTED_MINOR_VERSION,
     );
+    assert_send_sync!(Onnxruntime);
 
     /// [`Onnxruntime::load_once`]のビルダー。
     #[cfg(feature = "load-onnxruntime")]
@@ -767,7 +768,7 @@ pub(crate) mod blocking {
 pub(crate) mod nonblocking {
     use ref_cast::{RefCastCustom, ref_cast_custom};
 
-    use crate::SupportedDevices;
+    use crate::{SupportedDevices, assert::assert_send_sync};
 
     /// ONNX Runtime。
     ///
@@ -903,6 +904,7 @@ pub(crate) mod nonblocking {
     const _: () = assert!(
         Onnxruntime::LIB_MAX_SUPPORTED_MINOR_VERSION == super::LIB_MAX_SUPPORTED_MINOR_VERSION,
     );
+    assert_send_sync!(Onnxruntime);
 
     /// [`Onnxruntime::load_once`]のビルダー。
     #[cfg(feature = "load-onnxruntime")]

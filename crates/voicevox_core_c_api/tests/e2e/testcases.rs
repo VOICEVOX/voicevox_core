@@ -1,5 +1,7 @@
+mod audio_query_frame_length;
 mod compatible_engine;
 mod compatible_engine_load_model_before_initialize;
+mod deprecated_fn_warnings;
 mod double_delete_openjtalk;
 mod double_delete_synthesizer;
 mod double_delete_user_dict;
