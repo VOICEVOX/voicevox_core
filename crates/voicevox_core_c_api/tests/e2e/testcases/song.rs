@@ -278,7 +278,7 @@ impl assert_cdylib::TestCase for TestCase {
         };
 
         {
-            std::assert_eq!(false, frame_audio_query.output_stereo);
+            assert!(!frame_audio_query.output_stereo);
 
             // SAFETY: `voicevox_synthesizer_frame_synthesis` outputs a valid slice.
             let wav = unsafe { slice::from_raw_parts(wav, wav_length) };
