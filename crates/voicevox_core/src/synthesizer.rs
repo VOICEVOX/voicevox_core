@@ -4582,6 +4582,7 @@ mod tests {
             .await
             .unwrap();
 
+        assert_eq!(24000, frame_audio_query.output_sampling_rate.get().get());
         assert!(!frame_audio_query.output_stereo);
 
         assert_eq!(
@@ -4643,18 +4644,28 @@ mod tests {
 
         let wav_params = waveadapter::header::read_wav_header(Cursor::new(&*wav)).unwrap();
 
-        assert_eq!(1, wav_params.fmt.format_code);
-        assert_eq!(1, wav_params.fmt.channels);
-        assert_eq!(24000, wav_params.fmt.sample_rate);
-        assert_eq!(i16::BITS as u16, wav_params.fmt.bits_per_sample);
-        assert_eq!(None, wav_params.fmt.extension);
-        assert_eq!(None, wav_params.fact);
-        assert_eq!(None, wav_params.ds64_sample_count);
-        std::assert_matches!(*wav_params.chunks_before, []);
-        std::assert_matches!(*wav_params.chunks_after, []);
+        use waveadapter::header::{FmtChunk, WavParams};
+
         assert_eq!(
-            (num_total_frames * WAVE_SAMPLES_PER_FRAME * mem::size_of::<i16>()) as u64,
-            wav_params.data_length,
+            WavParams {
+                fmt: FmtChunk {
+                    format_code: 1,
+                    channels: 1,
+                    sample_rate: 24000,
+                    byte_rate: (24000 * mem::size_of::<i16>()) as _,
+                    block_align: mem::align_of::<i16>() as _,
+                    bits_per_sample: i16::BITS as _,
+                    extension: None,
+                },
+                fact: None,
+                ds64_sample_count: None,
+                data_offset: 44,
+                data_length: (num_total_frames * WAVE_SAMPLES_PER_FRAME * mem::size_of::<i16>())
+                    as _,
+                chunks_before: vec![],
+                chunks_after: vec![],
+            },
+            wav_params,
         );
         assert_eq!(
             wav_params.data_offset + wav_params.data_length,

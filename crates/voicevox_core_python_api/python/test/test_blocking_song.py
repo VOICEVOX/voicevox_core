@@ -33,6 +33,7 @@ def test(synthesizer: Synthesizer) -> None:
     frame_audio_query = synthesizer.create_sing_frame_audio_query(
         SCORE, SINGING_TEACHER
     )
+    assert frame_audio_query.output_sampling_rate == 24000
     assert not frame_audio_query.output_stereo
 
     phonemes = [phoneme.phoneme for phoneme in frame_audio_query.phonemes]

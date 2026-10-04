@@ -18,6 +18,7 @@ use test_util::{
         VoicevoxResultCode,
     },
 };
+use waveadapter::header::{FmtChunk, WavParams};
 
 use crate::{
     assert_cdylib::{self, Utf8Output, case},
@@ -278,6 +279,7 @@ impl assert_cdylib::TestCase for TestCase {
         };
 
         {
+            assert_eq!(24000, frame_audio_query.output_sampling_rate);
             assert!(!frame_audio_query.output_stereo);
 
             // SAFETY: `voicevox_synthesizer_frame_synthesis` outputs a valid slice.
@@ -285,19 +287,27 @@ impl assert_cdylib::TestCase for TestCase {
 
             let wav_params = waveadapter::header::read_wav_header(Cursor::new(wav))?;
 
-            std::assert_eq!(1, wav_params.fmt.format_code);
-            std::assert_eq!(1, wav_params.fmt.channels);
-            std::assert_eq!(24000, wav_params.fmt.sample_rate);
-            std::assert_eq!(i16::BITS as u16, wav_params.fmt.bits_per_sample);
-            std::assert_eq!(None, wav_params.fmt.extension);
-            std::assert_eq!(None, wav_params.fact);
-            std::assert_eq!(None, wav_params.ds64_sample_count);
-            std::assert_matches!(*wav_params.chunks_before, []);
-            std::assert_matches!(*wav_params.chunks_after, []);
             std::assert_eq!(
-                (NUM_TOTAL_FRAMES * (24000. / VOICEVOX_FRAME_RATE) as usize * mem::size_of::<i16>())
-                    as u64,
-                wav_params.data_length,
+                WavParams {
+                    fmt: FmtChunk {
+                        format_code: 1,
+                        channels: 1,
+                        sample_rate: 24000,
+                        byte_rate: (24000 * mem::size_of::<i16>()) as _,
+                        block_align: mem::align_of::<i16>() as _,
+                        bits_per_sample: i16::BITS as _,
+                        extension: None,
+                    },
+                    fact: None,
+                    ds64_sample_count: None,
+                    data_offset: 44,
+                    data_length: (NUM_TOTAL_FRAMES
+                        * (24000. / VOICEVOX_FRAME_RATE) as usize
+                        * mem::size_of::<i16>()) as _,
+                    chunks_before: vec![],
+                    chunks_after: vec![],
+                },
+                wav_params,
             );
             std::assert_eq!(
                 wav_params.data_offset + wav_params.data_length,
@@ -328,6 +338,7 @@ impl assert_cdylib::TestCase for TestCase {
             f0: Vec<serde_json::Value>,
             volume: Vec<serde_json::Value>,
             phonemes: Vec<FramePhoneme>,
+            output_sampling_rate: u32,
             output_stereo: bool,
         }
 
