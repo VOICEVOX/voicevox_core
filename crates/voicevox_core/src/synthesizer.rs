@@ -4582,6 +4582,8 @@ mod tests {
             .await
             .unwrap();
 
+        assert!(!frame_audio_query.output_stereo);
+
         assert_eq!(
             ["pau", "d", "o", "r", "e", "m", "i", "pau"],
             *frame_audio_query
@@ -4641,23 +4643,22 @@ mod tests {
 
         let wav_params = waveadapter::header::read_wav_header(Cursor::new(&*wav)).unwrap();
 
-        dbg!(&wav_params);
-
         assert_eq!(1, wav_params.fmt.format_code);
         assert_eq!(1, wav_params.fmt.channels);
         assert_eq!(24000, wav_params.fmt.sample_rate);
-        assert_eq!(
-            8 * mem::size_of::<i16>() as u16,
-            wav_params.fmt.bits_per_sample
-        );
-        std::assert_matches!(wav_params.fmt.extension, None);
-        std::assert_matches!(wav_params.fact, None);
-        std::assert_matches!(wav_params.ds64_sample_count, None);
+        assert_eq!(i16::BITS as u16, wav_params.fmt.bits_per_sample);
+        assert_eq!(None, wav_params.fmt.extension);
+        assert_eq!(None, wav_params.fact);
+        assert_eq!(None, wav_params.ds64_sample_count);
         std::assert_matches!(*wav_params.chunks_before, []);
         std::assert_matches!(*wav_params.chunks_after, []);
         assert_eq!(
             (num_total_frames * WAVE_SAMPLES_PER_FRAME * mem::size_of::<i16>()) as u64,
             wav_params.data_length,
+        );
+        assert_eq!(
+            wav_params.data_offset + wav_params.data_length,
+            wav.len() as u64,
         );
 
         fn note(id: &str, key: Option<u8>, frame_length: u32, lyric: &str) -> Note {

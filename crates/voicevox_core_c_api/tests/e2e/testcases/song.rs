@@ -288,19 +288,20 @@ impl assert_cdylib::TestCase for TestCase {
             std::assert_eq!(1, wav_params.fmt.format_code);
             std::assert_eq!(1, wav_params.fmt.channels);
             std::assert_eq!(24000, wav_params.fmt.sample_rate);
-            std::assert_eq!(
-                8 * mem::size_of::<i16>() as u16,
-                wav_params.fmt.bits_per_sample
-            );
-            std::assert_matches!(wav_params.fmt.extension, None);
-            std::assert_matches!(wav_params.fact, None);
-            std::assert_matches!(wav_params.ds64_sample_count, None);
+            std::assert_eq!(i16::BITS as u16, wav_params.fmt.bits_per_sample);
+            std::assert_eq!(None, wav_params.fmt.extension);
+            std::assert_eq!(None, wav_params.fact);
+            std::assert_eq!(None, wav_params.ds64_sample_count);
             std::assert_matches!(*wav_params.chunks_before, []);
             std::assert_matches!(*wav_params.chunks_after, []);
             std::assert_eq!(
                 (NUM_TOTAL_FRAMES * (24000. / VOICEVOX_FRAME_RATE) as usize * mem::size_of::<i16>())
                     as u64,
                 wav_params.data_length,
+            );
+            std::assert_eq!(
+                wav_params.data_offset + wav_params.data_length,
+                wav.len() as u64,
             );
         }
 

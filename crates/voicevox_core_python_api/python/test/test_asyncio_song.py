@@ -37,6 +37,7 @@ async def test(synthesizer: Synthesizer) -> None:
     frame_audio_query = await synthesizer.create_sing_frame_audio_query(
         SCORE, SINGING_TEACHER
     )
+    assert not frame_audio_query.output_stereo
 
     phonemes = [phoneme.phoneme for phoneme in frame_audio_query.phonemes]
     assert phonemes == ["pau", "d", "o", "r", "e", "m", "i", "pau"]
@@ -65,14 +66,17 @@ async def test(synthesizer: Synthesizer) -> None:
 
     wav = await synthesizer.frame_synthesis(frame_audio_query, SINGER)
 
-    with BytesIO(wav) as wav_buf:
-        with wave.open(wav_buf, "rb") as wav_read:
-            assert wav_read.getnchannels() == 1
-            assert wav_read.getsampwidth() == struct.calcsize("h")
-            assert wav_read.getframerate() == 24000
-            assert wav_read.getnframes() == NUM_TOTAL_FRAMES * int(24000.0 / FRAME_RATE)
-            assert wav_read.getcomptype() == "NONE"
-            # TODO: Python 3.15だと`Wave_read.getformat`というメソッドが入るらしい。
+    with BytesIO(wav) as wav_buf, wave.open(wav_buf, "rb") as wav_read:
+        # TODO: Python 3.15だと`Wave_read.getformat`というメソッドが入るらしい。
+        assert wav_read.getnchannels() == 1
+        assert wav_read.getsampwidth() == struct.calcsize("h")
+        assert wav_read.getframerate() == 24000
+        assert wav_read.getnframes() == NUM_TOTAL_FRAMES * int(24000.0 / FRAME_RATE)
+        assert wav_read.getcomptype() == "NONE"
+        assert (
+            len(wav_read.readframes(wav_read.getnframes()))
+            == wav_read.getnframes() * wav_read.getsampwidth()
+        )
 
 
 @pytest_asyncio.fixture
