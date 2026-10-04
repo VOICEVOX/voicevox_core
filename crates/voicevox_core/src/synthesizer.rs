@@ -3808,6 +3808,7 @@ mod tests {
     use itertools::Itertools as _;
     use rstest::rstest;
     use typed_floats::tf32;
+    use waveadapter::header::{FmtChunk, WavParams};
 
     #[rstest]
     #[case(Ok(()))]
@@ -4643,8 +4644,6 @@ mod tests {
             .unwrap();
 
         let wav_params = waveadapter::header::read_wav_header(Cursor::new(&*wav)).unwrap();
-
-        use waveadapter::header::{FmtChunk, WavParams};
 
         assert_eq!(
             WavParams {
