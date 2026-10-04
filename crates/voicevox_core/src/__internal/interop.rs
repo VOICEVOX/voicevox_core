@@ -10,6 +10,6 @@ pub use crate::{
     engine::validate::Validate,
     synthesizer::{
         BlockingTextAnalyzerExt, DEFAULT_CPU_NUM_THREADS, DEFAULT_HEAVY_INFERENCE_CANCELLABLE,
-        MARGIN, NonblockingTextAnalyzerExt, blocking::PerformInference,
+        MARGIN, NonblockingTextAnalyzerExt, WAVE_SAMPLES_PER_FRAME, blocking::PerformInference,
     },
 };

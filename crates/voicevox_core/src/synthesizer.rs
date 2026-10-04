@@ -16,7 +16,7 @@ use tracing::info;
 use typed_floats::{NonNaNFinite, PositiveFinite, tf32};
 
 use crate::{
-    AccentPhrase, AudioQuery, OnExistingVoiceModelId, Result, StyleId, VoiceModelId,
+    AccentPhrase, AudioQuery, FRAME_RATE, OnExistingVoiceModelId, Result, StyleId, VoiceModelId,
     VoiceModelMeta,
     assert::assert_send_sync,
     asyncs::{Async, BlockingThreadPool, SingleTasked},
@@ -200,6 +200,8 @@ impl AsyncExt for BlockingThreadPool {
     }
 }
 
+pub const WAVE_SAMPLES_PER_FRAME: usize = (DEFAULT_SAMPLING_RATE as f64 / FRAME_RATE) as _;
+const _: () = assert!(DEFAULT_SAMPLING_RATE as f64 / FRAME_RATE % 1. == 0.);
 /// 音が途切れてしまうのを避けるworkaround処理のためのパディング幅（フレーム数）
 // TODO: Rust 1.90であれば`{float}::round`がそのまま使える
 const PADDING_FRAME_LENGTH: usize = 38; // (0.4秒 * FRAME_RATE).round()
@@ -228,7 +230,9 @@ fn crop_with_margin(
 /// 追加した安全マージンを生成音声から取り除く
 fn trim_margin_from_wave(wave_with_margin: ndarray::Array1<f32>) -> ndarray::Array1<f32> {
     let len = wave_with_margin.len();
-    wave_with_margin.slice_move(ndarray::s![MARGIN * 256..len - MARGIN * 256])
+    wave_with_margin.slice_move(ndarray::s![
+        MARGIN * WAVE_SAMPLES_PER_FRAME..len - MARGIN * WAVE_SAMPLES_PER_FRAME
+    ])
 }
 
 /// 音声の中間表現。
@@ -1435,7 +1439,8 @@ impl<R: InferenceRuntime> Status<R> {
             let len = output.len();
             return Ok(output
                 .slice_move(ndarray::s![
-                    PADDING_FRAME_LENGTH * 256..len - PADDING_FRAME_LENGTH * 256,
+                    PADDING_FRAME_LENGTH * WAVE_SAMPLES_PER_FRAME
+                        ..len - PADDING_FRAME_LENGTH * WAVE_SAMPLES_PER_FRAME,
                 ])
                 .as_standard_layout()
                 .into_owned()
@@ -1677,7 +1682,8 @@ pub(crate) mod blocking {
     use super::{
         AccelerationMode, AsInner as _, AssumeSingleTasked, AudioFeature, DEFAULT_SAMPLING_RATE,
         InitializeOptions, Inner, InnerRefWithoutTextAnalyzer, LoadVoiceModelOptions,
-        StreamingSynthesisOptions, SynthesisOptions, TtsOptions, s16le_wav_prefix,
+        StreamingSynthesisOptions, SynthesisOptions, TtsOptions, WAVE_SAMPLES_PER_FRAME,
+        s16le_wav_prefix,
     };
 
     /// 音声シンセサイザ。
@@ -2677,7 +2683,7 @@ pub(crate) mod blocking {
             let segment_frames =
                 (self.options.segment_length * FRAME_RATE).round_ties_even() as usize;
             let render_frames = full_frames - offset_frames;
-            let render_wave_length = render_frames * 256;
+            let render_wave_length = render_frames * WAVE_SAMPLES_PER_FRAME;
             let output_sampling_rate = self.audio_query.output_sampling_rate.get().get();
             let output_stereo = self.audio_query.output_stereo;
             let num_channels: u16 = if output_stereo { 2 } else { 1 };
@@ -2781,7 +2787,7 @@ pub(crate) mod nonblocking {
         AccelerationMode, AsInner as _, AssumeBlockable, AudioFeature, DEFAULT_SAMPLING_RATE,
         FrameSynthesisOptions, InitializeOptions, Inner, InnerRefWithoutTextAnalyzer,
         LoadVoiceModelOptions, StreamingSynthesisOptions, SynthesisOptions, TtsOptions,
-        s16le_wav_prefix,
+        WAVE_SAMPLES_PER_FRAME, s16le_wav_prefix,
     };
 
     /// 音声シンセサイザ。
@@ -3672,7 +3678,7 @@ pub(crate) mod nonblocking {
                 (self.options.segment_length * FRAME_RATE).round_ties_even() as usize;
             let full_frames = audio_feature.frame_length();
             let render_frames = full_frames - offset_frames;
-            let render_wave_length = render_frames * 256;
+            let render_wave_length = render_frames * WAVE_SAMPLES_PER_FRAME;
             let output_sampling_rate = self.audio_query.output_sampling_rate.get().get();
             let output_stereo = self.audio_query.output_stereo;
             let num_channels: u16 = if output_stereo { 2 } else { 1 };
@@ -3788,7 +3794,9 @@ pub(crate) mod nonblocking {
 mod tests {
     use std::{mem, num::NonZero, sync::Arc};
 
-    use super::{AccelerationMode, AsInner as _, DEFAULT_HEAVY_INFERENCE_CANCELLABLE};
+    use super::{
+        AccelerationMode, AsInner as _, DEFAULT_HEAVY_INFERENCE_CANCELLABLE, WAVE_SAMPLES_PER_FRAME,
+    };
     use crate::{
         AccentPhrase, FramePhoneme, Note, NoteId, Result, Score, StyleId,
         asyncs::BlockingThreadPool, engine::talk::Mora, macros::tests::assert_debug_fmt_eq,
@@ -3999,7 +4007,7 @@ mod tests {
             .await;
 
         assert!(result.is_ok(), "{result:?}");
-        assert_eq!(result.unwrap().len(), F0_LENGTH * 256);
+        assert_eq!(result.unwrap().len(), F0_LENGTH * WAVE_SAMPLES_PER_FRAME);
     }
 
     #[rstest]
@@ -4133,7 +4141,7 @@ mod tests {
             .await;
 
         assert!(result.is_ok(), "{result:?}");
-        assert_eq!(result.unwrap().len(), F0_LENGTH * 256);
+        assert_eq!(result.unwrap().len(), F0_LENGTH * WAVE_SAMPLES_PER_FRAME);
     }
 
     type TextConsonantVowelData = [(
@@ -4634,7 +4642,7 @@ mod tests {
         assert!(wav.starts_with(b"RIFF"));
         assert_eq!(
             num_total_frames
-                * 256
+                * WAVE_SAMPLES_PER_FRAME
                 * mem::size_of::<u16>()
                 * (1 + usize::from(frame_audio_query.output_stereo)),
             u32::from_le_bytes(*wav[4..].first_chunk().unwrap()) as usize - 36,
