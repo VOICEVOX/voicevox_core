@@ -16,7 +16,7 @@ use tracing::info;
 use typed_floats::{NonNaNFinite, PositiveFinite, tf32};
 
 use crate::{
-    AccentPhrase, AudioQuery, FRAME_RATE, OnExistingVoiceModelId, Result, StyleId, VoiceModelId,
+    AccentPhrase, AudioQuery, OnExistingVoiceModelId, Result, StyleId, VoiceModelId,
     VoiceModelMeta,
     assert::assert_send_sync,
     asyncs::{Async, BlockingThreadPool, SingleTasked},
@@ -43,7 +43,9 @@ use crate::{
         voice_model,
     },
     engine::{
-        DEFAULT_SAMPLING_RATE, IteratorExt as _, PcmOptions, PhonemeCode, s16le_wav_prefix,
+        DEFAULT_SAMPLING_RATE, IteratorExt as _, PcmOptions, PhonemeCode,
+        frame::WAVE_SAMPLES_PER_FRAME,
+        s16le_wav_prefix,
         song::{
             self,
             interpret::{ConsonantLengthsFeature, PhonemeFeature, SfDecoderFeature},
@@ -200,8 +202,6 @@ impl AsyncExt for BlockingThreadPool {
     }
 }
 
-pub const WAVE_SAMPLES_PER_FRAME: usize = (DEFAULT_SAMPLING_RATE as f64 / FRAME_RATE) as _;
-const _: () = assert!(DEFAULT_SAMPLING_RATE as f64 / FRAME_RATE % 1. == 0.);
 /// 音が途切れてしまうのを避けるworkaround処理のためのパディング幅（フレーム数）
 // TODO: Rust 1.90であれば`{float}::round`がそのまま使える
 const PADDING_FRAME_LENGTH: usize = 38; // (0.4秒 * FRAME_RATE).round()
@@ -1676,14 +1676,13 @@ pub(crate) mod blocking {
     use crate::{
         AccentPhrase, AudioQuery, FRAME_RATE, FrameAudioQuery, OnExistingVoiceModelId, Score,
         StyleId, VoiceModelId, VoiceModelMeta, assert::assert_send_sync, asyncs::SingleTasked,
-        future::FutureExt as _,
+        engine::frame::WAVE_SAMPLES_PER_FRAME, future::FutureExt as _,
     };
 
     use super::{
         AccelerationMode, AsInner as _, AssumeSingleTasked, AudioFeature, DEFAULT_SAMPLING_RATE,
         InitializeOptions, Inner, InnerRefWithoutTextAnalyzer, LoadVoiceModelOptions,
-        StreamingSynthesisOptions, SynthesisOptions, TtsOptions, WAVE_SAMPLES_PER_FRAME,
-        s16le_wav_prefix,
+        StreamingSynthesisOptions, SynthesisOptions, TtsOptions, s16le_wav_prefix,
     };
 
     /// 音声シンセサイザ。
@@ -2780,14 +2779,14 @@ pub(crate) mod nonblocking {
     use crate::{
         AccentPhrase, AudioQuery, FRAME_RATE, FrameAudioQuery, OnExistingVoiceModelId, Result,
         Score, StyleId, VoiceModelId, VoiceModelMeta, assert::assert_send_sync,
-        asyncs::BlockingThreadPool,
+        asyncs::BlockingThreadPool, engine::frame::WAVE_SAMPLES_PER_FRAME,
     };
 
     use super::{
         AccelerationMode, AsInner as _, AssumeBlockable, AudioFeature, DEFAULT_SAMPLING_RATE,
         FrameSynthesisOptions, InitializeOptions, Inner, InnerRefWithoutTextAnalyzer,
         LoadVoiceModelOptions, StreamingSynthesisOptions, SynthesisOptions, TtsOptions,
-        WAVE_SAMPLES_PER_FRAME, s16le_wav_prefix,
+        s16le_wav_prefix,
     };
 
     /// 音声シンセサイザ。
@@ -3794,13 +3793,14 @@ pub(crate) mod nonblocking {
 mod tests {
     use std::{mem, num::NonZero, sync::Arc};
 
-    use super::{
-        AccelerationMode, AsInner as _, DEFAULT_HEAVY_INFERENCE_CANCELLABLE, WAVE_SAMPLES_PER_FRAME,
-    };
+    use super::{AccelerationMode, AsInner as _, DEFAULT_HEAVY_INFERENCE_CANCELLABLE};
     use crate::{
         AccentPhrase, FramePhoneme, Note, NoteId, Result, Score, StyleId,
-        asyncs::BlockingThreadPool, engine::talk::Mora, macros::tests::assert_debug_fmt_eq,
-        numerics::non_zero, wav_from_s16le,
+        asyncs::BlockingThreadPool,
+        engine::{frame::WAVE_SAMPLES_PER_FRAME, talk::Mora},
+        macros::tests::assert_debug_fmt_eq,
+        numerics::non_zero,
+        wav_from_s16le,
     };
     use ::test_util::OPEN_JTALK_DIC_DIR;
     use futures_core::Stream;
