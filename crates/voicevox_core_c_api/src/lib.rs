@@ -113,7 +113,7 @@ macro_rules! deprecated_fn_impl {
 
 /// フレームレート。
 ///
-/// 音声の秒数は`frame_length / FRAME_RATE`で表せる。
+/// 音声の秒数は`frame_length / VOICEVOX_FRAME_RATE`で表せる。
 ///
 /// \note
 /// この定数は将来的に削除される可能性がある。例えば、<code><a href="../rust_api/voicevox_core/struct.StyleMeta.html">StyleMeta</a>::frame_rate</code>というフィールドに置き換えられる可能性がある。
