@@ -66,6 +66,7 @@ tempfile.workspace = true
 test_util = { workspace = true, features = ["c-api"] }
 toml.workspace = true
 typetag.workspace = true
+waveadapter.workspace = true
 
 [lints.rust]
 unsafe_code = "allow" # C APIのための操作
