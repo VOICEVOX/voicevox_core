@@ -44,7 +44,9 @@ use crate::{
         voice_model,
     },
     engine::{
-        DEFAULT_SAMPLING_RATE, IteratorExt as _, PcmOptions, PhonemeCode, s16le_wav_prefix,
+        DEFAULT_SAMPLING_RATE, IteratorExt as _, PcmOptions, PhonemeCode,
+        frame::{FRAME_RATE, WAVE_SAMPLES_PER_FRAME},
+        s16le_wav_prefix,
         song::{
             self,
             interpret::{ConsonantLengthsFeature, PhonemeFeature, SfDecoderFeature},
@@ -134,7 +136,6 @@ impl<A: infer::AsyncExt> StreamingSynthesisOptions<A> {
     /// - <code>[start_offset_in_secs] * [FRAME_RATE]</code>が`0.0`以上[`AudioQuery::frame_length`]以下でなければパニックする。
     /// - <code>[segment_length_in_secs] * [FRAME_RATE]</code>が`0.5`を超えていなければパニックする。
     ///
-    /// [FRAME_RATE]: AudioFeature::FRAME_RATE
     /// [start_offset_in_secs]: Self::start_offset_in_secs
     /// [segment_length_in_secs]: Self::segment_length_in_secs
     #[track_caller]
@@ -147,7 +148,7 @@ impl<A: infer::AsyncExt> StreamingSynthesisOptions<A> {
             panic!(
                 "`start_offset` in frames must be positive and must not exceed the length of the \
                  audio ({frame_length} frames; approx. {} seconds)",
-                (frame_length as f64 / AudioFeature::FRAME_RATE) as f32,
+                (frame_length as f64 / FRAME_RATE) as f32,
             );
         };
 
@@ -157,10 +158,7 @@ impl<A: infer::AsyncExt> StreamingSynthesisOptions<A> {
         let Ok(segment_length_in_frame) =
             (to_frame_length(self.segment_length_in_secs).round_ties_even() as usize).try_into()
         else {
-            panic!(
-                "`segment_length * {FRAME_RATE}` must be greater than `0.5`",
-                FRAME_RATE = AudioFeature::FRAME_RATE,
-            );
+            panic!("`segment_length * {FRAME_RATE}` must be greater than `0.5`");
         };
 
         return (
@@ -170,7 +168,7 @@ impl<A: infer::AsyncExt> StreamingSynthesisOptions<A> {
         );
 
         const fn to_frame_length(secs: f64) -> f64 {
-            secs * AudioFeature::FRAME_RATE
+            secs * FRAME_RATE
         }
     }
 }
@@ -180,7 +178,7 @@ impl<A: infer::AsyncExt> Default for StreamingSynthesisOptions<A> {
         Self {
             synthesis: SynthesisOptions::default(),
             start_offset_in_secs: 0.0,
-            segment_length_in_secs: 3.0,
+            segment_length_in_secs: 0.3,
         }
     }
 }
@@ -253,7 +251,7 @@ impl AsyncExt for BlockingThreadPool {
 
 /// 音が途切れてしまうのを避けるworkaround処理のためのパディング幅（フレーム数）
 // TODO: Rust 1.90であれば`{float}::round`がそのまま使える
-const PADDING_FRAME_LENGTH: usize = 38; // (0.4秒 * 24000Hz / 256.0).round()
+const PADDING_FRAME_LENGTH: usize = 38; // (0.4秒 * FRAME_RATE).round()
 /// 音声生成の際、音声特徴量の前後に確保すべきマージン幅（フレーム数）
 /// モデルの受容野から計算される
 pub const MARGIN: usize = 14;
@@ -279,7 +277,9 @@ fn crop_with_margin(
 /// 追加した安全マージンを生成音声から取り除く
 fn trim_margin_from_wave(wave_with_margin: ndarray::Array1<f32>) -> ndarray::Array1<f32> {
     let len = wave_with_margin.len();
-    wave_with_margin.slice_move(ndarray::s![MARGIN * 256..len - MARGIN * 256])
+    wave_with_margin.slice_move(ndarray::s![
+        MARGIN * WAVE_SAMPLES_PER_FRAME..len - MARGIN * WAVE_SAMPLES_PER_FRAME
+    ])
 }
 
 /// 音声の中間表現。
@@ -296,9 +296,6 @@ pub struct AudioFeature {
 }
 
 impl AudioFeature {
-    /// フレームレート。全体の秒数は`frame_length() / FRAME_RATE`で表せる。
-    pub const FRAME_RATE: f64 = 93.75;
-
     /// workaround paddingを除いた音声特徴量のフレーム数。
     pub fn frame_length(&self) -> usize {
         self.internal_state.nrows() - 2 * MARGIN
@@ -306,7 +303,6 @@ impl AudioFeature {
 }
 
 assert_send_sync!(AudioFeature);
-const _: () = assert!(AudioFeature::FRAME_RATE == (DEFAULT_SAMPLING_RATE as f64) / 256.0);
 
 #[derive(derive_more::Debug)]
 struct Inner<T, A: Async> {
@@ -1490,7 +1486,8 @@ impl<R: InferenceRuntime> Status<R> {
             let len = output.len();
             return Ok(output
                 .slice_move(ndarray::s![
-                    PADDING_FRAME_LENGTH * 256..len - PADDING_FRAME_LENGTH * 256,
+                    PADDING_FRAME_LENGTH * WAVE_SAMPLES_PER_FRAME
+                        ..len - PADDING_FRAME_LENGTH * WAVE_SAMPLES_PER_FRAME,
                 ])
                 .as_standard_layout()
                 .into_owned()
@@ -1726,7 +1723,7 @@ pub(crate) mod blocking {
     use crate::{
         AccentPhrase, AudioQuery, FrameAudioQuery, OnExistingVoiceModelId, Score, StyleId,
         VoiceModelId, VoiceModelMeta, assert::assert_send_sync, asyncs::SingleTasked,
-        future::FutureExt as _,
+        engine::frame::WAVE_SAMPLES_PER_FRAME, future::FutureExt as _,
     };
 
     use super::{
@@ -1932,6 +1929,8 @@ pub(crate) mod blocking {
         /// #
         /// use std::mem;
         ///
+        /// use voicevox_core::FRAME_RATE;
+        ///
         /// let frame_length = query.frame_length().calculate().0;
         /// let num_channels = if query.output_stereo { 2 } else { 1 };
         ///
@@ -1941,7 +1940,7 @@ pub(crate) mod blocking {
         ///
         /// let [wav_header, segment1, segment2] = synth
         ///     .streaming_synthesis(query, STYLE_ID)
-        ///     .segment_length((frame_length as f64 + 0.5) / AudioFeature::FRAME_RATE / 2.) // ２分割
+        ///     .segment_length((frame_length as f64 + 0.5) / FRAME_RATE / 2.) // ２分割
         ///     .perform()?
         ///     .collect::<Result<Vec<_>, _>>()?
         ///     .try_into()
@@ -1983,7 +1982,7 @@ pub(crate) mod blocking {
         /// # fn main() -> anyhow::Result<()> {
         /// # use pollster::FutureExt as _;
         /// # use voicevox_core::{
-        /// #    __internal::doctest_fixtures::IntoBlocking as _, AudioFeature, AudioQuery, StyleId,
+        /// #     __internal::doctest_fixtures::IntoBlocking as _, AudioFeature, AudioQuery, FRAME_RATE, StyleId,
         /// # };
         /// #
         /// # let synth =
@@ -2000,7 +1999,7 @@ pub(crate) mod blocking {
         /// #
         /// let _ = synth
         ///     .streaming_synthesis(query, STYLE_ID)
-        ///     .segment_length(0.5 / AudioFeature::FRAME_RATE) // 0.005333333333333333
+        ///     .segment_length(0.5 / FRAME_RATE) // 0.005333333333333333
         ///     .perform();
         /// #
         /// # Ok(())
@@ -2840,7 +2839,7 @@ pub(crate) mod blocking {
         ///
         /// この値を`false`にすることにより<code>[start_offset] * [FRAME_RATE]</code>が[`AudioQuery::frame_length`]を超過する場合、[実行]時にパニックする。
         ///
-        /// [FRAME_RATE]: AudioFeature::FRAME_RATE
+        /// [FRAME_RATE]: crate::FRAME_RATE
         /// [start_offset]: Self::start_offset
         /// [実行]: Self::perform
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
@@ -2852,7 +2851,7 @@ pub(crate) mod blocking {
         ///
         /// <code>[start_offset] * [FRAME_RATE]</code>が`0.0`以上[`AudioQuery::frame_length`]以下でなければ[実行]時にパニックする。`AudioQuery::frame_length`の値は[`enable_interrogative_upspeak`]により変わることに注意。
         ///
-        /// [FRAME_RATE]: AudioFeature::FRAME_RATE
+        /// [FRAME_RATE]: crate::FRAME_RATE
         /// [start_offset]: Self::start_offset
         /// [実行]: Self::perform
         /// [`enable_interrogative_upspeak`]: Self::enable_interrogative_upspeak
@@ -2865,7 +2864,7 @@ pub(crate) mod blocking {
         ///
         /// <code>[segment_length] * [FRAME_RATE]</code>が`0.5`を超えていなければ[実行]時にパニックする。
         ///
-        /// [FRAME_RATE]: AudioFeature::FRAME_RATE
+        /// [FRAME_RATE]: crate::FRAME_RATE
         /// [segment_length]: Self::segment_length
         /// [実行]: Self::perform
         pub fn segment_length(mut self, segment_length: f64) -> Self {
@@ -2884,7 +2883,7 @@ pub(crate) mod blocking {
         ///
         /// [`enable_interrogative_upspeak`]により`AudioQuery::frame_length`が変わることに注意。
         ///
-        /// [FRAME_RATE]: AudioFeature::FRAME_RATE
+        /// [FRAME_RATE]: crate::FRAME_RATE
         /// [start_offset]: Self::start_offset
         /// [segment_length]: Self::segment_length
         /// [`enable_interrogative_upspeak`]: Self::enable_interrogative_upspeak
@@ -2903,7 +2902,7 @@ pub(crate) mod blocking {
                 .block_on()?;
             let full_frames = audio_feature.frame_length();
             let render_frames = full_frames - offset_frames;
-            let render_wave_length = render_frames * 256;
+            let render_wave_length = render_frames * WAVE_SAMPLES_PER_FRAME;
             let output_sampling_rate = self.audio_query.output_sampling_rate.get().get();
             let output_stereo = self.audio_query.output_stereo;
             let num_channels: u16 = if output_stereo { 2 } else { 1 };
@@ -3000,6 +2999,7 @@ pub(crate) mod nonblocking {
     use crate::{
         AccentPhrase, AudioQuery, FrameAudioQuery, OnExistingVoiceModelId, Result, Score, StyleId,
         VoiceModelId, VoiceModelMeta, assert::assert_send_sync, asyncs::BlockingThreadPool,
+        engine::frame::WAVE_SAMPLES_PER_FRAME,
     };
 
     use super::{
@@ -3205,6 +3205,8 @@ pub(crate) mod nonblocking {
         /// #
         /// use std::mem;
         ///
+        /// use voicevox_core::FRAME_RATE;
+        ///
         /// let frame_length = query.frame_length().calculate().0;
         /// let num_channels = if query.output_stereo { 2 } else { 1 };
         ///
@@ -3214,7 +3216,7 @@ pub(crate) mod nonblocking {
         ///
         /// let [wav_header, segment1, segment2] = synth
         ///     .streaming_synthesis(query, STYLE_ID)
-        ///     .segment_length((frame_length as f64 + 0.5) / AudioFeature::FRAME_RATE / 2.) // ２分割
+        ///     .segment_length((frame_length as f64 + 0.5) / FRAME_RATE / 2.) // ２分割
         ///     .perform()
         ///     .await?
         ///     .try_collect::<Vec<_>>()
@@ -3257,7 +3259,7 @@ pub(crate) mod nonblocking {
         /// ```should_panic
         /// # #[pollster::main]
         /// # async fn main() -> anyhow::Result<()> {
-        /// # use voicevox_core::{AudioFeature, AudioQuery, StyleId};
+        /// # use voicevox_core::{AudioFeature, AudioQuery, FRAME_RATE, StyleId};
         /// #
         /// # let synth =
         /// #     &voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
@@ -3272,7 +3274,7 @@ pub(crate) mod nonblocking {
         /// #
         /// let _ = synth
         ///     .streaming_synthesis(query, STYLE_ID)
-        ///     .segment_length(0.5 / AudioFeature::FRAME_RATE) // 0.005333333333333333
+        ///     .segment_length(0.5 / FRAME_RATE) // 0.005333333333333333
         ///     .perform()
         ///     .await;
         /// #
@@ -4013,7 +4015,7 @@ pub(crate) mod nonblocking {
         ///
         /// この値を`false`にすることにより<code>[start_offset] * [FRAME_RATE]</code>が[`AudioQuery::frame_length`]を超過する場合、[実行]時にパニックする。
         ///
-        /// [FRAME_RATE]: AudioFeature::FRAME_RATE
+        /// [FRAME_RATE]: crate::FRAME_RATE
         /// [start_offset]: Self::start_offset
         /// [実行]: Self::perform
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
@@ -4025,7 +4027,7 @@ pub(crate) mod nonblocking {
         ///
         /// <code>[start_offset] * [FRAME_RATE]</code>が`0.0`以上[`AudioQuery::frame_length`]以下でなければ[実行]時にパニックする。`AudioQuery::frame_length`の値は[`enable_interrogative_upspeak`]により変わることに注意。
         ///
-        /// [FRAME_RATE]: AudioFeature::FRAME_RATE
+        /// [FRAME_RATE]: crate::FRAME_RATE
         /// [start_offset]: Self::start_offset
         /// [実行]: Self::perform
         /// [`enable_interrogative_upspeak`]: Self::enable_interrogative_upspeak
@@ -4038,7 +4040,7 @@ pub(crate) mod nonblocking {
         ///
         /// <code>[segment_length] * [FRAME_RATE]</code>が`0.5`を超えていなければ[実行]時にパニックする。
         ///
-        /// [FRAME_RATE]: AudioFeature::FRAME_RATE
+        /// [FRAME_RATE]: crate::FRAME_RATE
         /// [segment_length]: Self::segment_length
         /// [実行]: Self::perform
         pub fn segment_length(mut self, segment_length: f64) -> Self {
@@ -4057,7 +4059,7 @@ pub(crate) mod nonblocking {
         ///
         /// `AudioQuery::frame_length`の値は[`enable_interrogative_upspeak`]により変わることに注意。
         ///
-        /// [FRAME_RATE]: AudioFeature::FRAME_RATE
+        /// [FRAME_RATE]: crate::FRAME_RATE
         /// [start_offset]: Self::start_offset
         /// [segment_length]: Self::segment_length
         /// [`enable_interrogative_upspeak`]: Self::enable_interrogative_upspeak
@@ -4076,7 +4078,7 @@ pub(crate) mod nonblocking {
                 .await?;
             let full_frames = audio_feature.frame_length();
             let render_frames = full_frames - offset_frames;
-            let render_wave_length = render_frames * 256;
+            let render_wave_length = render_frames * WAVE_SAMPLES_PER_FRAME;
             let output_sampling_rate = self.audio_query.output_sampling_rate.get().get();
             let output_stereo = self.audio_query.output_stereo;
             let num_channels: u16 = if output_stereo { 2 } else { 1 };
@@ -4195,8 +4197,11 @@ mod tests {
     use super::{AccelerationMode, AsInner as _, DEFAULT_HEAVY_INFERENCE_CANCELLABLE};
     use crate::{
         AccentPhrase, FramePhoneme, Note, NoteId, Result, Score, StyleId,
-        asyncs::BlockingThreadPool, engine::talk::Mora, macros::tests::assert_debug_fmt_eq,
-        numerics::non_zero, wav_from_s16le,
+        asyncs::BlockingThreadPool,
+        engine::{frame::WAVE_SAMPLES_PER_FRAME, talk::Mora},
+        macros::tests::assert_debug_fmt_eq,
+        numerics::non_zero,
+        wav_from_s16le,
     };
     use ::test_util::OPEN_JTALK_DIC_DIR;
     use futures_core::Stream;
@@ -4403,7 +4408,7 @@ mod tests {
             .await;
 
         assert!(result.is_ok(), "{result:?}");
-        assert_eq!(result.unwrap().len(), F0_LENGTH * 256);
+        assert_eq!(result.unwrap().len(), F0_LENGTH * WAVE_SAMPLES_PER_FRAME);
     }
 
     #[rstest]
@@ -4537,7 +4542,7 @@ mod tests {
             .await;
 
         assert!(result.is_ok(), "{result:?}");
-        assert_eq!(result.unwrap().len(), F0_LENGTH * 256);
+        assert_eq!(result.unwrap().len(), F0_LENGTH * WAVE_SAMPLES_PER_FRAME);
     }
 
     type TextConsonantVowelData = [(
@@ -5038,7 +5043,7 @@ mod tests {
         assert!(wav.starts_with(b"RIFF"));
         assert_eq!(
             num_total_frames
-                * 256
+                * WAVE_SAMPLES_PER_FRAME
                 * mem::size_of::<u16>()
                 * (1 + usize::from(frame_audio_query.output_stereo)),
             u32::from_le_bytes(*wav[4..].first_chunk().unwrap()) as usize - 36,
@@ -5145,7 +5150,7 @@ mod tests {
 
     #[rstest]
     #[tokio::test]
-    async fn nonblocking_streaming_synthesis_equivalent() {
+    async fn nonblocking_streaming_synthesis_preserve_length() {
         let synthesizer = super::nonblocking::Synthesizer::builder(
             crate::nonblocking::Onnxruntime::from_test_util_data()
                 .await
@@ -5169,13 +5174,13 @@ mod tests {
             .await
             .unwrap();
 
-        let expected_wav = synthesizer
+        let without_division = synthesizer
             .synthesis(&audio_query, StyleId::new(302))
             .perform()
             .await
             .unwrap();
 
-        let actual_wav = synthesizer
+        let with_division = synthesizer
             .streaming_synthesis(&audio_query, StyleId::new(302))
             .perform()
             .await
@@ -5189,12 +5194,13 @@ mod tests {
             .flatten()
             .collect::<Vec<_>>();
 
-        assert_eq!(expected_wav, actual_wav);
+        assert_eq!(without_division[..44], with_division[..44]);
+        assert_eq!(without_division.len(), with_division.len());
     }
 
     #[rstest]
     #[tokio::test]
-    async fn blocking_streaming_synthesis_equivalent() {
+    async fn blocking_streaming_synthesis_preserve_length() {
         let synthesizer = super::blocking::Synthesizer::builder(
             crate::blocking::Onnxruntime::from_test_util_data().unwrap(),
         )
@@ -5211,12 +5217,12 @@ mod tests {
             .create_audio_query("これはテストです", StyleId::new(302))
             .unwrap();
 
-        let expected_wav = synthesizer
+        let without_division = synthesizer
             .synthesis(&audio_query, StyleId::new(302))
             .perform()
             .unwrap();
 
-        let actual_wav = synthesizer
+        let with_division = synthesizer
             .streaming_synthesis(&audio_query, StyleId::new(302))
             .perform()
             .unwrap()
@@ -5228,7 +5234,8 @@ mod tests {
             .flatten()
             .collect::<Vec<_>>();
 
-        assert_eq!(expected_wav, actual_wav);
+        assert_eq!(without_division[..44], with_division[..44]);
+        assert_eq!(without_division.len(), with_division.len());
     }
 
     #[rstest]

@@ -21,7 +21,7 @@ use pyo3::{
     wrap_pyfunction,
 };
 use voicevox_core::{
-    __internal::interop::raii::MaybeClosed, AccentPhrase, AudioQuery, FrameAudioQuery,
+    __internal::interop::raii::MaybeClosed, AccentPhrase, AudioQuery, FRAME_RATE, FrameAudioQuery,
     FramePhoneme, Mora, Note, Score, UserDictWord,
 };
 
@@ -31,6 +31,7 @@ fn rust(py: Python<'_>, module: &Bound<'_, PyModule>) -> PyResult<()> {
     pyo3_log::init();
 
     module.add("__version__", pyproject_project_version!())?;
+    module.add("FRAME_RATE", FRAME_RATE)?;
     module.add_class::<_ReservedFields>()?;
     module.add_class::<AudioFeature>()?;
     module.add_wrapped(wrap_pyfunction!(_audio_query_from_accent_phrases))?;
@@ -429,9 +430,6 @@ struct AudioFeature {
 
 #[pymethods]
 impl AudioFeature {
-    #[classattr]
-    const FRAME_RATE: f64 = voicevox_core::AudioFeature::FRAME_RATE;
-
     #[getter]
     fn frame_length(&self) -> usize {
         self.audio.frame_length()
