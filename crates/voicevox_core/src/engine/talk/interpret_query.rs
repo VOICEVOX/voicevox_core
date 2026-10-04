@@ -12,8 +12,9 @@ use crate::{
 
 use super::{
     super::{
-        DEFAULT_SAMPLING_RATE, PhonemeCode,
+        PhonemeCode,
         acoustic_feature_extractor::{MoraTail, OptionalConsonant},
+        frame::FRAME_RATE,
         talk::{LengthedPhoneme, ValidatedAccentPhrase, ValidatedAudioQuery, ValidatedMora},
     },
     full_context_label::mora_to_text,
@@ -149,6 +150,8 @@ impl AudioQuery {
     /// ```
     /// # use voicevox_core::AudioQuery;
     /// #
+    /// use voicevox_core::FRAME_RATE;
+    ///
     /// let mut query = AudioQuery::from(vec![]);
     /// query.speed_scale = typed_floats::as_const!(PositiveFinite, f32, 1.2);
     /// query.pre_phoneme_length = typed_floats::as_const!(PositiveFinite, f32, 3.3);
@@ -165,7 +168,7 @@ impl AudioQuery {
     /// );
     ///
     /// fn to_frame_length(secs: f32, speed_scale: f32) -> usize {
-    ///     ((secs * 93.75).round_ties_even() / speed_scale).round_ties_even() as _
+    ///     ((secs * FRAME_RATE as f32).round_ties_even() / speed_scale).round_ties_even() as _
     /// }
     /// ```
     ///
@@ -179,9 +182,7 @@ impl AudioQuery {
     /// assert_eq!(usize::MAX, query.frame_length().calculate().0);
     /// ```
     ///
-    /// [`FRAME_RATE`]: crate::AudioFeature::FRAME_RATE
     /// [`enable_interrogative_upspeak`]: AudioQueryFrameLength::enable_interrogative_upspeak
-    /// [FRAME_RATE]: crate::AudioFeature::FRAME_RATE
     /// [round_ties_even()]: f32::round_ties_even
     /// [speed_scale]: Self::speed_scale
     #[cfg_attr(doc, doc(alias = "voicevox_audio_query_frame_length"))]
@@ -415,6 +416,5 @@ fn to_frame_length(secs: f32, speed_scale: f32) -> usize {
     // VOICEVOX ENGINEと挙動を合わせるため、四捨五入ではなく偶数丸めをする
     //
     // https://github.com/VOICEVOX/voicevox_engine/issues/552
-    const RATE: f32 = DEFAULT_SAMPLING_RATE as f32 / 256.;
-    ((secs * RATE).round_ties_even() / speed_scale).round_ties_even() as _
+    ((secs * FRAME_RATE as f32).round_ties_even() / speed_scale).round_ties_even() as _
 }

@@ -494,7 +494,7 @@ class AudioQuery:
         """
         音声の総フレーム数を算出する。
 
-        音声の秒数は、フレーム数を :attr:`AudioFeature.FRAME_RATE` で割った値で表せる。
+        音声の秒数は、フレーム数を :attr:`FRAME_RATE` で割った値で表せる。
 
         返す値は ``size_t`` の最大値で飽和する。算出方法は以下の通り。
 
@@ -518,7 +518,7 @@ class AudioQuery:
            - :attr:`post_phoneme_length`
 
         2. それぞれの秒数を ``secs`` として、対応するフレーム長を
-           ``round_ties_even(round_ties_even(secs * AudioFeature.FRAME_RATE) / speed_scale)``
+           ``round_ties_even(round_ties_even(secs * FRAME_RATE) / speed_scale)``
            として算出する。ここで ``round_ties_even`` は
            |audio-query-frame-length-round-ties-even|_ であり、
            |audio-query-frame-length-round|_ や |audio-query-frame-length-numpy-round|_
@@ -551,10 +551,9 @@ class AudioQuery:
         >>> assert query.frame_length() == audio.frame_length
 
         >>> import numpy as np
-        >>> from voicevox_core import AudioFeature
+        >>> from voicevox_core import FRAME_RATE
         >>>
         >>> def to_frame_length(secs: np.float32, speed_scale: np.float32) -> int:
-        ...     FRAME_RATE = np.float32(AudioFeature.FRAME_RATE)
         ...     return int(((secs * FRAME_RATE).round() / speed_scale).round())
         >>>
         >>> query = AudioQuery.from_accent_phrases([])
@@ -724,7 +723,8 @@ class Note:
     """
     音符のフレーム長。
 
-    秒数に93.75をかけ、端数を調整して整数にしたもの。例として125BPM (Beats Per
+    秒数に :attr:`FRAME_RATE` =
+    93.75をかけ、端数を調整して整数にしたもの。例として125BPM (Beats Per
     Minute)における一拍は:
 
     93.75[フレーム/秒] / (125[拍/分] / 60[秒/分]) = 45[フレーム/拍]

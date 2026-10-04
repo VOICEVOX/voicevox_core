@@ -5,27 +5,21 @@ from ast import AnnAssign, ClassDef, Constant, Name
 from pathlib import Path
 
 import voicevox_core
-from voicevox_core._rust import AudioFeature
 
 
-def test_audio_feature() -> None:
-    REAL = (AudioFeature.FRAME_RATE,)
-    stub = extract_audio_feature_const(
+def test_module() -> None:
+    REAL = (voicevox_core.FRAME_RATE,)
+    stub = extract_module_consts(
         Path("./python/voicevox_core/_rust/__init__.pyi"),
     )
     assert stub == REAL
 
 
-def extract_audio_feature_const(pyi: Path) -> tuple[float]:
+def extract_module_consts(pyi: Path) -> tuple[float]:
     module = ast.parse(pyi.read_text(encoding="utf-8"))
-    class_def = next(
-        stmt
-        for stmt in module.body
-        if isinstance(stmt, ClassDef) and stmt.name == "AudioFeature"
-    )
     frame_rate_value = next(
         eval(ast.unparse(stmt.value))
-        for stmt in class_def.body
+        for stmt in module.body
         if isinstance(stmt, AnnAssign)
         and isinstance(stmt.target, Name)
         and stmt.target.id == "FRAME_RATE"
