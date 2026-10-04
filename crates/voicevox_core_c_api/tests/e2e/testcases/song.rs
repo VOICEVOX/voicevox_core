@@ -1,6 +1,7 @@
 use std::{
     env,
     ffi::{CStr, CString},
+    io::Cursor,
     mem::{self, MaybeUninit},
     slice,
     sync::LazyLock,
@@ -277,18 +278,30 @@ impl assert_cdylib::TestCase for TestCase {
         };
 
         {
+            std::assert_eq!(false, frame_audio_query.output_stereo);
+
             // SAFETY: `voicevox_synthesizer_frame_synthesis` outputs a valid slice.
             let wav = unsafe { slice::from_raw_parts(wav, wav_length) };
 
-            assert!(wav.starts_with(b"RIFF"));
+            let wav_params = waveadapter::header::read_wav_header(Cursor::new(wav))?;
+
+            std::assert_eq!(1, wav_params.fmt.format_code);
+            std::assert_eq!(1, wav_params.fmt.channels);
+            std::assert_eq!(24000, wav_params.fmt.sample_rate);
             std::assert_eq!(
-                NUM_TOTAL_FRAMES
-                    * (24000. / VOICEVOX_FRAME_RATE) as usize
-                    * mem::size_of::<u16>()
-                    * (1 + usize::from(frame_audio_query.output_stereo)),
-                u32::from_le_bytes(*wav[4..].first_chunk().unwrap()) as usize - 36,
+                8 * mem::size_of::<i16>() as u16,
+                wav_params.fmt.bits_per_sample
             );
-            std::assert_eq!(*b"WAVEfmt ", wav[8..16]);
+            std::assert_matches!(wav_params.fmt.extension, None);
+            std::assert_matches!(wav_params.fact, None);
+            std::assert_matches!(wav_params.ds64_sample_count, None);
+            std::assert_matches!(*wav_params.chunks_before, []);
+            std::assert_matches!(*wav_params.chunks_after, []);
+            std::assert_eq!(
+                (NUM_TOTAL_FRAMES * (24000. / VOICEVOX_FRAME_RATE) as usize * mem::size_of::<i16>())
+                    as u64,
+                wav_params.data_length,
+            );
         }
 
         // SAFETY: These functions have no safety requirements.

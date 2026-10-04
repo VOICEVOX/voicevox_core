@@ -118,6 +118,7 @@ voicevox_core = { path = "crates/voicevox_core" }
 voicevox_core_build_features = { path = "crates/voicevox_core_build_features" }
 voicevox_core_macros = { path = "crates/voicevox_core_macros" }
 windows = "0.43.0"
+waveadapter = "0.3.0"
 zip = "0.6.3"
 
 [workspace.dependencies.open_jtalk]
