@@ -1,21 +1,9 @@
 use std::sync::Arc;
 
-use jni::{
-    JNIEnv,
-    objects::JObject,
-    sys::{jdouble, jlong},
-};
+use jni::{JNIEnv, objects::JObject, sys::jlong};
 use voicevox_core::AudioFeature;
 
 use crate::common::throw_if_err;
-
-// SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
-#[unsafe(no_mangle)]
-extern "system" fn Java_jp_hiroshiba_voicevoxcore_AudioFeature_rsFrameRate(
-    _: JNIEnv<'_>,
-) -> jdouble {
-    AudioFeature::FRAME_RATE
-}
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]

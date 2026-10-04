@@ -13,10 +13,8 @@ from argparse import ArgumentParser
 from pathlib import Path
 
 from sounddevice import RawOutputStream
-from voicevox_core import AccelerationMode, AudioFeature
+from voicevox_core import FRAME_RATE, AccelerationMode
 from voicevox_core.blocking import Onnxruntime, OpenJtalk, Synthesizer, VoiceModelFile
-
-FRAME_RATE = AudioFeature.FRAME_RATE  # TODO: #1449
 
 
 @dataclasses.dataclass
