@@ -25,9 +25,6 @@ FRAME_RATE: float = 93.75
     この定数は将来的に削除される可能性がある。例えば、 ``StyleMeta.frame_rate`` というフィールドに置き換えられる可能性がある。
 """
 
-WAVE_SAMPLES_PER_FRAME: int = 256
-"""１フレームから生成されるPCMのサンプル数。"""
-
 class AudioFeature:
     @property
     def frame_length(self) -> int: ...

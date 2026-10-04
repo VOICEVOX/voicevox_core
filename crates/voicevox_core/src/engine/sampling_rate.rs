@@ -7,17 +7,11 @@ use serde::{
     de::{self, Unexpected},
 };
 
-use crate::{
-    FRAME_RATE, WAVE_SAMPLES_PER_FRAME,
-    error::{InvalidQueryError, InvalidQueryErrorSource},
-};
+use crate::error::{InvalidQueryError, InvalidQueryErrorSource};
 
 pub(crate) const DEFAULT_SAMPLING_RATE: u32 = DEFAULT_SAMPLING_RATE_.get();
 
-const DEFAULT_SAMPLING_RATE_: NonZero<u32> =
-    NonZero::new((FRAME_RATE * WAVE_SAMPLES_PER_FRAME as f64) as _).unwrap();
-
-const _: () = assert!(DEFAULT_SAMPLING_RATE == 24000);
+const DEFAULT_SAMPLING_RATE_: NonZero<u32> = NonZero::new(24000).unwrap();
 
 /// サンプリングレート（Hz）。
 ///

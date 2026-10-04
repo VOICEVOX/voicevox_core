@@ -8,14 +8,14 @@ import voicevox_core
 
 
 def test_module() -> None:
-    REAL = (voicevox_core.FRAME_RATE, voicevox_core.WAVE_SAMPLES_PER_FRAME)
+    REAL = (voicevox_core.FRAME_RATE,)
     stub = extract_module_consts(
         Path("./python/voicevox_core/_rust/__init__.pyi"),
     )
     assert stub == REAL
 
 
-def extract_module_consts(pyi: Path) -> tuple[object, object]:
+def extract_module_consts(pyi: Path) -> tuple[float]:
     module = ast.parse(pyi.read_text(encoding="utf-8"))
     frame_rate_value = next(
         eval(ast.unparse(stmt.value))
@@ -25,15 +25,7 @@ def extract_module_consts(pyi: Path) -> tuple[object, object]:
         and stmt.target.id == "FRAME_RATE"
         and stmt.value
     )
-    wave_samples_per_frame_value = next(
-        eval(ast.unparse(stmt.value))
-        for stmt in module.body
-        if isinstance(stmt, AnnAssign)
-        and isinstance(stmt.target, Name)
-        and stmt.target.id == "WAVE_SAMPLES_PER_FRAME"
-        and stmt.value
-    )
-    return (frame_rate_value, wave_samples_per_frame_value)
+    return (frame_rate_value,)
 
 
 def test_blocking_and_asyncio() -> None:

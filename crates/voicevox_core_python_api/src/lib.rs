@@ -22,7 +22,7 @@ use pyo3::{
 };
 use voicevox_core::{
     __internal::interop::raii::MaybeClosed, AccentPhrase, AudioQuery, FRAME_RATE, FrameAudioQuery,
-    FramePhoneme, Mora, Note, Score, UserDictWord, WAVE_SAMPLES_PER_FRAME,
+    FramePhoneme, Mora, Note, Score, UserDictWord,
 };
 
 #[pymodule]
@@ -32,7 +32,6 @@ fn rust(py: Python<'_>, module: &Bound<'_, PyModule>) -> PyResult<()> {
 
     module.add("__version__", pyproject_project_version!())?;
     module.add("FRAME_RATE", FRAME_RATE)?;
-    module.add("WAVE_SAMPLES_PER_FRAME", WAVE_SAMPLES_PER_FRAME)?;
     module.add_class::<_ReservedFields>()?;
     module.add_class::<AudioFeature>()?;
     module.add_wrapped(wrap_pyfunction!(_audio_query_from_accent_phrases))?;

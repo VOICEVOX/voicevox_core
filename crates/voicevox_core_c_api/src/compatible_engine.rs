@@ -10,7 +10,7 @@ use libc::c_int;
 use tracing::warn;
 use voicevox_core::{
     __internal::interop::{PerformInference as _, ToJsonValue as _},
-    OnExistingVoiceModelId, StyleId, VoiceModelId, WAVE_SAMPLES_PER_FRAME,
+    OnExistingVoiceModelId, StyleId, VoiceModelId,
 };
 
 use crate::{helpers::display_error, init_logger_once};
@@ -374,9 +374,7 @@ pub unsafe extern "C" fn decode_forward(
     match result {
         Ok(output_vec) => {
             // SAFETY: The safety contract must be upheld by the caller.
-            let output_slice = unsafe {
-                std::slice::from_raw_parts_mut(output, length * usize::from(WAVE_SAMPLES_PER_FRAME))
-            };
+            let output_slice = unsafe { std::slice::from_raw_parts_mut(output, length * 256) };
             output_slice.clone_from_slice(&output_vec);
             true
         }
@@ -476,7 +474,7 @@ pub unsafe extern "C" fn render_audio_segment(
     );
     match result {
         Ok(output_arr) => {
-            let output_len = length * usize::from(WAVE_SAMPLES_PER_FRAME);
+            let output_len = length * 256;
             if output_arr.len() != output_len {
                 panic!("expected {}, got {}", output_len, output_arr.len());
             }
@@ -684,7 +682,7 @@ pub unsafe extern "C" fn sf_decode_forward(
     );
     match result {
         Ok(output_arr) => {
-            let output_len = length * usize::from(WAVE_SAMPLES_PER_FRAME);
+            let output_len = length * 256;
             if output_arr.len() != output_len {
                 panic!("expected {}, got {}", output_len, output_arr.len());
             }

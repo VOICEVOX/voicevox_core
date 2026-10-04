@@ -8,10 +8,7 @@ use assert_cmd::assert::AssertResult;
 use libloading::Library;
 use serde::{Deserialize, Serialize};
 
-use test_util::{
-    EXAMPLE_DATA,
-    c_api::{CApi, VOICEVOX_WAVE_SAMPLES_PER_FRAME},
-};
+use test_util::{EXAMPLE_DATA, c_api::CApi};
 
 use crate::{
     assert_cdylib::{self, Utf8Output, case},
@@ -26,8 +23,6 @@ struct TestCase;
 #[typetag::serde(name = "compatible_engine")]
 impl assert_cdylib::TestCase for TestCase {
     unsafe fn exec(&self, lib: Library) -> anyhow::Result<()> {
-        const WAVE_SAMPLES_PER_FRAME: usize = VOICEVOX_WAVE_SAMPLES_PER_FRAME as _;
-
         // SAFETY: The safety contract must be upheld by the caller.
         let lib = unsafe { CApi::from_library(lib) }?;
 
@@ -88,8 +83,7 @@ impl assert_cdylib::TestCase for TestCase {
         };
 
         let wave = {
-            let mut wave =
-                vec![0.; WAVE_SAMPLES_PER_FRAME * EXAMPLE_DATA.decode.f0_length as usize];
+            let mut wave = vec![0.; 256 * EXAMPLE_DATA.decode.f0_length as usize];
             assert!(unsafe {
                 // SAFETY:
                 // - `EXAMPLE_DATA.decode` is valid data for `decode_forward`.
@@ -112,7 +106,7 @@ impl assert_cdylib::TestCase for TestCase {
                 EXAMPLE_DATA.intermediate.f0_length + 2 * EXAMPLE_DATA.intermediate.margin_width;
             let mut audio_feature =
                 vec![0.; (length_with_margin * EXAMPLE_DATA.intermediate.feature_dim) as usize];
-            let mut wave = vec![0.; WAVE_SAMPLES_PER_FRAME * length_with_margin as usize];
+            let mut wave = vec![0.; 256 * length_with_margin as usize];
             assert!(unsafe {
                 // SAFETY:
                 // - `EXAMPLE_DATA.intermediate` is valid data for `generate_full_intermediate`.
@@ -139,9 +133,8 @@ impl assert_cdylib::TestCase for TestCase {
                     wave.as_mut_ptr(),
                 )
             });
-            wave[WAVE_SAMPLES_PER_FRAME * EXAMPLE_DATA.intermediate.margin_width as usize
-                ..wave.len()
-                    - WAVE_SAMPLES_PER_FRAME * EXAMPLE_DATA.intermediate.margin_width as usize]
+            wave[256 * EXAMPLE_DATA.intermediate.margin_width as usize
+                ..wave.len() - 256 * EXAMPLE_DATA.intermediate.margin_width as usize]
                 .to_vec()
         };
 
@@ -151,8 +144,7 @@ impl assert_cdylib::TestCase for TestCase {
                 EXAMPLE_DATA.intermediate.f0_length + 2 * EXAMPLE_DATA.intermediate.margin_width;
             let mut audio_feature =
                 vec![0.; (length_with_margin * EXAMPLE_DATA.intermediate.feature_dim) as usize];
-            let mut wave =
-                vec![0.; WAVE_SAMPLES_PER_FRAME * EXAMPLE_DATA.intermediate.f0_length as usize];
+            let mut wave = vec![0.; 256 * EXAMPLE_DATA.intermediate.f0_length as usize];
             assert!(unsafe {
                 // SAFETY:
                 // - `EXAMPLE_DATA.intermediate` is valid data for `generate_full_intermediate`.
@@ -175,7 +167,7 @@ impl assert_cdylib::TestCase for TestCase {
                 let slice_end = render_end + 2 * EXAMPLE_DATA.intermediate.margin_width as usize;
                 let feature_segment = &audio_feature[slice_start * pitch..slice_end * pitch];
                 let slice_length = slice_end - slice_start;
-                let mut wave_segment_with_margin = vec![0.; WAVE_SAMPLES_PER_FRAME * slice_length];
+                let mut wave_segment_with_margin = vec![0.; 256 * slice_length];
                 assert!(unsafe {
                     // SAFETY:
                     // - The inputs are valid and consistent.
@@ -189,12 +181,11 @@ impl assert_cdylib::TestCase for TestCase {
                         wave_segment_with_margin.as_mut_ptr(),
                     )
                 });
-                let wave_segment = &wave_segment_with_margin[WAVE_SAMPLES_PER_FRAME
+                let wave_segment = &wave_segment_with_margin[256
                     * EXAMPLE_DATA.intermediate.margin_width as usize
                     ..wave_segment_with_margin.len()
-                        - WAVE_SAMPLES_PER_FRAME * EXAMPLE_DATA.intermediate.margin_width as usize];
-                wave[render_start * WAVE_SAMPLES_PER_FRAME..render_end * WAVE_SAMPLES_PER_FRAME]
-                    .clone_from_slice(wave_segment);
+                        - 256 * EXAMPLE_DATA.intermediate.margin_width as usize];
+                wave[render_start * 256..render_end * 256].clone_from_slice(wave_segment);
             }
             wave
         };

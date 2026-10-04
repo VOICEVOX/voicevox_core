@@ -114,13 +114,6 @@
 #define VOICEVOX_FRAME_RATE 93.75
 
 /**
- * １フレームから生成されるPCMのサンプル数。
- *
- * \orig-impl{VOICEVOX_WAVE_SAMPLES_PER_FRAME}
- */
-#define VOICEVOX_WAVE_SAMPLES_PER_FRAME 256
-
-/**
  * ハードウェアアクセラレーションモードを設定する設定値。
  *
  * \orig-impl{VoicevoxAccelerationMode}
@@ -841,18 +834,6 @@ const char *voicevox_get_version(void);
 __declspec(dllimport)
 #endif
 double voicevox_get_frame_rate(void);
-
-/**
- * ::VOICEVOX_WAVE_SAMPLES_PER_FRAME を返す。
- *
- * @return ::VOICEVOX_WAVE_SAMPLES_PER_FRAME
- *
- * \orig-impl{voicevox_get_wave_samples_per_frame}
- */
-#ifdef _WIN32
-__declspec(dllimport)
-#endif
-uint16_t voicevox_get_wave_samples_per_frame(void);
 
 /**
  * AccentPhraseの配列からAudioQueryを作る。

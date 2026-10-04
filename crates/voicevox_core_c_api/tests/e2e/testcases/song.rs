@@ -13,8 +13,7 @@ use serde::{Deserialize, Serialize};
 use test_util::{
     OPEN_JTALK_DIC_DIR,
     c_api::{
-        self, CApi, VOICEVOX_WAVE_SAMPLES_PER_FRAME, VoicevoxInitializeOptions,
-        VoicevoxLoadOnnxruntimeOptions, VoicevoxResultCode,
+        self, CApi, VoicevoxInitializeOptions, VoicevoxLoadOnnxruntimeOptions, VoicevoxResultCode,
     },
 };
 
@@ -283,7 +282,7 @@ impl assert_cdylib::TestCase for TestCase {
             assert!(wav.starts_with(b"RIFF"));
             std::assert_eq!(
                 NUM_TOTAL_FRAMES
-                    * VOICEVOX_WAVE_SAMPLES_PER_FRAME as usize
+                    * 256
                     * mem::size_of::<u16>()
                     * (1 + usize::from(frame_audio_query.output_stereo)),
                 u32::from_le_bytes(*wav[4..].first_chunk().unwrap()) as usize - 36,
