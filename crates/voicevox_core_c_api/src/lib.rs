@@ -650,7 +650,7 @@ pub extern "C" fn voicevox_make_default_audio_query_frame_length_options()
 ///         - [`AccentPhrase::pause_mora`]の`Mora::consonant_length`（通常はない）
 ///         - `AccentPhrase::pause_mora`の`Mora::vowel_length`
 ///     - [`AudioQuery::post_phoneme_length`]
-/// 2. それぞれの秒数を`secs`として、対応するフレーム長を`round_ties_even(round_ties_even(secs * (float) VOICEVOX_FRAME_RATE) / speed_scale)`として算出する。ここで`round_ties_even`は[Rustの`f32::round_ties_even`]であり、libmの[`roundevenf(3)`]と同様IEEE 754の`roundToIntegralTiesToEven`演算を行う。[`AudioQuery::speed_scale`]も32-bit浮動小数点数として解釈し、乗算と除算も32-bit浮動小数点数上で行う。
+/// 2. それぞれの秒数を`secs`として、対応するフレーム長を`round_ties_even(round_ties_even(secs * (float)VOICEVOX_FRAME_RATE) / speed_scale)`として算出する。ここで`round_ties_even`は[Rustの`f32::round_ties_even`]であり、libmの[`roundevenf(3)`]と同様IEEE 754の`roundToIntegralTiesToEven`演算を行う。[`AudioQuery::speed_scale`]も32-bit浮動小数点数として解釈し、乗算と除算も32-bit浮動小数点数上で行う。
 /// 3. 各フレーム長を足し合わせる。
 ///
 /// `AudioQuery`に対応する音声の長さは将来的に変わる可能性がある。例えば、秒数を64-bit浮動小数点数として解釈しているVOICEVOX
