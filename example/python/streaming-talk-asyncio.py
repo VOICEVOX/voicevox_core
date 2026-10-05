@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-# pyright: strict
-
 """asyncio版のリアルタイムテキスト音声合成を行うサンプルコードです。"""
 
 import asyncio

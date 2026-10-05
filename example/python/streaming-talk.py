@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-# pyright: strict
-
 """リアルタイムテキスト音声合成を行うサンプルコードです。"""
 
 import dataclasses
