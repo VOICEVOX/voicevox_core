@@ -3791,7 +3791,7 @@ pub(crate) mod nonblocking {
 
 #[cfg(test)]
 mod tests {
-    use std::{mem, num::NonZero, sync::Arc};
+    use std::{io::Cursor, mem, num::NonZero, sync::Arc};
 
     use super::{AccelerationMode, AsInner as _, DEFAULT_HEAVY_INFERENCE_CANCELLABLE};
     use crate::{
@@ -3808,6 +3808,7 @@ mod tests {
     use itertools::Itertools as _;
     use rstest::rstest;
     use typed_floats::tf32;
+    use waveadapter::header::{FmtChunk, WavParams};
 
     #[rstest]
     #[case(Ok(()))]
@@ -4582,6 +4583,9 @@ mod tests {
             .await
             .unwrap();
 
+        assert_eq!(24000, frame_audio_query.output_sampling_rate.get().get());
+        assert!(!frame_audio_query.output_stereo);
+
         assert_eq!(
             ["pau", "d", "o", "r", "e", "m", "i", "pau"],
             *frame_audio_query
@@ -4639,15 +4643,33 @@ mod tests {
             .await
             .unwrap();
 
-        assert!(wav.starts_with(b"RIFF"));
+        let wav_params = waveadapter::header::read_wav_header(Cursor::new(&*wav)).unwrap();
+
         assert_eq!(
-            num_total_frames
-                * WAVE_SAMPLES_PER_FRAME
-                * mem::size_of::<u16>()
-                * (1 + usize::from(frame_audio_query.output_stereo)),
-            u32::from_le_bytes(*wav[4..].first_chunk().unwrap()) as usize - 36,
+            WavParams {
+                fmt: FmtChunk {
+                    format_code: 1,
+                    channels: 1,
+                    sample_rate: 24000,
+                    byte_rate: (24000 * mem::size_of::<i16>()) as _,
+                    block_align: mem::align_of::<i16>() as _,
+                    bits_per_sample: i16::BITS as _,
+                    extension: None,
+                },
+                fact: None,
+                ds64_sample_count: None,
+                data_offset: 44,
+                data_length: (num_total_frames * WAVE_SAMPLES_PER_FRAME * mem::size_of::<i16>())
+                    as _,
+                chunks_before: vec![],
+                chunks_after: vec![],
+            },
+            wav_params,
         );
-        assert_eq!(*b"WAVEfmt ", wav[8..16]);
+        assert_eq!(
+            wav_params.data_offset + wav_params.data_length,
+            wav.len() as u64,
+        );
 
         fn note(id: &str, key: Option<u8>, frame_length: u32, lyric: &str) -> Note {
             Note {
