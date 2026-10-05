@@ -169,7 +169,7 @@ def main() -> None:
             audio_query.frame_length()
             * (2 if audio_query.output_stereo else 1)
             / FRAME_RATE
-            - (time.time_ns() - rendering_started) / 10**9
+            - (time.time_ns() - rendering_started) / 1e9
         )
         if estimated_remaining_playback < 0.0:
             logger.warning(
