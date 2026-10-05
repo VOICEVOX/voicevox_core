@@ -122,7 +122,7 @@ async def main() -> None:
 
     logger.info("%s", f"Creating an AudioQuery from {args.text!r}")
     audio_query = await synthesizer.create_audio_query(args.text, args.style_id)
-    assert audio_query.output_sampling_rate == FRAME_RATE * 256.0
+    assert audio_query.output_sampling_rate == 24000
 
     logger.info("%s", f"Preparing the stream with {audio_query}")
 
@@ -133,28 +133,21 @@ async def main() -> None:
     _wav_header = await anext(stream)
 
     # import struct
-    # from typing import Literal
+    # import wave
+    # from io import BytesIO
     #
-    # assert len(wav_header) == 44
-    #
-    # def val_at(offset: int, dt: Literal["<H", "<I", "4s"]) -> object:
-    #     (val,) = struct.unpack_from(f"{dt}", wav_header, offset=offset)
-    #     return val
-    #
-    # assert val_at(12, "4s") == b"fmt "
-    # assert val_at(16, "<I") == 16  # 拡張なし
-    # assert val_at(20, "<H") == 1  # `WAVE_FORMAT_PCM`
-    # assert val_at(22, "<H") == 2 if audio_query.output_stereo else 1
-    # assert val_at(24, "<I") == audio_query.output_sampling_rate
-    # assert val_at(34, "<H") == 16  # 16-bit
-    # assert val_at(36, "4s") == b"data"
-    # assert val_at(40, "<I") == (
-    #     # `audio_query.output_sampling_rate == FRAME_RATE * 256`の場合
-    #     audio_query.frame_length()
-    #     * (2 if audio_query.output_stereo else 1)
-    #     * 256
-    #     * struct.calcsize("h")
-    # )
+    # with BytesIO(wav_header) as buf, wave.open(buf, "rb") as wav_header_:
+    #     assert wav_header_.getnchannels() == 2 if audio_query.output_stereo else 1
+    #     assert wav_header_.getsampwidth() == struct.calcsize("h")
+    #     assert wav_header_.getframerate() == 24000
+    #     assert wav_header_.getnframes() == (
+    #         # `audio_query.output_sampling_rate == 24000`の場合
+    #         audio_query.frame_length()
+    #         * (2 if audio_query.output_stereo else 1)
+    #         * int(24000 / FRAME_RATE)
+    #     )
+    #     assert wav_header_.getcomptype() == "NONE"
+    # assert wav_header[-8:-4] == b"data"
 
     logger.info("Starting the real time synthesis")
     num_wrote_segments = 0
