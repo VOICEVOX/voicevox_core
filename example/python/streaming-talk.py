@@ -23,7 +23,6 @@ class Args:
     dict_dir: Path
     text: str
     segment_length: float
-    out: Path
     style_id: int
 
     @staticmethod
@@ -63,12 +62,6 @@ class Args:
             help="一度に合成する音声の長さ",
         )
         argparser.add_argument(
-            "--out",
-            default="./output.wav",
-            type=Path,
-            help="出力wavファイルのパス",
-        )
-        argparser.add_argument(
             "--style-id",
             default=0,
             type=int,
@@ -82,7 +75,6 @@ class Args:
             args.dict_dir,
             args.text,
             args.segment_length,
-            args.out,
             args.style_id,
         )
 
@@ -140,7 +132,6 @@ def main() -> None:
     #     assert wav_header_.getnframes() == (
     #         # `audio_query.output_sampling_rate == 24000`の場合
     #         audio_query.frame_length()
-    #         * (2 if audio_query.output_stereo else 1)
     #         * int(24000 / FRAME_RATE)
     #     )
     #     assert wav_header_.getcomptype() == "NONE"
@@ -156,9 +147,11 @@ def main() -> None:
         dtype="int16",
         latency=args.segment_length + 0.1,
     ) as out:
-        rendering_started = time.time_ns()
+        rendering_started = time.monotonic_ns()
         for segment in stream:
-            out.write(segment)
+            undefflowed = out.write(segment)
+            if undefflowed:
+                logger.warning("Segment dropped out")
             num_wrote_segments += 1
             logger.info(
                 "%s",
@@ -166,10 +159,8 @@ def main() -> None:
                 f"({num_wrote_segments}/{num_total_segments})",
             )
         estimated_remaining_playback = (
-            audio_query.frame_length()
-            * (2 if audio_query.output_stereo else 1)
-            / FRAME_RATE
-            - (time.time_ns() - rendering_started) / 1e9
+            audio_query.frame_length() / FRAME_RATE
+            - (time.monotonic_ns() - rendering_started) / 1e9
         )
         if estimated_remaining_playback < 0.0:
             logger.warning(
