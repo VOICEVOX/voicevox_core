@@ -1,3 +1,7 @@
 {
+  "include": [
+    "./crates/voicevox_core_python_api",
+    "./example/python"
+  ],
   "extends": "./crates/voicevox_core_python_api/pyproject.toml"
 }

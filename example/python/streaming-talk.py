@@ -126,7 +126,7 @@ def main() -> None:
     # from io import BytesIO
     #
     # with BytesIO(wav_header) as buf, wave.open(buf, "rb") as wav_header_:
-    #     assert wav_header_.getnchannels() == 2 if audio_query.output_stereo else 1
+    #     assert wav_header_.getnchannels() == (2 if audio_query.output_stereo else 1)
     #     assert wav_header_.getsampwidth() == struct.calcsize("h")
     #     assert wav_header_.getframerate() == 24000
     #     assert wav_header_.getnframes() == (
@@ -149,9 +149,9 @@ def main() -> None:
     ) as out:
         rendering_started = time.monotonic_ns()
         for segment in stream:
-            undefflowed = out.write(segment)
-            if undefflowed:
-                logger.warning("Segment dropped out")
+            underflowed = out.write(segment)
+            if underflowed:
+                logger.warning("Underrun occurred")
             num_wrote_segments += 1
             logger.info(
                 "%s",
