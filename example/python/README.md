@@ -90,7 +90,7 @@ optional arguments:
 
 [streaming-talk.py](./streaming-talk.py)もしくは[streaming-talk-asyncio.py](./streaming-talk-asyncio.py)を実行します。
 
-[sounddevice](https://pypi.org/project/sounddevice/)および音声の再生ができる環境が必要です。
+[sounddevice](https://pypi.org/project/sounddevice/)および音声を再生できる環境が必要です。
 
 ## 歌唱音声合成の実行
 
