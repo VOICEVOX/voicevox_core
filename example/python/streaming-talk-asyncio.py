@@ -7,9 +7,14 @@ import dataclasses
 import logging
 import multiprocessing
 import operator
+import struct
+import sys
 import time
+import wave
 from argparse import ArgumentParser
+from io import BytesIO
 from pathlib import Path
+from wave import WAVE_FORMAT_PCM
 
 from sounddevice import RawOutputStream
 from voicevox_core import FRAME_RATE, AccelerationMode
@@ -119,26 +124,33 @@ async def main() -> None:
     # TODO: specify `args.segment_length`
     stream = await synthesizer.streaming_synthesis(audio_query, args.style_id)
 
-    # wav_header = await anext(stream)
-    _wav_header = await anext(stream)
+    # SynthesisStreamの最初の要素は必ず44バイトであり、瞬時に確実に取得できる。
+    # この44バイトはWAVデータのうち、"data"チャンクのFourCCとチャンクサイズまでの部分。
+    # SynthesisStreamの２番目以降の要素が音声波形データ。
+    # サンプリングレートとチャンネル数はAudioQueryから得られるため、
+    # この44バイトのデータは音声の再生には不要。
+    wav_header = await anext(stream)
+    with BytesIO(wav_header) as buf, wave.open(buf, "rb") as wav_header_:
+        pass
+    logger.info(
+        "Synthesizing and playing (%d channel(s), %d-bit, %d Hz, %d samples/channel)",
+        wav_header_.getnchannels(),
+        8 * wav_header_.getsampwidth(),
+        wav_header_.getframerate(),
+        wav_header_.getnframes(),
+    )
+    if (3, 15, 0, "alpha", 8) <= sys.version_info <= (3, 15, 0, "candidate", 3):
+        assert getattr(wav_header_, "getformat")() == WAVE_FORMAT_PCM
+    assert wav_header_.getnchannels() == (2 if audio_query.output_stereo else 1)
+    assert wav_header_.getsampwidth() == struct.calcsize("h")
+    assert wav_header_.getframerate() == 24000
+    assert wav_header_.getnframes() == (
+        # `audio_query.output_sampling_rate == 24000`の場合
+        audio_query.frame_length()
+        * int(24000 / FRAME_RATE)
+    )
+    assert wav_header[-8:-4] == b"data"
 
-    # import struct
-    # import wave
-    # from io import BytesIO
-    #
-    # with BytesIO(wav_header) as buf, wave.open(buf, "rb") as wav_header_:
-    #     assert wav_header_.getnchannels() == (2 if audio_query.output_stereo else 1)
-    #     assert wav_header_.getsampwidth() == struct.calcsize("h")
-    #     assert wav_header_.getframerate() == 24000
-    #     assert wav_header_.getnframes() == (
-    #         # `audio_query.output_sampling_rate == 24000`の場合
-    #         audio_query.frame_length()
-    #         * int(24000 / FRAME_RATE)
-    #     )
-    #     assert wav_header_.getcomptype() == "NONE"
-    # assert wav_header[-8:-4] == b"data"
-
-    logger.info("Starting the synthesis")
     num_wrote_segments = 0
     num_total_segments = operator.length_hint(stream)
 
