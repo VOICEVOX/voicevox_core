@@ -499,6 +499,7 @@ pub use self::{
     },
     engine::{
         Consonant, NonConsonant, Phoneme, SamplingRate, Sil,
+        frame::FRAME_RATE,
         song::{
             queries::{FrameAudioQuery, FramePhoneme, Key, Note, NoteId, OptionalLyric, Score},
             validate::ensure_compatible,
