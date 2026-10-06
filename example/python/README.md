@@ -86,7 +86,7 @@ optional arguments:
 正常に実行されれば音声合成の結果である wav ファイルが生成されます。
 この例の場合、`"この音声は、ボイスボックスを使用して、出力されています。"`という読み上げの wav ファイルが output.wav という名前で生成されます。
 
-## リアルタイムテキスト音声合成の実行
+## ストリーミングでのテキスト音声合成の実行
 
 [streaming-talk.py](./streaming-talk.py)もしくは[streaming-talk-asyncio.py](./streaming-talk-asyncio.py)を実行します。
 

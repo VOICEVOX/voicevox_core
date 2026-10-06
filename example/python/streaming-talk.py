@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""リアルタイムテキスト音声合成を行うサンプルコードです。"""
+"""ストリーミングでのテキスト音声合成を行うサンプルコードです。"""
 
 import dataclasses
 import logging
@@ -137,7 +137,7 @@ def main() -> None:
     #     assert wav_header_.getcomptype() == "NONE"
     # assert wav_header[-8:-4] == b"data"
 
-    logger.info("Starting the real time synthesis")
+    logger.info("Starting the synthesis")
     num_wrote_segments = 0
     num_total_segments = operator.length_hint(stream)
 
