@@ -131,7 +131,7 @@ def main() -> None:
         assert wav_header_.getsampwidth() == struct.calcsize("h")
         assert wav_header_.readframes(1) == b""
         logger.info(
-            "Synthesizing and playing"
+            "Synthesizing and playing "
             "(%d channel(s), %d Hz, 16-bit, %d samples/channel)",
             wav_header_.getnchannels(),
             wav_header_.getframerate(),
