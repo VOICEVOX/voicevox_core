@@ -1,10 +1,6 @@
 from types import TracebackType
 from typing import Literal, NoReturn, final
 
-@final
-class _Unknown:
-    def __new__(cls) -> NoReturn: ...
-
 class RawOutputStream:
     def __init__(
         self,
@@ -22,3 +18,7 @@ class RawOutputStream:
         traceback: TracebackType | None,
     ) -> None: ...
     def write(self, data: bytes | _Unknown) -> bool: ...
+
+@final
+class _Unknown:
+    def __new__(cls) -> NoReturn: ...

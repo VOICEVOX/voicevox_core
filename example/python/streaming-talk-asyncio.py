@@ -144,7 +144,7 @@ async def main() -> None:
     num_total_segments = operator.length_hint(stream)
 
     with RawOutputStream(
-        samplerate=audio_query.output_sampling_rate,
+        samplerate=float(audio_query.output_sampling_rate),
         channels=2 if audio_query.output_stereo else 1,
         dtype="int16",
         latency=args.segment_length + 0.1,
