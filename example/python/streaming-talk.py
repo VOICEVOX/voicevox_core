@@ -132,10 +132,9 @@ def main() -> None:
         assert wav_header_.readframes(1) == b""
         logger.info(
             "Synthesizing and playing"
-            "(%d channel(s), %d Hz, %d-bit, %d samples/channel)",
+            "(%d channel(s), %d Hz, 16-bit, %d samples/channel)",
             wav_header_.getnchannels(),
             wav_header_.getframerate(),
-            8 * wav_header_.getsampwidth(),
             wav_header_.getnframes(),
         )
 
