@@ -117,38 +117,27 @@ async def main() -> None:
 
     logger.info("%s", f"Creating an AudioQuery from {args.text!r}")
     audio_query = await synthesizer.create_audio_query(args.text, args.style_id)
-    assert audio_query.output_sampling_rate == 24000
 
     logger.info("%s", f"Preparing the stream with {audio_query}")
 
     # TODO: specify `args.segment_length`
     stream = await synthesizer.streaming_synthesis(audio_query, args.style_id)
 
-    # SynthesisStreamの最初の要素は必ず44バイトであり、瞬時に確実に取得できる。
-    # この44バイトはWAVデータのうち、"data"チャンクのFourCCとチャンクサイズまでの部分。
-    # SynthesisStreamの２番目以降の要素が音声波形データ。
-    # サンプリングレートとチャンネル数はAudioQueryから得られるため、
-    # この44バイトのデータは音声の再生には不要。
     wav_header = await anext(stream)
     with BytesIO(wav_header) as buf, wave.open(buf, "rb") as wav_header_:
-        pass
+        assert wav_header_.readframes(1) == b""
     logger.info(
-        "Synthesizing and playing (%d channel(s), %d-bit, %d Hz, %d samples/channel)",
+        "Synthesizing and playing (%d channel(s), %d Hz, %d-bit, %d samples/channel)",
         wav_header_.getnchannels(),
-        8 * wav_header_.getsampwidth(),
         wav_header_.getframerate(),
+        8 * wav_header_.getsampwidth(),
         wav_header_.getnframes(),
     )
     if (3, 15, 0, "alpha", 8) <= sys.version_info <= (3, 15, 0, "candidate", 3):
         assert getattr(wav_header_, "getformat")() == WAVE_FORMAT_PCM
     assert wav_header_.getnchannels() == (2 if audio_query.output_stereo else 1)
+    assert wav_header_.getframerate() == audio_query.output_sampling_rate
     assert wav_header_.getsampwidth() == struct.calcsize("h")
-    assert wav_header_.getframerate() == 24000
-    assert wav_header_.getnframes() == (
-        # `audio_query.output_sampling_rate == 24000`の場合
-        audio_query.frame_length()
-        * int(24000 / FRAME_RATE)
-    )
     assert wav_header[-8:-4] == b"data"
 
     num_wrote_segments = 0
