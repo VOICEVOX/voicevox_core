@@ -125,20 +125,20 @@ async def main() -> None:
 
     wav_header = await anext(stream)
     with BytesIO(wav_header) as buf, wave.open(buf, "rb") as wav_header_:
+        if (3, 15, 0, "alpha", 8) <= sys.version_info <= (3, 15, 0, "candidate", 3):
+            assert getattr(wav_header_, "getformat")() == WAVE_FORMAT_PCM
+        assert wav_header_.getnchannels() == (2 if audio_query.output_stereo else 1)
+        assert wav_header_.getframerate() == audio_query.output_sampling_rate
+        assert wav_header_.getsampwidth() == struct.calcsize("h")
         assert wav_header_.readframes(1) == b""
-    logger.info(
-        "Synthesizing and playing (%d channel(s), %d Hz, %d-bit, %d samples/channel)",
-        wav_header_.getnchannels(),
-        wav_header_.getframerate(),
-        8 * wav_header_.getsampwidth(),
-        wav_header_.getnframes(),
-    )
-    if (3, 15, 0, "alpha", 8) <= sys.version_info <= (3, 15, 0, "candidate", 3):
-        assert getattr(wav_header_, "getformat")() == WAVE_FORMAT_PCM
-    assert wav_header_.getnchannels() == (2 if audio_query.output_stereo else 1)
-    assert wav_header_.getframerate() == audio_query.output_sampling_rate
-    assert wav_header_.getsampwidth() == struct.calcsize("h")
-    assert wav_header[-8:-4] == b"data"
+        logger.info(
+            "Synthesizing and playing"
+            "(%d channel(s), %d Hz, %d-bit, %d samples/channel)",
+            wav_header_.getnchannels(),
+            wav_header_.getframerate(),
+            8 * wav_header_.getsampwidth(),
+            wav_header_.getnframes(),
+        )
 
     num_wrote_segments = 0
     num_total_segments = operator.length_hint(stream)
