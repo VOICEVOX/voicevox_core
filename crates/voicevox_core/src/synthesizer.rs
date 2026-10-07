@@ -1674,8 +1674,11 @@ pub(crate) mod blocking {
 
     use crate::{
         AccentPhrase, AudioQuery, FRAME_RATE, FrameAudioQuery, OnExistingVoiceModelId, Score,
-        StyleId, VoiceModelId, VoiceModelMeta, assert::assert_send_sync, asyncs::SingleTasked,
-        engine::frame::WAVE_SAMPLES_PER_FRAME, future::FutureExt as _,
+        StyleId, VoiceModelId, VoiceModelMeta,
+        assert::assert_send_sync,
+        asyncs::SingleTasked,
+        engine::{WAV_PREFIX_LEN, frame::WAVE_SAMPLES_PER_FRAME},
+        future::FutureExt as _,
     };
 
     use super::{
@@ -2234,7 +2237,7 @@ pub(crate) mod blocking {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, SingleTasked>,
         audio_feature: AudioFeature,
         cursor: StepBy<std::ops::Range<usize>>,
-        header: Option<Box<[u8; 44]>>,
+        header: Option<Box<[u8; WAV_PREFIX_LEN]>>,
     }
 
     impl Iterator for SynthesisStream<'_> {
@@ -2691,11 +2694,11 @@ pub(crate) mod blocking {
                 synthesizer: self.synthesizer,
                 audio_feature,
                 cursor: (offset_frames..full_frames).step_by(segment_frames),
-                header: Some(s16le_wav_prefix(
+                header: Some(Box::new(s16le_wav_prefix(
                     render_pcm_length,
                     output_sampling_rate,
                     output_stereo,
-                )),
+                ))),
             })
         }
     }
@@ -2779,8 +2782,10 @@ pub(crate) mod nonblocking {
 
     use crate::{
         AccentPhrase, AudioQuery, FRAME_RATE, FrameAudioQuery, OnExistingVoiceModelId, Result,
-        Score, StyleId, VoiceModelId, VoiceModelMeta, assert::assert_send_sync,
-        asyncs::BlockingThreadPool, engine::frame::WAVE_SAMPLES_PER_FRAME,
+        Score, StyleId, VoiceModelId, VoiceModelMeta,
+        assert::assert_send_sync,
+        asyncs::BlockingThreadPool,
+        engine::{WAV_PREFIX_LEN, frame::WAVE_SAMPLES_PER_FRAME},
     };
 
     use super::{
@@ -3342,7 +3347,7 @@ pub(crate) mod nonblocking {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, BlockingThreadPool>,
         audio_feature: AudioFeature,
         cursor: StepBy<std::ops::Range<usize>>,
-        header: Option<Box<[u8; 44]>>,
+        header: Option<Box<[u8; WAV_PREFIX_LEN]>>,
         pending_pcm: Option<BoxSyncFuture<'static, crate::Result<Vec<u8>>>>,
     }
 
@@ -3688,11 +3693,11 @@ pub(crate) mod nonblocking {
                 synthesizer: self.synthesizer,
                 audio_feature,
                 cursor: (offset_frames..full_frames).step_by(segment_frames),
-                header: Some(s16le_wav_prefix(
+                header: Some(Box::new(s16le_wav_prefix(
                     render_pcm_length,
                     output_sampling_rate,
                     output_stereo,
-                )),
+                ))),
                 pending_pcm: None,
             })
         }
@@ -3801,7 +3806,7 @@ mod tests {
     use crate::{
         AccentPhrase, FramePhoneme, Note, NoteId, Result, Score, StyleId,
         asyncs::BlockingThreadPool,
-        engine::{frame::WAVE_SAMPLES_PER_FRAME, talk::Mora},
+        engine::{WAV_PREFIX_LEN, frame::WAVE_SAMPLES_PER_FRAME, talk::Mora},
         macros::tests::assert_debug_fmt_eq,
         numerics::non_zero,
         wav_from_s16le,
@@ -4662,7 +4667,7 @@ mod tests {
                 },
                 fact: None,
                 ds64_sample_count: None,
-                data_offset: 44,
+                data_offset: WAV_PREFIX_LEN as _,
                 data_length: (num_total_frames * WAVE_SAMPLES_PER_FRAME * mem::size_of::<i16>())
                     as _,
                 chunks_before: vec![],
@@ -4819,7 +4824,10 @@ mod tests {
             .flatten()
             .collect::<Vec<_>>();
 
-        assert_eq!(without_division[..44], with_division[..44]);
+        assert_eq!(
+            without_division[..WAV_PREFIX_LEN],
+            with_division[..WAV_PREFIX_LEN],
+        );
         assert_eq!(without_division.len(), with_division.len());
     }
 
@@ -4859,7 +4867,10 @@ mod tests {
             .flatten()
             .collect::<Vec<_>>();
 
-        assert_eq!(without_division[..44], with_division[..44]);
+        assert_eq!(
+            without_division[..WAV_PREFIX_LEN],
+            with_division[..WAV_PREFIX_LEN],
+        );
         assert_eq!(without_division.len(), with_division.len());
     }
 
