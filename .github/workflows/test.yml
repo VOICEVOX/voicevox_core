@@ -373,7 +373,7 @@ jobs:
         uses: ./.github/actions/rust-toolchain-from-file
       - run: |
           pip install --upgrade poetry
-          poetry install --with dev --with test
+          poetry install --with dev --with examples --with test
       - run: cargo build -p test_util -v # build scriptにより/crates/test_util/data/の生成
       - run: poetry run maturin build --locked
       - run: poetry run maturin develop --locked
