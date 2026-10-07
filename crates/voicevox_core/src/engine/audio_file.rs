@@ -72,17 +72,21 @@ impl FrameAudioQuery {
 }
 
 /// 16bit PCMのバイト長に対応したWAVファイルの先頭部分を作成する。
-pub(crate) fn s16le_wav_prefix(pcm_length: usize, sampling_rate: u32, is_stereo: bool) -> Vec<u8> {
+pub(crate) fn s16le_wav_prefix(
+    pcm_length: usize,
+    sampling_rate: u32,
+    is_stereo: bool,
+) -> Box<[u8; 44]> {
     let num_channels: u16 = if is_stereo { 2 } else { 1 };
     let bit_depth: u16 = 16;
     let block_size: u16 = bit_depth * num_channels / 8;
 
     let bytes_size = pcm_length as u32;
-    let header_size = 44;
-    let wave_size = header_size + bytes_size;
+    const HEADER_SIZE: u32 = 44;
+    let wave_size = HEADER_SIZE + bytes_size;
 
-    let buf: Vec<u8> = Vec::with_capacity(header_size as usize);
-    let mut cur = Cursor::new(buf);
+    let mut buf = Box::new([0; HEADER_SIZE as _]);
+    let mut cur = Cursor::new(&mut buf[..]);
 
     cur.write_all("RIFF".as_bytes()).unwrap();
     cur.write_all(&(wave_size - 8).to_le_bytes()).unwrap();
@@ -99,7 +103,7 @@ pub(crate) fn s16le_wav_prefix(pcm_length: usize, sampling_rate: u32, is_stereo:
     cur.write_all(&bit_depth.to_le_bytes()).unwrap();
     cur.write_all("data".as_bytes()).unwrap();
     cur.write_all(&bytes_size.to_le_bytes()).unwrap();
-    cur.into_inner()
+    buf
 }
 
 /// 16bit PCMにヘッダを付加しWAVフォーマットのバイナリを生成する。
@@ -109,7 +113,7 @@ pub fn wav_from_s16le(pcm: &[u8], sampling_rate: u32, is_stereo: bool) -> Vec<u8
     let buf: Vec<u8> = Vec::with_capacity(wave_size);
     let mut cur = Cursor::new(buf);
 
-    cur.write_all(&s16le_wav_prefix(pcm.len(), sampling_rate, is_stereo))
+    cur.write_all(&*s16le_wav_prefix(pcm.len(), sampling_rate, is_stereo))
         .unwrap();
     cur.write_all(pcm).unwrap();
     cur.into_inner()

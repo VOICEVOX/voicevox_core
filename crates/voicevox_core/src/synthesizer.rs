@@ -1667,7 +1667,6 @@ pub(crate) mod blocking {
     use std::{
         fmt::{self, Debug},
         iter::StepBy,
-        mem,
     };
 
     use easy_ext::ext;
@@ -2235,7 +2234,7 @@ pub(crate) mod blocking {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, SingleTasked>,
         audio_feature: AudioFeature,
         cursor: StepBy<std::ops::Range<usize>>,
-        header: Vec<u8>,
+        header: Option<Box<[u8; 44]>>,
     }
 
     impl Iterator for SynthesisStream<'_> {
@@ -2243,16 +2242,15 @@ pub(crate) mod blocking {
 
         fn size_hint(&self) -> (usize, Option<usize>) {
             // ヘッダーが残っている場合はそれを含める
-            let lower = usize::from(!self.header.is_empty()) + self.cursor.len();
+            let lower = usize::from(self.header.is_some()) + self.cursor.len();
             // Errを返す場合も考慮して、上限は不明とする
             (lower, None)
         }
 
         fn next(&mut self) -> Option<Self::Item> {
             // まずヘッダーが残っていればそれを返す
-            let header = mem::take(&mut self.header);
-            if !header.is_empty() {
-                return Some(Ok(header));
+            if let Some(header) = self.header.take() {
+                return Some(Ok(<[_]>::into_vec(header)));
             }
             // 終了するか次のPCMデータを生成する
             let mut tmp_cursor = self.cursor.clone();
@@ -2693,7 +2691,11 @@ pub(crate) mod blocking {
                 synthesizer: self.synthesizer,
                 audio_feature,
                 cursor: (offset_frames..full_frames).step_by(segment_frames),
-                header: s16le_wav_prefix(render_pcm_length, output_sampling_rate, output_stereo),
+                header: Some(s16le_wav_prefix(
+                    render_pcm_length,
+                    output_sampling_rate,
+                    output_stereo,
+                )),
             })
         }
     }
@@ -2766,7 +2768,6 @@ pub(crate) mod nonblocking {
     use std::{
         fmt::{self, Debug},
         iter::StepBy,
-        mem,
         pin::Pin,
         task::{Context, Poll},
     };
@@ -3341,7 +3342,7 @@ pub(crate) mod nonblocking {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, BlockingThreadPool>,
         audio_feature: AudioFeature,
         cursor: StepBy<std::ops::Range<usize>>,
-        header: Vec<u8>,
+        header: Option<Box<[u8; 44]>>,
         pending_pcm: Option<BoxSyncFuture<'static, crate::Result<Vec<u8>>>>,
     }
 
@@ -3367,16 +3368,15 @@ pub(crate) mod nonblocking {
 
         fn size_hint(&self) -> (usize, Option<usize>) {
             // ヘッダーが残っている場合はそれを含める
-            let lower = usize::from(!self.header.is_empty()) + self.cursor.len();
+            let lower = usize::from(self.header.is_some()) + self.cursor.len();
             // Errを返す場合も考慮して、上限は不明とする
             (lower, None)
         }
 
         fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
             // まずヘッダーが残っていればそれを返す
-            let header = mem::take(&mut self.header);
-            if !header.is_empty() {
-                return Poll::Ready(Some(Ok(header)));
+            if let Some(header) = self.header.take() {
+                return Poll::Ready(Some(Ok(<[_]>::into_vec(header))));
             }
             // 処理中のPCMデータがあればそれをpollする
             if let Some(pending) = &mut self.pending_pcm {
@@ -3688,7 +3688,11 @@ pub(crate) mod nonblocking {
                 synthesizer: self.synthesizer,
                 audio_feature,
                 cursor: (offset_frames..full_frames).step_by(segment_frames),
-                header: s16le_wav_prefix(render_pcm_length, output_sampling_rate, output_stereo),
+                header: Some(s16le_wav_prefix(
+                    render_pcm_length,
+                    output_sampling_rate,
+                    output_stereo,
+                )),
                 pending_pcm: None,
             })
         }
