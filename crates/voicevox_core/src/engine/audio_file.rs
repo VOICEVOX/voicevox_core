@@ -105,6 +105,7 @@ pub(crate) fn s16le_wav_prefix(
     cur.write_all(&bit_depth.to_le_bytes()).unwrap();
     cur.write_all("data".as_bytes()).unwrap();
     cur.write_all(&bytes_size.to_le_bytes()).unwrap();
+    assert!(cur.is_empty());
     buf
 }
 
