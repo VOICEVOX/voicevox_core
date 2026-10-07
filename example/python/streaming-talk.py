@@ -6,14 +6,9 @@ import dataclasses
 import logging
 import multiprocessing
 import operator
-import struct
-import sys
 import time
-import wave
 from argparse import ArgumentParser
-from io import BytesIO
 from pathlib import Path
-from wave import WAVE_FORMAT_PCM
 
 from sounddevice import RawOutputStream
 from voicevox_core import FRAME_RATE, AccelerationMode
@@ -122,21 +117,13 @@ def main() -> None:
     # TODO: specify `args.segment_length`
     stream = synthesizer.streaming_synthesis(audio_query, args.style_id)
 
-    wav_header = next(stream)
-    with BytesIO(wav_header) as buf, wave.open(buf, "rb") as wav_header_:
-        if (3, 15, 0, "alpha", 8) <= sys.version_info <= (3, 15, 0, "candidate", 3):
-            assert getattr(wav_header_, "getformat")() == WAVE_FORMAT_PCM
-        assert wav_header_.getnchannels() == (2 if audio_query.output_stereo else 1)
-        assert wav_header_.getframerate() == audio_query.output_sampling_rate
-        assert wav_header_.getsampwidth() == struct.calcsize("h")
-        assert wav_header_.readframes(1) == b""
-        logger.info(
-            "Synthesizing and playing "
-            "(%d channel(s), %d Hz, 16-bit, %d samples/channel)",
-            wav_header_.getnchannels(),
-            wav_header_.getframerate(),
-            wav_header_.getnframes(),
-        )
+    _wav_header = next(stream)
+
+    logger.info(
+        "Synthesizing and playing (%d channel(s), %d Hz, 16-bit)",
+        2 if audio_query.output_stereo else 1,
+        audio_query.output_sampling_rate,
+    )
 
     num_wrote_segments = 0
     num_total_segments = operator.length_hint(stream)
