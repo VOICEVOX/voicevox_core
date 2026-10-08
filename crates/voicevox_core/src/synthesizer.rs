@@ -1667,7 +1667,6 @@ pub(crate) mod blocking {
     use std::{
         fmt::{self, Debug},
         iter::StepBy,
-        mem,
     };
 
     use easy_ext::ext;
@@ -1675,8 +1674,11 @@ pub(crate) mod blocking {
 
     use crate::{
         AccentPhrase, AudioQuery, FRAME_RATE, FrameAudioQuery, OnExistingVoiceModelId, Score,
-        StyleId, VoiceModelId, VoiceModelMeta, assert::assert_send_sync, asyncs::SingleTasked,
-        engine::frame::WAVE_SAMPLES_PER_FRAME, future::FutureExt as _,
+        StyleId, VoiceModelId, VoiceModelMeta,
+        assert::assert_send_sync,
+        asyncs::SingleTasked,
+        engine::{WAV_PREFIX_LEN, frame::WAVE_SAMPLES_PER_FRAME},
+        future::FutureExt as _,
     };
 
     use super::{
@@ -2235,7 +2237,7 @@ pub(crate) mod blocking {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, SingleTasked>,
         audio_feature: AudioFeature,
         cursor: StepBy<std::ops::Range<usize>>,
-        header: Vec<u8>,
+        header: Option<Box<[u8; WAV_PREFIX_LEN]>>,
     }
 
     impl Iterator for SynthesisStream<'_> {
@@ -2243,16 +2245,15 @@ pub(crate) mod blocking {
 
         fn size_hint(&self) -> (usize, Option<usize>) {
             // ヘッダーが残っている場合はそれを含める
-            let lower = usize::from(!self.header.is_empty()) + self.cursor.len();
+            let lower = usize::from(self.header.is_some()) + self.cursor.len();
             // Errを返す場合も考慮して、上限は不明とする
             (lower, None)
         }
 
         fn next(&mut self) -> Option<Self::Item> {
             // まずヘッダーが残っていればそれを返す
-            let header = mem::take(&mut self.header);
-            if !header.is_empty() {
-                return Some(Ok(header));
+            if let Some(header) = self.header.take() {
+                return Some(Ok(<[_]>::into_vec(header)));
             }
             // 終了するか次のPCMデータを生成する
             let mut tmp_cursor = self.cursor.clone();
@@ -2693,7 +2694,11 @@ pub(crate) mod blocking {
                 synthesizer: self.synthesizer,
                 audio_feature,
                 cursor: (offset_frames..full_frames).step_by(segment_frames),
-                header: s16le_wav_prefix(render_pcm_length, output_sampling_rate, output_stereo),
+                header: Some(Box::new(s16le_wav_prefix(
+                    render_pcm_length,
+                    output_sampling_rate,
+                    output_stereo,
+                ))),
             })
         }
     }
@@ -2766,7 +2771,6 @@ pub(crate) mod nonblocking {
     use std::{
         fmt::{self, Debug},
         iter::StepBy,
-        mem,
         pin::Pin,
         task::{Context, Poll},
     };
@@ -2778,8 +2782,10 @@ pub(crate) mod nonblocking {
 
     use crate::{
         AccentPhrase, AudioQuery, FRAME_RATE, FrameAudioQuery, OnExistingVoiceModelId, Result,
-        Score, StyleId, VoiceModelId, VoiceModelMeta, assert::assert_send_sync,
-        asyncs::BlockingThreadPool, engine::frame::WAVE_SAMPLES_PER_FRAME,
+        Score, StyleId, VoiceModelId, VoiceModelMeta,
+        assert::assert_send_sync,
+        asyncs::BlockingThreadPool,
+        engine::{WAV_PREFIX_LEN, frame::WAVE_SAMPLES_PER_FRAME},
     };
 
     use super::{
@@ -3341,7 +3347,7 @@ pub(crate) mod nonblocking {
         synthesizer: InnerRefWithoutTextAnalyzer<'a, BlockingThreadPool>,
         audio_feature: AudioFeature,
         cursor: StepBy<std::ops::Range<usize>>,
-        header: Vec<u8>,
+        header: Option<Box<[u8; WAV_PREFIX_LEN]>>,
         pending_pcm: Option<BoxSyncFuture<'static, crate::Result<Vec<u8>>>>,
     }
 
@@ -3367,16 +3373,15 @@ pub(crate) mod nonblocking {
 
         fn size_hint(&self) -> (usize, Option<usize>) {
             // ヘッダーが残っている場合はそれを含める
-            let lower = usize::from(!self.header.is_empty()) + self.cursor.len();
+            let lower = usize::from(self.header.is_some()) + self.cursor.len();
             // Errを返す場合も考慮して、上限は不明とする
             (lower, None)
         }
 
         fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
             // まずヘッダーが残っていればそれを返す
-            let header = mem::take(&mut self.header);
-            if !header.is_empty() {
-                return Poll::Ready(Some(Ok(header)));
+            if let Some(header) = self.header.take() {
+                return Poll::Ready(Some(Ok(<[_]>::into_vec(header))));
             }
             // 処理中のPCMデータがあればそれをpollする
             if let Some(pending) = &mut self.pending_pcm {
@@ -3688,7 +3693,11 @@ pub(crate) mod nonblocking {
                 synthesizer: self.synthesizer,
                 audio_feature,
                 cursor: (offset_frames..full_frames).step_by(segment_frames),
-                header: s16le_wav_prefix(render_pcm_length, output_sampling_rate, output_stereo),
+                header: Some(Box::new(s16le_wav_prefix(
+                    render_pcm_length,
+                    output_sampling_rate,
+                    output_stereo,
+                ))),
                 pending_pcm: None,
             })
         }
@@ -3797,7 +3806,7 @@ mod tests {
     use crate::{
         AccentPhrase, FramePhoneme, Note, NoteId, Result, Score, StyleId,
         asyncs::BlockingThreadPool,
-        engine::{frame::WAVE_SAMPLES_PER_FRAME, talk::Mora},
+        engine::{WAV_PREFIX_LEN, frame::WAVE_SAMPLES_PER_FRAME, talk::Mora},
         macros::tests::assert_debug_fmt_eq,
         numerics::non_zero,
         wav_from_s16le,
@@ -4658,7 +4667,7 @@ mod tests {
                 },
                 fact: None,
                 ds64_sample_count: None,
-                data_offset: 44,
+                data_offset: WAV_PREFIX_LEN as _,
                 data_length: (num_total_frames * WAVE_SAMPLES_PER_FRAME * mem::size_of::<i16>())
                     as _,
                 chunks_before: vec![],
@@ -4815,7 +4824,10 @@ mod tests {
             .flatten()
             .collect::<Vec<_>>();
 
-        assert_eq!(without_division[..44], with_division[..44]);
+        assert_eq!(
+            without_division[..WAV_PREFIX_LEN],
+            with_division[..WAV_PREFIX_LEN],
+        );
         assert_eq!(without_division.len(), with_division.len());
     }
 
@@ -4855,7 +4867,10 @@ mod tests {
             .flatten()
             .collect::<Vec<_>>();
 
-        assert_eq!(without_division[..44], with_division[..44]);
+        assert_eq!(
+            without_division[..WAV_PREFIX_LEN],
+            with_division[..WAV_PREFIX_LEN],
+        );
         assert_eq!(without_division.len(), with_division.len());
     }
 

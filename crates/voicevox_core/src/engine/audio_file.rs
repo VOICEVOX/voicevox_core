@@ -6,6 +6,8 @@ use crate::{FrameAudioQuery, SamplingRate};
 
 use super::{DEFAULT_SAMPLING_RATE, talk::ValidatedAudioQuery};
 
+pub(crate) const WAV_PREFIX_LEN: usize = 44;
+
 pub(crate) fn to_s16le_pcm(wave: &[f32], options: PcmOptions) -> Vec<u8> {
     let PcmOptions {
         volume_scale,
@@ -72,17 +74,21 @@ impl FrameAudioQuery {
 }
 
 /// 16bit PCMのバイト長に対応したWAVファイルの先頭部分を作成する。
-pub(crate) fn s16le_wav_prefix(pcm_length: usize, sampling_rate: u32, is_stereo: bool) -> Vec<u8> {
+pub(crate) fn s16le_wav_prefix(
+    pcm_length: usize,
+    sampling_rate: u32,
+    is_stereo: bool,
+) -> [u8; WAV_PREFIX_LEN] {
     let num_channels: u16 = if is_stereo { 2 } else { 1 };
     let bit_depth: u16 = 16;
     let block_size: u16 = bit_depth * num_channels / 8;
 
     let bytes_size = pcm_length as u32;
-    let header_size = 44;
-    let wave_size = header_size + bytes_size;
+    let wave_size = WAV_PREFIX_LEN as u32 + bytes_size;
 
-    let buf: Vec<u8> = Vec::with_capacity(header_size as usize);
-    let mut cur = Cursor::new(buf);
+    // TODO: `Write`じゃなくて`itertools::chain!`とかでもよいはず
+    let mut buf = [0; WAV_PREFIX_LEN];
+    let mut cur = &mut buf[..];
 
     cur.write_all("RIFF".as_bytes()).unwrap();
     cur.write_all(&(wave_size - 8).to_le_bytes()).unwrap();
@@ -99,13 +105,14 @@ pub(crate) fn s16le_wav_prefix(pcm_length: usize, sampling_rate: u32, is_stereo:
     cur.write_all(&bit_depth.to_le_bytes()).unwrap();
     cur.write_all("data".as_bytes()).unwrap();
     cur.write_all(&bytes_size.to_le_bytes()).unwrap();
-    cur.into_inner()
+    assert!(cur.is_empty());
+    buf
 }
 
 /// 16bit PCMにヘッダを付加しWAVフォーマットのバイナリを生成する。
 #[cfg_attr(doc, doc(alias = "voicevox_wav_from_s16le"))]
 pub fn wav_from_s16le(pcm: &[u8], sampling_rate: u32, is_stereo: bool) -> Vec<u8> {
-    let wave_size = pcm.len() + 44;
+    let wave_size = pcm.len() + WAV_PREFIX_LEN;
     let buf: Vec<u8> = Vec::with_capacity(wave_size);
     let mut cur = Cursor::new(buf);
 
