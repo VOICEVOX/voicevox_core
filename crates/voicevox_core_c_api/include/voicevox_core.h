@@ -1499,7 +1499,7 @@ char *voicevox_synthesizer_create_metas_json(const struct VoicevoxSynthesizer *s
  *
  * JSONの解放は ::voicevox_string_free で行う。
  *
- * あくまでONNX Runtimeが対応しているデバイスの情報であることに注意。GPUが使える環境ではなかったとしても`cuda`や`dml`は`true`を示しうる。
+ * あくまでONNX Runtimeが対応しているデバイスの情報であることに注意。GPUが使える環境ではなかったとしても`cuda`や`dml`、`migraphx`は`true`を示しうる。
  *
  * @param [in] onnxruntime
  * @param [out] output_supported_devices_json サポートデバイス情報のJSON文字列
