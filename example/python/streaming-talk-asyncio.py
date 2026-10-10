@@ -3,17 +3,25 @@
 """asyncio版のストリーミングでのテキスト音声合成を行うサンプルコードです。"""
 
 import asyncio
+import contextlib
 import dataclasses
 import logging
 import multiprocessing
 import operator
 import time
 from argparse import ArgumentParser
+from collections.abc import AsyncGenerator
 from pathlib import Path
 
 from sounddevice import RawOutputStream
 from voicevox_core import FRAME_RATE, AccelerationMode
-from voicevox_core.asyncio import Onnxruntime, OpenJtalk, Synthesizer, VoiceModelFile
+from voicevox_core.asyncio import (
+    Onnxruntime,
+    OpenJtalk,
+    SynthesisStream,
+    Synthesizer,
+    VoiceModelFile,
+)
 
 
 @dataclasses.dataclass
@@ -129,35 +137,60 @@ async def main() -> None:
     num_wrote_segments = 0
     num_total_segments = operator.length_hint(stream)
 
-    with RawOutputStream(
-        samplerate=float(audio_query.output_sampling_rate),
-        channels=2 if audio_query.output_stereo else 1,
-        dtype="int16",
-        latency=args.segment_length + 0.1,
-    ) as out:
-        rendering_started = time.monotonic_ns()
-        async for segment in stream:
-            # FIXME: Ctrl-cで止めると変な形でクラッシュしてしまう
-            underflowed = await asyncio.to_thread(out.write, segment)
-            if underflowed:
-                logger.warning("Underrun occurred")
-            num_wrote_segments += 1
-            logger.info(
-                "%s",
-                "Appended a PCM segment to the buffer "
-                f"({num_wrote_segments}/{num_total_segments})",
+    async with contextlib.aclosing(spawn_stream(stream)) as audio:
+        with RawOutputStream(
+            samplerate=float(audio_query.output_sampling_rate),
+            channels=2 if audio_query.output_stereo else 1,
+            dtype="int16",
+            latency=args.segment_length + 0.1,
+        ) as out:
+            rendering_started = time.monotonic_ns()
+            async for segment in audio:
+                # FIXME: Ctrl-cで止めると変な形でクラッシュしてしまう
+                underflowed = await asyncio.to_thread(out.write, segment)
+                if underflowed:
+                    logger.warning("Underrun occurred")
+                num_wrote_segments += 1
+                logger.info(
+                    "%s",
+                    "Appended a PCM segment to the buffer "
+                    f"({num_wrote_segments}/{num_total_segments})",
+                )
+            estimated_remaining_playback = (
+                audio_query.frame_length() / FRAME_RATE
+                - (time.monotonic_ns() - rendering_started) / 1e9
             )
-        estimated_remaining_playback = (
-            audio_query.frame_length() / FRAME_RATE
-            - (time.monotonic_ns() - rendering_started) / 1e9
-        )
-        if estimated_remaining_playback < 0.0:
-            logger.warning(
-                "Synthesis exceeded the audio duration by %.3f seconds. "
-                "Consider setting larger `--segment-length`",
-                -estimated_remaining_playback,
-            )
-        await asyncio.sleep(max(0.0, estimated_remaining_playback + 0.1))
+            if estimated_remaining_playback < 0.0:
+                logger.warning(
+                    "Synthesis exceeded the audio duration by %.3f seconds. "
+                    "Consider setting larger `--segment-length`",
+                    -estimated_remaining_playback,
+                )
+            await asyncio.sleep(max(0.0, estimated_remaining_playback + 0.1))
+
+
+def spawn_stream(stream: SynthesisStream) -> AsyncGenerator[bytes]:
+    segments = asyncio.Queue[bytes | None](maxsize=operator.length_hint(stream) + 1)
+
+    async def render_all() -> None:
+        try:
+            async for segment in stream:
+                assert segment != b""
+                segments.put_nowait(segment)
+        finally:
+            segments.put_nowait(None)
+
+    rendering = asyncio.create_task(render_all())
+
+    async def gen() -> AsyncGenerator[bytes]:
+        try:
+            while segment := await segments.get():
+                yield segment
+            await rendering
+        finally:
+            rendering.cancel()
+
+    return gen()
 
 
 if __name__ == "__main__":

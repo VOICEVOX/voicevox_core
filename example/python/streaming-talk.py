@@ -2,17 +2,28 @@
 
 """ストリーミングでのテキスト音声合成を行うサンプルコードです。"""
 
+import contextlib
 import dataclasses
 import logging
 import multiprocessing
 import operator
+import queue
 import time
 from argparse import ArgumentParser
+from collections.abc import Generator
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from threading import Event
 
 from sounddevice import RawOutputStream
 from voicevox_core import FRAME_RATE, AccelerationMode
-from voicevox_core.blocking import Onnxruntime, OpenJtalk, Synthesizer, VoiceModelFile
+from voicevox_core.blocking import (
+    Onnxruntime,
+    OpenJtalk,
+    SynthesisStream,
+    Synthesizer,
+    VoiceModelFile,
+)
 
 
 @dataclasses.dataclass
@@ -128,14 +139,15 @@ def main() -> None:
     num_wrote_segments = 0
     num_total_segments = operator.length_hint(stream)
 
-    with RawOutputStream(
+    with contextlib.closing(spawn_stream(stream)) as audio, RawOutputStream(
         samplerate=float(audio_query.output_sampling_rate),
         channels=2 if audio_query.output_stereo else 1,
         dtype="int16",
         latency=args.segment_length + 0.1,
     ) as out:
         rendering_started = time.monotonic_ns()
-        for segment in stream:
+        # FIXME: voicevox_coreはrenderしている間ずっとGILを掴みっぱなしなので、writeが詰まる場合があるかも。注意書きを書くか、GILをできるだけ放すようにする
+        for segment in audio:
             underflowed = out.write(segment)
             if underflowed:
                 logger.warning("Underrun occurred")
@@ -156,6 +168,31 @@ def main() -> None:
                 -estimated_remaining_playback,
             )
         time.sleep(max(0.0, estimated_remaining_playback + 0.1))
+
+
+def spawn_stream(stream: SynthesisStream) -> Generator[bytes]:
+    segments = queue.Queue[bytes | None](maxsize=operator.length_hint(stream) + 1)
+    stop_rendering = Event()
+
+    def render_all() -> None:
+        try:
+            while not stop_rendering.is_set():
+                segment = next(stream, None)
+                if segment is None:
+                    break
+                assert segment != b""
+                segments.put_nowait(segment)
+        finally:
+            segments.put_nowait(None)
+
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        rendering = executor.submit(render_all)
+        try:
+            while segment := segments.get():
+                yield segment
+            rendering.result()
+        finally:
+            stop_rendering.set()
 
 
 if __name__ == "__main__":
