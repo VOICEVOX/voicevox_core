@@ -5,7 +5,7 @@
 //! - **`buildtime-download-onnxruntime`**: ビルド時に後述する環境変数`VVCORE_BUILD_DOWNLOAD_AND_COPY_ORT`が`1`なら、ONNX
 //!   Runtimeのバイナリをダウンロードしてtarget
 //!   directory内の複数箇所に配置する。`VVCORE_BUILD_DOWNLOAD_AND_COPY_ORT`が`1`ではないなら警告を出して何もしない。後述の`link-onnxruntime`フィーチャと合わせると、システムにONNX Runtimeが無くてもビルドが可能になる。
-//! - **`load-onnxruntime`**: ONNX Runtimeを`dlopen`/`LoadLibraryExW`で開く。[CUDA]と[DirectML]が利用可能。
+//! - **`load-onnxruntime`**: ONNX Runtimeを`dlopen`/`LoadLibraryExW`で開く。[CUDA]、[DirectML]、[OpenVINO]が利用可能。
 //!   またmuslをターゲットとしたビルドでは`dlopen`をサポートしないため、このフラグは利用不可であるため、`link-onnxruntime`を利用する必要がある。
 //! - **`link-onnxruntime`**: ONNX Runtimeをロード時動的リンクする。そのためビルドするためにはシステムにONNX
 //!   Runtimeがインストールされているか、`buildtime-download-onnxruntime`によるダウンロードを行う必要がある。iOSのような`dlopen`の利用が困難な環境でのみこちらを利用するべきである。_Note_:
@@ -22,6 +22,7 @@
 //! [Cargoフィーチャ]: https://doc.rust-lang.org/stable/cargo/reference/features.html
 //! [CUDA]: https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html
 //! [DirectML]: https://onnxruntime.ai/docs/execution-providers/DirectML-ExecutionProvider.html
+//! [OpenVINO]: https://onnxruntime.ai/docs/execution-providers/OpenVINO-ExecutionProvider.html
 //! [動的リンク対象のライブラリ名]:
 //! https://doc.rust-lang.org/cargo/reference/build-scripts.html#rustc-link-lib
 //! [`Onnxruntime`]: blocking::Onnxruntime
