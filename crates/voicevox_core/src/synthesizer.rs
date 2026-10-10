@@ -6,17 +6,22 @@ use anyhow::{Context as _, anyhow, bail, ensure};
 use easy_ext::ext;
 use educe::Educe;
 use enum_map::enum_map;
+use futures_core::Stream;
+use futures_lite::FutureExt as _;
 use futures_util::TryFutureExt as _;
 use std::{
     fmt::{self, Debug},
+    iter,
     marker::PhantomData,
+    pin::Pin,
     sync::Arc,
+    task::{Context, Poll, ready},
 };
 use tracing::info;
 use typed_floats::{NonNaNFinite, PositiveFinite, tf32};
 
 use crate::{
-    AccentPhrase, AudioQuery, OnExistingVoiceModelId, Result, StyleId, VoiceModelId,
+    AccentPhrase, AudioQuery, FRAME_RATE, OnExistingVoiceModelId, Result, StyleId, VoiceModelId,
     VoiceModelMeta,
     assert::assert_send_sync,
     asyncs::{Async, BlockingThreadPool, SingleTasked},
@@ -43,7 +48,7 @@ use crate::{
         voice_model,
     },
     engine::{
-        DEFAULT_SAMPLING_RATE, IteratorExt as _, PcmOptions, PhonemeCode,
+        DEFAULT_SAMPLING_RATE, IteratorExt as _, PcmOptions, PhonemeCode, WAV_PREFIX_LEN,
         frame::WAVE_SAMPLES_PER_FRAME,
         s16le_wav_prefix,
         song::{
@@ -1593,6 +1598,115 @@ fn list_windows_video_cards() {
     }
 }
 
+struct SynthesisStreamInner<'a, A: Async> {
+    synthesizer: InnerRefWithoutTextAnalyzer<'a, A>,
+    audio_feature: AudioFeature,
+    cursor: iter::StepBy<std::ops::Range<usize>>,
+    header: Option<Box<[u8; WAV_PREFIX_LEN]>>,
+    pending_pcm: Option<BoxSyncFuture<'static, crate::Result<Vec<u8>>>>,
+}
+
+type BoxSyncFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + Sync + 'a>>;
+
+impl<'a, A: AsyncExt> SynthesisStreamInner<'a, A> {
+    async fn new(
+        synthesizer: InnerRefWithoutTextAnalyzer<'a, A>,
+        audio_query: &'_ AudioQuery,
+        style_id: StyleId,
+        options: &StreamingSynthesisOptions<A>,
+    ) -> crate::Result<Self> {
+        let audio_feature = synthesizer
+            .create_audio_feature(audio_query, style_id, &options.synthesis)
+            .await?;
+        let offset_frames = (options.start_offset * FRAME_RATE).round_ties_even() as usize;
+        let segment_frames = (options.segment_length * FRAME_RATE).round_ties_even() as usize;
+        let full_frames = audio_feature.frame_length();
+        let render_frames = full_frames - offset_frames;
+        let render_wave_length = render_frames * WAVE_SAMPLES_PER_FRAME;
+        let output_sampling_rate = audio_query.output_sampling_rate.get().get();
+        let output_stereo = audio_query.output_stereo;
+        let num_channels: u16 = if output_stereo { 2 } else { 1 };
+        let repeat_count: u32 =
+            (output_sampling_rate / DEFAULT_SAMPLING_RATE) * num_channels as u32;
+        let render_pcm_length = (render_wave_length as u32 * repeat_count * 2) as usize;
+        Ok(Self {
+            synthesizer,
+            audio_feature,
+            cursor: (offset_frames..full_frames).step_by(segment_frames),
+            header: Some(Box::new(s16le_wav_prefix(
+                render_pcm_length,
+                output_sampling_rate,
+                output_stereo,
+            ))),
+            pending_pcm: None,
+        })
+    }
+}
+
+impl<A: Async> Debug for SynthesisStreamInner<'_, A> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("SynthesisStream")
+            .field("synthesizer", &self.synthesizer)
+            .field("audio_feature", &self.audio_feature)
+            .field("cursor", &self.cursor)
+            .field("header", &self.header)
+            .field(
+                "pending_pcm",
+                &self.pending_pcm.as_ref().map(|_| format_args!("_")),
+            )
+            .finish()
+    }
+}
+
+impl<A: AsyncExt> Stream for SynthesisStreamInner<'_, A> {
+    type Item = crate::Result<Vec<u8>>;
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        // ヘッダーが残っている場合はそれを含める
+        let lower = usize::from(self.header.is_some()) + self.cursor.len();
+        // Errを返す場合も考慮して、上限は不明とする
+        (lower, None)
+    }
+
+    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        // まずヘッダーが残っていればそれを返す
+        if let Some(header) = self.header.take() {
+            return Poll::Ready(Some(Ok(<[_]>::into_vec(header))));
+        }
+        // 処理中のPCMデータがあればそれをpollする
+        if let Some(pending) = &mut self.pending_pcm {
+            let result = ready!(pending.poll(cx));
+            // 処理が完了しているので結果を返す
+            self.pending_pcm = None;
+            let pcm = match result {
+                Ok(pcm) => pcm,
+                Err(err) => return Poll::Ready(Some(Err(err))),
+            };
+            // PCMデータの生成に成功したのでカーソルをひとつ進める
+            self.cursor.next();
+            return Poll::Ready(Some(Ok(pcm)));
+        }
+        // 終了するか次のPCMデータを生成する
+        let mut tmp_cursor = self.cursor.clone();
+        match tmp_cursor.next() {
+            None => Poll::Ready(None),
+            Some(start_frame) => {
+                let end_frame = tmp_cursor
+                    .next()
+                    .unwrap_or_else(|| self.audio_feature.frame_length());
+                let inner = self.synthesizer.without_text_analyzer_cloned();
+                let audio_feature = self.audio_feature.clone();
+                let range = start_frame..end_frame;
+                self.pending_pcm = Some(Box::pin(async move {
+                    inner.render(&audio_feature, range).await
+                }));
+                cx.waker().wake_by_ref();
+                Poll::Pending
+            }
+        }
+    }
+}
+
 impl AudioQuery {
     /// アクセント句の配列からAudioQueryを作る。
     #[cfg_attr(doc, doc(alias = "voicevox_audio_query_create_from_accent_phrases"))]
@@ -1664,27 +1778,23 @@ impl From<Vec<AccentPhrase>> for AudioQuery {
               形を考えると、ここの引数を構造体にまとめたりしても可読性に寄与しない"
 )]
 pub(crate) mod blocking {
-    use std::{
-        fmt::{self, Debug},
-        iter::StepBy,
-    };
+    use std::fmt::{self, Debug};
 
     use easy_ext::ext;
+    use futures_core::Stream as _;
+    use futures_util::StreamExt as _;
     use typed_floats::{NonNaNFinite, PositiveFinite};
 
     use crate::{
-        AccentPhrase, AudioQuery, FRAME_RATE, FrameAudioQuery, OnExistingVoiceModelId, Score,
-        StyleId, VoiceModelId, VoiceModelMeta,
-        assert::assert_send_sync,
-        asyncs::SingleTasked,
-        engine::{WAV_PREFIX_LEN, frame::WAVE_SAMPLES_PER_FRAME},
+        AccentPhrase, AudioQuery, FrameAudioQuery, OnExistingVoiceModelId, Score, StyleId,
+        VoiceModelId, VoiceModelMeta, assert::assert_send_sync, asyncs::SingleTasked,
         future::FutureExt as _,
     };
 
     use super::{
-        AccelerationMode, AsInner as _, AssumeSingleTasked, AudioFeature, DEFAULT_SAMPLING_RATE,
-        InitializeOptions, Inner, InnerRefWithoutTextAnalyzer, LoadVoiceModelOptions,
-        StreamingSynthesisOptions, SynthesisOptions, TtsOptions, s16le_wav_prefix,
+        AccelerationMode, AsInner as _, AssumeSingleTasked, AudioFeature, InitializeOptions, Inner,
+        InnerRefWithoutTextAnalyzer, LoadVoiceModelOptions, StreamingSynthesisOptions,
+        SynthesisOptions, SynthesisStreamInner, TtsOptions,
     };
 
     /// 音声シンセサイザ。
@@ -2233,49 +2343,17 @@ pub(crate) mod blocking {
     assert_send_sync!(for<T: ..> self::Synthesizer<T>);
 
     #[derive(Debug)]
-    pub struct SynthesisStream<'a> {
-        synthesizer: InnerRefWithoutTextAnalyzer<'a, SingleTasked>,
-        audio_feature: AudioFeature,
-        cursor: StepBy<std::ops::Range<usize>>,
-        header: Option<Box<[u8; WAV_PREFIX_LEN]>>,
-    }
+    pub struct SynthesisStream<'a>(SynthesisStreamInner<'a, SingleTasked>);
 
     impl Iterator for SynthesisStream<'_> {
         type Item = crate::Result<Vec<u8>>;
 
         fn size_hint(&self) -> (usize, Option<usize>) {
-            // ヘッダーが残っている場合はそれを含める
-            let lower = usize::from(self.header.is_some()) + self.cursor.len();
-            // Errを返す場合も考慮して、上限は不明とする
-            (lower, None)
+            self.0.size_hint()
         }
 
         fn next(&mut self) -> Option<Self::Item> {
-            // まずヘッダーが残っていればそれを返す
-            if let Some(header) = self.header.take() {
-                return Some(Ok(<[_]>::into_vec(header)));
-            }
-            // 終了するか次のPCMデータを生成する
-            let mut tmp_cursor = self.cursor.clone();
-            match tmp_cursor.next() {
-                None => None,
-                Some(start_frame) => {
-                    let end_frame = tmp_cursor
-                        .next()
-                        .unwrap_or_else(|| self.audio_feature.frame_length());
-                    let pcm = match self
-                        .synthesizer
-                        .render(&self.audio_feature, start_frame..end_frame)
-                        .block_on()
-                    {
-                        Ok(pcm) => pcm,
-                        Err(e) => return Some(Err(e)),
-                    };
-                    // 処理に成功したのでPCMを返し、カーソルをひとつ進める
-                    self.cursor.next();
-                    Some(Ok(pcm))
-                }
-            }
+            self.0.next().block_on()
         }
     }
 
@@ -2674,32 +2752,14 @@ pub(crate) mod blocking {
 
         /// 実行する。
         pub fn perform(self) -> crate::Result<SynthesisStream<'synthesizer>> {
-            let audio_feature = self
-                .synthesizer
-                .create_audio_feature(self.audio_query, self.style_id, &self.options.synthesis)
-                .block_on()?;
-            let offset_frames = (self.options.start_offset * FRAME_RATE).round_ties_even() as usize;
-            let full_frames = audio_feature.frame_length();
-            let segment_frames =
-                (self.options.segment_length * FRAME_RATE).round_ties_even() as usize;
-            let render_frames = full_frames - offset_frames;
-            let render_wave_length = render_frames * WAVE_SAMPLES_PER_FRAME;
-            let output_sampling_rate = self.audio_query.output_sampling_rate.get().get();
-            let output_stereo = self.audio_query.output_stereo;
-            let num_channels: u16 = if output_stereo { 2 } else { 1 };
-            let repeat_count: u32 =
-                (output_sampling_rate / DEFAULT_SAMPLING_RATE) * num_channels as u32;
-            let render_pcm_length = (render_wave_length as u32 * repeat_count * 2) as usize;
-            Ok(SynthesisStream {
-                synthesizer: self.synthesizer,
-                audio_feature,
-                cursor: (offset_frames..full_frames).step_by(segment_frames),
-                header: Some(Box::new(s16le_wav_prefix(
-                    render_pcm_length,
-                    output_sampling_rate,
-                    output_stereo,
-                ))),
-            })
+            SynthesisStreamInner::new(
+                self.synthesizer,
+                self.audio_query,
+                self.style_id,
+                &self.options,
+            )
+            .block_on()
+            .map(SynthesisStream)
         }
     }
 
@@ -2770,29 +2830,23 @@ pub(crate) mod blocking {
 pub(crate) mod nonblocking {
     use std::{
         fmt::{self, Debug},
-        iter::StepBy,
-        pin::Pin,
+        pin::{Pin, pin},
         task::{Context, Poll},
     };
 
     use easy_ext::ext;
-    use futures_core::{Stream, ready};
-    use futures_lite::FutureExt as _;
+    use futures_core::Stream;
     use typed_floats::{NonNaNFinite, PositiveFinite};
 
     use crate::{
-        AccentPhrase, AudioQuery, FRAME_RATE, FrameAudioQuery, OnExistingVoiceModelId, Result,
-        Score, StyleId, VoiceModelId, VoiceModelMeta,
-        assert::assert_send_sync,
-        asyncs::BlockingThreadPool,
-        engine::{WAV_PREFIX_LEN, frame::WAVE_SAMPLES_PER_FRAME},
+        AccentPhrase, AudioQuery, FrameAudioQuery, OnExistingVoiceModelId, Result, Score, StyleId,
+        VoiceModelId, VoiceModelMeta, assert::assert_send_sync, asyncs::BlockingThreadPool,
     };
 
     use super::{
-        AccelerationMode, AsInner as _, AssumeBlockable, AudioFeature, DEFAULT_SAMPLING_RATE,
-        FrameSynthesisOptions, InitializeOptions, Inner, InnerRefWithoutTextAnalyzer,
-        LoadVoiceModelOptions, StreamingSynthesisOptions, SynthesisOptions, TtsOptions,
-        s16le_wav_prefix,
+        AccelerationMode, AsInner as _, AssumeBlockable, AudioFeature, FrameSynthesisOptions,
+        InitializeOptions, Inner, InnerRefWithoutTextAnalyzer, LoadVoiceModelOptions,
+        StreamingSynthesisOptions, SynthesisOptions, SynthesisStreamInner, TtsOptions,
     };
 
     /// 音声シンセサイザ。
@@ -3343,77 +3397,18 @@ pub(crate) mod nonblocking {
 
     assert_send_sync!(for<T: ..> self::Synthesizer<T>);
 
-    pub struct SynthesisStream<'a> {
-        synthesizer: InnerRefWithoutTextAnalyzer<'a, BlockingThreadPool>,
-        audio_feature: AudioFeature,
-        cursor: StepBy<std::ops::Range<usize>>,
-        header: Option<Box<[u8; WAV_PREFIX_LEN]>>,
-        pending_pcm: Option<BoxSyncFuture<'static, crate::Result<Vec<u8>>>>,
-    }
-
-    type BoxSyncFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + Sync + 'a>>;
-
-    impl Debug for SynthesisStream<'_> {
-        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-            f.debug_struct("SynthesisStream")
-                .field("synthesizer", &self.synthesizer)
-                .field("audio_feature", &self.audio_feature)
-                .field("cursor", &self.cursor)
-                .field("header", &self.header)
-                .field(
-                    "pending_pcm",
-                    &self.pending_pcm.as_ref().map(|_| format_args!("_")),
-                )
-                .finish()
-        }
-    }
+    #[derive(Debug)]
+    pub struct SynthesisStream<'a>(SynthesisStreamInner<'a, BlockingThreadPool>);
 
     impl Stream for SynthesisStream<'_> {
         type Item = crate::Result<Vec<u8>>;
 
         fn size_hint(&self) -> (usize, Option<usize>) {
-            // ヘッダーが残っている場合はそれを含める
-            let lower = usize::from(self.header.is_some()) + self.cursor.len();
-            // Errを返す場合も考慮して、上限は不明とする
-            (lower, None)
+            self.0.size_hint()
         }
 
         fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-            // まずヘッダーが残っていればそれを返す
-            if let Some(header) = self.header.take() {
-                return Poll::Ready(Some(Ok(<[_]>::into_vec(header))));
-            }
-            // 処理中のPCMデータがあればそれをpollする
-            if let Some(pending) = &mut self.pending_pcm {
-                let result = ready!(pending.poll(cx));
-                // 処理が完了しているので結果を返す
-                self.pending_pcm = None;
-                let pcm = match result {
-                    Ok(pcm) => pcm,
-                    Err(err) => return Poll::Ready(Some(Err(err))),
-                };
-                // PCMデータの生成に成功したのでカーソルをひとつ進める
-                self.cursor.next();
-                return Poll::Ready(Some(Ok(pcm)));
-            }
-            // 終了するか次のPCMデータを生成する
-            let mut tmp_cursor = self.cursor.clone();
-            match tmp_cursor.next() {
-                None => Poll::Ready(None),
-                Some(start_frame) => {
-                    let end_frame = tmp_cursor
-                        .next()
-                        .unwrap_or_else(|| self.audio_feature.frame_length());
-                    let inner = self.synthesizer.without_text_analyzer_cloned();
-                    let audio_feature = self.audio_feature.clone();
-                    let range = start_frame..end_frame;
-                    self.pending_pcm = Some(Box::pin(async move {
-                        inner.render(&audio_feature, range).await
-                    }));
-                    cx.waker().wake_by_ref();
-                    Poll::Pending
-                }
-            }
+            pin!(&mut self.0).poll_next(cx)
         }
     }
 
@@ -3673,33 +3668,14 @@ pub(crate) mod nonblocking {
 
         /// 実行する。
         pub async fn perform(self) -> crate::Result<SynthesisStream<'synthesizer>> {
-            let audio_feature = self
-                .synthesizer
-                .create_audio_feature(self.audio_query, self.style_id, &self.options.synthesis)
-                .await?;
-            let offset_frames = (self.options.start_offset * FRAME_RATE).round_ties_even() as usize;
-            let segment_frames =
-                (self.options.segment_length * FRAME_RATE).round_ties_even() as usize;
-            let full_frames = audio_feature.frame_length();
-            let render_frames = full_frames - offset_frames;
-            let render_wave_length = render_frames * WAVE_SAMPLES_PER_FRAME;
-            let output_sampling_rate = self.audio_query.output_sampling_rate.get().get();
-            let output_stereo = self.audio_query.output_stereo;
-            let num_channels: u16 = if output_stereo { 2 } else { 1 };
-            let repeat_count: u32 =
-                (output_sampling_rate / DEFAULT_SAMPLING_RATE) * num_channels as u32;
-            let render_pcm_length = (render_wave_length as u32 * repeat_count * 2) as usize;
-            Ok(SynthesisStream {
-                synthesizer: self.synthesizer,
-                audio_feature,
-                cursor: (offset_frames..full_frames).step_by(segment_frames),
-                header: Some(Box::new(s16le_wav_prefix(
-                    render_pcm_length,
-                    output_sampling_rate,
-                    output_stereo,
-                ))),
-                pending_pcm: None,
-            })
+            SynthesisStreamInner::new(
+                self.synthesizer,
+                self.audio_query,
+                self.style_id,
+                &self.options,
+            )
+            .await
+            .map(SynthesisStream)
         }
     }
 
