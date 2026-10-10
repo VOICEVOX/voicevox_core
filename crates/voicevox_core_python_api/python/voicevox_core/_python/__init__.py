@@ -554,7 +554,8 @@ class AudioQuery:
         >>> from numpy.lib import NumpyVersion
         >>> from voicevox_core import FRAME_RATE
         >>>
-        >>> # NumPy 1では`np.float32`と`float`の乗算は`float`、2では`np.float32`
+        >>> # `np.float32`と`builtins.float`の乗算がデフォルトで`np.float32`に
+        >>> # なるのはNumPy 2から（cf. NEP 50）
         >>> assert NumpyVersion(np.__version__).major == 2
         >>>
         >>> def to_frame_length(secs: np.float32, speed_scale: np.float32) -> int:
