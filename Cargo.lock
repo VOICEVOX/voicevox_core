@@ -1319,7 +1319,7 @@ dependencies = [
  "indexmap 2.13.0",
  "indicatif",
  "indoc",
- "itertools 0.10.5",
+ "itertools 0.11.0",
  "minus",
  "octocrab",
  "parse-display",
@@ -2263,9 +2263,9 @@ checksum = "7943c866cc5cd64cbc25b2e01621d07fa8eb2a1a23160ee81ce38704e97b8ecf"
 
 [[package]]
 name = "itertools"
-version = "0.10.5"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b0fd2260e829bddf4cb6ea802289de2f86d6a7a690192fbe91b3f46e0f2c8473"
+checksum = "b1c173a5686ce8bfa551b3563d0c2170bf24ca44da99c7ca4bfdab5418c3fe57"
 dependencies = [
  "either",
 ]
@@ -5053,7 +5053,7 @@ dependencies = [
  "futures-util",
  "humansize",
  "indexmap 2.13.0",
- "itertools 0.10.5",
+ "itertools 0.11.0",
  "jlabel",
  "libloading 0.7.3",
  "ndarray",
@@ -5102,7 +5102,7 @@ dependencies = [
  "flate2",
  "fs-err",
  "hex",
- "itertools 0.10.5",
+ "itertools 0.11.0",
  "pkg-config",
  "process_path",
  "relative-path",
@@ -5137,7 +5137,7 @@ dependencies = [
  "indexmap 2.13.0",
  "indoc",
  "inventory",
- "itertools 0.10.5",
+ "itertools 0.11.0",
  "libc",
  "libloading 0.7.3",
  "libtest-mimic",
