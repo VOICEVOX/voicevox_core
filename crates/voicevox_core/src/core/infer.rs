@@ -22,14 +22,14 @@ use super::{
 };
 
 pub(crate) trait AsyncExt: Async {
-    type Cancellable: Copy;
+    type Cancellable: Copy + Send + Sync;
     const LIGHT_INFERENCE_CANCELLABLE: Self::Cancellable;
     const DEFAULT_HEAVY_INFERENCE_CANCELLABLE: Self::Cancellable;
 
-    async fn run_session<R: InferenceRuntime>(
+    fn run_session<R: InferenceRuntime>(
         ctx: R::RunContext,
         cancellable: Self::Cancellable,
-    ) -> anyhow::Result<Vec<OutputTensor>>;
+    ) -> impl Future<Output = anyhow::Result<Vec<OutputTensor>>> + Send + Sync;
 }
 
 impl AsyncExt for SingleTasked {
@@ -63,7 +63,7 @@ pub(crate) trait InferenceRuntime: 'static {
     type Session;
 
     // 本当は`From<&'_ Self::Session>`としたいが、 rust-lang/rust#100013 が立ち塞がる
-    type RunContext: From<Arc<Self::Session>> + PushInputTensor;
+    type RunContext: From<Arc<Self::Session>> + PushInputTensor + Send + Sync;
 
     /// 名前。
     const DISPLAY_NAME: &'static str;
@@ -91,10 +91,10 @@ pub(crate) trait InferenceRuntime: 'static {
 
     fn run_blocking(ctx: Self::RunContext) -> anyhow::Result<Vec<OutputTensor>>;
 
-    async fn run_async(
+    fn run_async(
         ctx: Self::RunContext,
         cancellable: bool,
-    ) -> anyhow::Result<Vec<OutputTensor>>;
+    ) -> impl Future<Output = anyhow::Result<Vec<OutputTensor>>> + Send + Sync;
 }
 
 /// 共に扱われるべき推論操作の集合を示す。
