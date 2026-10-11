@@ -17,6 +17,7 @@ use std::{
     sync::Arc,
     task::{Context, Poll, ready},
 };
+use sync_wrapper::SyncFuture;
 use tracing::info;
 use typed_floats::{NonNaNFinite, PositiveFinite, tf32};
 
@@ -1645,7 +1646,7 @@ impl<'a, A: AsyncExt> SynthesisStreamInner<'a, A> {
 
 impl<A: Async> Debug for SynthesisStreamInner<'_, A> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("SynthesisStream")
+        f.debug_struct("SynthesisStreamInner")
             .field("synthesizer", &self.synthesizer)
             .field("audio_feature", &self.audio_feature)
             .field("cursor", &self.cursor)
@@ -1697,9 +1698,9 @@ impl<A: AsyncExt> Stream for SynthesisStreamInner<'_, A> {
                 let inner = self.synthesizer.without_text_analyzer_cloned();
                 let audio_feature = self.audio_feature.clone();
                 let range = start_frame..end_frame;
-                self.pending_pcm = Some(Box::pin(async move {
+                self.pending_pcm = Some(Box::pin(SyncFuture::new(async move {
                     inner.render(&audio_feature, range).await
-                }));
+                })));
                 cx.waker().wake_by_ref();
                 Poll::Pending
             }
@@ -2830,7 +2831,7 @@ pub(crate) mod blocking {
 pub(crate) mod nonblocking {
     use std::{
         fmt::{self, Debug},
-        pin::{Pin, pin},
+        pin::Pin,
         task::{Context, Poll},
     };
 
@@ -3408,7 +3409,7 @@ pub(crate) mod nonblocking {
         }
 
         fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-            pin!(&mut self.0).poll_next(cx)
+            Pin::new(&mut self.0).poll_next(cx)
         }
     }
 

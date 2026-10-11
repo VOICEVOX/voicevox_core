@@ -29,7 +29,7 @@ pub(crate) trait AsyncExt: Async {
     fn run_session<R: InferenceRuntime>(
         ctx: R::RunContext,
         cancellable: Self::Cancellable,
-    ) -> impl Future<Output = anyhow::Result<Vec<OutputTensor>>> + Send + Sync;
+    ) -> impl Future<Output = anyhow::Result<Vec<OutputTensor>>> + Send;
 }
 
 impl AsyncExt for SingleTasked {
@@ -63,7 +63,7 @@ pub(crate) trait InferenceRuntime: 'static {
     type Session;
 
     // 本当は`From<&'_ Self::Session>`としたいが、 rust-lang/rust#100013 が立ち塞がる
-    type RunContext: From<Arc<Self::Session>> + PushInputTensor + Send + Sync;
+    type RunContext: From<Arc<Self::Session>> + PushInputTensor + Send;
 
     /// 名前。
     const DISPLAY_NAME: &'static str;
@@ -94,7 +94,7 @@ pub(crate) trait InferenceRuntime: 'static {
     fn run_async(
         ctx: Self::RunContext,
         cancellable: bool,
-    ) -> impl Future<Output = anyhow::Result<Vec<OutputTensor>>> + Send + Sync;
+    ) -> impl Future<Output = anyhow::Result<Vec<OutputTensor>>> + Send;
 }
 
 /// 共に扱われるべき推論操作の集合を示す。

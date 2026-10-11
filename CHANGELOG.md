@@ -24,6 +24,11 @@
 - `AudioQuery::frame_length`が追加されます ([#1448])。
 - \[C\] `voicevox_json_free`の代わりに<code>voicevox\_**string**\_free</code>が、`voicevox_wav_free`の代わりに<code>voicevox\_**bytes**\_free</code>が追加されます ([#1441])。
 
+### Changed
+
+- \[Rust\] 依存ライブラリが変化します ([#1462])。
+    - \[追加\]: `sync_wrapper@1`: `^1.0.2`
+
 ### Deprecated
 
 - \[C\] `voicevox_json_free`と`voicevox_wav_free`は非推奨になります。代わりに`voicevox_string_free`と`voicevox_bytes_free`をご利用ください ([#1441])。
