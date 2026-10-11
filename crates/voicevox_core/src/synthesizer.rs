@@ -1647,6 +1647,10 @@ impl<'a, A: AsyncExt> SynthesisStreamInner<'a, A> {
         // ヘッダーが残っている場合はそれを含める
         usize::from(self.header.is_some()) + self.cursor.len()
     }
+
+    fn is_empty(&self) -> bool {
+        self.num_oks() == 0
+    }
 }
 
 impl<A: Async> Debug for SynthesisStreamInner<'_, A> {
@@ -1713,7 +1717,7 @@ impl<A: AsyncExt> Stream for SynthesisStreamInner<'_, A> {
 
 impl<A: AsyncExt> FusedStream for SynthesisStreamInner<'_, A> {
     fn is_terminated(&self) -> bool {
-        self.num_oks() == 0
+        self.is_empty()
     }
 }
 
@@ -1799,9 +1803,9 @@ pub(crate) mod blocking {
     use typed_floats::{NonNaNFinite, PositiveFinite};
 
     use crate::{
-        AccentPhrase, AudioQuery, FrameAudioQuery, OnExistingVoiceModelId, Score, StyleId,
-        VoiceModelId, VoiceModelMeta, assert::assert_send_sync, asyncs::SingleTasked,
-        future::FutureExt as _,
+        __internal::interop::PeekIfEmpty, AccentPhrase, AudioQuery, FrameAudioQuery,
+        OnExistingVoiceModelId, Score, StyleId, VoiceModelId, VoiceModelMeta,
+        assert::assert_send_sync, asyncs::SingleTasked, future::FutureExt as _,
     };
 
     use super::{
@@ -2372,6 +2376,12 @@ pub(crate) mod blocking {
 
     impl FusedIterator for SynthesisStream<'_> {}
 
+    impl PeekIfEmpty for SynthesisStream<'_> {
+        fn is_empty(&self) -> bool {
+            self.0.is_empty()
+        }
+    }
+
     assert_send_sync!(SynthesisStream<'_>);
 
     impl<T> self::Synthesizer<T> {
@@ -2854,8 +2864,9 @@ pub(crate) mod nonblocking {
     use typed_floats::{NonNaNFinite, PositiveFinite};
 
     use crate::{
-        AccentPhrase, AudioQuery, FrameAudioQuery, OnExistingVoiceModelId, Result, Score, StyleId,
-        VoiceModelId, VoiceModelMeta, assert::assert_send_sync, asyncs::BlockingThreadPool,
+        __internal::interop::PeekIfEmpty, AccentPhrase, AudioQuery, FrameAudioQuery,
+        OnExistingVoiceModelId, Result, Score, StyleId, VoiceModelId, VoiceModelMeta,
+        assert::assert_send_sync, asyncs::BlockingThreadPool,
     };
 
     use super::{
@@ -3430,6 +3441,12 @@ pub(crate) mod nonblocking {
     impl FusedStream for SynthesisStream<'_> {
         fn is_terminated(&self) -> bool {
             self.0.is_terminated()
+        }
+    }
+
+    impl PeekIfEmpty for SynthesisStream<'_> {
+        fn is_empty(&self) -> bool {
+            self.0.is_empty()
         }
     }
 

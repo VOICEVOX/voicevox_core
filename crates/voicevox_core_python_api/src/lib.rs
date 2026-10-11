@@ -460,9 +460,9 @@ mod blocking {
     use ref_cast::RefCast as _;
     use uuid::Uuid;
     use voicevox_core::{
-        __internal::interop::BlockingTextAnalyzerExt as _, AccelerationMode, AccentPhrase,
-        AudioQuery, FrameAudioQuery, OnExistingVoiceModelId, Score, StyleId, SupportedDevices,
-        UserDictWord, VoiceModelMeta,
+        __internal::interop::{BlockingTextAnalyzerExt as _, PeekIfEmpty as _},
+        AccelerationMode, AccentPhrase, AudioQuery, FrameAudioQuery, OnExistingVoiceModelId, Score,
+        StyleId, SupportedDevices, UserDictWord, VoiceModelMeta,
     };
 
     use crate::{
@@ -794,7 +794,7 @@ mod blocking {
                 .with_stream_mut(|rust_api| rust_api.next())
                 .expect("`stream` should be non empty while `SynthesisStreamInner::Some` is held")
                 .into_py_result(py);
-            if matches!(body.borrow_stream().size_hint(), (0, _)) {
+            if body.borrow_stream().is_empty() {
                 self.0 = SynthesisStreamInner::Empty;
             }
             pcm.map(Some)
@@ -1135,12 +1135,13 @@ mod blocking {
                     .perform()
             })
             .into_py_result(py)?;
-            Ok(SynthesisStream(match body.borrow_stream().size_hint() {
-                (0, _) => SynthesisStreamInner::Empty,
-                _ => SynthesisStreamInner::Some {
+            Ok(SynthesisStream(if body.borrow_stream().is_empty() {
+                SynthesisStreamInner::Empty
+            } else {
+                SynthesisStreamInner::Some {
                     body,
                     _synthesizer_read_lock: Some(ReadLockThread::new(slf)),
-                },
+                }
             }))
         }
 
@@ -1357,9 +1358,9 @@ mod asyncio {
     use ref_cast::RefCast as _;
     use uuid::Uuid;
     use voicevox_core::{
-        __internal::interop::NonblockingTextAnalyzerExt as _, AccelerationMode, AccentPhrase,
-        AudioQuery, FrameAudioQuery, OnExistingVoiceModelId, Score, StyleId, SupportedDevices,
-        UserDictWord, VoiceModelMeta,
+        __internal::interop::{NonblockingTextAnalyzerExt as _, PeekIfEmpty as _},
+        AccelerationMode, AccentPhrase, AudioQuery, FrameAudioQuery, OnExistingVoiceModelId, Score,
+        StyleId, SupportedDevices, UserDictWord, VoiceModelMeta,
     };
 
     use crate::{
@@ -1702,7 +1703,7 @@ mod asyncio {
             .await
             .expect("`stream` should be non empty while `SynthesisStreamInner::Some` is held");
             let pcm = Python::attach(|py| pcm.into_py_result(py));
-            if matches!(body.borrow_stream().size_hint(), (0, _)) {
+            if body.borrow_stream().is_empty() {
                 self.0 = SynthesisStreamInner::Empty;
             }
             pcm
@@ -2042,12 +2043,13 @@ mod asyncio {
             })
             .await;
             let body = Python::attach(|py| body.into_py_result(py))?;
-            Ok(SynthesisStream(match body.borrow_stream().size_hint() {
-                (0, _) => SynthesisStreamInner::Empty,
-                _ => SynthesisStreamInner::Some {
+            Ok(SynthesisStream(if body.borrow_stream().is_empty() {
+                SynthesisStreamInner::Empty
+            } else {
+                SynthesisStreamInner::Some {
                     body,
                     _synthesizer_read_lock: Some(ReadLockThread::new(slf)),
-                },
+                }
             }))
         }
 

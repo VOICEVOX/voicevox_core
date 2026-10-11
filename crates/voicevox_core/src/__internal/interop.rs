@@ -14,3 +14,7 @@ pub use crate::{
         MARGIN, NonblockingTextAnalyzerExt, blocking::PerformInference,
     },
 };
+
+pub trait PeekIfEmpty {
+    fn is_empty(&self) -> bool;
+}
