@@ -1952,6 +1952,21 @@ pub(crate) mod blocking {
             }
         }
 
+        /// AudioQueryから直接WAVフォーマットで音声波形をストリーミング生成する。
+        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_streaming_synthesis"))]
+        pub fn streaming_synthesis<'synthesizer, 'audio_query>(
+            &'synthesizer self,
+            audio_query: &'audio_query AudioQuery,
+            style_id: StyleId,
+        ) -> StreamingSynthesis<'synthesizer, 'audio_query> {
+            StreamingSynthesis {
+                synthesizer: self.0.without_text_analyzer(),
+                audio_query,
+                style_id,
+                options: Default::default(),
+            }
+        }
+
         /// AquesTalk風記法からAccentPhrase (アクセント句)の配列を生成する。
         ///
         /// # Example
@@ -2383,23 +2398,6 @@ pub(crate) mod blocking {
     }
 
     assert_send_sync!(SynthesisStream<'_>);
-
-    impl<T> self::Synthesizer<T> {
-        /// AudioQueryから直接WAVフォーマットで音声波形をストリーミング生成する。
-        #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_streaming_synthesis"))]
-        pub fn streaming_synthesis<'synthesizer, 'audio_query>(
-            &'synthesizer self,
-            audio_query: &'audio_query AudioQuery,
-            style_id: StyleId,
-        ) -> StreamingSynthesis<'synthesizer, 'audio_query> {
-            StreamingSynthesis {
-                synthesizer: self.0.without_text_analyzer(),
-                audio_query,
-                style_id,
-                options: Default::default(),
-            }
-        }
-    }
 
     impl<T: crate::blocking::TextAnalyzer> self::Synthesizer<T> {
         /// 日本語のテキストからAccentPhrase (アクセント句)の配列を生成する。
