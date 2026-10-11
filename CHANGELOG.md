@@ -27,7 +27,7 @@
 ### Changed
 
 - \[Rust\] 依存ライブラリが変化します ([#1462])。
-    - \[追加\]: `sync_wrapper@1`: `^1.0.2`
+    - \[追加\] `sync_wrapper@1`: `^1.0.2`
 
 ### Deprecated
 
