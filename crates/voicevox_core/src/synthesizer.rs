@@ -6,7 +6,7 @@ use anyhow::{Context as _, anyhow, bail, ensure};
 use easy_ext::ext;
 use educe::Educe;
 use enum_map::enum_map;
-use futures_core::Stream;
+use futures_core::{FusedStream, Stream};
 use futures_lite::FutureExt as _;
 use futures_util::TryFutureExt as _;
 use std::{
@@ -1642,6 +1642,11 @@ impl<'a, A: AsyncExt> SynthesisStreamInner<'a, A> {
             pending_pcm: None,
         })
     }
+
+    fn num_oks(&self) -> usize {
+        // ヘッダーが残っている場合はそれを含める
+        usize::from(self.header.is_some()) + self.cursor.len()
+    }
 }
 
 impl<A: Async> Debug for SynthesisStreamInner<'_, A> {
@@ -1663,10 +1668,8 @@ impl<A: AsyncExt> Stream for SynthesisStreamInner<'_, A> {
     type Item = crate::Result<Vec<u8>>;
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        // ヘッダーが残っている場合はそれを含める
-        let lower = usize::from(self.header.is_some()) + self.cursor.len();
         // Errを返す場合も考慮して、上限は不明とする
-        (lower, None)
+        (self.num_oks(), None)
     }
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
@@ -1705,6 +1708,12 @@ impl<A: AsyncExt> Stream for SynthesisStreamInner<'_, A> {
                 Poll::Pending
             }
         }
+    }
+}
+
+impl<A: AsyncExt> FusedStream for SynthesisStreamInner<'_, A> {
+    fn is_terminated(&self) -> bool {
+        self.num_oks() == 0
     }
 }
 
@@ -1779,7 +1788,10 @@ impl From<Vec<AccentPhrase>> for AudioQuery {
               形を考えると、ここの引数を構造体にまとめたりしても可読性に寄与しない"
 )]
 pub(crate) mod blocking {
-    use std::fmt::{self, Debug};
+    use std::{
+        fmt::{self, Debug},
+        iter::FusedIterator,
+    };
 
     use easy_ext::ext;
     use futures_core::Stream as _;
@@ -2358,6 +2370,8 @@ pub(crate) mod blocking {
         }
     }
 
+    impl FusedIterator for SynthesisStream<'_> {}
+
     assert_send_sync!(SynthesisStream<'_>);
 
     impl<T> self::Synthesizer<T> {
@@ -2836,7 +2850,7 @@ pub(crate) mod nonblocking {
     };
 
     use easy_ext::ext;
-    use futures_core::Stream;
+    use futures_core::{FusedStream, Stream};
     use typed_floats::{NonNaNFinite, PositiveFinite};
 
     use crate::{
@@ -3410,6 +3424,12 @@ pub(crate) mod nonblocking {
 
         fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
             Pin::new(&mut self.0).poll_next(cx)
+        }
+    }
+
+    impl FusedStream for SynthesisStream<'_> {
+        fn is_terminated(&self) -> bool {
+            self.0.is_terminated()
         }
     }
 
