@@ -5078,6 +5078,7 @@ dependencies = [
  "smallvec",
  "smol_str",
  "strum",
+ "sync_wrapper",
  "tempfile",
  "test_util",
  "thiserror 1.0.64",
