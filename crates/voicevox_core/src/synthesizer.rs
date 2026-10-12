@@ -3702,6 +3702,16 @@ pub(crate) mod nonblocking {
             self
         }
 
+        pub fn start_offset(mut self, start_offset: f64) -> Self {
+            self.options.start_offset = start_offset;
+            self
+        }
+
+        pub fn segment_length(mut self, segment_length: f64) -> Self {
+            self.options.segment_length = segment_length;
+            self
+        }
+
         /// 実行する。
         pub async fn perform(self) -> crate::Result<SynthesisStream<'synthesizer>> {
             SynthesisStreamInner::new(
