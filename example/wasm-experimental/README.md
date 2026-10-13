@@ -9,10 +9,30 @@ Worker で Core を初期化した後、ページのテキストボックスに�
 | --- | --- |
 | `index.html` | ログ表示と音声プレイヤー |
 | `main.js` | Worker を起動し、入力されたテキストを送信、受け取った WAV を検証して再生 |
-| `worker.js` | 辞書と `sample.vvm` を Emscripten FS に書き込んで Core を初期化し、メッセージごとに合成 |
-| `wasm_browser_api_example.{js,wasm}` | ビルド成果物（手順 3 でコピー） |
+| `worker.js` | (module Worker) 辞書と `sample.vvm` を Emscripten FS に書き込んで Core を初期化し、メッセージごとに AudioQuery 生成→合成 |
+| `wasm_browser_api_example.{js,wasm}` | ビルド成果物（手順 3 でコピー）。`createVoicevoxCore` を default export する ES module |
 | `sample.vvm` | 音声モデル（手順 4 で作成） |
 | `open_jtalk_dic_utf_8-1.11/` | Open JTalk 辞書（手順 4 で配置） |
+
+## API
+
+`crates/voicevox_core_wasm/src/main.rs` が `voicevox_wasm_*` 関数を export します。
+文字列引数は NUL 終端 UTF-8、ファイルは Emscripten FS 上のパスで渡します。
+各関数は成功で `0`、失敗で `1` を返し、結果（JSON / WAV）または失敗時のエラーメッセージが結果バッファに入ります。
+結果バッファは `voicevox_wasm_result_pointer` / `voicevox_wasm_result_length` で `HEAPU8` から読み出します。
+
+| 関数 | 結果 |
+| --- | --- |
+| `voicevox_wasm_initialize(dict_dir)` | なし |
+| `voicevox_wasm_load_voice_model(vvm_path)` | そのVVMのメタ情報 (JSON) |
+| `voicevox_wasm_metas()` | 読み込み済み全VVMのメタ情報 (JSON) |
+| `voicevox_wasm_is_loaded_style(style_id)` | 戻り値が `1`/`0`（結果バッファは変更しない） |
+| `voicevox_wasm_create_audio_query(text, style_id)` | AudioQuery (JSON) |
+| `voicevox_wasm_create_accent_phrases(text, style_id)` | AccentPhrase[] (JSON) |
+| `voicevox_wasm_create_accent_phrases_from_kana(kana, style_id)` | AccentPhrase[] (JSON) |
+| `voicevox_wasm_replace_mora_data(accent_phrases_json, style_id)` | AccentPhrase[] (JSON) |
+| `voicevox_wasm_synthesis(audio_query_json, style_id, enable_interrogative_upspeak)` | WAV |
+| `voicevox_wasm_tts(text, style_id)` | WAV |
 
 ## 必要なもの
 
@@ -50,8 +70,12 @@ export CARGO_TARGET_WASM32_UNKNOWN_EMSCRIPTEN_RUSTFLAGS="\
   -C link-arg=-sALLOW_MEMORY_GROWTH=1 \
   -C link-arg=-sINITIAL_MEMORY=1073741824 \
   -C link-arg=-sSTACK_SIZE=8388608 \
+  -C link-arg=-sMODULARIZE=1 \
+  -C link-arg=-sEXPORT_ES6=1 \
+  -C link-arg=-sEXPORT_NAME=createVoicevoxCore \
+  -C link-arg=-sENVIRONMENT=web,worker \
   -C link-arg=-sEXPORTED_RUNTIME_METHODS=FS,HEAPU8,ccall \
-  -C link-arg=-sEXPORTED_FUNCTIONS=_main,_voicevox_browser_initialize,_voicevox_browser_synthesize,_voicevox_browser_wav_pointer,_voicevox_browser_wav_length \
+  -C link-arg=-sEXPORTED_FUNCTIONS=_main,_voicevox_wasm_initialize,_voicevox_wasm_load_voice_model,_voicevox_wasm_metas,_voicevox_wasm_is_loaded_style,_voicevox_wasm_create_audio_query,_voicevox_wasm_create_accent_phrases,_voicevox_wasm_create_accent_phrases_from_kana,_voicevox_wasm_replace_mora_data,_voicevox_wasm_synthesis,_voicevox_wasm_tts,_voicevox_wasm_result_pointer,_voicevox_wasm_result_length \
   -L native=${ONNXRUNTIME_DOWNLOAD_DIR}"
 
 cargo +1.96.0 build \

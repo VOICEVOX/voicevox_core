@@ -4,7 +4,9 @@ const form = document.querySelector("#form");
 const textInput = document.querySelector("#text");
 const styleIdInput = document.querySelector("#style-id");
 const submit = document.querySelector("#submit");
-const worker = new Worker(new URL("./worker.js", import.meta.url));
+const worker = new Worker(new URL("./worker.js", import.meta.url), {
+  type: "module",
+});
 
 const log = (text) => {
   output.textContent += `\n${text}`;

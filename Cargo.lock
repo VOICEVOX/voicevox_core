@@ -5185,6 +5185,7 @@ name = "voicevox_core_wasm"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "serde_json",
  "voicevox_core",
 ]
 

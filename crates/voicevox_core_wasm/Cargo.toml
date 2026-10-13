@@ -16,4 +16,5 @@ link-onnxruntime = ["voicevox_core/link-onnxruntime"]
 
 [dependencies]
 anyhow.workspace = true
+serde_json.workspace = true
 voicevox_core.workspace = true
