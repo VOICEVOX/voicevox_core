@@ -2505,6 +2505,9 @@ pub(crate) mod blocking {
 
     assert_send_sync!(for<T: ..> self::Synthesizer<T>);
 
+    /// 音声ストリーム。
+    ///
+    /// [`Iterator`]としての読み取りに応じて音声合成する。
     #[derive(Debug)]
     pub struct SynthesisStream<'a>(SynthesisStreamInner<'a, SingleTasked>);
 
@@ -3688,6 +3691,9 @@ pub(crate) mod nonblocking {
 
     assert_send_sync!(for<T: ..> self::Synthesizer<T>);
 
+    /// 音声のストリーム。
+    ///
+    /// [`Stream`]としての読み取りに応じて音声合成する。
     #[derive(Debug)]
     pub struct SynthesisStream<'a>(SynthesisStreamInner<'a, BlockingThreadPool>);
 
@@ -3970,11 +3976,13 @@ pub(crate) mod nonblocking {
             self
         }
 
+        /// 音声の開始位置。単位は秒。
         pub fn start_offset(mut self, start_offset: f64) -> Self {
             self.options.start_offset = start_offset;
             self
         }
 
+        /// 一度に合成する音声の長さ。単位は秒。
         pub fn segment_length(mut self, segment_length: f64) -> Self {
             self.options.segment_length = segment_length;
             self

@@ -541,6 +541,57 @@ class Synthesizer:
         Returns
         -------
         WAVデータを分割して返すイテレータ。
+
+        Examples
+        --------
+
+        >>> STYLE_ID: voicevox_core.StyleId
+        >>> synth: voicevox_core.asyncio.Synthesizer
+        >>> query: voicevox_core.AudioQuery
+        >>>
+        >>> # ストリームの作成は一瞬。
+        >>> stream = await synth.streaming_synthesis(query, STYLE_ID)
+        >>>
+        >>> # 最初の要素はWAVの先頭部分で、音声波形本体の手前まで。
+        >>> _wav_header = await anext(stream)
+        >>>
+        >>> # 少しずつ音声合成。デフォルトでは28フレーム ≒ 0.3秒ずつ生成。
+        >>> async for pcm in stream:
+        ...    _do_something(pcm)
+
+        TODO: ``segment_length`` を実装したらこれ↓もdoctest化
+
+        .. code-block::
+
+            from voicevox_core import FRAME_RATE
+
+            frame_length = query.frame_length()
+            if frame_length < 2:
+                raise RuntimeError("unimplemented")
+            stream = await synth.streaming_synthesis(query, STYLE_ID)
+            _wav_header, segment1, segment2 = await synth.streaming_synthesis(
+                query,
+                STYLE_ID,
+                segment_length=(frame_length + 0.5) / FRAME_RATE / 2.0,  # ２分割
+            )
+
+        >>> wav_header = _wav_header
+        >>>
+        >>> import struct
+        >>> import wave
+        >>> from io import BytesIO
+        >>>
+        >>> from voicevox_core import FRAME_RATE
+        >>>
+        >>> with BytesIO(wav_header) as buf, wave.open(buf, "rb") as h:
+        ...     assert h.getnchannels() == (2 if query.output_stereo else 1)
+        ...     assert h.getsampwidth() == struct.calcsize("h")
+        ...     assert h.getframerate() == query.output_sampling_rate
+        ...     if query.output_sampling_rate == 24000:
+        ...         assert h.getnframes() == (
+        ...             query.frame_length() * int(24000 / FRAME_RATE)
+        ...         )
+        ...     assert h.readframes(1) == b""
         """
         ...
     async def tts_from_kana(
