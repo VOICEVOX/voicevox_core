@@ -1962,8 +1962,8 @@ pub(crate) mod blocking {
         ///
         /// # Errors
         ///
-        /// - `style_id`に対応するスタイルが見つからなかった場合[`ErrroKind::StyleNotFound`]を表すエラーを返す。
-        /// - 推論に失敗した、または推論結果が異常だった場合[`ErrroKind::RunModel`]を表すエラーを返す。
+        /// - `style_id`に対応するスタイルが見つからなかった場合[`ErrorKind::StyleNotFound`]を表すエラーを返す。
+        /// - 推論に失敗した、または推論結果が異常だった場合[`ErrorKind::RunModel`]を表すエラーを返す。
         ///
         /// # Examples
         ///
@@ -2099,8 +2099,8 @@ pub(crate) mod blocking {
         /// [Rustの`waveadapter`クレート]: https://docs.rs/crate/waveadapter
         /// [Pythonの`wave`]: https://docs.python.org/3/library/wave.html
         /// [#1467]: https://github.com/VOICEVOX/voicevox_core/issues/1467
-        /// [`ErrroKind::StyleNotFound`]: crate::ErrorKind::StyleNotFound
-        /// [`ErrroKind::RunModel`]: crate::ErrorKind::RunModel
+        /// [`ErrorKind::StyleNotFound`]: crate::ErrorKind::StyleNotFound
+        /// [`ErrorKind::RunModel`]: crate::ErrorKind::RunModel
         #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_streaming_synthesis"))]
         pub fn streaming_synthesis<'synthesizer, 'audio_query>(
             &'synthesizer self,
@@ -2528,12 +2528,12 @@ pub(crate) mod blocking {
     ///
     /// # Errors
     ///
-    /// - 利用中の音声モデルが[アンロード]されていた場合[`ErrroKind::StyleNotFound`]を表すエラーを返す。
-    /// - 推論に失敗した、または推論結果が異常だった場合[`ErrroKind::RunModel`]を表すエラーを返す。
+    /// - 利用中の音声モデルが[アンロード]されていた場合[`ErrorKind::StyleNotFound`]を表すエラーを返す。
+    /// - 推論に失敗した、または推論結果が異常だった場合[`ErrorKind::RunModel`]を表すエラーを返す。
     ///
     /// [アンロード]: self::Synthesizer::unload_voice_model
-    /// [`ErrroKind::StyleNotFound`]: crate::ErrorKind::StyleNotFound
-    /// [`ErrroKind::RunModel`]: crate::ErrorKind::RunModel
+    /// [`ErrorKind::StyleNotFound`]: crate::ErrorKind::StyleNotFound
+    /// [`ErrorKind::RunModel`]: crate::ErrorKind::RunModel
     #[derive(Debug)]
     pub struct SynthesisStream<'a>(SynthesisStreamInner<'a, SingleTasked>);
 
@@ -3189,8 +3189,8 @@ pub(crate) mod nonblocking {
         ///
         /// # Errors
         ///
-        /// - `style_id`に対応するスタイルが見つからなかった場合[`ErrroKind::StyleNotFound`]を表すエラーを返す。
-        /// - 推論に失敗した、または推論結果が異常だった場合[`ErrroKind::RunModel`]を表すエラーを返す。
+        /// - `style_id`に対応するスタイルが見つからなかった場合[`ErrorKind::StyleNotFound`]を表すエラーを返す。
+        /// - 推論に失敗した、または推論結果が異常だった場合[`ErrorKind::RunModel`]を表すエラーを返す。
         ///
         /// # Examples
         ///
@@ -3326,8 +3326,8 @@ pub(crate) mod nonblocking {
         /// [Rustの`waveadapter`クレート]: https://docs.rs/crate/waveadapter
         /// [Pythonの`wave`]: https://docs.python.org/3/library/wave.html
         /// [#1467]: https://github.com/VOICEVOX/voicevox_core/issues/1467
-        /// [`ErrroKind::StyleNotFound`]: crate::ErrorKind::StyleNotFound
-        /// [`ErrroKind::RunModel`]: crate::ErrorKind::RunModel
+        /// [`ErrorKind::StyleNotFound`]: crate::ErrorKind::StyleNotFound
+        /// [`ErrorKind::RunModel`]: crate::ErrorKind::RunModel
         pub fn streaming_synthesis<'synthesizer, 'audio_query>(
             &'synthesizer self,
             audio_query: &'audio_query AudioQuery,
@@ -3740,12 +3740,12 @@ pub(crate) mod nonblocking {
     ///
     /// # Errors
     ///
-    /// - 利用中の音声モデルが[アンロード]されていた場合[`ErrroKind::StyleNotFound`]を表すエラーを返す。
-    /// - 推論に失敗した、または推論結果が異常だった場合[`ErrroKind::RunModel`]を表すエラーを返す。
+    /// - 利用中の音声モデルが[アンロード]されていた場合[`ErrorKind::StyleNotFound`]を表すエラーを返す。
+    /// - 推論に失敗した、または推論結果が異常だった場合[`ErrorKind::RunModel`]を表すエラーを返す。
     ///
     /// [アンロード]: self::Synthesizer::unload_voice_model
-    /// [`ErrroKind::StyleNotFound`]: crate::ErrorKind::StyleNotFound
-    /// [`ErrroKind::RunModel`]: crate::ErrorKind::RunModel
+    /// [`ErrorKind::StyleNotFound`]: crate::ErrorKind::StyleNotFound
+    /// [`ErrorKind::RunModel`]: crate::ErrorKind::RunModel
     #[derive(Debug)]
     pub struct SynthesisStream<'a>(SynthesisStreamInner<'a, BlockingThreadPool>);
 
