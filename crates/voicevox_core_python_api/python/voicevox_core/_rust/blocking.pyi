@@ -184,10 +184,32 @@ class OpenJtalk:
         ...
 
 class SynthesisStream(Iterator[bytes]):
+    """
+    音声合成を都度行うことでWAVデータを分割で返す :class:`Iterator`。
+
+    :attr:`Synthesizer.streaming_synthesis` により作られる。
+    """
+
     def __new__(cls, *args: object, **kwargs: object) -> NoReturn: ...
     def __length_hint__(self) -> int: ...
     def __iter__(self) -> "SynthesisStream": ...
-    def __next__(self) -> bytes: ...
+    def __next__(self) -> bytes:
+        """
+        :class:`Iterator` として要素を返す。
+
+        .. |synthesis-stream-unload| replace:: アンロード
+        .. _synthesis-stream-unload: #Synthesizer.unload_voice_model
+
+        Raises
+        ------
+        StopIteration
+            要素が無い場合。
+        StyleNotFoundError
+            利用中の音声モデルが |synthesis-stream-unload|_ されていた場合。
+        RunModelError
+            推論に失敗した、または推論結果が異常だった場合。
+        """
+        ...
     def __repr__(self) -> str: ...
     def __enter__(self) -> "SynthesisStream": ...
     def __exit__(self, exc_type, exc_value, traceback) -> None: ...
@@ -515,6 +537,17 @@ class Synthesizer:
         """
         :class:`AudioQuery` からストリーミングで音声合成する。
 
+        このメソッド自体の実行は一瞬で終わる。
+
+        このメソッドが返す :class:`SynthesisStream`
+        は最初に必ず、WAVデータの先頭部分を示す44バイトのデータを返す。このときエラーが返されることはない。Pythonの
+        :mod:`wave`
+        のようなツールを利用するなどすれば情報を読み取ることができるが、音声をリアルタイムに再生するだけなら多くの場合この44バイトのデータは不要。
+
+        ２番目以降の要素から ``s16le``
+        形式の音声波形が始まる。要素が要求されていない間は音声合成は行われない。そのため例えば再生バッファへの書き込みがスレッドを長時間ブロックするといった場合に、滞りなく音声合成し続けるためにFIFOキューなどを利用しなければならないことがある。この問題の解決方法は
+        `#1467 <https://github.com/VOICEVOX/voicevox_core/issues/1467>`_ で議論中。
+
         Parameters
         ----------
         audio_query
@@ -526,7 +559,14 @@ class Synthesizer:
 
         Returns
         -------
-        WAVデータを分割して返すイテレータ。
+        :class:`SynthesisStream`。
+
+        Raises
+        ------
+        StyleNotFoundError
+            ``style_id`` に対応するスタイルが見つからなかった場合。
+        RunModelError
+            推論に失敗した、または推論結果が異常だった場合。
 
         Examples
         --------
@@ -554,12 +594,13 @@ class Synthesizer:
             frame_length = query.frame_length()
             if frame_length < 2:
                 raise RuntimeError("unimplemented")
-            stream = synth.streaming_synthesis(query, STYLE_ID)
-            _wav_header, segment1, segment2 = synth.streaming_synthesis(
+
+            stream = synth.streaming_synthesis(
                 query,
                 STYLE_ID,
                 segment_length=(frame_length + 0.5) / FRAME_RATE / 2.0,  # ２分割
             )
+            _wav_header, segment1, segment2 = stream
 
         >>> wav_header = _wav_header
         >>>

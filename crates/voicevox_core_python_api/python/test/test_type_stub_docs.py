@@ -1,5 +1,3 @@
-# pyright: strict
-
 import ast
 import dataclasses
 import importlib

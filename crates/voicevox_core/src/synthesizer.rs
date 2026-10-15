@@ -1952,7 +1952,18 @@ pub(crate) mod blocking {
             }
         }
 
-        /// AudioQueryから直接WAVフォーマットで音声波形をストリーミング生成する。
+        /// [AudioQuery]からストリーミングで音声合成する。
+        ///
+        /// このメソッド自体の実行は一瞬で終わる。
+        ///
+        /// このメソッドが返す[`SynthesisStream`]は最初に必ず、WAVデータの先頭部分を示す44バイトのデータを返す。このときエラーが返されることはない。[Rustの`waveadapter`クレート]や[Pythonの`wave`]のようなツールを利用するなどすれば情報を読み取ることができるが、音声をリアルタイムに再生するだけなら多くの場合この44バイトのデータは不要。
+        ///
+        /// ２番目以降の要素から`s16le`形式の音声波形が始まる。要素が要求されていない間は音声合成は行われない。そのため例えば再生バッファへの書き込みがスレッドを長時間ブロックするといった場合に、滞りなく音声合成し続けるためにFIFOキューなどを利用しなければならないことがある。この問題の解決方法は[#1467]で議論中。
+        ///
+        /// # Errors
+        ///
+        /// - `style_id`に対応するスタイルが見つからなかった場合[`ErrroKind::StyleNotFound`]を表すエラーを返す。
+        /// - 推論に失敗した、または推論結果が異常だった場合[`ErrroKind::RunModel`]を表すエラーを返す。
         ///
         /// # Examples
         ///
@@ -2084,6 +2095,12 @@ pub(crate) mod blocking {
         /// # Ok(())
         /// # }
         /// ```
+        ///
+        /// [Rustの`waveadapter`クレート]: https://docs.rs/crate/waveadapter
+        /// [Pythonの`wave`]: https://docs.python.org/3/library/wave.html
+        /// [#1467]: https://github.com/VOICEVOX/voicevox_core/issues/1467
+        /// [`ErrroKind::StyleNotFound`]: crate::ErrorKind::StyleNotFound
+        /// [`ErrroKind::RunModel`]: crate::ErrorKind::RunModel
         #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_streaming_synthesis"))]
         pub fn streaming_synthesis<'synthesizer, 'audio_query>(
             &'synthesizer self,
@@ -2505,9 +2522,18 @@ pub(crate) mod blocking {
 
     assert_send_sync!(for<T: ..> self::Synthesizer<T>);
 
-    /// 音声ストリーム。
+    /// 音声合成を都度行うことでWAVデータを分割で返す[`Iterator`]。
     ///
-    /// [`Iterator`]としての読み取りに応じて音声合成する。
+    /// [`Synthesizer::streaming_synthesis`]により作られる。
+    ///
+    /// # Errors
+    ///
+    /// - 利用中の音声モデルが[アンロード]されていた場合[`ErrroKind::StyleNotFound`]を表すエラーを返す。
+    /// - 推論に失敗した、または推論結果が異常だった場合[`ErrroKind::RunModel`]を表すエラーを返す。
+    ///
+    /// [アンロード]: self::Synthesizer::unload_voice_model
+    /// [`ErrroKind::StyleNotFound`]: crate::ErrorKind::StyleNotFound
+    /// [`ErrroKind::RunModel`]: crate::ErrorKind::RunModel
     #[derive(Debug)]
     pub struct SynthesisStream<'a>(SynthesisStreamInner<'a, SingleTasked>);
 
@@ -2892,7 +2918,7 @@ pub(crate) mod blocking {
     }
 
     impl<'synthesizer> StreamingSynthesis<'synthesizer, '_> {
-        /// [`AccentPhrase::is_interrogative`]を考慮するかどうか。
+        /// 疑問文の調整を有効にするかどうか。
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.synthesis.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
@@ -3153,7 +3179,18 @@ pub(crate) mod nonblocking {
             }
         }
 
-        /// AudioQueryから直接WAVフォーマットで音声波形をストリーミング生成する。
+        /// [AudioQuery]からストリーミングで音声合成する。
+        ///
+        /// このメソッド自体の実行は一瞬で終わる。
+        ///
+        /// このメソッドが返す[`SynthesisStream`]は最初に必ず、WAVデータの先頭部分を示す44バイトのデータを返す。このときエラーが返されることはない。[Rustの`waveadapter`クレート]や[Pythonの`wave`]のようなツールを利用するなどすれば情報を読み取ることができるが、音声をリアルタイムに再生するだけなら多くの場合この44バイトのデータは不要。
+        ///
+        /// ２番目以降の要素から`s16le`形式の音声波形が始まる。要素が要求されていない間は音声合成は行われない。そのため例えば再生バッファへの書き込みがスレッドを長時間ブロックするといった場合に、滞りなく音声合成し続けるためにFIFOキューなどを利用しなければならないことがある。この問題の解決方法は[#1467]で議論中。
+        ///
+        /// # Errors
+        ///
+        /// - `style_id`に対応するスタイルが見つからなかった場合[`ErrroKind::StyleNotFound`]を表すエラーを返す。
+        /// - 推論に失敗した、または推論結果が異常だった場合[`ErrroKind::RunModel`]を表すエラーを返す。
         ///
         /// # Examples
         ///
@@ -3285,6 +3322,12 @@ pub(crate) mod nonblocking {
         /// # Ok(())
         /// # }
         /// ```
+        ///
+        /// [Rustの`waveadapter`クレート]: https://docs.rs/crate/waveadapter
+        /// [Pythonの`wave`]: https://docs.python.org/3/library/wave.html
+        /// [#1467]: https://github.com/VOICEVOX/voicevox_core/issues/1467
+        /// [`ErrroKind::StyleNotFound`]: crate::ErrorKind::StyleNotFound
+        /// [`ErrroKind::RunModel`]: crate::ErrorKind::RunModel
         pub fn streaming_synthesis<'synthesizer, 'audio_query>(
             &'synthesizer self,
             audio_query: &'audio_query AudioQuery,
@@ -3691,9 +3734,18 @@ pub(crate) mod nonblocking {
 
     assert_send_sync!(for<T: ..> self::Synthesizer<T>);
 
-    /// 音声のストリーム。
+    /// 音声合成を都度行うことでWAVデータを分割で返す[`Stream`]。
     ///
-    /// [`Stream`]としての読み取りに応じて音声合成する。
+    /// [`Synthesizer::streaming_synthesis`]により作られる。
+    ///
+    /// # Errors
+    ///
+    /// - 利用中の音声モデルが[アンロード]されていた場合[`ErrroKind::StyleNotFound`]を表すエラーを返す。
+    /// - 推論に失敗した、または推論結果が異常だった場合[`ErrroKind::RunModel`]を表すエラーを返す。
+    ///
+    /// [アンロード]: self::Synthesizer::unload_voice_model
+    /// [`ErrroKind::StyleNotFound`]: crate::ErrorKind::StyleNotFound
+    /// [`ErrroKind::RunModel`]: crate::ErrorKind::RunModel
     #[derive(Debug)]
     pub struct SynthesisStream<'a>(SynthesisStreamInner<'a, BlockingThreadPool>);
 
@@ -3970,7 +4022,7 @@ pub(crate) mod nonblocking {
     }
 
     impl<'synthesizer> StreamingSynthesis<'synthesizer, '_> {
-        /// [`AccentPhrase::is_interrogative`]を考慮するかどうか。
+        /// 疑問文の調整を有効にするかどうか。
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.synthesis.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
