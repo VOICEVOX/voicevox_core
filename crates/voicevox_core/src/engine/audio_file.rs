@@ -2,9 +2,9 @@ use std::io::{Cursor, Write as _};
 
 use typed_floats::PositiveFinite;
 
-use crate::{FrameAudioQuery, SamplingRate};
+use crate::{FrameAudioQuery, SamplingRate, frame::DEFAULT_SAMPLING_RATE};
 
-use super::{DEFAULT_SAMPLING_RATE, talk::ValidatedAudioQuery};
+use super::talk::ValidatedAudioQuery;
 
 pub(crate) const WAV_PREFIX_LEN: usize = 44;
 
