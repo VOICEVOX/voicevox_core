@@ -6,9 +6,7 @@ use itertools::{Itertools as _, chain};
 use ndarray::{Array, Array1, Dim, Ix, RemoveAxis};
 use typed_floats::{NonNaNFinite, PositiveFinite};
 
-use crate::{
-    engine::frame::WAVE_SAMPLES_PER_FRAME, error::ErrorRepr, numerics::non_nan_finite_f32,
-};
+use crate::{error::ErrorRepr, frame::WAVE_SAMPLES_PER_FRAME, numerics::non_nan_finite_f32};
 
 /// 音声生成の際、音声特徴量の前後に確保すべきマージン幅（フレーム数）
 /// モデルの受容野から計算される

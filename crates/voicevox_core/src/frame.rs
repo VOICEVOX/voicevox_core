@@ -1,4 +1,4 @@
-use super::sampling_rate::DEFAULT_SAMPLING_RATE;
+use std::num::NonZero;
 
 /// フレームレート。
 ///
@@ -16,6 +16,7 @@ use super::sampling_rate::DEFAULT_SAMPLING_RATE;
 )]
 pub const FRAME_RATE: f64 = 93.75;
 
-// FIXME: 本物のリサンプリング機能（#762）を実装したあたりで、フレームレートとサンプリングレートごと`engine`の外に出す
-pub const WAVE_SAMPLES_PER_FRAME: usize = (DEFAULT_SAMPLING_RATE as f64 / FRAME_RATE) as _;
-const _: () = assert!(DEFAULT_SAMPLING_RATE as f64 / FRAME_RATE % 1. == 0.);
+pub(crate) const DEFAULT_SAMPLING_RATE: NonZero<u32> = NonZero::new(24000).unwrap();
+
+pub const WAVE_SAMPLES_PER_FRAME: usize = (DEFAULT_SAMPLING_RATE.get() as f64 / FRAME_RATE) as _;
+const _: () = assert!(DEFAULT_SAMPLING_RATE.get() as f64 / FRAME_RATE % 1. == 0.);

@@ -468,6 +468,7 @@ mod convert;
 mod core;
 mod engine;
 mod error;
+mod frame;
 mod future;
 mod macros;
 mod numerics;
@@ -501,7 +502,6 @@ pub use self::{
     },
     engine::{
         Consonant, NonConsonant, Phoneme, SamplingRate, Sil,
-        frame::FRAME_RATE,
         song::{
             queries::{FrameAudioQuery, FramePhoneme, Key, Note, NoteId, OptionalLyric, Score},
             validate::ensure_compatible,
@@ -515,6 +515,7 @@ pub use self::{
         wav_from_s16le,
     },
     error::{Error, ErrorKind},
+    frame::FRAME_RATE,
     result::Result,
     synthesizer::AccelerationMode,
     version::VERSION,

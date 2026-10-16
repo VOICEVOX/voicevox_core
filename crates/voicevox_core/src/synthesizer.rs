@@ -50,9 +50,7 @@ use crate::{
         trim_margin_from_wave, voice_model,
     },
     engine::{
-        DEFAULT_SAMPLING_RATE, IteratorExt as _, PhonemeCode, WAV_PREFIX_LEN,
-        frame::WAVE_SAMPLES_PER_FRAME,
-        s16le_wav_prefix,
+        IteratorExt as _, PhonemeCode, WAV_PREFIX_LEN, s16le_wav_prefix,
         song::{
             self,
             interpret::{ConsonantLengthsFeature, PhonemeFeature, SfDecoderFeature},
@@ -67,6 +65,7 @@ use crate::{
         to_s16le_pcm, wav_from_s16le,
     },
     error::ErrorRepr,
+    frame::{DEFAULT_SAMPLING_RATE, WAVE_SAMPLES_PER_FRAME},
     future::FutureExt as _,
     numerics::{non_nan_finite_f32, positive_finite_f32},
 };
@@ -3768,7 +3767,8 @@ mod tests {
     use crate::{
         AccentPhrase, FramePhoneme, Note, NoteId, Result, Score, StyleId,
         asyncs::BlockingThreadPool,
-        engine::{WAV_PREFIX_LEN, frame::WAVE_SAMPLES_PER_FRAME, talk::Mora},
+        engine::{WAV_PREFIX_LEN, talk::Mora},
+        frame::WAVE_SAMPLES_PER_FRAME,
         macros::tests::assert_debug_fmt_eq,
         numerics::non_zero,
         wav_from_s16le,
