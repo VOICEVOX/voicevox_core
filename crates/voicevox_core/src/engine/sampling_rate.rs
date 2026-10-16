@@ -7,11 +7,10 @@ use serde::{
     de::{self, Unexpected},
 };
 
-use crate::error::{InvalidQueryError, InvalidQueryErrorSource};
-
-pub(crate) const DEFAULT_SAMPLING_RATE: u32 = DEFAULT_SAMPLING_RATE_.get();
-
-const DEFAULT_SAMPLING_RATE_: NonZero<u32> = NonZero::new(24000).unwrap();
+use crate::{
+    error::{InvalidQueryError, InvalidQueryErrorSource},
+    frame::DEFAULT_SAMPLING_RATE,
+};
 
 /// サンプリングレート（Hz）。
 ///
@@ -42,7 +41,7 @@ impl SamplingRate {
 
         let n = NonZero::new(n)
             .ok_or_else(|| error(InvalidQueryErrorSource::IsNotMultipleOfBaseSamplingRate))?; // TODO: `IsZero`にする
-        (n.get() % DEFAULT_SAMPLING_RATE == 0)
+        (n.get() % DEFAULT_SAMPLING_RATE.get() == 0)
             .then_some(Self(n))
             .ok_or_else(|| error(InvalidQueryErrorSource::IsNotMultipleOfBaseSamplingRate))
     }
@@ -54,7 +53,7 @@ impl SamplingRate {
 
 impl Default for SamplingRate {
     fn default() -> Self {
-        Self(DEFAULT_SAMPLING_RATE_)
+        Self(DEFAULT_SAMPLING_RATE)
     }
 }
 

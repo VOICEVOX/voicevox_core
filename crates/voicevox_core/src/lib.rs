@@ -462,11 +462,13 @@ pub mod __doc {
 
 mod assert;
 mod asyncs;
+mod audio_feature;
 mod collections;
 mod convert;
 mod core;
 mod engine;
 mod error;
+mod frame;
 mod future;
 mod macros;
 mod numerics;
@@ -491,6 +493,7 @@ mod test_util;
 use rstest_reuse;
 
 pub use self::{
+    audio_feature::AudioFeature,
     core::{
         devices::SupportedDevices,
         metas::{CharacterMeta, CharacterVersion, StyleId, StyleMeta, StyleType, VoiceModelMeta},
@@ -499,7 +502,6 @@ pub use self::{
     },
     engine::{
         Consonant, NonConsonant, Phoneme, SamplingRate, Sil,
-        frame::FRAME_RATE,
         song::{
             queries::{FrameAudioQuery, FramePhoneme, Key, Note, NoteId, OptionalLyric, Score},
             validate::ensure_compatible,
@@ -513,7 +515,8 @@ pub use self::{
         wav_from_s16le,
     },
     error::{Error, ErrorKind},
+    frame::FRAME_RATE,
     result::Result,
-    synthesizer::{AccelerationMode, AudioFeature},
+    synthesizer::AccelerationMode,
     version::VERSION,
 };

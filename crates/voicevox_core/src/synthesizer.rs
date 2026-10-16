@@ -24,11 +24,12 @@ use typed_floats::{NonNaNFinite, PositiveFinite, tf32};
 use crate::{
     AccentPhrase, AudioQuery, FRAME_RATE, OnExistingVoiceModelId, Result, StyleId, VoiceModelId,
     VoiceModelMeta,
-    assert::assert_send_sync,
     asyncs::{Async, BlockingThreadPool, SingleTasked},
+    audio_feature::AudioFeature,
     collections::{NonEmptyIterator as _, NonEmptySlice, NonEmptyVec},
     core::{
         Array1ExtForPostProcess as _, Array1ExtForPreProcess as _, ArrayExt as _,
+        adjust::{MARGIN, PADDING_FRAME_LENGTH},
         devices::{self, DeviceSpec, GpuSpec},
         ensure_minimum_phoneme_length, ensure_non_nan_finite, ensure_positive_finite,
         infer::{
@@ -46,12 +47,10 @@ use crate::{
         },
         pad_decoder_feature,
         status::Status,
-        voice_model,
+        trim_margin_from_wave, voice_model,
     },
     engine::{
-        DEFAULT_SAMPLING_RATE, IteratorExt as _, PcmOptions, PhonemeCode, WAV_PREFIX_LEN,
-        frame::WAVE_SAMPLES_PER_FRAME,
-        s16le_wav_prefix,
+        IteratorExt as _, PhonemeCode, WAV_PREFIX_LEN, s16le_wav_prefix,
         song::{
             self,
             interpret::{ConsonantLengthsFeature, PhonemeFeature, SfDecoderFeature},
@@ -66,6 +65,7 @@ use crate::{
         to_s16le_pcm, wav_from_s16le,
     },
     error::ErrorRepr,
+    frame::{DEFAULT_SAMPLING_RATE, WAVE_SAMPLES_PER_FRAME},
     future::FutureExt as _,
     numerics::{non_nan_finite_f32, positive_finite_f32},
 };
@@ -207,61 +207,6 @@ impl AsyncExt for BlockingThreadPool {
         ::blocking::unblock(f).await
     }
 }
-
-/// 音が途切れてしまうのを避けるworkaround処理のためのパディング幅（フレーム数）
-// TODO: Rust 1.90であれば`{float}::round`がそのまま使える
-const PADDING_FRAME_LENGTH: usize = 38; // (0.4秒 * FRAME_RATE).round()
-/// 音声生成の際、音声特徴量の前後に確保すべきマージン幅（フレーム数）
-/// モデルの受容野から計算される
-pub const MARGIN: usize = 14;
-/// 指定した音声区間に対応する特徴量を両端にマージンを追加した上で切り出す
-fn crop_with_margin(
-    audio: &AudioFeature,
-    range: std::ops::Range<usize>,
-) -> ndarray::ArrayView2<'_, f32> {
-    let frame_length = audio.frame_length();
-    let std::ops::Range { start, end } = range;
-    if start > frame_length {
-        panic!("range start index {start} out of range for audio feature of length {frame_length}");
-    }
-    if end > frame_length {
-        panic!("range end index {end} out of range for audio feature of length {frame_length}");
-    }
-    if start > end {
-        panic!("range starts at {start} but ends at {end}");
-    }
-    let range = start..end + 2 * MARGIN;
-    audio.internal_state.slice(ndarray::s![range, ..])
-}
-/// 追加した安全マージンを生成音声から取り除く
-fn trim_margin_from_wave(wave_with_margin: ndarray::Array1<f32>) -> ndarray::Array1<f32> {
-    let len = wave_with_margin.len();
-    wave_with_margin.slice_move(ndarray::s![
-        MARGIN * WAVE_SAMPLES_PER_FRAME..len - MARGIN * WAVE_SAMPLES_PER_FRAME
-    ])
-}
-
-/// 音声の中間表現。
-#[cfg_attr(doc, doc(alias = "VoicevoxAudioFeature"))]
-#[derive(Clone, PartialEq, derive_more::Debug)]
-pub struct AudioFeature {
-    /// (フレーム数, 特徴数)の形を持つ音声特徴量。
-    #[debug("_")]
-    internal_state: ndarray::Array2<f32>,
-    /// 生成時に指定したスタイル番号。
-    style_id: crate::StyleId,
-    /// `[f32]`からPCMを作るときのオプション。
-    pcm_options: PcmOptions,
-}
-
-impl AudioFeature {
-    /// workaround paddingを除いた音声特徴量のフレーム数。
-    pub fn frame_length(&self) -> usize {
-        self.internal_state.nrows() - 2 * MARGIN
-    }
-}
-
-assert_send_sync!(AudioFeature);
 
 #[derive(derive_more::Debug)]
 struct Inner<T, A: Async> {
@@ -506,24 +451,20 @@ trait AsInner {
                 style_id,
             )
             .await?;
-        Ok(AudioFeature {
-            internal_state: spec,
-            style_id,
-            pcm_options: audio_query.pcm_options(),
-        })
+        Ok(AudioFeature::new(spec, style_id, audio_query.pcm_options()))
     }
 
     async fn render(&self, audio: &AudioFeature, range: std::ops::Range<usize>) -> Result<Vec<u8>> {
         // TODO: 44.1kHzなどの対応
-        let spec_segment = crop_with_margin(audio, range);
+        let spec_segment = audio.crop_with_margin(range);
         let wave_with_margin = self
-            .render_audio_segment(spec_segment.to_owned(), audio.style_id)
+            .render_audio_segment(spec_segment.to_owned(), audio.style_id())
             .await?;
         let wave = trim_margin_from_wave(wave_with_margin);
         Ok(to_s16le_pcm(
             wave.as_slice()
                 .expect("`trim_margin_from_wave` should just trim an array"),
-            audio.pcm_options,
+            audio.pcm_options(),
         ))
     }
 
@@ -1337,13 +1278,12 @@ impl<R: InferenceRuntime> Status<R> {
     ) -> Result<ndarray::Array2<f32>> {
         let (model_id, inner_voice_id) = self.ids_for::<StreamingTalkDomain>(style_id)?;
 
-        let (length_with_padding, f0_with_padding, phoneme_with_padding) =
-            pad_decoder_feature::<PADDING_FRAME_LENGTH>(
-                f0,
-                phoneme_vector
-                    .into_shape_with_order([length, phoneme_size])
-                    .unwrap(),
-            );
+        let (length_with_padding, f0_with_padding, phoneme_with_padding) = pad_decoder_feature(
+            f0,
+            phoneme_vector
+                .into_shape_with_order([length, phoneme_size])
+                .unwrap(),
+        );
 
         let f0_with_padding_len = f0_with_padding.len();
 
@@ -1422,13 +1362,12 @@ impl<R: InferenceRuntime> Status<R> {
         // `TalkDomain`と`StreamingTalkDomain`の両方がある場合、`TalkDomain`を優先
         if self.contains_domain::<TalkDomain>(style_id) {
             let (model_id, inner_voice_id) = self.ids_for::<TalkDomain>(style_id)?;
-            let (length_with_padding, f0_with_padding, phoneme_with_padding) =
-                pad_decoder_feature::<PADDING_FRAME_LENGTH>(
-                    f0,
-                    phoneme_vector
-                        .into_shape_with_order([length, phoneme_size])
-                        .unwrap(),
-                );
+            let (length_with_padding, f0_with_padding, phoneme_with_padding) = pad_decoder_feature(
+                f0,
+                phoneme_vector
+                    .into_shape_with_order([length, phoneme_size])
+                    .unwrap(),
+            );
             let DecodeOutput { wave: output } = self
                 .run_session::<A, _>(
                     model_id,
@@ -4158,7 +4097,8 @@ mod tests {
     use crate::{
         AccentPhrase, FramePhoneme, Note, NoteId, Result, Score, StyleId,
         asyncs::BlockingThreadPool,
-        engine::{WAV_PREFIX_LEN, frame::WAVE_SAMPLES_PER_FRAME, talk::Mora},
+        engine::{WAV_PREFIX_LEN, talk::Mora},
+        frame::WAVE_SAMPLES_PER_FRAME,
         macros::tests::assert_debug_fmt_eq,
         numerics::non_zero,
         wav_from_s16le,
