@@ -1,3 +1,5 @@
+"""強引にpyiのdocstringをdoctestする。"""
+
 import ast
 import dataclasses
 import importlib
