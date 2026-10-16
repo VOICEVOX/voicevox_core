@@ -14,11 +14,17 @@ pub struct AudioFeature {
 }
 
 impl AudioFeature {
+    /// # Panics
+    ///
+    /// `internal_state.nrows()`が`2 * MARGIN`より小さいならパニックする。
     pub(crate) fn new(
         internal_state: ndarray::Array2<f32>,
         style_id: StyleId,
         pcm_options: PcmOptions,
     ) -> Self {
+        if internal_state.nrows() < 2 * MARGIN {
+            panic!("too short: {}", internal_state.nrows());
+        }
         Self {
             internal_state,
             style_id,

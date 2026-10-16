@@ -79,10 +79,17 @@ pub(crate) fn ensure_positive_finite(
 }
 
 /// 追加した安全マージンを生成音声から取り除く
+///
+/// # Panics
+///
+/// `internal_state.nrows()`が`2 * WAVE_SAMPLES_PER_FRAME * MARGIN`より小さいならパニックする。
 pub(crate) fn trim_margin_from_wave(
     wave_with_margin: ndarray::Array1<f32>,
 ) -> ndarray::Array1<f32> {
     let len = wave_with_margin.len();
+    if len < 2 * WAVE_SAMPLES_PER_FRAME * MARGIN {
+        panic!("too short: {len}");
+    }
     wave_with_margin.slice_move(ndarray::s![
         MARGIN * WAVE_SAMPLES_PER_FRAME..len - MARGIN * WAVE_SAMPLES_PER_FRAME
     ])
