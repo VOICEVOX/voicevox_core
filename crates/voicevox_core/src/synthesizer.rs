@@ -2461,7 +2461,7 @@ pub(crate) mod blocking {
 
     assert_send_sync!(for<T: ..> self::Synthesizer<T>);
 
-    /// 音声合成を都度行うことでWAVデータを分割で返す[`Iterator`]。
+    /// 音声合成を都度行うことで、WAVデータを分割で返す[`Iterator`]。
     ///
     /// [`Synthesizer::streaming_synthesis`]により作られる。
     ///
@@ -3673,7 +3673,7 @@ pub(crate) mod nonblocking {
 
     assert_send_sync!(for<T: ..> self::Synthesizer<T>);
 
-    /// 音声合成を都度行うことでWAVデータを分割で返す[`Stream`]。
+    /// 音声合成を都度行うことで、WAVデータを分割で返す[`Stream`]。
     ///
     /// [`Synthesizer::streaming_synthesis`]により作られる。
     ///

@@ -191,7 +191,7 @@ class OpenJtalk:
 
 class SynthesisStream(AsyncIterator[bytes]):
     """
-    音声合成を都度行うことでWAVデータを分割で返す :class:`AsyncIterator`。
+    音声合成を都度行うことで、WAVデータを分割で返す :class:`AsyncIterator`。
 
     :attr:`Synthesizer.streaming_synthesis` により作られる。
     """
