@@ -6,7 +6,13 @@ use itertools::{Itertools as _, chain};
 use ndarray::{Array, Array1, Dim, Ix, RemoveAxis};
 use typed_floats::{NonNaNFinite, PositiveFinite};
 
-use crate::{error::ErrorRepr, numerics::non_nan_finite_f32};
+use crate::{
+    engine::frame::WAVE_SAMPLES_PER_FRAME, error::ErrorRepr, numerics::non_nan_finite_f32,
+};
+
+/// 音声生成の際、音声特徴量の前後に確保すべきマージン幅（フレーム数）
+/// モデルの受容野から計算される
+pub const MARGIN: usize = 14;
 
 // TODO: typed_floatsにissueかPRを出しに行き、スライス変換かbytemuck対応を入れてもらう
 /// 推論結果の`[f32]`を`[NonNaNFinite<f32>]`として解釈する。
@@ -70,6 +76,16 @@ pub(crate) fn ensure_positive_finite(
             }
             .into()
         })
+}
+
+/// 追加した安全マージンを生成音声から取り除く
+pub(crate) fn trim_margin_from_wave(
+    wave_with_margin: ndarray::Array1<f32>,
+) -> ndarray::Array1<f32> {
+    let len = wave_with_margin.len();
+    wave_with_margin.slice_move(ndarray::s![
+        MARGIN * WAVE_SAMPLES_PER_FRAME..len - MARGIN * WAVE_SAMPLES_PER_FRAME
+    ])
 }
 
 pub(crate) fn ensure_minimum_phoneme_length(

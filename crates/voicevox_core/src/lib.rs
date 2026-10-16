@@ -462,6 +462,7 @@ pub mod __doc {
 
 mod assert;
 mod asyncs;
+mod audio_feature;
 mod collections;
 mod convert;
 mod core;
@@ -491,6 +492,7 @@ mod test_util;
 use rstest_reuse;
 
 pub use self::{
+    audio_feature::AudioFeature,
     core::{
         devices::SupportedDevices,
         metas::{CharacterMeta, CharacterVersion, StyleId, StyleMeta, StyleType, VoiceModelMeta},
@@ -514,6 +516,6 @@ pub use self::{
     },
     error::{Error, ErrorKind},
     result::Result,
-    synthesizer::{AccelerationMode, AudioFeature},
+    synthesizer::AccelerationMode,
     version::VERSION,
 };

@@ -2,6 +2,7 @@ pub mod raii;
 
 pub use crate::{
     convert::ToJsonValue,
+    core::adjust::MARGIN,
     core::metas::merge as merge_metas,
     engine::frame::WAVE_SAMPLES_PER_FRAME,
     engine::talk::{
@@ -11,7 +12,7 @@ pub use crate::{
     engine::validate::Validate,
     synthesizer::{
         BlockingTextAnalyzerExt, DEFAULT_CPU_NUM_THREADS, DEFAULT_HEAVY_INFERENCE_CANCELLABLE,
-        MARGIN, NonblockingTextAnalyzerExt, blocking::PerformInference,
+        NonblockingTextAnalyzerExt, blocking::PerformInference,
     },
 };
 
