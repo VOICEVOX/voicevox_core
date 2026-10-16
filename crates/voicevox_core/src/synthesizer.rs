@@ -2006,16 +2006,19 @@ pub(crate) mod blocking {
         /// #
         /// # let frame_length = query.frame_length().calculate().0;
         /// #
+        /// # let mut stream = synth.streaming_synthesis(query, STYLE_ID).perform()?;
+        /// #
+        /// # let _wav_header = &*stream
+        /// #     .next()
+        /// #     .expect("`SynthesisStream` returns the pre-PCM part first")
+        /// #     .expect("getting the pre-PCM part is infallible");
+        /// #
+        /// // WAVデータ先頭部分の中身を見る場合
+        /// let wav_header = _wav_header;
+        ///
         /// use std::{io::Cursor, mem};
         ///
         /// use waveadapter::WavParams;
-        ///
-        /// let mut stream = synth.streaming_synthesis(query, STYLE_ID).perform()?;
-        ///
-        /// let wav_header = &*stream
-        ///     .next()
-        ///     .expect("`SynthesisStream` returns the pre-PCM part first")
-        ///     .expect("getting the pre-PCM part is infallible");
         ///
         /// let WavParams { data_length, .. } =
         ///     waveadapter::header::read_wav_header(Cursor::new(wav_header))
@@ -3232,17 +3235,19 @@ pub(crate) mod nonblocking {
         /// #
         /// # let frame_length = query.frame_length().calculate().0;
         /// #
+        /// # let mut stream = synth.streaming_synthesis(query, STYLE_ID).perform().await?;
+        /// #
+        /// # let _wav_header = &*stream
+        /// #     .next()
+        /// #     .await
+        /// #     .expect("`SynthesisStream` returns the pre-PCM part first")
+        /// #     .expect("getting the pre-PCM part is infallible");
+        /// // WAVデータ先頭部分の中身を見る場合
+        /// let wav_header = _wav_header;
+        ///
         /// use std::{io::Cursor, mem};
         ///
         /// use waveadapter::WavParams;
-        ///
-        /// let mut stream = synth.streaming_synthesis(query, STYLE_ID).perform().await?;
-        ///
-        /// let wav_header = &*stream
-        ///     .next()
-        ///     .await
-        ///     .expect("`SynthesisStream` returns the pre-PCM part first")
-        ///     .expect("getting the pre-PCM part is infallible");
         ///
         /// let WavParams { data_length, .. } =
         ///     waveadapter::header::read_wav_header(Cursor::new(wav_header))

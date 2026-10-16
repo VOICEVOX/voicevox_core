@@ -616,6 +616,7 @@ class Synthesizer:
             )
             _wav_header, segment1, segment2 = [elm async for elm in stream]
 
+        >>> # WAVデータ先頭部分の中身を見る場合
         >>> wav_header = _wav_header
         >>>
         >>> import struct

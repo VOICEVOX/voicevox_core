@@ -602,6 +602,7 @@ class Synthesizer:
             )
             _wav_header, segment1, segment2 = stream
 
+        >>> # WAVデータ先頭部分の中身を見る場合
         >>> wav_header = _wav_header
         >>>
         >>> import struct
