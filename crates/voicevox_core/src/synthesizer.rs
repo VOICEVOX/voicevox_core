@@ -1891,7 +1891,161 @@ pub(crate) mod blocking {
             }
         }
 
-        /// AudioQueryから直接WAVフォーマットで音声波形をストリーミング生成する。
+        /// [AudioQuery]からストリーミングで音声合成する。
+        ///
+        /// このメソッド自体の実行は一瞬で終わる。
+        ///
+        /// このメソッドが返す[`SynthesisStream`]は最初に必ず、WAVデータの先頭部分を示す44バイトのデータを返す。このときエラーが返されることはない。[Rustの`waveadapter`クレート]や[Pythonの`wave`]のようなツールを利用するなどすれば情報を読み取ることができる。音声をリアルタイムに再生するだけなら多くの場合この44バイトのデータは不要。
+        ///
+        /// ２番目以降の要素からが`s16le`形式の音声波形。要素が要求されていない間は音声合成が行われない。そのため例えば再生バッファへの書き込みがスレッドを長時間ブロックする場合に、滞りなく音声合成し続けるためにFIFOキューなどを利用しなければならないことがある。このような対処を１行で行えるAPIを[#1467]で議論中。
+        ///
+        /// # Errors
+        ///
+        /// - `audio_query`が[不正]な場合[`ErrorKind::InvalidQuery`]を表すエラーを返す。
+        /// - `style_id`に対応する[`StyleType::StreamingTalk`]のスタイルが見つからなかった場合[`ErrorKind::StyleNotFound`]を表すエラーを返す。
+        /// - 推論に失敗した、または推論結果が異常だった場合[`ErrorKind::RunModel`]を表すエラーを返す。
+        ///
+        /// # Examples
+        ///
+        /// ```
+        /// # fn main() -> anyhow::Result<()> {
+        /// # use pollster::FutureExt as _;
+        /// # use voicevox_core::{__internal::doctest_fixtures::IntoBlocking as _, blocking::Synthesizer};
+        /// #
+        /// # let synth =
+        /// #     &voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+        /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
+        /// #         test_util::ONNXRUNTIME_DYLIB_PATH,
+        /// #         test_util::OPEN_JTALK_DIC_DIR,
+        /// #     )
+        /// #     .block_on()?
+        /// #     .into_blocking();
+        /// #
+        /// use voicevox_core::{AudioQuery, StyleId};
+        ///
+        /// # const STYLE_ID: StyleId = StyleId(302);
+        /// # let query = &AudioQuery::from_accent_phrases(vec![]);
+        /// #
+        /// const _: StyleId = STYLE_ID;
+        /// let _: &Synthesizer<_> = synth;
+        /// let _: &AudioQuery = query;
+        ///
+        /// // ストリームの作成は一瞬。
+        /// let mut stream = synth.streaming_synthesis(query, STYLE_ID).perform()?;
+        ///
+        /// let _wav_header = &*stream
+        ///     .next()
+        ///     .expect("`SynthesisStream` returns the pre-PCM part first")
+        ///     .expect("getting the pre-PCM part is infallible");
+        ///
+        /// // 少しずつ音声合成。デフォルトでは28フレーム ≒ 0.3秒ずつ生成。
+        /// for pcm in stream {
+        ///     let pcm = pcm?;
+        ///     // …
+        /// }
+        /// #
+        /// # Ok(())
+        /// # }
+        /// ```
+        ///
+        /// ```
+        /// # fn main() -> anyhow::Result<()> {
+        /// # use pollster::FutureExt as _;
+        /// # use voicevox_core::{__internal::doctest_fixtures::IntoBlocking as _, AudioQuery, StyleId};
+        /// #
+        /// # let synth =
+        /// #     &voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+        /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
+        /// #         test_util::ONNXRUNTIME_DYLIB_PATH,
+        /// #         test_util::OPEN_JTALK_DIC_DIR,
+        /// #     )
+        /// #     .block_on()?
+        /// #     .into_blocking();
+        /// #
+        /// # const STYLE_ID: StyleId = StyleId(302);
+        /// # let query = &AudioQuery::from_accent_phrases(vec![]);
+        /// #
+        /// use voicevox_core::FRAME_RATE;
+        ///
+        /// let frame_length = query.frame_length().calculate().0;
+        ///
+        /// if frame_length < 2 {
+        ///     unimplemented!();
+        /// }
+        ///
+        /// let [_wav_header, segment1, segment2] = synth
+        ///     .streaming_synthesis(query, STYLE_ID)
+        ///     .segment_length((frame_length as f64 + 0.5) / FRAME_RATE / 2.) // ２分割
+        ///     .perform()?
+        ///     .collect::<Result<Vec<_>, _>>()?
+        ///     .try_into()
+        ///     .expect("the PCM must be divided into two parts");
+        /// #
+        /// # Ok(())
+        /// # }
+        /// ```
+        ///
+        /// ```
+        /// # fn main() -> anyhow::Result<()> {
+        /// # use pollster::FutureExt as _;
+        /// # use voicevox_core::{
+        /// #    __internal::doctest_fixtures::IntoBlocking as _, AudioQuery, FRAME_RATE, StyleId,
+        /// # };
+        /// #
+        /// # let synth =
+        /// #     &voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+        /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
+        /// #         test_util::ONNXRUNTIME_DYLIB_PATH,
+        /// #         test_util::OPEN_JTALK_DIC_DIR,
+        /// #     )
+        /// #     .block_on()?
+        /// #     .into_blocking();
+        /// #
+        /// # const STYLE_ID: StyleId = StyleId(302);
+        /// # let query = &AudioQuery::from_accent_phrases(vec![]);
+        /// #
+        /// # let frame_length = query.frame_length().calculate().0;
+        /// #
+        /// # let mut stream = synth.streaming_synthesis(query, STYLE_ID).perform()?;
+        /// #
+        /// # let _wav_header = &*stream
+        /// #     .next()
+        /// #     .expect("`SynthesisStream` returns the pre-PCM part first")
+        /// #     .expect("getting the pre-PCM part is infallible");
+        /// #
+        /// // WAVデータ先頭部分の中身を見る場合
+        /// let wav_header = _wav_header;
+        ///
+        /// use std::{io::Cursor, mem};
+        ///
+        /// use waveadapter::WavParams;
+        ///
+        /// let WavParams { data_length, .. } =
+        ///     waveadapter::header::read_wav_header(Cursor::new(wav_header))
+        ///         .expect("the pre-PCM part has enough information for `waveadapter::WavParams`");
+        ///
+        /// if query.output_sampling_rate.get().get() == 24000 {
+        ///     assert_eq!(
+        ///         (frame_length
+        ///             * (24000. / FRAME_RATE) as usize
+        ///             * if query.output_stereo { 2 } else { 1 }
+        ///             * mem::size_of::<i16>()) as u64,
+        ///         data_length,
+        ///     );
+        /// }
+        /// #
+        /// # Ok(())
+        /// # }
+        /// ```
+        ///
+        /// [Rustの`waveadapter`クレート]: https://docs.rs/crate/waveadapter
+        /// [Pythonの`wave`]: https://docs.python.org/3/library/wave.html
+        /// [#1467]: https://github.com/VOICEVOX/voicevox_core/issues/1467
+        /// [不正]: AudioQuery::validate
+        /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
+        /// [`StyleType::StreamingTalk`]: crate::StyleType::StreamingTalk
+        /// [`ErrorKind::StyleNotFound`]: crate::ErrorKind::StyleNotFound
+        /// [`ErrorKind::RunModel`]: crate::ErrorKind::RunModel
         #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_streaming_synthesis"))]
         pub fn streaming_synthesis<'synthesizer, 'audio_query>(
             &'synthesizer self,
@@ -2313,6 +2467,18 @@ pub(crate) mod blocking {
 
     assert_send_sync!(for<T: ..> self::Synthesizer<T>);
 
+    /// 音声合成を都度行うことで、WAVデータを分割で返す[`Iterator`]。
+    ///
+    /// [`Synthesizer::streaming_synthesis`]により作られる。
+    ///
+    /// # Errors
+    ///
+    /// - 利用中の音声モデルが[アンロード]されていた場合[`ErrorKind::StyleNotFound`]を表すエラーを返す。
+    /// - 推論に失敗した、または推論結果が異常だった場合[`ErrorKind::RunModel`]を表すエラーを返す。
+    ///
+    /// [アンロード]: self::Synthesizer::unload_voice_model
+    /// [`ErrorKind::StyleNotFound`]: crate::ErrorKind::StyleNotFound
+    /// [`ErrorKind::RunModel`]: crate::ErrorKind::RunModel
     #[derive(Debug)]
     pub struct SynthesisStream<'a>(SynthesisStreamInner<'a, SingleTasked>);
 
@@ -2697,22 +2863,27 @@ pub(crate) mod blocking {
     }
 
     impl<'synthesizer> StreamingSynthesis<'synthesizer, '_> {
+        /// 疑問文の調整を有効にするかどうか。
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.synthesis.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
         }
 
+        /// 音声の開始位置。単位は秒。
         pub fn start_offset(mut self, start_offset: f64) -> Self {
             self.options.start_offset = start_offset;
             self
         }
 
+        /// 一度に合成する音声の長さ。単位は秒。
         pub fn segment_length(mut self, segment_length: f64) -> Self {
             self.options.segment_length = segment_length;
             self
         }
 
         /// 実行する。
+        ///
+        /// 詳細は[`Synthesizer::streaming_synthesis`]を参照。
         pub fn perform(self) -> crate::Result<SynthesisStream<'synthesizer>> {
             SynthesisStreamInner::new(
                 self.synthesizer,
@@ -2953,7 +3124,161 @@ pub(crate) mod nonblocking {
             }
         }
 
-        /// AudioQueryから直接WAVフォーマットで音声波形をストリーミング生成する。
+        /// [AudioQuery]からストリーミングで音声合成する。
+        ///
+        /// このメソッド自体の実行は一瞬で終わる。
+        ///
+        /// このメソッドが返す[`SynthesisStream`]は最初に必ず、WAVデータの先頭部分を示す44バイトのデータを返す。このときエラーが返されることはない。[Rustの`waveadapter`クレート]や[Pythonの`wave`]のようなツールを利用するなどすれば情報を読み取ることができる。音声をリアルタイムに再生するだけなら多くの場合この44バイトのデータは不要。
+        ///
+        /// ２番目以降の要素からが`s16le`形式の音声波形。要素が要求されていない間は音声合成が行われない。そのため例えば再生バッファへの書き込みがスレッドを長時間ブロックする場合に、滞りなく音声合成し続けるためにFIFOキューなどを利用しなければならないことがある。このような対処を１行で行えるAPIを[#1467]で議論中。
+        ///
+        /// # Errors
+        ///
+        /// - `audio_query`が[不正]な場合[`ErrorKind::InvalidQuery`]を表すエラーを返す。
+        /// - `style_id`に対応する[`StyleType::StreamingTalk`]のスタイルが見つからなかった場合[`ErrorKind::StyleNotFound`]を表すエラーを返す。
+        /// - 推論に失敗した、または推論結果が異常だった場合[`ErrorKind::RunModel`]を表すエラーを返す。
+        ///
+        /// # Examples
+        ///
+        /// ```
+        /// # #[pollster::main]
+        /// # async fn main() -> anyhow::Result<()> {
+        /// # use voicevox_core::nonblocking::Synthesizer;
+        /// #
+        /// # let synth =
+        /// #     &voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+        /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
+        /// #         test_util::ONNXRUNTIME_DYLIB_PATH,
+        /// #         test_util::OPEN_JTALK_DIC_DIR,
+        /// #     )
+        /// #     .await?;
+        /// #
+        /// use futures_util::{StreamExt as _, TryStreamExt as _};
+        /// use voicevox_core::{AudioQuery, StyleId};
+        ///
+        /// # const STYLE_ID: StyleId = StyleId(302);
+        /// # let query = &AudioQuery::from_accent_phrases(vec![]);
+        /// #
+        /// const _: StyleId = STYLE_ID;
+        /// let _: &Synthesizer<_> = synth;
+        /// let _: &AudioQuery = query;
+        ///
+        /// // ストリームの作成は一瞬。
+        /// let mut stream = synth.streaming_synthesis(query, STYLE_ID).perform().await?;
+        ///
+        /// let _wav_header = &*stream
+        ///     .next()
+        ///     .await
+        ///     .expect("`SynthesisStream` returns the pre-PCM part first")
+        ///     .expect("getting the pre-PCM part is infallible");
+        ///
+        /// // 少しずつ音声合成。デフォルトでは28フレーム ≒ 0.3秒ずつ生成。
+        /// while let Some(pcm) = stream.try_next().await? {
+        ///     // …
+        /// }
+        /// #
+        /// # Ok(())
+        /// # }
+        /// ```
+        ///
+        /// ```
+        /// # #[pollster::main]
+        /// # async fn main() -> anyhow::Result<()> {
+        /// # use futures_util::TryStreamExt as _;
+        /// # use voicevox_core::{AudioQuery, StyleId};
+        /// #
+        /// # let synth =
+        /// #     &voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+        /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
+        /// #         test_util::ONNXRUNTIME_DYLIB_PATH,
+        /// #         test_util::OPEN_JTALK_DIC_DIR,
+        /// #     )
+        /// #     .await?;
+        /// #
+        /// # const STYLE_ID: StyleId = StyleId(302);
+        /// # let query = &AudioQuery::from_accent_phrases(vec![]);
+        /// #
+        /// use voicevox_core::FRAME_RATE;
+        ///
+        /// let frame_length = query.frame_length().calculate().0;
+        ///
+        /// if frame_length < 2 {
+        ///     unimplemented!();
+        /// }
+        ///
+        /// let [_wav_header, segment1, segment2] = synth
+        ///     .streaming_synthesis(query, STYLE_ID)
+        ///     .segment_length((frame_length as f64 + 0.5) / FRAME_RATE / 2.) // ２分割
+        ///     .perform()
+        ///     .await?
+        ///     .try_collect::<Vec<_>>()
+        ///     .await?
+        ///     .try_into()
+        ///     .expect("the PCM must be divided into two parts");
+        /// #
+        /// # Ok(())
+        /// # }
+        /// ```
+        ///
+        /// ```
+        /// # #[pollster::main]
+        /// # async fn main() -> anyhow::Result<()> {
+        /// # use futures_util::StreamExt as _;
+        /// # use voicevox_core::{AudioQuery, FRAME_RATE, StyleId};
+        /// #
+        /// # let synth =
+        /// #     &voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+        /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
+        /// #         test_util::ONNXRUNTIME_DYLIB_PATH,
+        /// #         test_util::OPEN_JTALK_DIC_DIR,
+        /// #     )
+        /// #     .await?;
+        /// #
+        /// # const STYLE_ID: StyleId = StyleId(302);
+        /// # let query = &AudioQuery::from_accent_phrases(vec![]);
+        /// #
+        /// # let frame_length = query.frame_length().calculate().0;
+        /// #
+        /// # let mut stream = synth.streaming_synthesis(query, STYLE_ID).perform().await?;
+        /// #
+        /// # let _wav_header = &*stream
+        /// #     .next()
+        /// #     .await
+        /// #     .expect("`SynthesisStream` returns the pre-PCM part first")
+        /// #     .expect("getting the pre-PCM part is infallible");
+        /// // WAVデータ先頭部分の中身を見る場合
+        /// let wav_header = _wav_header;
+        ///
+        /// use std::{io::Cursor, mem};
+        ///
+        /// use waveadapter::WavParams;
+        ///
+        /// let WavParams { data_length, .. } =
+        ///     waveadapter::header::read_wav_header(Cursor::new(wav_header))
+        ///         .expect("the pre-PCM part has enough information for `waveadapter::WavParams`");
+        ///
+        /// if query.output_sampling_rate.get().get() == 24000 {
+        ///     assert_eq!(
+        ///         (frame_length
+        ///             * (24000. / FRAME_RATE) as usize
+        ///             * if query.output_stereo { 2 } else { 1 }
+        ///             * mem::size_of::<i16>()) as u64,
+        ///         data_length,
+        ///     );
+        /// }
+        /// #
+        /// # Ok(())
+        /// # }
+        /// ```
+        ///
+        /// [Rustの`waveadapter`クレート]: https://docs.rs/crate/waveadapter
+        /// [Pythonの`wave`]: https://docs.python.org/3/library/wave.html
+        /// [#1467]: https://github.com/VOICEVOX/voicevox_core/issues/1467
+        /// [不正]: AudioQuery::validate
+        /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
+        /// [`StyleType::StreamingTalk`]: crate::StyleType::StreamingTalk
+        /// [`ErrorKind::StyleNotFound`]: crate::ErrorKind::StyleNotFound
+        /// [`ErrorKind::RunModel`]: crate::ErrorKind::RunModel
         pub fn streaming_synthesis<'synthesizer, 'audio_query>(
             &'synthesizer self,
             audio_query: &'audio_query AudioQuery,
@@ -3360,6 +3685,18 @@ pub(crate) mod nonblocking {
 
     assert_send_sync!(for<T: ..> self::Synthesizer<T>);
 
+    /// 音声合成を都度行うことで、WAVデータを分割で返す[`Stream`]。
+    ///
+    /// [`Synthesizer::streaming_synthesis`]により作られる。
+    ///
+    /// # Errors
+    ///
+    /// - 利用中の音声モデルが[アンロード]されていた場合[`ErrorKind::StyleNotFound`]を表すエラーを返す。
+    /// - 推論に失敗した、または推論結果が異常だった場合[`ErrorKind::RunModel`]を表すエラーを返す。
+    ///
+    /// [アンロード]: self::Synthesizer::unload_voice_model
+    /// [`ErrorKind::StyleNotFound`]: crate::ErrorKind::StyleNotFound
+    /// [`ErrorKind::RunModel`]: crate::ErrorKind::RunModel
     #[derive(Debug)]
     pub struct SynthesisStream<'a>(SynthesisStreamInner<'a, BlockingThreadPool>);
 
@@ -3636,22 +3973,27 @@ pub(crate) mod nonblocking {
     }
 
     impl<'synthesizer> StreamingSynthesis<'synthesizer, '_> {
+        /// 疑問文の調整を有効にするかどうか。
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.synthesis.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
         }
 
+        /// 音声の開始位置。単位は秒。
         pub fn start_offset(mut self, start_offset: f64) -> Self {
             self.options.start_offset = start_offset;
             self
         }
 
+        /// 一度に合成する音声の長さ。単位は秒。
         pub fn segment_length(mut self, segment_length: f64) -> Self {
             self.options.segment_length = segment_length;
             self
         }
 
         /// 実行する。
+        ///
+        /// 詳細は[`Synthesizer::streaming_synthesis`]を参照。
         pub async fn perform(self) -> crate::Result<SynthesisStream<'synthesizer>> {
             SynthesisStreamInner::new(
                 self.synthesizer,
