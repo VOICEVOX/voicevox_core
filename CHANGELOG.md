@@ -1590,6 +1590,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1461]: https://github.com/VOICEVOX/voicevox_core/pull/1461
 [#1462]: https://github.com/VOICEVOX/voicevox_core/pull/1462
 [#1463]: https://github.com/VOICEVOX/voicevox_core/pull/1463
+[#1466]: https://github.com/VOICEVOX/voicevox_core/pull/1466
 [#1470]: https://github.com/VOICEVOX/voicevox_core/pull/1470
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
