@@ -41,7 +41,7 @@ impl AudioSegmentation {
         {
             start_offset_in_frames.round_ties_even() as _
         } else {
-            return Err(InvalidAudioSegmentationError::StartOffsetForFrameLength { frame_length });
+            return Err(InvalidAudioSegmentationError::StartOffsetOutOfBounds { frame_length });
         };
 
         #[expect(clippy::cast_nan_to_int)]
@@ -50,7 +50,7 @@ impl AudioSegmentation {
         let Ok(segment_length_in_frame) =
             (to_frame_length(self.segment_length_in_secs).round_ties_even() as usize).try_into()
         else {
-            return Err(InvalidAudioSegmentationError::SegmentLength);
+            return Err(InvalidAudioSegmentationError::SegmentLengthTooShort);
         };
 
         return Ok((start_offset_in_frames, segment_length_in_frame));
@@ -77,8 +77,8 @@ enum InvalidAudioSegmentationError {
          ({frame_length} frames; approx. {approx_secs} seconds)",
         approx_secs = (*frame_length as f64 / FRAME_RATE) as f32,
     )]
-    StartOffsetForFrameLength { frame_length: usize },
+    StartOffsetOutOfBounds { frame_length: usize },
 
     #[display("`segment_length * {FRAME_RATE}` must be greater than `0.5`")]
-    SegmentLength,
+    SegmentLengthTooShort,
 }
