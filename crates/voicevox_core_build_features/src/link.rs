@@ -35,6 +35,8 @@ pub fn link(attempt_pkg_config: bool) -> anyhow::Result<()> {
 
     if rust_target.contains(&"windows") {
         println!("cargo::rustc-link-lib=static=onnxruntime"); // import libraryの方
+    } else if rust_target.contains(&"emscripten") {
+        println!("cargo::rustc-link-lib=static=onnxruntime_webassembly");
     } else {
         println!("cargo::rustc-link-lib=dylib=onnxruntime");
     }
