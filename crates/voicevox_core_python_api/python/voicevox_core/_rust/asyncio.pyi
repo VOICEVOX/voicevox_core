@@ -190,10 +190,30 @@ class OpenJtalk:
         ...
 
 class SynthesisStream(AsyncIterator[bytes]):
+    """
+    音声合成を都度行うことで、WAVデータを分割で返す :class:`AsyncIterator`。
+
+    :attr:`Synthesizer.streaming_synthesis` により作られる。
+    """
+
     def __new__(cls, *args: object, **kwargs: object) -> NoReturn: ...
     def __length_hint__(self) -> int: ...
     def __aiter__(self) -> "SynthesisStream": ...
-    async def __anext__(self) -> bytes: ...
+    async def __anext__(self) -> bytes:
+        """
+        :class:`AsyncIterator` として要素を返す。
+
+        Raises
+        ------
+        StopAsyncIteration
+            要素が無い場合。
+        StyleNotFoundError
+            利用中の音声モデルが :attr:`アンロード <Synthesizer.unload_voice_model>`
+            されていた場合。
+        RunModelError
+            推論に失敗した、または推論結果が異常だった場合。
+        """
+        ...
     def __repr__(self) -> str: ...
     def __enter__(self) -> "SynthesisStream": ...
     def __exit__(self, exc_type, exc_value, traceback) -> None: ...
@@ -527,12 +547,23 @@ class Synthesizer:
         enable_interrogative_upspeak: bool = True,
     ) -> SynthesisStream:
         """
-        :class:`AudioQuery` からストリーミングで音声合成する。
+        :class:`AudioQuery <voicevox_core.AudioQuery>` からストリーミングで音声合成する。
+
+        このメソッド自体の実行は一瞬で終わる。
+
+        このメソッドが返す :class:`SynthesisStream`
+        は最初に必ず、WAVデータの先頭部分を示す44バイトのデータを返す。このときエラーが送出されることはない。Pythonの
+        :mod:`wave`
+        のようなツールを利用するなどすれば情報を読み取ることができる。音声をリアルタイムに再生するだけなら多くの場合この44バイトのデータは不要。
+
+        ２番目以降の要素から ``s16le``
+        形式の音声波形が始まる。要素が要求されていない間は音声合成が行われない。そのため例えば再生バッファへの書き込みがスレッドを長時間ブロックする場合に、滞りなく音声合成し続けるためにFIFOキューなどを利用しなければならないことがある。このような対処を１行で行えるAPIを
+        `#1467 <https://github.com/VOICEVOX/voicevox_core/issues/1467>`_ で議論中。
 
         Parameters
         ----------
         audio_query
-            :class:`AudioQuery` 。
+            :class:`AudioQuery <voicevox_core.AudioQuery>`。
         style_id
             スタイルID。
         enable_interrogative_upspeak
@@ -540,7 +571,70 @@ class Synthesizer:
 
         Returns
         -------
-        WAVデータを分割して返すイテレータ。
+        :class:`SynthesisStream`。
+
+        Raises
+        ------
+        InvalidQueryError
+            ``audio_query`` が :attr:`不正 <voicevox_core.AudioQuery.validate>` な場合。
+        StyleNotFoundError
+            ``style_id`` に対応する :attr:`"streaming_talk" <voicevox_core.StyleType>`
+            のスタイルが見つからなかった場合。
+        RunModelError
+            推論に失敗した、または推論結果が異常だった場合。
+
+        Examples
+        --------
+
+        >>> STYLE_ID: voicevox_core.StyleId
+        >>> synth: voicevox_core.asyncio.Synthesizer
+        >>> query: voicevox_core.AudioQuery
+        >>>
+        >>> # ストリームの作成は一瞬。
+        >>> stream = await synth.streaming_synthesis(query, STYLE_ID)
+        >>>
+        >>> # 最初の要素はWAVの先頭部分で、音声波形本体の手前まで。
+        >>> _wav_header = await anext(stream)
+        >>>
+        >>> # 少しずつ音声合成。デフォルトでは28フレーム ≒ 0.3秒ずつ生成。
+        >>> async for pcm in stream:
+        ...     _do_something(pcm)
+
+        TODO: ``segment_length`` を実装したらこれ↓もdoctest化
+
+        .. code-block::
+
+            from voicevox_core import FRAME_RATE
+
+            frame_length = query.frame_length()
+            if frame_length < 2:
+                raise RuntimeError("unimplemented")
+
+            stream = await synth.streaming_synthesis(
+                query,
+                STYLE_ID,
+                segment_length=(frame_length + 0.5) / FRAME_RATE / 2.0,  # ２分割
+            )
+            _wav_header, segment1, segment2 = [elm async for elm in stream]
+
+        >>> # WAVデータ先頭部分の中身を見る場合
+        >>> wav_header = _wav_header
+        >>>
+        >>> import struct
+        >>> import wave
+        >>> from io import BytesIO
+        >>>
+        >>> from voicevox_core import FRAME_RATE
+        >>>
+        >>> with BytesIO(wav_header) as buf, wave.open(buf, "rb") as h:
+        ...     assert h.getnchannels() == (2 if query.output_stereo else 1)
+        ...     assert h.getsampwidth() == struct.calcsize("h")
+        ...     assert h.getframerate() == query.output_sampling_rate
+        ...     if query.output_sampling_rate == 24000:
+        ...         assert h.getnframes() == (
+        ...             query.frame_length() * int(24000 / FRAME_RATE)
+        ...         )
+        ...     assert h.readframes(1) == b""
         """
         ...
     async def tts_from_kana(

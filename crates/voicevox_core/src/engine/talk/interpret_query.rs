@@ -7,6 +7,7 @@ use typed_floats::{NonNaNFinite, PositiveFinite, tf32};
 
 use crate::{
     AccentPhrase, AudioQuery, Mora,
+    frame::FRAME_RATE,
     numerics::{non_nan_finite_f32, positive_finite_f32},
 };
 
@@ -14,7 +15,6 @@ use super::{
     super::{
         PhonemeCode,
         acoustic_feature_extractor::{MoraTail, OptionalConsonant},
-        frame::FRAME_RATE,
         talk::{LengthedPhoneme, ValidatedAccentPhrase, ValidatedAudioQuery, ValidatedMora},
     },
     full_context_label::mora_to_text,
