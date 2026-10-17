@@ -10,7 +10,7 @@ pub(crate) struct AudioSegmentation {
 
 // FIXME: 受理する範囲についてテストを書く
 impl AudioSegmentation {
-    /// `start_offset`, `segment_length`が`frame_length`に対して受理してよければフレーム数に変換し、そうでなければパニックする。
+    /// `start_offset_in_secs`と`segment_length_in_secs`が`frame_length`に対して受理してよければそれぞれをフレーム数に変換し、そうでなければパニックする。
     ///
     /// # Panics
     ///
@@ -23,12 +23,12 @@ impl AudioSegmentation {
         }
     }
 
-    /// `start_offset`, `segment_length`が`frame_length`に対して受理してよければフレーム数に変換し、そうでなければエラーを返す。
+    /// `start_offset_in_secs`と`segment_length_in_secs`が`frame_length`に対して受理してよければそれぞれをフレーム数に変換し、そうでなければエラーを返す。
     ///
     /// # Errors
     ///
-    /// - <code>[start_offset_in_secs] * [FRAME_RATE]</code>が`0.0`以上`frame_length`以下でなければ[`InvalidAudioSegmentationError::StartOffsetForFrameLength`]。
-    /// - <code>[segment_length_in_secs] * [FRAME_RATE]</code>が`0.5`を超えていなければ[`InvalidAudioSegmentationError::SegmentLength`]。
+    /// - <code>[start_offset_in_secs] * [FRAME_RATE]</code>が`0.0`以上`frame_length`以下でなければ[`InvalidAudioSegmentationError::StartOffsetOutOfBounds`]。
+    /// - <code>[segment_length_in_secs] * [FRAME_RATE]</code>が`0.5`を超えていなければ[`InvalidAudioSegmentationError::SegmentLengthTooShort`]。
     ///
     /// [start_offset_in_secs]: Self::start_offset_in_secs
     /// [segment_length_in_secs]: Self::segment_length_in_secs
