@@ -69,7 +69,7 @@ def example_data() -> ExampleData:
 
 
 @pytest.fixture(scope="session")
-def blocking_synthesizesr_with_model() -> voicevox_core.blocking.Synthesizer:
+def blocking_synthesizer_with_model() -> voicevox_core.blocking.Synthesizer:
     from voicevox_core.blocking import (
         Onnxruntime,
         OpenJtalk,
@@ -87,7 +87,7 @@ def blocking_synthesizesr_with_model() -> voicevox_core.blocking.Synthesizer:
 
 # pyright: reportUnknownMemberType=false, reportUntypedFunctionDecorator=false
 @pytest_asyncio.fixture(scope="session")
-async def asyncio_synthesizesr_with_model() -> voicevox_core.asyncio.Synthesizer:
+async def asyncio_synthesizer_with_model() -> voicevox_core.asyncio.Synthesizer:
     from voicevox_core.asyncio import (
         Onnxruntime,
         OpenJtalk,
@@ -103,6 +103,7 @@ async def asyncio_synthesizesr_with_model() -> voicevox_core.asyncio.Synthesizer
     return synth
 
 
+# FIXME: pytest v1からはできないらしい。
 @pytest.fixture(scope="session")
 def event_loop() -> Generator[AbstractEventLoop, object]:
     loop = asyncio.new_event_loop()

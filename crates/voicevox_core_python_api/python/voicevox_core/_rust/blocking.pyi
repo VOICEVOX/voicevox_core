@@ -197,15 +197,13 @@ class SynthesisStream(Iterator[bytes]):
         """
         :class:`Iterator` として要素を返す。
 
-        .. |synthesis-stream-unload| replace:: アンロード
-        .. _synthesis-stream-unload: #Synthesizer.unload_voice_model
-
         Raises
         ------
         StopIteration
             要素が無い場合。
         StyleNotFoundError
-            利用中の音声モデルが |synthesis-stream-unload|_ されていた場合。
+            利用中の音声モデルが :attr:`アンロード <Synthesizer.unload_voice_model>`
+            されていた場合。
         RunModelError
             推論に失敗した、または推論結果が異常だった場合。
         """
@@ -535,7 +533,7 @@ class Synthesizer:
         enable_interrogative_upspeak: bool = True,
     ) -> SynthesisStream:
         """
-        :class:`AudioQuery` からストリーミングで音声合成する。
+        :class:`AudioQuery <voicevox_core.AudioQuery>` からストリーミングで音声合成する。
 
         このメソッド自体の実行は一瞬で終わる。
 
@@ -563,6 +561,8 @@ class Synthesizer:
 
         Raises
         ------
+        InvalidQueryError
+             ``audio_query`` が :attr:`不正 <voicevox_core.AudioQuery.validate>` な場合。
         StyleNotFoundError
             ``style_id`` に対応するスタイルが見つからなかった場合。
         RunModelError

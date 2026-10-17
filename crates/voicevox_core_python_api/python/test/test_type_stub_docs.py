@@ -104,12 +104,12 @@ def replace_await(source: str) -> str:
         pytest.param(spec, id=spec.name)
         for specs in [
             extract(
-                Path("./python/voicevox_core/_rust/asyncio.pyi"),
+                Path(__file__).parent.parent / "voicevox_core/_rust/asyncio.pyi",
                 "voicevox_core._rust.asyncio",
                 "asyncio",
             ),
             extract(
-                Path("./python/voicevox_core/_rust/blocking.pyi"),
+                Path(__file__).parent.parent / "voicevox_core/_rust/blocking.pyi",
                 "voicevox_core._rust.blocking",
                 "blocking",
             ),
@@ -119,8 +119,8 @@ def replace_await(source: str) -> str:
 )
 def test(
     spec: Spec,
-    blocking_synthesizesr_with_model: voicevox_core.blocking.Synthesizer,
-    asyncio_synthesizesr_with_model: voicevox_core.asyncio.Synthesizer,
+    blocking_synthesizer_with_model: voicevox_core.blocking.Synthesizer,
+    asyncio_synthesizer_with_model: voicevox_core.asyncio.Synthesizer,
     event_loop: AbstractEventLoop,
 ) -> None:
     def do_something(_: object) -> None:
@@ -134,7 +134,7 @@ def test(
     }
     match spec.asyncness:
         case "blocking":
-            globs["synth"] = blocking_synthesizesr_with_model
+            globs["synth"] = blocking_synthesizer_with_model
         case "asyncio":
             T = TypeVar("T")
 
@@ -151,7 +151,7 @@ def test(
 
             globs["_run_aiter"] = run_aiter
             globs["_run_awaitable"] = run_awaitable
-            globs["synth"] = asyncio_synthesizesr_with_model
+            globs["synth"] = asyncio_synthesizer_with_model
     if spec.item_path:
         obj_name, *_ = spec.item_path
         globs[obj_name] = getattr(importlib.import_module(spec.module_name), obj_name)

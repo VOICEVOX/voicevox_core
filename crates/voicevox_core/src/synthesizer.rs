@@ -1901,6 +1901,7 @@ pub(crate) mod blocking {
         ///
         /// # Errors
         ///
+        /// - `audio_query`が[不正]な場合[`ErrorKind::InvalidQuery`]を表すエラーを返す。
         /// - `style_id`に対応するスタイルが見つからなかった場合[`ErrorKind::StyleNotFound`]を表すエラーを返す。
         /// - 推論に失敗した、または推論結果が異常だった場合[`ErrorKind::RunModel`]を表すエラーを返す。
         ///
@@ -1986,7 +1987,6 @@ pub(crate) mod blocking {
         ///
         /// ```
         /// # fn main() -> anyhow::Result<()> {
-        /// # use itertools::Itertools as _;
         /// # use pollster::FutureExt as _;
         /// # use voicevox_core::{
         /// #    __internal::doctest_fixtures::IntoBlocking as _, AudioQuery, FRAME_RATE, StyleId,
@@ -2041,6 +2041,8 @@ pub(crate) mod blocking {
         /// [Rustの`waveadapter`クレート]: https://docs.rs/crate/waveadapter
         /// [Pythonの`wave`]: https://docs.python.org/3/library/wave.html
         /// [#1467]: https://github.com/VOICEVOX/voicevox_core/issues/1467
+        /// [不正]: AudioQuery::validate
+        /// [`ErrorKind::InvalidQuery`] crate::ErrorKind::InvalidQuery
         /// [`ErrorKind::StyleNotFound`]: crate::ErrorKind::StyleNotFound
         /// [`ErrorKind::RunModel`]: crate::ErrorKind::RunModel
         #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_streaming_synthesis"))]
@@ -3131,6 +3133,7 @@ pub(crate) mod nonblocking {
         ///
         /// # Errors
         ///
+        /// - `audio_query`が[不正]な場合[`ErrorKind::InvalidQuery`]を表すエラーを返す。
         /// - `style_id`に対応するスタイルが見つからなかった場合[`ErrorKind::StyleNotFound`]を表すエラーを返す。
         /// - 推論に失敗した、または推論結果が異常だった場合[`ErrorKind::RunModel`]を表すエラーを返す。
         ///
@@ -3219,7 +3222,7 @@ pub(crate) mod nonblocking {
         /// ```
         /// # #[pollster::main]
         /// # async fn main() -> anyhow::Result<()> {
-        /// # use futures_util::{StreamExt as _, TryStreamExt as _};
+        /// # use futures_util::StreamExt as _;
         /// # use voicevox_core::{AudioQuery, FRAME_RATE, StyleId};
         /// #
         /// # let synth =
@@ -3270,6 +3273,8 @@ pub(crate) mod nonblocking {
         /// [Rustの`waveadapter`クレート]: https://docs.rs/crate/waveadapter
         /// [Pythonの`wave`]: https://docs.python.org/3/library/wave.html
         /// [#1467]: https://github.com/VOICEVOX/voicevox_core/issues/1467
+        /// [不正]: AudioQuery::validate
+        /// [`ErrorKind::InvalidQuery`] crate::ErrorKind::InvalidQuery
         /// [`ErrorKind::StyleNotFound`]: crate::ErrorKind::StyleNotFound
         /// [`ErrorKind::RunModel`]: crate::ErrorKind::RunModel
         pub fn streaming_synthesis<'synthesizer, 'audio_query>(
