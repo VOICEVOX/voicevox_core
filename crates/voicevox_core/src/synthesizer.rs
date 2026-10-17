@@ -1902,7 +1902,7 @@ pub(crate) mod blocking {
         /// # Errors
         ///
         /// - `audio_query`が[不正]な場合[`ErrorKind::InvalidQuery`]を表すエラーを返す。
-        /// - `style_id`に対応するスタイルが見つからなかった場合[`ErrorKind::StyleNotFound`]を表すエラーを返す。
+        /// - `style_id`に対応する[`StyleType::StreamingTalk`]のスタイルが見つからなかった場合[`ErrorKind::StyleNotFound`]を表すエラーを返す。
         /// - 推論に失敗した、または推論結果が異常だった場合[`ErrorKind::RunModel`]を表すエラーを返す。
         ///
         /// # Examples
@@ -2042,7 +2042,8 @@ pub(crate) mod blocking {
         /// [Pythonの`wave`]: https://docs.python.org/3/library/wave.html
         /// [#1467]: https://github.com/VOICEVOX/voicevox_core/issues/1467
         /// [不正]: AudioQuery::validate
-        /// [`ErrorKind::InvalidQuery`] crate::ErrorKind::InvalidQuery
+        /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
+        /// [`StyleType::StreamingTalk`]: crate::StyleType::StreamingTalk
         /// [`ErrorKind::StyleNotFound`]: crate::ErrorKind::StyleNotFound
         /// [`ErrorKind::RunModel`]: crate::ErrorKind::RunModel
         #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_streaming_synthesis"))]
@@ -3134,7 +3135,7 @@ pub(crate) mod nonblocking {
         /// # Errors
         ///
         /// - `audio_query`が[不正]な場合[`ErrorKind::InvalidQuery`]を表すエラーを返す。
-        /// - `style_id`に対応するスタイルが見つからなかった場合[`ErrorKind::StyleNotFound`]を表すエラーを返す。
+        /// - `style_id`に対応する[`StyleType::StreamingTalk`]のスタイルが見つからなかった場合[`ErrorKind::StyleNotFound`]を表すエラーを返す。
         /// - 推論に失敗した、または推論結果が異常だった場合[`ErrorKind::RunModel`]を表すエラーを返す。
         ///
         /// # Examples
@@ -3274,7 +3275,8 @@ pub(crate) mod nonblocking {
         /// [Pythonの`wave`]: https://docs.python.org/3/library/wave.html
         /// [#1467]: https://github.com/VOICEVOX/voicevox_core/issues/1467
         /// [不正]: AudioQuery::validate
-        /// [`ErrorKind::InvalidQuery`] crate::ErrorKind::InvalidQuery
+        /// [`ErrorKind::InvalidQuery`]: crate::ErrorKind::InvalidQuery
+        /// [`StyleType::StreamingTalk`]: crate::StyleType::StreamingTalk
         /// [`ErrorKind::StyleNotFound`]: crate::ErrorKind::StyleNotFound
         /// [`ErrorKind::RunModel`]: crate::ErrorKind::RunModel
         pub fn streaming_synthesis<'synthesizer, 'audio_query>(

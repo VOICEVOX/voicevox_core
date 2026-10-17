@@ -563,7 +563,7 @@ class Synthesizer:
         Parameters
         ----------
         audio_query
-            :class:`AudioQuery` 。
+            :class:`AudioQuery <voicevox_core.AudioQuery>`。
         style_id
             スタイルID。
         enable_interrogative_upspeak
@@ -578,7 +578,8 @@ class Synthesizer:
         InvalidQueryError
              ``audio_query`` が :attr:`不正 <voicevox_core.AudioQuery.validate>` な場合。
         StyleNotFoundError
-            ``style_id`` に対応するスタイルが見つからなかった場合。
+            ``style_id`` に対応する :attr:`"streaming_talk" <voicevox_core.StyleType>`
+            のスタイルが見つからなかった場合。
         RunModelError
             推論に失敗した、または推論結果が異常だった場合。
 
@@ -597,7 +598,7 @@ class Synthesizer:
         >>>
         >>> # 少しずつ音声合成。デフォルトでは28フレーム ≒ 0.3秒ずつ生成。
         >>> async for pcm in stream:
-        ...    _do_something(pcm)
+        ...     _do_something(pcm)
 
         TODO: ``segment_length`` を実装したらこれ↓もdoctest化
 

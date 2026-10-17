@@ -103,7 +103,7 @@ async def asyncio_synthesizer_with_model() -> voicevox_core.asyncio.Synthesizer:
     return synth
 
 
-# FIXME: pytest v1からはできないらしい。
+# FIXME: pytest-asyncio v1からはできないらしい。
 @pytest.fixture(scope="session")
 def event_loop() -> Generator[AbstractEventLoop, object]:
     loop = asyncio.new_event_loop()
