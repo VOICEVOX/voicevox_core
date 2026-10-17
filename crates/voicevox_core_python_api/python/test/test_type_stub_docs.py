@@ -71,6 +71,7 @@ def extract(pyi: Path, module_name: str, asyncness: Asyncness) -> Iterator[Spec]
     yield from extract_from_node(module, [])
 
 
+# TODO: 上手くやれば`doctest`自体を`PyCF_ALLOW_TOP_LEVEL_AWAIT`で動かすことができるかもしれない？
 def replace_await(source: str) -> str:
     module = ast.parse(source)
     if len(module.body) == 1:

@@ -576,7 +576,7 @@ class Synthesizer:
         Raises
         ------
         InvalidQueryError
-             ``audio_query`` が :attr:`不正 <voicevox_core.AudioQuery.validate>` な場合。
+            ``audio_query`` が :attr:`不正 <voicevox_core.AudioQuery.validate>` な場合。
         StyleNotFoundError
             ``style_id`` に対応する :attr:`"streaming_talk" <voicevox_core.StyleType>`
             のスタイルが見つからなかった場合。

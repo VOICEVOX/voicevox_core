@@ -85,8 +85,9 @@ def blocking_synthesizer_with_model() -> voicevox_core.blocking.Synthesizer:
     return synth
 
 
-# pyright: reportUnknownMemberType=false, reportUntypedFunctionDecorator=false
-@pytest_asyncio.fixture(scope="session")
+@pytest_asyncio.fixture(  # pyright: ignore[reportUnknownMemberType, reportUntypedFunctionDecorator]
+    scope="session",
+)
 async def asyncio_synthesizer_with_model() -> voicevox_core.asyncio.Synthesizer:
     from voicevox_core.asyncio import (
         Onnxruntime,
