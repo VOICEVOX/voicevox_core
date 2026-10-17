@@ -14,6 +14,7 @@ use std::{
     iter,
     marker::PhantomData,
     pin::Pin,
+    slice::SliceIndex,
     sync::Arc,
     task::{Context, Poll, ready},
 };
@@ -25,7 +26,7 @@ use crate::{
     AccentPhrase, AudioQuery, FRAME_RATE, OnExistingVoiceModelId, Result, StyleId, VoiceModelId,
     VoiceModelMeta,
     asyncs::{Async, BlockingThreadPool, SingleTasked},
-    audio_feature::AudioFeature,
+    audio_feature::{_Frame, AudioFeature},
     collections::{NonEmptyIterator as _, NonEmptySlice, NonEmptyVec},
     core::{
         Array1ExtForPostProcess as _, Array1ExtForPreProcess as _, ArrayExt as _,
@@ -454,7 +455,11 @@ trait AsInner {
         Ok(AudioFeature::new(spec, style_id, audio_query.pcm_options()))
     }
 
-    async fn render(&self, audio: &AudioFeature, range: std::ops::Range<usize>) -> Result<Vec<u8>> {
+    async fn render(
+        &self,
+        audio: &AudioFeature,
+        range: impl for<'a> SliceIndex<[_Frame<'a>], Output = [_Frame<'a>]> + Clone + Debug + 'static,
+    ) -> Result<Vec<u8>> {
         // TODO: 44.1kHzなどの対応
         let spec_segment = audio.crop_with_margin(range);
         let wave_with_margin = self
@@ -1734,6 +1739,7 @@ pub(crate) mod blocking {
     use std::{
         fmt::{self, Debug},
         iter::FusedIterator,
+        slice::SliceIndex,
     };
 
     use easy_ext::ext;
@@ -1744,7 +1750,8 @@ pub(crate) mod blocking {
     use crate::{
         __internal::interop::PeekIfEmpty, AccentPhrase, AudioQuery, FrameAudioQuery,
         OnExistingVoiceModelId, Score, StyleId, VoiceModelId, VoiceModelMeta,
-        assert::assert_send_sync, asyncs::SingleTasked, future::FutureExt as _,
+        assert::assert_send_sync, asyncs::SingleTasked, audio_feature::_Frame,
+        future::FutureExt as _,
     };
 
     use super::{
@@ -1871,9 +1878,12 @@ pub(crate) mod blocking {
         pub fn render(
             &self,
             audio: &AudioFeature,
-            range: impl Into<std::ops::Range<usize>>,
+            range: impl for<'a> SliceIndex<[_Frame<'a>], Output = [_Frame<'a>]>
+            + Clone
+            + Debug
+            + 'static,
         ) -> crate::Result<Vec<u8>> {
-            self.0.render(audio, range.into()).block_on()
+            self.0.render(audio, range).block_on()
         }
 
         /// AudioQueryから直接WAVフォーマットで音声波形を生成する。
@@ -2793,6 +2803,7 @@ pub(crate) mod nonblocking {
     use std::{
         fmt::{self, Debug},
         pin::Pin,
+        slice::SliceIndex,
         task::{Context, Poll},
     };
 
@@ -2803,7 +2814,7 @@ pub(crate) mod nonblocking {
     use crate::{
         __internal::interop::PeekIfEmpty, AccentPhrase, AudioQuery, FrameAudioQuery,
         OnExistingVoiceModelId, Result, Score, StyleId, VoiceModelId, VoiceModelMeta,
-        assert::assert_send_sync, asyncs::BlockingThreadPool,
+        assert::assert_send_sync, asyncs::BlockingThreadPool, audio_feature::_Frame,
     };
 
     use super::{
@@ -2928,9 +2939,12 @@ pub(crate) mod nonblocking {
         pub async fn render(
             &self,
             audio: &AudioFeature,
-            range: impl Into<std::ops::Range<usize>>,
+            range: impl for<'a> SliceIndex<[_Frame<'a>], Output = [_Frame<'a>]>
+            + Clone
+            + Debug
+            + 'static,
         ) -> crate::Result<Vec<u8>> {
-            self.0.render(audio, range.into()).await
+            self.0.render(audio, range).await
         }
 
         /// AudioQueryから音声合成を行う。
