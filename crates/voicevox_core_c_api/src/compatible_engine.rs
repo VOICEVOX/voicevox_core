@@ -423,15 +423,15 @@ pub unsafe extern "C" fn generate_full_intermediate(
     match result {
         Ok(output_arr) => {
             let output_len = (length + 2 * MARGIN_WIDTH) * FEATURE_SIZE;
+            let output_arr = output_arr.as_flattened();
             assert_eq!(
                 output_len,
-                output_arr.as_flattened().len(),
+                output_arr.len(),
                 "we have checked the output length",
             );
             // SAFETY: The safety contract must be upheld by the caller.
             unsafe {
                 output_arr
-                    .as_flattened()
                     .as_ptr()
                     .copy_to_nonoverlapping(output, output_len);
             }
