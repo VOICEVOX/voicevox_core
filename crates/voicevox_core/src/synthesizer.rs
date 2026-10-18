@@ -50,6 +50,7 @@ use crate::{
         status::Status,
         trim_margin_from_wave, voice_model,
     },
+    dim::AUDIO_FEATURE_BINS,
     engine::{
         IteratorExt as _, PhonemeCode, WAV_PREFIX_LEN,
         audio_length::AudioSegmentation,
@@ -1086,7 +1087,7 @@ trait AsInner {
         f0: &[f32],
         phoneme_vector: &[f32],
         style_id: StyleId,
-    ) -> Result<ndarray::Array2<f32>> {
+    ) -> Result<Box<[[f32; AUDIO_FEATURE_BINS]]>> {
         let status = self.status().clone();
         let f0 = ndarray::arr1(f0);
         let phoneme_vector = ndarray::arr1(phoneme_vector);
@@ -1290,7 +1291,7 @@ impl<R: InferenceRuntime> Status<R> {
         f0: ndarray::Array1<f32>,
         phoneme_vector: ndarray::Array1<f32>,
         style_id: StyleId,
-    ) -> Result<ndarray::Array2<f32>> {
+    ) -> Result<Box<[[f32; AUDIO_FEATURE_BINS]]>> {
         let (model_id, inner_voice_id) = self.ids_for::<StreamingTalkDomain>(style_id)?;
 
         let (length_with_padding, f0_with_padding, phoneme_with_padding) = pad_decoder_feature(
@@ -1331,6 +1332,26 @@ impl<R: InferenceRuntime> Status<R> {
             .into());
         }
 
+        if spec_with_padding.ncols() != AUDIO_FEATURE_BINS {
+            return Err(ErrorRepr::RunModel {
+                note: None,
+                source: anyhow!(
+                    "`generate_full_intermediate` returned an output with {actual} columns. \
+                     expected {AUDIO_FEATURE_BINS} columns",
+                    actual = spec_with_padding.ncols(),
+                ),
+            }
+            .into());
+        }
+
+        let (spec_with_padding, &[]) = spec_with_padding
+            .as_slice()
+            .expect("`ort` is not considered to output non standard ndarrays")
+            .as_chunks()
+        else {
+            unreachable!("we've checked `ncols`");
+        };
+
         // マージンがデータからはみ出さないことを保証
         // cf. https://github.com/VOICEVOX/voicevox_core/pull/854#discussion_r1803691291
         if MARGIN > PADDING_FRAME_LENGTH {
@@ -1339,13 +1360,9 @@ impl<R: InferenceRuntime> Status<R> {
             );
         }
         // マージン分を両端に残して音声特徴量を返す
-        Ok(spec_with_padding
-            .slice(ndarray::s![
-                PADDING_FRAME_LENGTH - MARGIN
-                    ..spec_with_padding.nrows() - PADDING_FRAME_LENGTH + MARGIN,
-                ..
-            ])
-            .to_owned())
+        Ok((&spec_with_padding[PADDING_FRAME_LENGTH - MARGIN
+            ..spec_with_padding.len() - PADDING_FRAME_LENGTH + MARGIN])
+            .into())
     }
 
     /// 与えられた音声特徴量で音声生成。
@@ -1408,7 +1425,9 @@ impl<R: InferenceRuntime> Status<R> {
         }
         let intermediate = self
             .generate_full_intermediate::<A>(length, phoneme_size, f0, phoneme_vector, style_id)
-            .await?;
+            .await?
+            .into_vec()
+            .into();
         let output_with_margin = self
             .render_audio_segment::<A>(intermediate, style_id)
             .await?;
@@ -1769,7 +1788,8 @@ pub(crate) mod blocking {
     use crate::{
         __internal::interop::PeekIfEmpty, AccentPhrase, AudioQuery, FrameAudioQuery,
         OnExistingVoiceModelId, Score, StyleId, VoiceModelId, VoiceModelMeta,
-        assert::assert_send_sync, asyncs::SingleTasked, future::FutureExt as _,
+        assert::assert_send_sync, asyncs::SingleTasked, dim::AUDIO_FEATURE_BINS,
+        future::FutureExt as _,
     };
 
     use super::{
@@ -2711,7 +2731,7 @@ pub(crate) mod blocking {
             f0: &[f32],
             phoneme_vector: &[f32],
             style_id: StyleId,
-        ) -> crate::Result<ndarray::Array2<f32>> {
+        ) -> crate::Result<Box<[[f32; AUDIO_FEATURE_BINS]]>> {
             self.0
                 .generate_full_intermediate(length, phoneme_size, f0, phoneme_vector, style_id)
                 .block_on()
