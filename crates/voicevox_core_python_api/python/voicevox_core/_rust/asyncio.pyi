@@ -584,7 +584,8 @@ class Synthesizer:
             一度に合成する音声の長さ。単位は秒。``0.5 < segment_length * FRAME_RATE``
             でなければならない。
         enable_interrogative_upspeak
-            疑問文の調整を有効にするかどうか。
+            疑問文の調整を有効にするかどうか。この値を ``False``
+            にすることで上記の ``frame_length`` が小さくなる場合があることに注意。
 
         Returns
         -------
