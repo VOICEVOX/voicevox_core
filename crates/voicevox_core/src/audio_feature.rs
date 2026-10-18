@@ -19,7 +19,7 @@ pub struct AudioFeature {
 impl AudioFeature {
     /// # Panics
     ///
-    /// `internal_state.nrows()`が`2 * MARGIN`より小さいならパニックする。
+    /// `internal_state.len()`が`2 * MARGIN`より小さいならパニックする。
     pub(crate) fn new(
         internal_state: Box<[[f32; AUDIO_FEATURE_BINS]]>,
         style_id: StyleId,
