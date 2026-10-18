@@ -1,15 +1,9 @@
 use std::{
-    any::Any,
-    fmt::Debug,
-    marker::PhantomData,
-    mem::{self, MaybeUninit},
-    ops::Bound,
-    slice::SliceIndex,
+    any::Any, fmt::Debug, marker::PhantomData, mem::MaybeUninit, ops::Bound, slice::SliceIndex,
 };
 
 use duplicate::duplicate_item;
 use easy_ext::ext;
-use num_integer::Integer as _;
 
 use crate::{StyleId, assert::assert_send_sync, core::adjust::MARGIN, engine::PcmOptions};
 
@@ -92,12 +86,10 @@ impl AudioFeature {
                 if slice.is_empty() {
                     MaybeEmptyRange::Empty
                 } else {
-                    // `slice` should come from `dummy_audio_feature` since the `SliceIndex`
-                    // implementation cannot return outside non-empty `[_Frame<'a>]` for all `'a`.
-                    let (start, rem) = (slice.as_ptr().addr()
-                        - dummy_audio_feature.as_ptr().addr())
-                    .div_rem(&mem::size_of::<_Frame<'_>>());
-                    assert_eq!(0, rem);
+                    // SAFETY: No matter how `range` implements `SliceIndex`, `<[_Frame<'a>]>::get`
+                    // cannot return outside non-empty `[_Frame<'a>]` for all `'a`.
+                    let start = unsafe { slice.as_ptr().offset_from(dummy_audio_feature.as_ptr()) }
+                        as usize;
                     let end = start + slice.len();
                     MaybeEmptyRange::NonEmpty(start..end)
                 }

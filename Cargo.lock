@@ -5058,7 +5058,6 @@ dependencies = [
  "libloading 0.7.3",
  "ndarray",
  "num-bigint",
- "num-integer",
  "num-traits",
  "once_cell",
  "open",
