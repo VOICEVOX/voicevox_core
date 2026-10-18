@@ -68,12 +68,10 @@ impl AudioFeature {
     }
 }
 
-// TODO: #1454をやるときに`__internal::interop`から出して使う
-
 #[ext(AudioFeatureExt)]
 impl AudioFeature {
     /// この`AudioFeature`に対して有効な範囲を与えられた場合、それを[`std::ops::Range<usize>`]に変換する。
-    pub fn validate_range(
+    fn validate_range(
         &self,
         range: impl for<'a> SliceIndex<[_Frame<'a>], Output = [_Frame<'a>]> + Clone + Debug + 'static,
     ) -> Result<MaybeEmptyRange, AudioFeatureOutOfBoundsError> {
@@ -235,13 +233,13 @@ impl _Frame<'_> {
 }
 
 #[derive(PartialEq, Debug)]
-pub enum MaybeEmptyRange {
+enum MaybeEmptyRange {
     Empty,
     NonEmpty(std::ops::Range<usize>),
 }
 
 #[derive(PartialEq, derive_more::Display, Debug)]
-pub enum AudioFeatureOutOfBoundsError {
+enum AudioFeatureOutOfBoundsError {
     #[display("range start index {start} out of range for audio feature of length {len}")]
     StartOutOfBounds { start: usize, len: usize },
 
