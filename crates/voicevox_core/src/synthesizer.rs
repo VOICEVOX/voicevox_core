@@ -13,6 +13,7 @@ use std::{
     fmt::{self, Debug},
     iter,
     marker::PhantomData,
+    num::Saturating,
     pin::Pin,
     sync::Arc,
     task::{Context, Poll, ready},
@@ -22,7 +23,7 @@ use tracing::info;
 use typed_floats::{NonNaNFinite, PositiveFinite, tf32};
 
 use crate::{
-    AccentPhrase, AudioQuery, FRAME_RATE, OnExistingVoiceModelId, Result, StyleId, VoiceModelId,
+    AccentPhrase, AudioQuery, OnExistingVoiceModelId, Result, StyleId, VoiceModelId,
     VoiceModelMeta,
     asyncs::{Async, BlockingThreadPool, SingleTasked},
     audio_feature::AudioFeature,
@@ -50,7 +51,9 @@ use crate::{
         trim_margin_from_wave, voice_model,
     },
     engine::{
-        IteratorExt as _, PhonemeCode, WAV_PREFIX_LEN, s16le_wav_prefix,
+        IteratorExt as _, PhonemeCode, WAV_PREFIX_LEN,
+        audio_length::AudioSegmentation,
+        s16le_wav_prefix,
         song::{
             self,
             interpret::{ConsonantLengthsFeature, PhonemeFeature, SfDecoderFeature},
@@ -128,16 +131,14 @@ impl<A: infer::AsyncExt> Default for FrameSynthesisOptions<A> {
 #[debug(bound(A::Cancellable: Debug))]
 struct StreamingSynthesisOptions<A: infer::AsyncExt> {
     synthesis: SynthesisOptions<A>,
-    start_offset: f64,
-    segment_length: f64,
+    segmentation: AudioSegmentation,
 }
 
 impl<A: infer::AsyncExt> Default for StreamingSynthesisOptions<A> {
     fn default() -> Self {
         Self {
-            synthesis: SynthesisOptions::default(),
-            start_offset: 0.0,
-            segment_length: 0.3,
+            synthesis: Default::default(),
+            segmentation: Default::default(),
         }
     }
 }
@@ -437,6 +438,11 @@ trait AsInner {
         style_id: StyleId,
         options: &SynthesisOptions<Self::Async>,
     ) -> Result<AudioFeature> {
+        let Saturating(frame_length) = audio_query
+            .frame_length()
+            .enable_interrogative_upspeak(options.enable_interrogative_upspeak)
+            .calculate();
+
         let audio_query = audio_query.to_validated()?;
 
         let DecoderFeature { f0, phoneme } =
@@ -451,7 +457,16 @@ trait AsInner {
                 style_id,
             )
             .await?;
-        Ok(AudioFeature::new(spec, style_id, audio_query.pcm_options()))
+
+        let audio_feature = AudioFeature::new(spec, style_id, audio_query.pcm_options());
+
+        assert_eq!(
+            frame_length,
+            audio_feature.frame_length(),
+            "the actual `AudioFeature` length is different from expected value. this is a bug",
+        );
+
+        Ok(audio_feature)
     }
 
     async fn render(&self, audio: &AudioFeature, range: std::ops::Range<usize>) -> Result<Vec<u8>> {
@@ -1549,17 +1564,27 @@ struct SynthesisStreamInner<'a, A: Async> {
 type BoxSyncFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + Sync + 'a>>;
 
 impl<'a, A: AsyncExt> SynthesisStreamInner<'a, A> {
+    /// コンストラクトする。
+    ///
+    /// # Panics
+    ///
+    /// [総フレーム数]に対する[`AudioSegmentation::to_frames`]のパニックをそのまま返す。
+    ///
+    /// [総フレーム数]: AudioQuery::frame_length
     async fn new(
         synthesizer: InnerRefWithoutTextAnalyzer<'a, A>,
         audio_query: &'_ AudioQuery,
         style_id: StyleId,
-        options: &StreamingSynthesisOptions<A>,
+        options: StreamingSynthesisOptions<A>,
     ) -> crate::Result<Self> {
+        let Saturating(frame_length) = audio_query
+            .frame_length()
+            .enable_interrogative_upspeak(options.synthesis.enable_interrogative_upspeak)
+            .calculate();
+        let (offset_frames, segment_frames) = options.segmentation.to_frames(frame_length);
         let audio_feature = synthesizer
             .create_audio_feature(audio_query, style_id, &options.synthesis)
             .await?;
-        let offset_frames = (options.start_offset * FRAME_RATE).round_ties_even() as usize;
-        let segment_frames = (options.segment_length * FRAME_RATE).round_ties_even() as usize;
         let full_frames = audio_feature.frame_length();
         let render_frames = full_frames - offset_frames;
         let render_wave_length = render_frames * WAVE_SAMPLES_PER_FRAME;
@@ -1572,7 +1597,7 @@ impl<'a, A: AsyncExt> SynthesisStreamInner<'a, A> {
         Ok(Self {
             synthesizer,
             audio_feature,
-            cursor: (offset_frames..full_frames).step_by(segment_frames),
+            cursor: (offset_frames..full_frames).step_by(segment_frames.get()),
             header: Some(Box::new(s16le_wav_prefix(
                 render_pcm_length,
                 output_sampling_rate,
@@ -1980,6 +2005,34 @@ pub(crate) mod blocking {
         ///     .collect::<Result<Vec<_>, _>>()?
         ///     .try_into()
         ///     .expect("the PCM must be divided into two parts");
+        /// #
+        /// # Ok(())
+        /// # }
+        /// ```
+        ///
+        /// ```should_panic
+        /// # fn main() -> anyhow::Result<()> {
+        /// # use pollster::FutureExt as _;
+        /// # use voicevox_core::{
+        /// #     __internal::doctest_fixtures::IntoBlocking as _, AudioFeature, AudioQuery, FRAME_RATE, StyleId,
+        /// # };
+        /// #
+        /// # let synth =
+        /// #     &voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+        /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
+        /// #         test_util::ONNXRUNTIME_DYLIB_PATH,
+        /// #         test_util::OPEN_JTALK_DIC_DIR,
+        /// #     )
+        /// #     .block_on()?
+        /// #     .into_blocking();
+        /// #
+        /// # const STYLE_ID: StyleId = StyleId(302);
+        /// # let query = &AudioQuery::from_accent_phrases(vec![]);
+        /// #
+        /// let _ = synth
+        ///     .streaming_synthesis(query, STYLE_ID)
+        ///     .segment_length(0.5 / FRAME_RATE) // 0.005333333333333333
+        ///     .perform();
         /// #
         /// # Ok(())
         /// # }
@@ -2864,32 +2917,68 @@ pub(crate) mod blocking {
 
     impl<'synthesizer> StreamingSynthesis<'synthesizer, '_> {
         /// 疑問文の調整を有効にするかどうか。
+        ///
+        /// 具体的には、[`AccentPhrase::is_interrogative`]を考慮するかどうか。
+        ///
+        /// この値を`false`にすることにより[総フレーム数]が<code>[start_offset] * [FRAME_RATE]</code>を下回る場合、[実行]時にパニックする。
+        ///
+        /// [総フレーム数]: AudioQuery::frame_length
+        /// [start_offset]: Self::start_offset
+        /// [FRAME_RATE]: crate::FRAME_RATE
+        /// [実行]: Self::perform
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.synthesis.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
         }
 
         /// 音声の開始位置。単位は秒。
+        ///
+        /// <code>[start_offset] * [FRAME_RATE]</code>が`0.0`以上[総フレーム数]以下でなければ[実行]時にパニックする。総フレーム数は[`enable_interrogative_upspeak`]により変わることに注意。
+        ///
+        /// [start_offset]: Self::start_offset
+        /// [FRAME_RATE]: crate::FRAME_RATE
+        /// [総フレーム数]: AudioQuery::frame_length
+        /// [実行]: Self::perform
+        /// [`enable_interrogative_upspeak`]: Self::enable_interrogative_upspeak
         pub fn start_offset(mut self, start_offset: f64) -> Self {
-            self.options.start_offset = start_offset;
+            self.options.segmentation.start_offset_in_secs = start_offset;
             self
         }
 
         /// 一度に合成する音声の長さ。単位は秒。
+        ///
+        /// <code>[segment_length] * [FRAME_RATE]</code>が`0.5`を超えていなければ[実行]時にパニックする。
+        ///
+        /// [FRAME_RATE]: crate::FRAME_RATE
+        /// [segment_length]: Self::segment_length
+        /// [実行]: Self::perform
         pub fn segment_length(mut self, segment_length: f64) -> Self {
-            self.options.segment_length = segment_length;
+            self.options.segmentation.segment_length_in_secs = segment_length;
             self
         }
 
         /// 実行する。
         ///
         /// 詳細は[`Synthesizer::streaming_synthesis`]を参照。
+        ///
+        /// # Panics
+        ///
+        /// - <code>[start_offset] * [FRAME_RATE]</code>が`0.0`以上[総フレーム数]以下でなければパニックする。
+        /// - <code>[segment_length] * [FRAME_RATE]</code>が`0.5`を超えていなければパニックする。
+        ///
+        /// 総フレーム数は[`enable_interrogative_upspeak`]により変わることに注意。
+        ///
+        /// [start_offset]: Self::start_offset
+        /// [FRAME_RATE]: crate::FRAME_RATE
+        /// [総フレーム数]: AudioQuery::frame_length
+        /// [segment_length]: Self::segment_length
+        /// [`enable_interrogative_upspeak`]: Self::enable_interrogative_upspeak
         pub fn perform(self) -> crate::Result<SynthesisStream<'synthesizer>> {
             SynthesisStreamInner::new(
                 self.synthesizer,
                 self.audio_query,
                 self.style_id,
-                &self.options,
+                self.options,
             )
             .block_on()
             .map(SynthesisStream)
@@ -3215,6 +3304,32 @@ pub(crate) mod nonblocking {
         ///     .await?
         ///     .try_into()
         ///     .expect("the PCM must be divided into two parts");
+        /// #
+        /// # Ok(())
+        /// # }
+        /// ```
+        ///
+        /// ```should_panic
+        /// # #[pollster::main]
+        /// # async fn main() -> anyhow::Result<()> {
+        /// # use voicevox_core::{AudioFeature, AudioQuery, FRAME_RATE, StyleId};
+        /// #
+        /// # let synth =
+        /// #     &voicevox_core::__internal::doctest_fixtures::synthesizer_with_sample_voice_model(
+        /// #         test_util::SAMPLE_VOICE_MODEL_FILE_PATH,
+        /// #         test_util::ONNXRUNTIME_DYLIB_PATH,
+        /// #         test_util::OPEN_JTALK_DIC_DIR,
+        /// #     )
+        /// #     .await?;
+        /// #
+        /// # const STYLE_ID: StyleId = StyleId(302);
+        /// # let query = &AudioQuery::from_accent_phrases(vec![]);
+        /// #
+        /// let _ = synth
+        ///     .streaming_synthesis(query, STYLE_ID)
+        ///     .segment_length(0.5 / FRAME_RATE) // 0.005333333333333333
+        ///     .perform()
+        ///     .await;
         /// #
         /// # Ok(())
         /// # }
@@ -3974,32 +4089,68 @@ pub(crate) mod nonblocking {
 
     impl<'synthesizer> StreamingSynthesis<'synthesizer, '_> {
         /// 疑問文の調整を有効にするかどうか。
+        ///
+        /// 具体的には、[`AccentPhrase::is_interrogative`]を考慮するかどうか。
+        ///
+        /// この値を`false`にすることにより[総フレーム数]が<code>[start_offset] * [FRAME_RATE]</code>を下回る場合、[実行]時にパニックする。
+        ///
+        /// [総フレーム数]: AudioQuery::frame_length
+        /// [start_offset]: Self::start_offset
+        /// [FRAME_RATE]: crate::FRAME_RATE
+        /// [実行]: Self::perform
         pub fn enable_interrogative_upspeak(mut self, enable_interrogative_upspeak: bool) -> Self {
             self.options.synthesis.enable_interrogative_upspeak = enable_interrogative_upspeak;
             self
         }
 
         /// 音声の開始位置。単位は秒。
+        ///
+        /// <code>[start_offset] * [FRAME_RATE]</code>が`0.0`以上[総フレーム数]以下でなければ[実行]時にパニックする。総フレーム数は[`enable_interrogative_upspeak`]により変わることに注意。
+        ///
+        /// [start_offset]: Self::start_offset
+        /// [FRAME_RATE]: crate::FRAME_RATE
+        /// [総フレーム数]: AudioQuery::frame_length
+        /// [実行]: Self::perform
+        /// [`enable_interrogative_upspeak`]: Self::enable_interrogative_upspeak
         pub fn start_offset(mut self, start_offset: f64) -> Self {
-            self.options.start_offset = start_offset;
+            self.options.segmentation.start_offset_in_secs = start_offset;
             self
         }
 
         /// 一度に合成する音声の長さ。単位は秒。
+        ///
+        /// <code>[segment_length] * [FRAME_RATE]</code>が`0.5`を超えていなければ[実行]時にパニックする。
+        ///
+        /// [FRAME_RATE]: crate::FRAME_RATE
+        /// [segment_length]: Self::segment_length
+        /// [実行]: Self::perform
         pub fn segment_length(mut self, segment_length: f64) -> Self {
-            self.options.segment_length = segment_length;
+            self.options.segmentation.segment_length_in_secs = segment_length;
             self
         }
 
         /// 実行する。
         ///
         /// 詳細は[`Synthesizer::streaming_synthesis`]を参照。
+        ///
+        /// # Panics
+        ///
+        /// - <code>[start_offset] * [FRAME_RATE]</code>が`0.0`以上[総フレーム数]以下でなければパニックする。
+        /// - <code>[segment_length] * [FRAME_RATE]</code>が`0.5`を超えていなければパニックする。
+        ///
+        /// 総フレーム数は[`enable_interrogative_upspeak`]により変わることに注意。
+        ///
+        /// [start_offset]: Self::start_offset
+        /// [FRAME_RATE]: crate::FRAME_RATE
+        /// [総フレーム数]: AudioQuery::frame_length
+        /// [segment_length]: Self::segment_length
+        /// [`enable_interrogative_upspeak`]: Self::enable_interrogative_upspeak
         pub async fn perform(self) -> crate::Result<SynthesisStream<'synthesizer>> {
             SynthesisStreamInner::new(
                 self.synthesizer,
                 self.audio_query,
                 self.style_id,
-                &self.options,
+                self.options,
             )
             .await
             .map(SynthesisStream)
