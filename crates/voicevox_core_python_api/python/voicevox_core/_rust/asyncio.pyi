@@ -586,10 +586,10 @@ class Synthesizer:
         Raises
         ------
         ValueError
-            - ``0.0 <= start_offset * FRAME_RATE <= frame_length`` の場合。ここで
-              ``frame_length`` は
+            - ``0.0 <= start_offset * FRAME_RATE <= frame_length``
+              を満たさない場合。ここで ``frame_length`` は
               ``audio_query.frame_length(enable_interrogative_upspeak=enable_interrogative_upspeak)``。
-            - ``0.5 < segment_length * FRAME_RATE`` の場合。
+            - ``0.5 < segment_length * FRAME_RATE`` を満たさない場合。
         InvalidQueryError
             ``audio_query`` が :attr:`不正 <voicevox_core.AudioQuery.validate>` な場合。
         StyleNotFoundError
