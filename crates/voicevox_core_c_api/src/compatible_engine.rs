@@ -425,7 +425,7 @@ pub unsafe extern "C" fn generate_full_intermediate(
             let output_len = (length + 2 * MARGIN_WIDTH) * FEATURE_SIZE;
             assert_eq!(
                 output_len,
-                output_arr.len(),
+                output_arr.as_flattened().len(),
                 "we have checked the output length",
             );
             // SAFETY: The safety contract must be upheld by the caller.
