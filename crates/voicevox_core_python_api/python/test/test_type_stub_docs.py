@@ -4,7 +4,16 @@ import ast
 import dataclasses
 import importlib
 import textwrap
-from ast import Assign, AsyncFor, AsyncFunctionDef, Await, ClassDef, FunctionDef, Module
+from ast import (
+    Assign,
+    AsyncFor,
+    AsyncFunctionDef,
+    Await,
+    ClassDef,
+    FunctionDef,
+    ListComp,
+    Module,
+)
 from asyncio import AbstractEventLoop
 from collections.abc import AsyncIterable, Awaitable, Iterator
 from doctest import DocTest, DocTestParser, DocTestRunner, Example
@@ -79,7 +88,19 @@ def replace_await(source: str) -> str:
         if isinstance(stmt, Assign):
             if len(stmt.targets) == 1:
                 (target,) = stmt.targets
-                if isinstance(stmt.value, Await):
+                if isinstance(stmt.value, ListComp) and len(stmt.value.generators) == 1:
+                    (generator,) = stmt.value.generators
+                    if generator.is_async:
+                        if generator.ifs:
+                            raise RuntimeError("unimplemented")
+                        return (
+                            f"{ast.unparse(target)} = ["
+                            f"{ast.unparse(stmt.value.elt)} "
+                            f"for {ast.unparse(generator.target)} "
+                            f"in _run_aiter({ast.unparse(generator.iter)})"
+                            "]\n"
+                        )
+                elif isinstance(stmt.value, Await):
                     return (
                         f"{ast.unparse(target)} = "
                         f"_run_awaitable({ast.unparse(stmt.value.value)})"

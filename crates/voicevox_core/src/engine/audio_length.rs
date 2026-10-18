@@ -3,9 +3,9 @@ use std::num::NonZero;
 use crate::FRAME_RATE;
 
 #[derive(Clone, Copy, Debug)]
-pub(crate) struct AudioSegmentation {
-    pub(crate) start_offset_in_secs: f64,
-    pub(crate) segment_length_in_secs: f64,
+pub struct AudioSegmentation {
+    pub start_offset_in_secs: f64,
+    pub segment_length_in_secs: f64,
 }
 
 // FIXME: 受理する範囲についてテストを書く
@@ -59,6 +59,10 @@ impl AudioSegmentation {
             secs * FRAME_RATE
         }
     }
+
+    pub fn validate(self, frame_length: usize) -> Result<(), InvalidAudioSegmentationError> {
+        self.try_to_frames(frame_length).map(|_| ())
+    }
 }
 
 impl Default for AudioSegmentation {
@@ -71,7 +75,7 @@ impl Default for AudioSegmentation {
 }
 
 #[derive(derive_more::Display)]
-enum InvalidAudioSegmentationError {
+pub enum InvalidAudioSegmentationError {
     #[display(
         "`start_offset` in frames must be positive and must not exceed the length of the audio \
          ({frame_length} frames; approx. {approx_secs} seconds)",

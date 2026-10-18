@@ -18,7 +18,7 @@ use ref_cast::RefCast;
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::json;
 use voicevox_core::{
-    __internal::interop::{self, ToJsonValue as _, Validate},
+    __internal::interop::{self, AudioSegmentation, ToJsonValue as _, Validate},
     AccelerationMode, AccentPhrase, AudioQuery, FrameAudioQuery, OnExistingVoiceModelId,
     SupportedDevices, UserDictWord, UserDictWordPriority, VoiceModelMeta,
 };
@@ -187,6 +187,26 @@ pub(crate) fn error_for_audio_feature_range(
         )));
     }
     Ok(())
+}
+
+pub(crate) fn validate_audio_segmentation(
+    enable_interrogative_upspeak: bool,
+    start_offset_in_secs: f64,
+    segment_length_in_secs: f64,
+    audio_query: &AudioQuery,
+) -> PyResult<()> {
+    AudioSegmentation {
+        start_offset_in_secs,
+        segment_length_in_secs,
+    }
+    .validate(
+        audio_query
+            .frame_length()
+            .enable_interrogative_upspeak(enable_interrogative_upspeak)
+            .calculate()
+            .0,
+    )
+    .map_err(|e| PyValueError::new_err(e.to_string()))
 }
 
 pub(crate) fn from_utf8_path(ob: &Bound<'_, PyAny>) -> PyResult<Utf8PathBuf> {

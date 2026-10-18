@@ -460,7 +460,7 @@ mod blocking {
     use ref_cast::RefCast as _;
     use uuid::Uuid;
     use voicevox_core::{
-        __internal::interop::{BlockingTextAnalyzerExt as _, PeekIfEmpty as _},
+        __internal::interop::{AudioSegmentation, BlockingTextAnalyzerExt as _, PeekIfEmpty as _},
         AccelerationMode, AccentPhrase, AudioQuery, FrameAudioQuery, OnExistingVoiceModelId, Score,
         StyleId, SupportedDevices, UserDictWord, VoiceModelMeta,
     };
@@ -1117,6 +1117,8 @@ mod blocking {
             audio_query,
             style_id,
             *,
+            start_offset = AudioSegmentation::default().start_offset_in_secs,
+            segment_length = AudioSegmentation::default().segment_length_in_secs,
             enable_interrogative_upspeak =
                 voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
         ))]
@@ -1124,14 +1126,24 @@ mod blocking {
             slf: Py<Self>,
             #[pyo3(from_py_with = crate::convert::from_audio_query)] audio_query: AudioQuery,
             style_id: u32,
+            start_offset: f64,
+            segment_length: f64,
             enable_interrogative_upspeak: bool,
             py: Python<'_>,
         ) -> PyResult<SynthesisStream> {
+            crate::convert::validate_audio_segmentation(
+                enable_interrogative_upspeak,
+                start_offset,
+                segment_length,
+                &audio_query,
+            )?;
             let synthesizer = slf.get().synthesizer.read()?.clone();
             let body = SynthesisStreamBody::try_new(synthesizer, |synthesizer| {
                 synthesizer
                     .streaming_synthesis(&audio_query, StyleId::new(style_id))
                     .enable_interrogative_upspeak(enable_interrogative_upspeak)
+                    .start_offset(start_offset)
+                    .segment_length(segment_length)
                     .perform()
             })
             .into_py_result(py)?;
@@ -1358,7 +1370,9 @@ mod asyncio {
     use ref_cast::RefCast as _;
     use uuid::Uuid;
     use voicevox_core::{
-        __internal::interop::{NonblockingTextAnalyzerExt as _, PeekIfEmpty as _},
+        __internal::interop::{
+            AudioSegmentation, NonblockingTextAnalyzerExt as _, PeekIfEmpty as _,
+        },
         AccelerationMode, AccentPhrase, AudioQuery, FrameAudioQuery, OnExistingVoiceModelId, Score,
         StyleId, SupportedDevices, UserDictWord, VoiceModelMeta,
     };
@@ -2022,6 +2036,8 @@ mod asyncio {
             audio_query,
             style_id,
             *,
+            start_offset = AudioSegmentation::default().start_offset_in_secs,
+            segment_length = AudioSegmentation::default().segment_length_in_secs,
             enable_interrogative_upspeak =
                 voicevox_core::__internal::interop::DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
         ))]
@@ -2029,14 +2045,24 @@ mod asyncio {
             slf: Py<Self>,
             #[pyo3(from_py_with = crate::convert::from_audio_query)] audio_query: AudioQuery,
             style_id: u32,
+            start_offset: f64,
+            segment_length: f64,
             enable_interrogative_upspeak: bool,
         ) -> PyResult<SynthesisStream> {
+            crate::convert::validate_audio_segmentation(
+                enable_interrogative_upspeak,
+                start_offset,
+                segment_length,
+                &audio_query,
+            )?;
             let synthesizer = slf.get().synthesizer.read()?.clone();
             let body = SynthesisStreamBody::try_new_async_send(synthesizer, |synthesizer| {
                 Box::pin(async move {
                     synthesizer
                         .streaming_synthesis(&audio_query, StyleId::new(style_id))
                         .enable_interrogative_upspeak(enable_interrogative_upspeak)
+                        .start_offset(start_offset)
+                        .segment_length(segment_length)
                         .perform()
                         .await
                 })
