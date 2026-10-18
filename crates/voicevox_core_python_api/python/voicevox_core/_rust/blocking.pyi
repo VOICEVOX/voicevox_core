@@ -558,8 +558,7 @@ class Synthesizer:
         start_offset
             音声の開始位置。単位は秒。``0.0 <= start_offset * FRAME_RATE <= frame_length``
             でなければならない。ここで ``frame_length`` は
-            ``audio_query.frame_length(enable_interrogative_upspeak=enable_interrogative_upspeak)``
-            であるとする。
+            ``audio_query.frame_length(enable_interrogative_upspeak=enable_interrogative_upspeak)``。
         segment_length
             一度に合成する音声の長さ。単位は秒。``0.5 < segment_length * FRAME_RATE``
             でなければならない。
