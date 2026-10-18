@@ -572,7 +572,14 @@ class Synthesizer:
         start_offset
             音声の開始位置。単位は秒。``0.0 <= start_offset * FRAME_RATE <= frame_length``
             でなければならない。ここで ``frame_length`` は
-            ``audio_query.frame_length(enable_interrogative_upspeak=enable_interrogative_upspeak)``。
+
+            .. code-block::
+
+                audio_query.frame_length(
+                    enable_interrogative_upspeak=enable_interrogative_upspeak,
+                )
+
+            で得られるものとする。
         segment_length
             一度に合成する音声の長さ。単位は秒。``0.5 < segment_length * FRAME_RATE``
             でなければならない。
@@ -588,7 +595,14 @@ class Synthesizer:
         ValueError
             - ``0.0 <= start_offset * FRAME_RATE <= frame_length``
               を満たさない場合。ここで ``frame_length`` は
-              ``audio_query.frame_length(enable_interrogative_upspeak=enable_interrogative_upspeak)``。
+
+              .. code-block::
+
+                  audio_query.frame_length(
+                      enable_interrogative_upspeak=enable_interrogative_upspeak,
+                  )
+
+              で得られるものとする。
             - ``0.5 < segment_length * FRAME_RATE`` を満たさない場合。
         InvalidQueryError
             ``audio_query`` が :attr:`不正 <voicevox_core.AudioQuery.validate>` な場合。
