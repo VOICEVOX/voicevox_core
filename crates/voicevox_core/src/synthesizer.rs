@@ -1337,7 +1337,7 @@ impl<R: InferenceRuntime> Status<R> {
                 note: None,
                 source: anyhow!(
                     "`generate_full_intermediate` returned an output with {actual} columns. \
-                     expected {AUDIO_FEATURE_BINS} frames",
+                     expected {AUDIO_FEATURE_BINS} columns",
                     actual = spec_with_padding.ncols(),
                 ),
             }
