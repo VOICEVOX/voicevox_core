@@ -1,4 +1,7 @@
-use crate::{StyleId, assert::assert_send_sync, core::adjust::MARGIN, engine::PcmOptions};
+use crate::{
+    StyleId, assert::assert_send_sync, core::adjust::MARGIN, dim::AUDIO_FEATURE_BINS,
+    engine::PcmOptions,
+};
 
 /// 音声の中間表現。
 #[cfg_attr(doc, doc(alias = "VoicevoxAudioFeature"))]
@@ -6,7 +9,7 @@ use crate::{StyleId, assert::assert_send_sync, core::adjust::MARGIN, engine::Pcm
 pub struct AudioFeature {
     /// (フレーム数, 特徴数)の形を持つ音声特徴量。
     #[debug("_")]
-    internal_state: ndarray::Array2<f32>,
+    internal_state: Box<[[f32; AUDIO_FEATURE_BINS]]>,
     /// 生成時に指定したスタイル番号。
     style_id: StyleId,
     /// `[f32]`からPCMを作るときのオプション。
@@ -18,12 +21,12 @@ impl AudioFeature {
     ///
     /// `internal_state.nrows()`が`2 * MARGIN`より小さいならパニックする。
     pub(crate) fn new(
-        internal_state: ndarray::Array2<f32>,
+        internal_state: Box<[[f32; AUDIO_FEATURE_BINS]]>,
         style_id: StyleId,
         pcm_options: PcmOptions,
     ) -> Self {
-        if internal_state.nrows() < 2 * MARGIN {
-            panic!("too short: {}", internal_state.nrows());
+        if internal_state.len() < 2 * MARGIN {
+            panic!("too short: {}", internal_state.len());
         }
         Self {
             internal_state,
@@ -34,7 +37,7 @@ impl AudioFeature {
 
     /// workaround paddingを除いた音声特徴量のフレーム数。
     pub fn frame_length(&self) -> usize {
-        self.internal_state.nrows() - 2 * MARGIN
+        self.internal_state.len() - 2 * MARGIN
     }
 
     /// 指定した音声区間に対応する特徴量を両端にマージンを追加した上で切り出す
@@ -55,8 +58,7 @@ impl AudioFeature {
         if start > end {
             panic!("range starts at {start} but ends at {end}");
         }
-        let range = start..end + 2 * MARGIN;
-        self.internal_state.slice(ndarray::s![range, ..])
+        (&self.internal_state[start..end + 2 * MARGIN]).into()
     }
 
     pub(crate) fn style_id(&self) -> StyleId {
