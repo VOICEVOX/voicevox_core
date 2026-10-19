@@ -3,12 +3,13 @@ use std::{
     fmt::Debug,
     marker::PhantomData,
     mem,
-    ops::Bound,
+    ops::{Bound, RangeTo},
     slice::{self, SliceIndex},
 };
 
 use duplicate::duplicate_item;
 use easy_ext::ext;
+use ref_cast::{RefCastCustom, ref_cast_custom};
 
 use crate::{
     StyleId, assert::assert_send_sync, core::adjust::MARGIN, dim::AUDIO_FEATURE_BINS,
@@ -97,18 +98,21 @@ impl AudioFeature {
                     // SAFETY: No matter how `range` implements `SliceIndex`, `<[_Frame<'a>]>::get`
                     // cannot return outside non-empty `[_Frame<'a>]` for all `'a`.
                     let start =
-                        unsafe { slice.as_ptr().offset_from(internal_state.as_ptr()) } as usize;
+                        unsafe { slice.as_ptr().offset_from_unsigned(internal_state.as_ptr()) };
                     let end = start + slice.len();
                     MaybeEmptyRange::NonEmpty(start..end)
                 }
             })
             .ok_or_else(|| {
+                fn to_range_to(range: &dyn Any) -> Option<RangeTo<usize>> {
+                    range.downcast_ref().cloned()
+                }
+
                 #[rustversion::since(1.96)]
                 #[duplicate_item(
                     f Type;
                     [ to_range ] [ Range ];
                     [ to_range_from ] [ RangeFrom ];
-                    [ to_range_inclusive ] [ RangeInclusive ];
                     [ to_range_to_inclusive ] [ RangeToInclusive ];
                 )]
                 fn f(range: &dyn Any) -> Option<std::ops::Type<usize>> {
@@ -119,30 +123,28 @@ impl AudioFeature {
                         .or_else(|| range.downcast_ref().cloned())
                 }
 
-                #[rustversion::since(1.98)]
-                #[expect(clippy::useless_conversion, reason = "Clippy's bug??")]
-                fn to_range_to(range: &dyn Any) -> Option<std::ops::RangeTo<usize>> {
+                #[rustversion::since(1.95)]
+                fn to_range_inclusive(range: &dyn Any) -> Option<std::ops::RangeInclusive<usize>> {
                     range
-                        .downcast_ref::<std::range::RangeTo<usize>>()
+                        .downcast_ref::<std::range::RangeInclusive<usize>>()
                         .copied()
                         .map(Into::into)
                         .or_else(|| range.downcast_ref().cloned())
                 }
 
-                #[rustversion::not(since(1.96))]
+                #[rustversion::before(1.96)]
                 #[duplicate_item(
                     f Type;
                     [ to_range ] [ Range ];
                     [ to_range_from ] [ RangeFrom ];
-                    [ to_range_inclusive ] [ RangeInclusive ];
                     [ to_range_to_inclusive ] [ RangeToInclusive ];
                 )]
                 fn f(range: &dyn Any) -> Option<std::ops::Type<usize>> {
                     range.downcast_ref().cloned()
                 }
 
-                #[rustversion::before(1.98)]
-                fn to_range_to(range: &dyn Any) -> Option<std::ops::RangeTo<usize>> {
+                #[rustversion::before(1.95)]
+                fn to_range_inclusive(range: &dyn Any) -> Option<std::ops::RangeInclusive<usize>> {
                     range.downcast_ref().cloned()
                 }
 
@@ -207,7 +209,20 @@ impl AudioFeature {
                                 Bound::Included(start) if start > end => {
                                     AudioFeatureOutOfBoundsError::StartExceedsEnd { start, end }
                                 }
-                                Bound::Excluded(start) if start >= len => {
+                                Bound::Excluded(start) if start == len => {
+                                    // Rust 1.99時点で何故か以下のようなメッセージになるのを模す
+                                    //
+                                    // ```rs
+                                    // let xs = [(); 10];
+                                    // let _ = &xs[(Bound::Excluded(10), Bound::Included(9))];
+                                    // ```
+                                    //
+                                    // ```console
+                                    // range end index 10 out of range for slice of length 10
+                                    // ```
+                                    AudioFeatureOutOfBoundsError::EndOutOfBounds { end, len }
+                                }
+                                Bound::Excluded(start) if start > len => {
                                     AudioFeatureOutOfBoundsError::StartOutOfBounds { start, len }
                                 }
                                 Bound::Excluded(start) if start >= end => {
@@ -229,13 +244,17 @@ impl AudioFeature {
 
 assert_send_sync!(AudioFeature);
 
+#[derive(RefCastCustom)]
 #[repr(transparent)]
 pub struct _Frame<'a> {
-    inner: [u8; AUDIO_FEATURE_BINS],
+    inner: [f32; AUDIO_FEATURE_BINS],
     _marker: PhantomData<fn(&'a ()) -> &'a ()>,
 }
 
 impl _Frame<'_> {
+    #[ref_cast_custom]
+    const fn _proof(inner: &[f32; AUDIO_FEATURE_BINS]) -> &Self;
+
     const fn new_slice(internal_state: &[[f32; AUDIO_FEATURE_BINS]]) -> &[Self] {
         unsafe {
             // SAFETY: `#[repr(transparent)]`.
@@ -396,15 +415,18 @@ mod tests {
             [Bound::Unbounded],
         );
         for (start, end) in iproduct!(bounds.clone(), bounds) {
-            // 面倒なのでエラーの種別までは確認しない。
+            let actual = feat.validate_range((start, end));
+            assert!(!matches!(
+                actual,
+                Err(AudioFeatureOutOfBoundsError::Unknown { .. })
+            ));
+            // 面倒なのでこれ以上のエラーの種別までは確認しない。
             assert_eq!(
                 [(); LEN].get((start, end)).map(|slice| slice.len()),
-                feat.validate_range((start, end))
-                    .ok()
-                    .map(|range| match range {
-                        MaybeEmptyRange::Empty => 0,
-                        MaybeEmptyRange::NonEmpty(range) => range.len(),
-                    }),
+                actual.ok().map(|range| match range {
+                    MaybeEmptyRange::Empty => 0,
+                    MaybeEmptyRange::NonEmpty(range) => range.len(),
+                }),
             );
         }
     }
