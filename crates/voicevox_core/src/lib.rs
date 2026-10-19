@@ -466,6 +466,7 @@ mod audio_feature;
 mod collections;
 mod convert;
 mod core;
+mod dim;
 mod engine;
 mod error;
 mod frame;
