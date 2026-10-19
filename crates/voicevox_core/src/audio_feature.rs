@@ -60,8 +60,7 @@ impl AudioFeature {
         range: impl for<'a> SliceIndex<[_Frame<'a>], Output = [_Frame<'a>]> + Clone + Debug + 'static,
     ) -> ndarray::ArrayView2<'_, f32> {
         let std::ops::Range { start, end } = match self.validate_range(range) {
-            Ok(MaybeEmptyRange::Empty) => 0..0,
-            Ok(MaybeEmptyRange::NonEmpty(range)) => range,
+            Ok(range) => range,
             Err(err) => panic!("{err}"),
         };
         (&self.internal_state[start..end + 2 * MARGIN]).into()
@@ -82,17 +81,19 @@ impl AudioFeature {
     fn validate_range(
         &self,
         range: impl for<'a> SliceIndex<[_Frame<'a>], Output = [_Frame<'a>]> + Clone + Debug + 'static,
-    ) -> Result<MaybeEmptyRange, AudioFeatureOutOfBoundsError> {
+    ) -> Result<std::ops::Range<usize>, AudioFeatureOutOfBoundsError> {
         let len = self.frame_length();
 
         // 長ささえ合っていればどう切り取ってもよい
         let internal_state = _Frame::new_slice(&self.internal_state[MARGIN..][..len]);
 
-        internal_state
+        return internal_state
             .get(range.clone())
             .map(|slice| {
                 if slice.is_empty() {
-                    MaybeEmptyRange::Empty
+                    let i =
+                        partition_point(len, |i| internal_state[..i].get(range.clone()).is_none());
+                    i..i
                 } else {
                     const _: () = assert!(mem::size_of::<_Frame<'_>>() > 0);
                     // SAFETY: No matter how `range` implements `SliceIndex`, `<[_Frame<'a>]>::get`
@@ -100,7 +101,7 @@ impl AudioFeature {
                     let start =
                         unsafe { slice.as_ptr().offset_from_unsigned(internal_state.as_ptr()) };
                     let end = start + slice.len();
-                    MaybeEmptyRange::NonEmpty(start..end)
+                    start..end
                 }
             })
             .ok_or_else(|| {
@@ -169,7 +170,8 @@ impl AudioFeature {
                         AudioFeatureOutOfBoundsError::StartOutOfBounds { start, len }
                     } else if end >= len {
                         AudioFeatureOutOfBoundsError::EndOutOfBounds { end, len }
-                    } else if start > end {
+                    } else if start > end + 1 {
+                        let end = end + 1;
                         AudioFeatureOutOfBoundsError::StartExceedsEnd { start, end }
                     } else {
                         could_not_categorize()
@@ -209,16 +211,20 @@ impl AudioFeature {
                                 Bound::Included(start) if start > end => {
                                     AudioFeatureOutOfBoundsError::StartExceedsEnd { start, end }
                                 }
-                                Bound::Excluded(start) if start == len => {
+                                Bound::Excluded(start) if start == end => {
                                     // Rust 1.99時点で何故か以下のようなメッセージになるのを模す
                                     //
                                     // ```rs
-                                    // let xs = [(); 10];
-                                    // let _ = &xs[(Bound::Excluded(10), Bound::Included(9))];
+                                    //  const XS: [(); 10] = [(); 10];
+                                    //  const WHATEVER: usize = 5;
+                                    //  let _ = &XS[(
+                                    //      Bound::Excluded(WHATEVER),
+                                    //      Bound::Excluded(WHATEVER),
+                                    //  )];
                                     // ```
                                     //
                                     // ```console
-                                    // range end index 10 out of range for slice of length 10
+                                    // range end index 5 out of range for slice of length 10
                                     // ```
                                     AudioFeatureOutOfBoundsError::EndOutOfBounds { end, len }
                                 }
@@ -238,7 +244,23 @@ impl AudioFeature {
                         len,
                     }
                 }
-            })
+            });
+
+        fn partition_point(n: usize, p: impl Fn(usize) -> bool) -> usize {
+            if n == 0 {
+                return 0;
+            }
+            let mut base = 0;
+            let mut size = n;
+            while size > 1 {
+                let half = size / 2;
+                if p(base + half) {
+                    base += half;
+                }
+                size -= half;
+            }
+            if p(base) { base + 1 } else { 0 }
+        }
     }
 }
 
@@ -261,12 +283,6 @@ impl _Frame<'_> {
             slice::from_raw_parts(internal_state.as_ptr().cast::<Self>(), internal_state.len())
         }
     }
-}
-
-#[derive(PartialEq, Debug)]
-enum MaybeEmptyRange {
-    Empty,
-    NonEmpty(std::ops::Range<usize>),
 }
 
 #[derive(PartialEq, derive_more::Display, Debug)]
@@ -293,9 +309,7 @@ mod tests {
 
     use crate::{core::adjust::MARGIN, dim::AUDIO_FEATURE_BINS, engine::PcmOptions};
 
-    use super::{
-        AudioFeature, AudioFeatureExt as _, AudioFeatureOutOfBoundsError, MaybeEmptyRange,
-    };
+    use super::{AudioFeature, AudioFeatureExt as _, AudioFeatureOutOfBoundsError};
 
     #[test]
     fn test_validate_range_for_nonempty() {
@@ -311,11 +325,10 @@ mod tests {
 
         // `Range`
         for (start, end) in iproduct!(0..=LEN, 0..=LEN) {
+            dbg!((start, end));
             assert_eq!(
-                if start == end {
-                    Ok(MaybeEmptyRange::Empty)
-                } else if start < end {
-                    Ok(MaybeEmptyRange::NonEmpty(start..end))
+                if start <= end {
+                    Ok(start..end)
                 } else {
                     Err(AudioFeatureOutOfBoundsError::StartExceedsEnd { start, end })
                 },
@@ -335,13 +348,7 @@ mod tests {
 
         // `RangeFrom`
         for start in 0..=LEN {
-            assert_eq!(
-                Ok(match start {
-                    LEN => MaybeEmptyRange::Empty,
-                    start => MaybeEmptyRange::NonEmpty(start..LEN),
-                }),
-                feat.validate_range(start..),
-            );
+            assert_eq!(Ok(start..LEN), feat.validate_range(start..));
         }
         let start = LEN + 1;
         assert_eq!(
@@ -351,13 +358,7 @@ mod tests {
 
         // `RangeTo`
         for end in 0..=LEN {
-            assert_eq!(
-                Ok(match end {
-                    0 => MaybeEmptyRange::Empty,
-                    end => MaybeEmptyRange::NonEmpty(0..end),
-                }),
-                feat.validate_range(..end),
-            );
+            assert_eq!(Ok(0..end), feat.validate_range(..end));
         }
         let end = LEN + 1;
         assert_eq!(
@@ -368,12 +369,13 @@ mod tests {
         // `RangeInclusive`
         for (start, end) in iproduct!(0..=LEN, 0..LEN) {
             assert_eq!(
-                if start == end + 1 {
-                    Ok(MaybeEmptyRange::Empty)
-                } else if start <= end {
-                    Ok(MaybeEmptyRange::NonEmpty(start..end + 1))
+                if start <= end + 1 {
+                    Ok(start..end + 1)
                 } else {
-                    Err(AudioFeatureOutOfBoundsError::StartExceedsEnd { start, end })
+                    Err(AudioFeatureOutOfBoundsError::StartExceedsEnd {
+                        start,
+                        end: end + 1,
+                    })
                 },
                 feat.validate_range(start..=end),
             );
@@ -391,10 +393,7 @@ mod tests {
 
         // `RangeToInclusive`
         for end in 0..LEN {
-            assert_eq!(
-                Ok(MaybeEmptyRange::NonEmpty(0..end + 1)),
-                feat.validate_range(..=end),
-            );
+            assert_eq!(Ok(0..end + 1), feat.validate_range(..=end));
         }
         let end = LEN;
         assert_eq!(
@@ -403,10 +402,7 @@ mod tests {
         );
 
         // `RangeFull`
-        assert_eq!(
-            Ok(MaybeEmptyRange::NonEmpty(0..LEN)),
-            feat.validate_range(..),
-        );
+        assert_eq!(Ok(0..LEN), feat.validate_range(..));
 
         // `(Bound<usize>, Bound<usize>)`
         let bounds = chain!(
@@ -423,10 +419,7 @@ mod tests {
             // 面倒なのでこれ以上のエラーの種別までは確認しない。
             assert_eq!(
                 [(); LEN].get((start, end)).map(|slice| slice.len()),
-                actual.ok().map(|range| match range {
-                    MaybeEmptyRange::Empty => 0,
-                    MaybeEmptyRange::NonEmpty(range) => range.len(),
-                }),
+                actual.ok().map(|range| range.len()),
             );
         }
     }
@@ -441,8 +434,8 @@ mod tests {
             PcmOptions::DUMMY, // whatever
         );
 
-        assert_eq!(Ok(MaybeEmptyRange::Empty), feat.validate_range(..));
-        assert_eq!(Ok(MaybeEmptyRange::Empty), feat.validate_range(0..0));
+        assert_eq!(Ok(0..0), feat.validate_range(..));
+        assert_eq!(Ok(0..0), feat.validate_range(0..0));
 
         let end = 0;
         assert_eq!(
