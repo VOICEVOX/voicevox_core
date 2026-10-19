@@ -1,5 +1,10 @@
 use std::{
-    any::Any, fmt::Debug, marker::PhantomData, mem::MaybeUninit, ops::Bound, slice::SliceIndex,
+    any::Any,
+    fmt::Debug,
+    marker::PhantomData,
+    mem,
+    ops::Bound,
+    slice::{self, SliceIndex},
 };
 
 use duplicate::duplicate_item;
@@ -78,18 +83,21 @@ impl AudioFeature {
         range: impl for<'a> SliceIndex<[_Frame<'a>], Output = [_Frame<'a>]> + Clone + Debug + 'static,
     ) -> Result<MaybeEmptyRange, AudioFeatureOutOfBoundsError> {
         let len = self.frame_length();
-        let dummy_audio_feature = (0..len).map(|_| _Frame::DUMMY).collect::<Vec<_>>();
 
-        dummy_audio_feature
+        // 長ささえ合っていればどう切り取ってもよい
+        let internal_state = _Frame::new_slice(&self.internal_state[MARGIN..][..len]);
+
+        internal_state
             .get(range.clone())
             .map(|slice| {
                 if slice.is_empty() {
                     MaybeEmptyRange::Empty
                 } else {
+                    const _: () = assert!(mem::size_of::<_Frame<'_>>() > 0);
                     // SAFETY: No matter how `range` implements `SliceIndex`, `<[_Frame<'a>]>::get`
                     // cannot return outside non-empty `[_Frame<'a>]` for all `'a`.
-                    let start = unsafe { slice.as_ptr().offset_from(dummy_audio_feature.as_ptr()) }
-                        as usize;
+                    let start =
+                        unsafe { slice.as_ptr().offset_from(internal_state.as_ptr()) } as usize;
                     let end = start + slice.len();
                     MaybeEmptyRange::NonEmpty(start..end)
                 }
@@ -223,15 +231,17 @@ assert_send_sync!(AudioFeature);
 
 #[repr(transparent)]
 pub struct _Frame<'a> {
-    inner: MaybeUninit<[u8; 80]>,
+    inner: [u8; AUDIO_FEATURE_BINS],
     _marker: PhantomData<fn(&'a ()) -> &'a ()>,
 }
 
 impl _Frame<'_> {
-    const DUMMY: Self = Self {
-        inner: MaybeUninit::uninit(),
-        _marker: PhantomData,
-    };
+    const fn new_slice(internal_state: &[[f32; AUDIO_FEATURE_BINS]]) -> &[Self] {
+        unsafe {
+            // SAFETY: `#[repr(transparent)]`.
+            slice::from_raw_parts(internal_state.as_ptr().cast::<Self>(), internal_state.len())
+        }
+    }
 }
 
 #[derive(PartialEq, Debug)]
@@ -273,7 +283,9 @@ mod tests {
         const LEN: usize = 10;
 
         let feat = AudioFeature::new(
-            [[0.; AUDIO_FEATURE_BINS]; LEN + 2 * MARGIN].into(),
+            [[0.; // whatever
+            AUDIO_FEATURE_BINS]; LEN + 2 * MARGIN]
+                .into(),
             0.into(),          // whatever
             PcmOptions::DUMMY, // whatever
         );
@@ -400,7 +412,9 @@ mod tests {
     #[test]
     fn test_validate_range_for_empty() {
         let feat = AudioFeature::new(
-            [[0.; AUDIO_FEATURE_BINS]; 2 * MARGIN].into(),
+            [[0.;  // whatever
+            AUDIO_FEATURE_BINS]; 2 * MARGIN]
+                .into(),
             0.into(),          // whatever
             PcmOptions::DUMMY, // whatever
         );
