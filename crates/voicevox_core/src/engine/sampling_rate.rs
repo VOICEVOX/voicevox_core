@@ -21,6 +21,8 @@ use crate::{
 pub struct SamplingRate(NonZero<u32>);
 
 impl SamplingRate {
+    pub(crate) const DEFAULT: Self = Self(DEFAULT_SAMPLING_RATE);
+
     /// [`u32`]から`SamplingRate`をコンストラクトする。
     ///
     /// # Errors
@@ -53,7 +55,7 @@ impl SamplingRate {
 
 impl Default for SamplingRate {
     fn default() -> Self {
-        Self(DEFAULT_SAMPLING_RATE)
+        Self::DEFAULT
     }
 }
 
