@@ -2,9 +2,9 @@ use std::io::{Cursor, Write as _};
 
 use typed_floats::PositiveFinite;
 
-use crate::{FrameAudioQuery, SamplingRate};
+use crate::{FrameAudioQuery, SamplingRate, frame::DEFAULT_SAMPLING_RATE};
 
-use super::{DEFAULT_SAMPLING_RATE, talk::ValidatedAudioQuery};
+use super::talk::ValidatedAudioQuery;
 
 pub(crate) const WAV_PREFIX_LEN: usize = 44;
 
@@ -37,6 +37,15 @@ pub(crate) struct PcmOptions {
     volume_scale: PositiveFinite<f32>,
     output_sampling_rate: SamplingRate,
     output_stereo: bool,
+}
+
+#[cfg(test)]
+impl PcmOptions {
+    pub(crate) const DUMMY: Self = Self {
+        volume_scale: typed_floats::tf32::ZERO,
+        output_sampling_rate: SamplingRate::DEFAULT,
+        output_stereo: false,
+    };
 }
 
 impl ValidatedAudioQuery<'_> {
