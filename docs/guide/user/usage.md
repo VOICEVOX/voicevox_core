@@ -189,32 +189,37 @@ with open("output.wav", "wb") as f:
 
 TODO: 後で書きます。
 
-```py
+```diff
 -wav = synthesizer.synthesis(audio_query, style_id)
 +stream = synthesizer.streaming_synthesis(audio_query, style_id)
-+wav = next(stream)
++wav = bytearray(next(stream))
 +for pcm in stream:
 +    wav += pcm
++wav = bytes(wav)
 ```
 
 ```py
+# 音声合成の区切り方を細かく制御したい場合
+
 from voicevox_core import FRAME_RATE, wav_from_s16le
 
 SEGMENT_LENGTH = round(0.3 * FRAME_RATE)  # 約0.3秒
 
 feature = synthesizer.create_audio_feature(audio_query, style_id)
-pcm = b""
+pcm = bytesarray()
 for offset in range(0, len(feature), SEGMENT_LENGTH):
-    pcm += await synthesizer.render(feature[offset:][:SEGMENT_LENGTH])
+    pcm += synthesizer.render(feature[offset:][:SEGMENT_LENGTH])
 wav = wav_from_s16le(
-    pcm, audio_query.output_sampling_rate, audio_query.output_stereo
+    bytes(pcm), audio_query.output_sampling_rate, audio_query.output_stereo
 )
 ```
+
+Java APIとC APIにおける`streaming_synthesis`は未実装です。代わりに`create_audio_feature`と`render`が利用できます。
 
 TODO: 以下の内容を解説予定です。
 
 - 区切りを小さくするとEコア/LITTLEコアが使われやすくなる問題（[#1455](https://github.com/VOICEVOX/voicevox_core/issues/1455)）について
-- [RTF](www.google.com/search?q=Real%20Time%20Factor)の話
+- [RTF](https://www.google.com/search?q=Real%20Time%20Factor)の話
 - `StreamingSynthesis`は要素をリクエストするまで音声合成処理をしないので、ストリーミング音声再生では一工夫要るという話（[#1467](https://github.com/VOICEVOX/voicevox_core/issues/1467)）
 - Python APIの非asyncio版において、[GIL](https://www.google.com/search?q=Global%20Interpreter%20Lock)を掴みっぱなしになる問題（[#1476](https://github.com/VOICEVOX/voicevox_core/issues/1476)）について
 - ソングの方は未だ無理という話
