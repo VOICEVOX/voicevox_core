@@ -281,7 +281,8 @@ jobs:
         with:
           tool: cargo-binstall
       - name: Install cargo-edit
-        run: cargo binstall cargo-edit@^0.11 --no-confirm --log-level debug
+        # https://github.com/cargo-bins/cargo-quickinstall/releases/tag/cargo-edit-0.13.13
+        run: cargo binstall cargo-edit@0.13.13 --no-confirm --log-level debug
       - name: set cargo version
         run: |
           version=${{ needs.config.outputs.version }}
