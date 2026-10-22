@@ -24,7 +24,7 @@ async def test_render(synthesizer: Synthesizer) -> None:
 
     query = await synthesizer.create_audio_query(TEXT, STYLE_ID)
     feat = await synthesizer.create_audio_feature(query, STYLE_ID)
-    pcm = await synthesizer.render(feat, 0, feat.frame_length)
+    pcm = await synthesizer.render(feat)
     wav2 = wav_from_s16le(pcm, query.output_sampling_rate, query.output_stereo)
 
     assert wav1 == wav2

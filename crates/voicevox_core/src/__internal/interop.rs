@@ -1,6 +1,7 @@
 pub mod raii;
 
 pub use crate::{
+    audio_feature::{AudioFeatureOutOfBoundsError, AudioFeatureSliceExt},
     convert::ToJsonValue,
     core::adjust::MARGIN,
     core::metas::merge as merge_metas,
