@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, NoReturn
+import builtins
+from typing import TYPE_CHECKING, NoReturn, SupportsIndex
 
 if TYPE_CHECKING:
     from voicevox_core import (
@@ -26,10 +27,39 @@ FRAME_RATE: float = 93.75
 """
 
 class AudioFeature:
-    @property
-    def frame_length(self) -> int: ...
     def __repr__(self) -> str: ...
     def __eq__(self, other: object) -> bool: ...
+    def __len__(self) -> int: ...
+    def __getitem__(
+        self, slice: builtins.slice[SupportsIndex | None, SupportsIndex | None, None]
+    ) -> AudioFeatureSlice:
+        """
+        Parameters
+        ----------
+        slice
+            範囲。
+        """
+        ...
+
+class AudioFeatureSlice:
+    def __init__(self, audio_feature: AudioFeature) -> None: ...
+    @property
+    def audio_feature(self) -> AudioFeature: ...
+    @property
+    def start_offset(self) -> int: ...
+    def __repr__(self) -> str: ...
+    def __eq__(self, other: object) -> bool: ...
+    def __len__(self) -> int: ...
+    def __getitem__(
+        self, slice: builtins.slice[SupportsIndex | None, SupportsIndex | None, None]
+    ) -> AudioFeatureSlice:
+        """
+        Parameters
+        ----------
+        slice
+            範囲。
+        """
+        ...
 
 class NotLoadedOpenjtalkDictError(Exception):
     """open_jtalk辞書ファイルが読み込まれていない。"""

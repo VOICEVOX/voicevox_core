@@ -68,6 +68,7 @@ pastey.workspace = true
 phf = { workspace = true, features = ["macros"] }
 ref-cast.workspace = true
 regex.workspace = true
+rustversion.workspace = true
 serde = { workspace = true, features = ["derive", "rc"] }
 serde_json = { workspace = true, features = ["preserve_order"] }
 serde_with.workspace = true

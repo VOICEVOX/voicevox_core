@@ -208,19 +208,36 @@ impl assert_cdylib::TestCase for TestCase {
             unsafe { audio_feature.assume_init() }
         };
 
-        let (pcm_length, pcm) = {
-            // SAFETY: this function has no safety requirements.
-            let len = unsafe { lib.voicevox_audio_feature_frame_length(audio_feature) };
+        // SAFETY: `audio_feature` should be valid.
+        let len = unsafe { lib.voicevox_audio_feature_len(audio_feature) };
 
+        let audio_feature_slice = {
+            let mut audio_feature_slice = MaybeUninit::uninit();
+            // SAFETY: `audio_feature` should be valid.
+            assert_ok(unsafe {
+                lib.voicevox_audio_feature_slice(
+                    audio_feature,
+                    len / 2,
+                    len / 2,
+                    false,
+                    false,
+                    false,
+                    audio_feature_slice.as_mut_ptr(),
+                )
+            });
+            // SAFETY: `voicevox_audio_feature_slice` initializes `audio_feature`
+            // if succeeded.
+            unsafe { audio_feature_slice.assume_init() }
+        };
+
+        let (pcm_length, pcm) = {
             let mut pcm_length = MaybeUninit::uninit();
             let mut pcm = MaybeUninit::uninit();
             assert_ok(unsafe {
                 // SAFETY: `pcm_length` and `pcm` are valid for writes.
                 lib.voicevox_synthesizer_render(
                     synthesizer,
-                    audio_feature,
-                    len / 2,
-                    len / 2,
+                    audio_feature_slice,
                     pcm_length.as_mut_ptr(),
                     pcm.as_mut_ptr(),
                 )

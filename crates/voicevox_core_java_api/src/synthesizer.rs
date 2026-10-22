@@ -6,7 +6,7 @@ use crate::{
 use jni::{
     JNIEnv,
     objects::{JObject, JString},
-    sys::{jboolean, jint, jlong, jobject},
+    sys::{jboolean, jint, jobject},
 };
 use std::{borrow::Cow, sync::Arc};
 use voicevox_core::AudioFeature;
@@ -596,8 +596,8 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
     env: JNIEnv<'local>,
     this: JObject<'local>,
     audio_feature: JObject<'local>,
-    start_inclusive: jlong,
-    end_exclusive: jlong,
+    start_inclusive: jint,
+    end_exclusive: jint,
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {
         let internal = unsafe {
@@ -610,19 +610,23 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
             env.get_rust_field::<_, _, RustField>(&this, "handle")
         }?
         .clone();
+
+        let start_inclusive =
+            usize::try_from(start_inclusive).expect("the invariant should be held");
+
+        let end_exclusive = usize::try_from(end_exclusive).expect("the invariant should be held");
+
         let audio_feature = unsafe {
             // SAFETY:
             // - The safety contract must be upheld by the caller.
             // - `jp.hiroshiba.voicevoxcore.AudioFeature.handle` must correspond to
             //   `Arc<voicevox_core::AudioFeature>`.
             type RustField = Arc<AudioFeature>;
-            env.get_rust_field::<_, _, RustField>(&audio_feature, "handle")
+            env.get_rust_field::<_, _, RustField>(audio_feature, "handle")
         }?
         .clone();
-        let pcm = internal.render(
-            &audio_feature,
-            start_inclusive as usize..end_exclusive as usize,
-        )?;
+
+        let pcm = internal.render(audio_feature.slice(start_inclusive..end_exclusive))?;
 
         Ok(env.byte_array_from_slice(&pcm)?.into_raw())
     })

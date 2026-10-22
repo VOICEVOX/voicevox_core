@@ -546,9 +546,9 @@ class AudioQuery:
         >>> query = synth.create_audio_query(
         ...     "こんにちは、音声合成の世界へようこそ？", WHATEVER_STYLE1
         ... )
-        >>> audio = synth.create_audio_feature(query, WHATEVER_STYLE2)
+        >>> feat = synth.create_audio_feature(query, WHATEVER_STYLE2)
         >>>
-        >>> assert query.frame_length() == audio.frame_length
+        >>> assert query.frame_length() == len(feat)
 
         >>> import numpy as np
         >>> from numpy.lib import NumpyVersion

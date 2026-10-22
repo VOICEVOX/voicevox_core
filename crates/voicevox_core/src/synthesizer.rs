@@ -23,8 +23,8 @@ use tracing::info;
 use typed_floats::{NonNaNFinite, PositiveFinite, tf32};
 
 use crate::{
-    AccentPhrase, AudioQuery, OnExistingVoiceModelId, Result, StyleId, VoiceModelId,
-    VoiceModelMeta,
+    AccentPhrase, AudioFeatureSlice, AudioQuery, OnExistingVoiceModelId, Result, StyleId,
+    VoiceModelId, VoiceModelMeta,
     asyncs::{Async, BlockingThreadPool, SingleTasked},
     audio_feature::AudioFeature,
     collections::{NonEmptyIterator as _, NonEmptySlice, NonEmptyVec},
@@ -50,6 +50,7 @@ use crate::{
         status::Status,
         trim_margin_from_wave, voice_model,
     },
+    dim::AUDIO_FEATURE_BINS,
     engine::{
         IteratorExt as _, PhonemeCode, WAV_PREFIX_LEN,
         audio_length::AudioSegmentation,
@@ -462,16 +463,17 @@ trait AsInner {
 
         assert_eq!(
             frame_length,
-            audio_feature.frame_length(),
+            audio_feature.len(),
             "the actual `AudioFeature` length is different from expected value. this is a bug",
         );
 
         Ok(audio_feature)
     }
 
-    async fn render(&self, audio: &AudioFeature, range: std::ops::Range<usize>) -> Result<Vec<u8>> {
+    // ここで`impl Into<…>`を要求すると、futureが`Send`ではなくなってしまうらしい。
+    async fn render(&self, audio: AudioFeatureSlice<'_>) -> Result<Vec<u8>> {
         // TODO: 44.1kHzなどの対応
-        let spec_segment = audio.crop_with_margin(range);
+        let spec_segment = audio.segment_with_margin();
         let wave_with_margin = self
             .render_audio_segment(spec_segment.to_owned(), audio.style_id())
             .await?;
@@ -512,7 +514,7 @@ trait AsInner {
         let audio = self
             .create_audio_feature(audio_query, style_id, options)
             .await?;
-        let pcm = self.render(&audio, 0..audio.frame_length()).await?;
+        let pcm = self.render((&audio).into()).await?;
         Ok(wav_from_s16le(
             &pcm,
             audio_query.output_sampling_rate.get().get(),
@@ -1086,7 +1088,7 @@ trait AsInner {
         f0: &[f32],
         phoneme_vector: &[f32],
         style_id: StyleId,
-    ) -> Result<ndarray::Array2<f32>> {
+    ) -> Result<Box<[[f32; AUDIO_FEATURE_BINS]]>> {
         let status = self.status().clone();
         let f0 = ndarray::arr1(f0);
         let phoneme_vector = ndarray::arr1(phoneme_vector);
@@ -1290,7 +1292,7 @@ impl<R: InferenceRuntime> Status<R> {
         f0: ndarray::Array1<f32>,
         phoneme_vector: ndarray::Array1<f32>,
         style_id: StyleId,
-    ) -> Result<ndarray::Array2<f32>> {
+    ) -> Result<Box<[[f32; AUDIO_FEATURE_BINS]]>> {
         let (model_id, inner_voice_id) = self.ids_for::<StreamingTalkDomain>(style_id)?;
 
         let (length_with_padding, f0_with_padding, phoneme_with_padding) = pad_decoder_feature(
@@ -1331,6 +1333,26 @@ impl<R: InferenceRuntime> Status<R> {
             .into());
         }
 
+        if spec_with_padding.ncols() != AUDIO_FEATURE_BINS {
+            return Err(ErrorRepr::RunModel {
+                note: None,
+                source: anyhow!(
+                    "`generate_full_intermediate` returned an output with {actual} columns. \
+                     expected {AUDIO_FEATURE_BINS} columns",
+                    actual = spec_with_padding.ncols(),
+                ),
+            }
+            .into());
+        }
+
+        let (spec_with_padding, &[]) = spec_with_padding
+            .as_slice()
+            .expect("`ort` is not considered to output non standard ndarrays")
+            .as_chunks()
+        else {
+            unreachable!("we've checked `ncols`");
+        };
+
         // マージンがデータからはみ出さないことを保証
         // cf. https://github.com/VOICEVOX/voicevox_core/pull/854#discussion_r1803691291
         if MARGIN > PADDING_FRAME_LENGTH {
@@ -1339,13 +1361,9 @@ impl<R: InferenceRuntime> Status<R> {
             );
         }
         // マージン分を両端に残して音声特徴量を返す
-        Ok(spec_with_padding
-            .slice(ndarray::s![
-                PADDING_FRAME_LENGTH - MARGIN
-                    ..spec_with_padding.nrows() - PADDING_FRAME_LENGTH + MARGIN,
-                ..
-            ])
-            .to_owned())
+        Ok((&spec_with_padding[PADDING_FRAME_LENGTH - MARGIN
+            ..spec_with_padding.len() - PADDING_FRAME_LENGTH + MARGIN])
+            .into())
     }
 
     /// 与えられた音声特徴量で音声生成。
@@ -1408,7 +1426,9 @@ impl<R: InferenceRuntime> Status<R> {
         }
         let intermediate = self
             .generate_full_intermediate::<A>(length, phoneme_size, f0, phoneme_vector, style_id)
-            .await?;
+            .await?
+            .into_vec()
+            .into();
         let output_with_margin = self
             .render_audio_segment::<A>(intermediate, style_id)
             .await?;
@@ -1555,7 +1575,7 @@ fn list_windows_video_cards() {
 
 struct SynthesisStreamInner<'a, A: Async> {
     synthesizer: InnerRefWithoutTextAnalyzer<'a, A>,
-    audio_feature: AudioFeature,
+    audio_feature: Arc<AudioFeature>,
     cursor: iter::StepBy<std::ops::Range<usize>>,
     header: Option<Box<[u8; WAV_PREFIX_LEN]>>,
     pending_pcm: Option<BoxSyncFuture<'static, crate::Result<Vec<u8>>>>,
@@ -1585,7 +1605,7 @@ impl<'a, A: AsyncExt> SynthesisStreamInner<'a, A> {
         let audio_feature = synthesizer
             .create_audio_feature(audio_query, style_id, &options.synthesis)
             .await?;
-        let full_frames = audio_feature.frame_length();
+        let full_frames = audio_feature.len();
         let render_frames = full_frames - offset_frames;
         let render_wave_length = render_frames * WAVE_SAMPLES_PER_FRAME;
         let output_sampling_rate = audio_query.output_sampling_rate.get().get();
@@ -1596,7 +1616,7 @@ impl<'a, A: AsyncExt> SynthesisStreamInner<'a, A> {
         let render_pcm_length = (render_wave_length as u32 * repeat_count * 2) as usize;
         Ok(Self {
             synthesizer,
-            audio_feature,
+            audio_feature: audio_feature.into(),
             cursor: (offset_frames..full_frames).step_by(segment_frames.get()),
             header: Some(Box::new(s16le_wav_prefix(
                 render_pcm_length,
@@ -1665,12 +1685,12 @@ impl<A: AsyncExt> Stream for SynthesisStreamInner<'_, A> {
             Some(start_frame) => {
                 let end_frame = tmp_cursor
                     .next()
-                    .unwrap_or_else(|| self.audio_feature.frame_length());
+                    .unwrap_or_else(|| self.audio_feature.len());
                 let inner = self.synthesizer.without_text_analyzer_cloned();
                 let audio_feature = self.audio_feature.clone();
                 let range = start_frame..end_frame;
                 self.pending_pcm = Some(Box::pin(SyncFuture::new(async move {
-                    inner.render(&audio_feature, range).await
+                    inner.render(audio_feature.slice(range)).await
                 })));
                 cx.waker().wake_by_ref();
                 Poll::Pending
@@ -1767,9 +1787,10 @@ pub(crate) mod blocking {
     use typed_floats::{NonNaNFinite, PositiveFinite};
 
     use crate::{
-        __internal::interop::PeekIfEmpty, AccentPhrase, AudioQuery, FrameAudioQuery,
-        OnExistingVoiceModelId, Score, StyleId, VoiceModelId, VoiceModelMeta,
-        assert::assert_send_sync, asyncs::SingleTasked, future::FutureExt as _,
+        __internal::interop::PeekIfEmpty, AccentPhrase, AudioFeatureSlice, AudioQuery,
+        FrameAudioQuery, OnExistingVoiceModelId, Score, StyleId, VoiceModelId, VoiceModelMeta,
+        assert::assert_send_sync, asyncs::SingleTasked, dim::AUDIO_FEATURE_BINS,
+        future::FutureExt as _,
     };
 
     use super::{
@@ -1893,12 +1914,11 @@ pub(crate) mod blocking {
 
         /// 中間表現から16bit PCMで音声波形を生成する。
         #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_render"))]
-        pub fn render(
+        pub fn render<'a>(
             &self,
-            audio: &AudioFeature,
-            range: impl Into<std::ops::Range<usize>>,
+            audio: impl Into<AudioFeatureSlice<'a>>,
         ) -> crate::Result<Vec<u8>> {
-            self.0.render(audio, range.into()).block_on()
+            self.0.render(audio.into()).block_on()
         }
 
         /// AudioQueryから直接WAVフォーマットで音声波形を生成する。
@@ -2711,7 +2731,7 @@ pub(crate) mod blocking {
             f0: &[f32],
             phoneme_vector: &[f32],
             style_id: StyleId,
-        ) -> crate::Result<ndarray::Array2<f32>> {
+        ) -> crate::Result<Box<[[f32; AUDIO_FEATURE_BINS]]>> {
             self.0
                 .generate_full_intermediate(length, phoneme_size, f0, phoneme_vector, style_id)
                 .block_on()
@@ -3061,9 +3081,9 @@ pub(crate) mod nonblocking {
     use typed_floats::{NonNaNFinite, PositiveFinite};
 
     use crate::{
-        __internal::interop::PeekIfEmpty, AccentPhrase, AudioQuery, FrameAudioQuery,
-        OnExistingVoiceModelId, Result, Score, StyleId, VoiceModelId, VoiceModelMeta,
-        assert::assert_send_sync, asyncs::BlockingThreadPool,
+        __internal::interop::PeekIfEmpty, AccentPhrase, AudioFeatureSlice, AudioQuery,
+        FrameAudioQuery, OnExistingVoiceModelId, Result, Score, StyleId, VoiceModelId,
+        VoiceModelMeta, assert::assert_send_sync, asyncs::BlockingThreadPool,
     };
 
     use super::{
@@ -3187,10 +3207,9 @@ pub(crate) mod nonblocking {
         /// 中間表現から16bit PCMで音声波形を生成する。
         pub async fn render(
             &self,
-            audio: &AudioFeature,
-            range: impl Into<std::ops::Range<usize>>,
+            audio: impl Into<AudioFeatureSlice<'_>>,
         ) -> crate::Result<Vec<u8>> {
-            self.0.render(audio, range.into()).await
+            self.0.render(audio.into()).await
         }
 
         /// AudioQueryから音声合成を行う。
@@ -5182,10 +5201,7 @@ mod tests {
             .perform()
             .await
             .unwrap();
-        let pcm = synthesizer
-            .render(&feat, 0..feat.frame_length())
-            .await
-            .unwrap();
+        let pcm = synthesizer.render(&feat).await.unwrap();
         let actual_wav = wav_from_s16le(
             &pcm,
             audio_query.output_sampling_rate.get().get(),
@@ -5223,7 +5239,7 @@ mod tests {
             .create_audio_feature(&audio_query, StyleId::new(302))
             .perform()
             .unwrap();
-        let pcm = synthesizer.render(&feat, 0..feat.frame_length()).unwrap();
+        let pcm = synthesizer.render(&feat).unwrap();
         let actual_wav = wav_from_s16le(
             &pcm,
             audio_query.output_sampling_rate.get().get(),

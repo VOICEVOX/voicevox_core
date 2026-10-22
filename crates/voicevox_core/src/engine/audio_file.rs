@@ -39,6 +39,15 @@ pub(crate) struct PcmOptions {
     output_stereo: bool,
 }
 
+#[cfg(test)]
+impl PcmOptions {
+    pub(crate) const DUMMY: Self = Self {
+        volume_scale: typed_floats::tf32::ZERO,
+        output_sampling_rate: SamplingRate::DEFAULT,
+        output_stereo: false,
+    };
+}
+
 impl ValidatedAudioQuery<'_> {
     pub(crate) fn pcm_options(&self) -> PcmOptions {
         let Self {

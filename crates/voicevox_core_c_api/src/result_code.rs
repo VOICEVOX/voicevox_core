@@ -72,6 +72,12 @@ pub enum VoicevoxResultCode {
     VOICEVOX_RESULT_INVALID_FRAME_PHONEME_ERROR = 34,
     /// 楽譜とFrameAudioQueryの組み合わせが不正
     VOICEVOX_RESULT_INCOMPATIBLE_QUERIES_ERROR = 35,
+    /// AudioFeatureSliceをスライスするときの始端が大きすぎた
+    VOICEVOX_RESULT_START_OUT_OF_BOUNDS_ERROR = 36,
+    /// AudioFeatureSliceをスライスするときの終端が大きすぎた
+    VOICEVOX_RESULT_END_OUT_OF_BOUNDS_ERROR = 37,
+    /// AudioFeatureSliceをスライスするときに始端が終端を超えていた
+    VOICEVOX_RESULT_START_EXCEEDS_END_ERROR = 38,
 }
 
 pub(crate) const fn error_result_to_message(result_code: VoicevoxResultCode) -> &'static CStr {
@@ -126,5 +132,8 @@ pub(crate) const fn error_result_to_message(result_code: VoicevoxResultCode) -> 
         VOICEVOX_RESULT_INCOMPATIBLE_QUERIES_ERROR => {
             c"不正な楽譜とFrameAudioQueryの組み合わせです。異なる音素ID列です"
         }
+        VOICEVOX_RESULT_START_OUT_OF_BOUNDS_ERROR => c"始端の値が大きすぎます",
+        VOICEVOX_RESULT_END_OUT_OF_BOUNDS_ERROR => c"終端の値が大きすぎます",
+        VOICEVOX_RESULT_START_EXCEEDS_END_ERROR => c"始端が終端を超過しています",
     }
 }

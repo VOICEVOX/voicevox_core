@@ -137,11 +137,11 @@ impl AudioQuery {
     /// #
     /// let query =
     ///     &synth.create_audio_query("こんにちは、音声合成の世界へようこそ？", WHATEVER_STYLE1)?;
-    /// let audio = synth
+    /// let feat = synth
     ///     .create_audio_feature(query, WHATEVER_STYLE2)
     ///     .perform()?;
     ///
-    /// assert_eq!(audio.frame_length(), query.frame_length().calculate().0);
+    /// assert_eq!(feat.len(), query.frame_length().calculate().0);
     /// #
     /// # Ok(())
     /// # }

@@ -1,4 +1,5 @@
 use std::{
+    cmp,
     convert::Infallible,
     marker::PhantomData,
     mem,
@@ -15,9 +16,12 @@ use log::{debug, warn};
 use macros::pyproject_project_version;
 use pyo3::{
     Bound, Py, PyAny, PyClass, PyResult, PyTypeInfo, Python, create_exception,
-    exceptions::{PyException, PyKeyError, PyValueError},
+    exceptions::{PyException, PyKeyError, PyTypeError, PyValueError},
     pyclass, pyfunction, pymethods, pymodule,
-    types::{PyAnyMethods as _, PyList, PyModule, PyModuleMethods as _, PyString},
+    types::{
+        PyAnyMethods as _, PyList, PyModule, PyModuleMethods as _, PySlice, PySliceMethods as _,
+        PyString,
+    },
     wrap_pyfunction,
 };
 use voicevox_core::{
@@ -34,6 +38,7 @@ fn rust(py: Python<'_>, module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add("FRAME_RATE", FRAME_RATE)?;
     module.add_class::<_ReservedFields>()?;
     module.add_class::<AudioFeature>()?;
+    module.add_class::<AudioFeatureSlice>()?;
     module.add_wrapped(wrap_pyfunction!(_audio_query_from_accent_phrases))?;
     module.add_wrapped(wrap_pyfunction!(_audio_query_from_json))?;
     module.add_wrapped(wrap_pyfunction!(_audio_query_to_json))?;
@@ -430,11 +435,6 @@ struct AudioFeature {
 
 #[pymethods]
 impl AudioFeature {
-    #[getter]
-    fn frame_length(&self) -> usize {
-        self.audio.frame_length()
-    }
-
     fn __repr__(&self, py: Python<'_>) -> String {
         let Self { audio: rust_api } = self;
         let rust_api = PyString::new(py, &format!("{rust_api:?}"));
@@ -442,6 +442,89 @@ impl AudioFeature {
             "<voicevox_core.{NAME} rust_api=<{rust_api:?}>>",
             NAME = Self::NAME,
         )
+    }
+
+    const fn __len__(&self) -> usize {
+        self.audio.len()
+    }
+
+    fn __getitem__(slf: Py<Self>, slice: Bound<'_, PySlice>) -> PyResult<AudioFeatureSlice> {
+        AudioFeatureSlice::new(slf).__getitem__(slice)
+    }
+}
+
+#[pyclass(frozen, eq)]
+struct AudioFeatureSlice {
+    audio_feature: Py<AudioFeature>,
+
+    /// Invariant: must be valid for `audio_feature`.
+    range: std::ops::Range<usize>,
+}
+
+#[pymethods]
+impl AudioFeatureSlice {
+    #[new]
+    fn new(audio_feature: Py<AudioFeature>) -> Self {
+        Self {
+            range: 0..audio_feature.get().audio.len(),
+            audio_feature,
+        }
+    }
+
+    #[getter]
+    fn audio_feature(&self, py: Python<'_>) -> Py<AudioFeature> {
+        self.audio_feature.clone_ref(py)
+    }
+
+    #[getter]
+    const fn start_offset(&self) -> usize {
+        self.range.start
+    }
+
+    fn __repr__(&self, py: Python<'_>) -> String {
+        let audio_feature = &self.audio_feature.get().audio;
+        let audio_feature = PyString::new(py, &format!("{audio_feature:?}"));
+        format!(
+            "<voicevox_core.{NAME} audio_feature=<{audio_feature:?}>, start={start}, stop={stop}>",
+            NAME = Self::NAME,
+            start = self.range.start,
+            stop = self.range.end,
+        )
+    }
+
+    fn __len__(&self) -> usize {
+        self.range.len()
+    }
+
+    fn __getitem__(&self, slice: Bound<'_, PySlice>) -> PyResult<Self> {
+        let py = slice.py();
+        if !slice.getattr("step")?.is_none() {
+            return Err(PyTypeError::new_err(
+                "argument 'slice': 'step' must be 'None'",
+            ));
+        }
+        let indices = slice.indices(self.range.len() as _)?;
+        let start = indices.start as usize;
+        let stop = indices.stop as usize;
+        assert_eq!(1, indices.step);
+        let mut range = self.range.start + start..self.range.start + stop;
+        range.end = cmp::max(range.end, range.start);
+        Ok(Self {
+            audio_feature: self.audio_feature.clone_ref(py),
+            range,
+        })
+    }
+}
+
+impl AudioFeatureSlice {
+    fn as_rust_api(&self) -> voicevox_core::AudioFeatureSlice<'_> {
+        self.audio_feature.get().audio.slice(self.range.clone())
+    }
+}
+
+impl PartialEq for AudioFeatureSlice {
+    fn eq(&self, other: &Self) -> bool {
+        (self.audio_feature.get(), &self.range) == (other.audio_feature.get(), &other.range)
     }
 }
 
@@ -467,7 +550,7 @@ mod blocking {
 
     use crate::{
         AudioFeature, Closable, HasClosable, ReadLockThread, SingleTasked, VoiceModelFilePyFields,
-        convert::{ToDataclass, VoicevoxCoreResultExt as _},
+        convert::{ToAudioFeatureSlice, ToDataclass, VoicevoxCoreResultExt as _},
     };
 
     #[pyclass(frozen)]
@@ -1077,18 +1160,9 @@ mod blocking {
             Ok(AudioFeature { audio })
         }
 
-        fn render(
-            &self,
-            audio: &AudioFeature,
-            #[pyo3(from_py_with = crate::convert::from_audio_feature_range_start)] start: usize,
-            #[pyo3(from_py_with = crate::convert::from_audio_feature_range_stop)] stop: usize,
-            py: Python<'_>,
-        ) -> PyResult<Vec<u8>> {
-            crate::convert::error_for_audio_feature_range(audio.audio.frame_length(), start, stop)?;
-            self.synthesizer
-                .read()?
-                .render(&audio.audio, start..stop)
-                .into_py_result(py)
+        fn render(&self, audio: ToAudioFeatureSlice, py: Python<'_>) -> PyResult<Vec<u8>> {
+            let audio = audio.get();
+            self.synthesizer.read()?.render(audio).into_py_result(py)
         }
 
         #[pyo3(signature=(
@@ -1379,7 +1453,7 @@ mod asyncio {
 
     use crate::{
         AudioFeature, Closable, HasClosable, ReadLockThread, Tokio, VoiceModelFilePyFields,
-        convert::{ToDataclass, VoicevoxCoreResultExt as _},
+        convert::{ToAudioFeatureSlice, ToDataclass, VoicevoxCoreResultExt as _},
     };
 
     #[pyclass(frozen)]
@@ -1994,15 +2068,9 @@ mod asyncio {
             Ok(AudioFeature { audio })
         }
 
-        async fn render(
-            &self,
-            audio: Py<AudioFeature>,
-            #[pyo3(from_py_with = crate::convert::from_audio_feature_range_start)] start: usize,
-            #[pyo3(from_py_with = crate::convert::from_audio_feature_range_stop)] stop: usize,
-        ) -> PyResult<Vec<u8>> {
-            let audio = &audio.get().audio;
-            crate::convert::error_for_audio_feature_range(audio.frame_length(), start, stop)?;
-            let pcm = self.synthesizer.read()?.render(audio, start..stop).await;
+        async fn render(&self, audio: ToAudioFeatureSlice) -> PyResult<Vec<u8>> {
+            let audio = audio.get();
+            let pcm = self.synthesizer.read()?.render(audio).await;
             Python::attach(|py| pcm.into_py_result(py))
         }
 

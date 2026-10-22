@@ -12,12 +12,14 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import jp.hiroshiba.voicevoxcore.AccelerationMode;
 import jp.hiroshiba.voicevoxcore.AccentPhrase;
 import jp.hiroshiba.voicevoxcore.AudioFeature;
 import jp.hiroshiba.voicevoxcore.AudioQuery;
 import jp.hiroshiba.voicevoxcore.FrameAudioQuery;
+import jp.hiroshiba.voicevoxcore.Frames;
 import jp.hiroshiba.voicevoxcore.Mora;
 import jp.hiroshiba.voicevoxcore.Note;
 import jp.hiroshiba.voicevoxcore.Score;
@@ -236,12 +238,58 @@ class SynthesizerTest extends TestUtils {
     AudioQuery query = synthesizer.createAudioQuery(TEXT, STYLE_ID);
     AudioFeature audioFeature = synthesizer.createAudioFeature(query, STYLE_ID).perform();
 
-    assertEquals(query.frameLength().calculate(), audioFeature.getFrameLength());
+    assertEquals(query.frameLength().calculate(), audioFeature.length());
 
-    byte[] pcm = synthesizer.render(audioFeature, 0, audioFeature.getFrameLength());
+    byte[] pcm = synthesizer.render(audioFeature);
     byte[] wav2 = wavFromS16le(pcm, query.outputSamplingRate, query.outputStereo);
 
     assertArrayEquals(wav1, wav2);
+  }
+
+  @Test
+  void checkAudioFeatureSlicing() throws RunModelException, InvalidModelDataException {
+    Onnxruntime onnxruntime = loadOnnxruntime();
+    OpenJtalk openJtalk = loadOpenJtalk();
+    Synthesizer synthesizer = Synthesizer.builder(onnxruntime, openJtalk).build();
+    try (VoiceModelFile model = openModel()) {
+      synthesizer.loadVoiceModel(model).perform();
+    }
+
+    final int LEN = 10;
+    final int STYLE_ID = 302;
+
+    AudioQuery query = AudioQuery.fromAccentPhrases(Collections.emptyList());
+    query.prePhonemeLength = LEN / Frames.FRAME_RATE;
+    query.postPhonemeLength = 0.0;
+    AudioFeature audioFeature = synthesizer.createAudioFeature(query, STYLE_ID).perform();
+    assertEquals(LEN, audioFeature.length());
+
+    List<Integer> reference = Collections.nCopies(LEN, 0);
+    for (int i = -1; i <= LEN + 1; i++) {
+      for (int j = -1; j <= LEN + 1; j++) {
+        for (int k = -1; k <= LEN + 1; k++) {
+          for (int l = -1; l <= LEN + 1; l++) {
+            int[] expected;
+            try {
+              List<Integer> slice = reference.subList(i, j).subList(k, l);
+              expected = new int[] {i + k, slice.size()};
+            } catch (IndexOutOfBoundsException | IllegalArgumentException e) {
+              expected = null;
+            }
+
+            int[] actual;
+            try {
+              AudioFeature.Slice slice = audioFeature.slice(i, j).slice(k, l);
+              actual = new int[] {slice.getStartOffset(), slice.length()};
+            } catch (IndexOutOfBoundsException | IllegalArgumentException e) {
+              actual = null;
+            }
+
+            assertArrayEquals(expected, actual);
+          }
+        }
+      }
+    }
   }
 
   @Test

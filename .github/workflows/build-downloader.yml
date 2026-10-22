@@ -92,10 +92,8 @@ jobs:
           tool: cargo-binstall
 
       - name: Install cargo-edit
-        # cargo-binstall だと quickinstall の不具合 (cargo-bins/cargo-quickinstall#466) で cargo-edit v0.13 系の導入が失敗する。
-        # かつ Rust 1.88 環境では smol_str v0.3.4 の影響で --locked なしの cargo install が失敗するため、--locked で固定インストールする。
-        # TODO: cargo-edit v0.13.8 / v0.14.0 がリリースされ、 quickinstall に正しくホストされたら cargo-binstall に戻す。
-        run: cargo install cargo-edit@^0.13 -v --locked
+        # https://github.com/cargo-bins/cargo-quickinstall/releases/tag/cargo-edit-0.13.13
+        run: cargo binstall cargo-edit@0.13.13 --no-confirm --log-level debug
 
       - name: Set version
         run: cargo set-version ${{ needs.config.outputs.version }} --exclude voicevox_core_python_api --exclude xtask

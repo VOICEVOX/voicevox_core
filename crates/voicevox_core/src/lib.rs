@@ -297,7 +297,7 @@
 //!         let phrases = synth.replace_mora_pitch(&phrases, STYLE_ID)?;
 //!         let query = AudioQuery::from(phrases);
 //!         let feat = synth.create_audio_feature(&query, STYLE_ID).perform()?;
-//!         let pcm = synth.render(&feat, 0..feat.frame_length())?;
+//!         let pcm = synth.render(feat.slice(..))?; // `feat`そのままでも可
 //!         voicevox_core::wav_from_s16le(
 //!             &pcm,
 //!             query.output_sampling_rate.get().get(),
@@ -466,6 +466,7 @@ mod audio_feature;
 mod collections;
 mod convert;
 mod core;
+mod dim;
 mod engine;
 mod error;
 mod frame;
@@ -493,7 +494,7 @@ mod test_util;
 use rstest_reuse;
 
 pub use self::{
-    audio_feature::AudioFeature,
+    audio_feature::{AudioFeature, AudioFeatureSlice},
     core::{
         devices::SupportedDevices,
         metas::{CharacterMeta, CharacterVersion, StyleId, StyleMeta, StyleType, VoiceModelMeta},
