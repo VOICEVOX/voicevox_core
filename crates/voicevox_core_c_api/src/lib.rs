@@ -1057,8 +1057,6 @@ pub unsafe extern "C" fn voicevox_ensure_compatible(
 /// @param [out] output_wav_length 出力のバイト長
 /// @param [out] output_wav 出力先
 ///
-/// @returns 結果コード
-///
 /// \safety{
 /// - `pcm_length > 0`のとき、`pcm`は長さ`pcm_length`にわたって<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// - `output_wav_length`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
@@ -1952,11 +1950,15 @@ pub struct VoicevoxAudioFeature {
 }
 
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
-/// ::VoicevoxAudioFeature のフレーム数を取得する。
+/// ::VoicevoxAudioFeature の総フレーム数を取得する。
+///
+/// この ::VoicevoxAudioFeature
+/// を生成するときに用いた`AudioQuery`について、生成時と同じ疑問文の語尾上昇設定で
+/// ::voicevox_audio_query_frame_length により算出した値に等しい。
 ///
 /// @param [in] audio_feature 音声合成用の中間表現
 ///
-/// @returns フレーム数
+/// @returns 総フレーム数
 ///
 /// \orig-impl{voicevox_audio_feature_len}
 #[unsafe(no_mangle)]
@@ -1966,6 +1968,12 @@ pub extern "C" fn voicevox_audio_feature_len(audio_feature: *const VoicevoxAudio
 }
 
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// ::voicevox_audio_feature_len で取得する長さが`0`かどうか。
+///
+/// @param [in] audio_feature 音声合成用の中間表現
+///
+/// @returns 長さが`0`なら`true`、それ以外は`false`
+///
 /// \orig-impl{voicevox_audio_feature_is_empty}
 #[unsafe(no_mangle)]
 pub extern "C" fn voicevox_audio_feature_is_empty(
@@ -1976,13 +1984,22 @@ pub extern "C" fn voicevox_audio_feature_is_empty(
 }
 
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// 指定された範囲に対応した ::VoicevoxAudioFeatureSlice を返す。
+///
+/// `audio_feature`は複製されずにそのまま構造体に入る。解放は不要。
+///
 /// @param [in] audio_feature
 /// @param [in] start_inclusive 開始フレーム番号
 /// @param [in] end 終了フレーム番号
 /// @param [in] end_is_inclusive `end`を含むかどうか
 /// @param [in] clamp
 /// @param [in] allow_start_exceeds_end
-/// @param [out] output
+/// @param [out] output スライスの出力先
+///
+/// @returns 結果コード。エラーは
+///          \ref VOICEVOX_RESULT_START_OUT_OF_BOUNDS_ERROR
+///          、\ref VOICEVOX_RESULT_END_OUT_OF_BOUNDS_ERROR
+///          、または \ref VOICEVOX_RESULT_START_EXCEEDS_END_ERROR
 ///
 /// \safety{
 /// - `output`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
@@ -2014,12 +2031,20 @@ pub unsafe extern "C" fn voicevox_audio_feature_slice(
     })())
 }
 
+/// ある ::VoicevoxAudioFeature 上の区間。
+///
+/// この構造体は、`audio_feature`を破棄するかフィールドを編集したときのみ不正な状態になる。
+///
 /// \orig-impl{VoicevoxAudioFeatureSlice}
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct VoicevoxAudioFeatureSlice {
+    /// 元の ::VoicevoxAudioFeature 。
+    ///
     /// \orig-impl{VoicevoxAudioFeatureSlice::audio_feature}
     audio_feature: *const VoicevoxAudioFeature,
+    /// この ::VoicevoxAudioFeatureSlice の始端が、元の ::VoicevoxAudioFeature のどの箇所にあたるか。
+    ///
     /// \orig-impl{VoicevoxAudioFeatureSlice::start_offset}
     start_offset: usize,
     end: usize,
@@ -2029,6 +2054,10 @@ pub struct VoicevoxAudioFeatureSlice {
 }
 
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// 与えられた ::VoicevoxAudioFeature の全体を表す ::VoicevoxAudioFeatureSlice を返す。
+///
+/// `audio_feature`は複製されずにそのまま構造体に入る。解放は不要。
+///
 /// \orig-impl{voicevox_audio_feature_slice_new}
 #[unsafe(no_mangle)]
 pub extern "C" fn voicevox_audio_feature_slice_new(
@@ -2041,8 +2070,15 @@ pub extern "C" fn voicevox_audio_feature_slice_new(
 }
 
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// ::VoicevoxAudioFeatureSlice が持つフレーム数を返す。
+///
 /// @param [in] audio_feature_slice
-/// @param [out] output
+/// @param [out] output フレーム数の出力先
+///
+/// @returns 結果コード。エラーは
+///          \ref VOICEVOX_RESULT_START_OUT_OF_BOUNDS_ERROR
+///          、\ref VOICEVOX_RESULT_END_OUT_OF_BOUNDS_ERROR
+///          、または \ref VOICEVOX_RESULT_START_EXCEEDS_END_ERROR
 ///
 /// \safety{
 /// - `output`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
@@ -2064,8 +2100,15 @@ pub unsafe extern "C" fn voicevox_audio_feature_slice_len(
 }
 
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// ::voicevox_audio_feature_slice_len で取得する長さが`0`かどうかを返す。
+///
 /// @param [in] audio_feature_slice
-/// @param [out] output
+/// @param [out] output 長さが`0`かどうかの出力先
+///
+/// @returns 結果コード。エラーは
+///          \ref VOICEVOX_RESULT_START_OUT_OF_BOUNDS_ERROR
+///          、\ref VOICEVOX_RESULT_END_OUT_OF_BOUNDS_ERROR
+///          、または \ref VOICEVOX_RESULT_START_EXCEEDS_END_ERROR
 ///
 /// \safety{
 /// - `output`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
@@ -2087,13 +2130,22 @@ pub unsafe extern "C" fn voicevox_audio_feature_slice_is_empty(
 }
 
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// 与えられた ::VoicevoxAudioFeatureSlice のサブスライスを返す。
+///
+/// `audio_feature_slice.audio_feature`は複製されずにそのまま構造体に入る。解放は不要。
+///
 /// @param [in] audio_feature_slice
 /// @param [in] start_inclusive 開始フレーム番号
 /// @param [in] end 終了フレーム番号
 /// @param [in] end_is_inclusive `end`を含むかどうか
 /// @param [in] clamp
 /// @param [in] allow_start_exceeds_end
-/// @param [out] output
+/// @param [out] output サブスライスの出力先
+///
+/// @returns 結果コード。エラーは
+///          \ref VOICEVOX_RESULT_START_OUT_OF_BOUNDS_ERROR
+///          、\ref VOICEVOX_RESULT_END_OUT_OF_BOUNDS_ERROR
+///          、または \ref VOICEVOX_RESULT_START_EXCEEDS_END_ERROR
 ///
 /// \safety{
 /// - `output`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。

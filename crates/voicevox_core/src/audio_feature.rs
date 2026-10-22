@@ -48,21 +48,31 @@ impl AudioFeature {
         }
     }
 
+    /// 総フレーム数。
+    ///
+    /// この`AudioFeature`を生成するときに用いた`AudioQuery`の[`frame_length`]に等しい。
+    ///
+    /// [`frame_length`]: crate::AudioQuery::frame_length
     #[cfg_attr(doc, doc(alias = "voicevox_audio_feature_len"))]
     pub const fn len(&self) -> usize {
         self.internal_state.len() - 2 * MARGIN
     }
 
+    /// [長さ]が`0`かどうか。
+    ///
+    /// [長さ]: Self::len
     #[cfg_attr(doc, doc(alias = "voicevox_audio_feature_is_empty"))]
     pub const fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
+    /// `range`に対応した[`AudioFeatureSlice`]を返す。
+    ///
     /// # Panics
     ///
-    /// この`AudioFeature`の[大きさ]に対して`range`が範囲外の場合パニックする。
+    /// この`AudioFeature`の[長さ]に対して`range`が範囲外の場合パニックする。
     ///
-    /// [大きさ]: Self::len
+    /// [長さ]: Self::len
     #[cfg_attr(doc, doc(alias = "voicevox_audio_feature_slice"))]
     #[track_caller]
     pub fn slice<'a>(
@@ -73,6 +83,7 @@ impl AudioFeature {
     }
 }
 
+/// ある`AudioFeature`上の区間。
 #[cfg_attr(doc, doc(alias = "VoicevoxAudioFeatureSlice"))]
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct AudioFeatureSlice<'a> {
@@ -84,6 +95,7 @@ pub struct AudioFeatureSlice<'a> {
 }
 
 impl<'a> AudioFeatureSlice<'a> {
+    /// 与えられた[`AudioFeature`]の全体を表す`AudioFeatureSlice`を返す。
     #[cfg_attr(doc, doc(alias = "voicevox_audio_feature_slice_new"))]
     pub const fn new(audio_feature: &'a AudioFeature) -> Self {
         Self {
@@ -92,33 +104,41 @@ impl<'a> AudioFeatureSlice<'a> {
         }
     }
 
+    /// 元の[`AudioFeature`]。
     #[cfg_attr(doc, doc(alias = "VoicevoxAudioFeatureSlice::audio_feature"))]
     pub const fn audio_feature(self) -> &'a AudioFeature {
         self.audio_feature
     }
 
+    /// この`AudioFeatureSlice`の始端が、元の[`AudioFeature`]のどの箇所にあたるか。
     #[cfg_attr(doc, doc(alias = "VoicevoxAudioFeatureSlice::start_offset"))]
     pub const fn start_offset(self) -> usize {
         let (start, _) = self.range;
         start
     }
 
+    /// この`AudioFeatureSlice`が持つフレーム数。
     #[cfg_attr(doc, doc(alias = "voicevox_audio_feature_slice_len"))]
     pub const fn len(self) -> usize {
         let (start, end) = self.range;
         end - start
     }
 
+    /// [長さ]が`0`かどうか。
+    ///
+    /// [長さ]: Self::len
     #[cfg_attr(doc, doc(alias = "voicevox_audio_feature_slice_is_empty"))]
     pub const fn is_empty(self) -> bool {
         self.len() == 0
     }
 
+    /// この`AudioFeatureSlice`のサブスライスを返す。
+    ///
     /// # Panics
     ///
-    /// この`AudioFeatureSlice`の[大きさ]に対して`range`が範囲外の場合パニックする。
+    /// この`AudioFeatureSlice`の[長さ]に対して`range`が範囲外の場合パニックする。
     ///
-    /// [大きさ]: Self::len
+    /// [長さ]: Self::len
     #[cfg_attr(doc, doc(alias = "voicevox_audio_feature_slice_slice"))]
     #[track_caller]
     pub fn slice(

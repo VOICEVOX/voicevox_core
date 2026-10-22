@@ -37,7 +37,8 @@ flowchart TD;
     wav[WAV形式の音声]
 
     ja-txt ==>|<a href="https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/blocking/index.html#voicevox_core.blocking.Synthesizer.tts">Synthesizer.tts</a>| wav
-    aq ==>|<ul><li><a href="https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/blocking/index.html#voicevox_core.blocking.Synthesizer.synthesis">Synthesizer.synthesis</a></li><li><a href="https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/blocking/index.html#voicevox_core.blocking.Synthesizer.streaming_synthesis">Synthesizer.streaming_synthesis</a></li></ul>| wav
+    aq ==>|<a href="https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/blocking/index.html#voicevox_core.blocking.Synthesizer.synthesis">Synthesizer.synthesis</a>| wav
+    aq ==>|<a href="https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/blocking/index.html#voicevox_core.blocking.Synthesizer.streaming_synthesis">Synthesizer.streaming_synthesis</a>| wav
     ja-txt ==>|<a href="https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/blocking/index.html#voicevox_core.blocking.Synthesizer.create_audio_query">Synthesizer.create_audio_query</a>| aq
     ja-txt ==>|<a href="https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/blocking/index.html#voicevox_core.blocking.Synthesizer.create_accent_phrases">Synthesizer.create_accent_phrases</a>| ap-with-mora-data
     ja-txt -->|<a href="https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/blocking/index.html#voicevox_core.blocking.OpenJtalk.analyze">OpenJtalk.analyze</a>| ap-without-mora-data
