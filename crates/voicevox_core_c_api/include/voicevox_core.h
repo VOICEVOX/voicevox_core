@@ -1844,6 +1844,11 @@ VoicevoxResultCode voicevox_synthesizer_synthesis(const struct VoicevoxSynthesiz
  *
  * 生成した中間表現を解放するには ::voicevox_audio_feature_delete を使う。
  *
+ * > [!WARNING]
+ * > ストリーミング音声合成にはいくつか注意事項がある。ユーザーガイドの[ストリーミング音声合成]を参照。
+ *
+ * [ストリーミング音声合成]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/usage.md#ストリーミング音声合成
+ *
  * @param [in] synthesizer 音声シンセサイザ
  * @param [in] audio_query_json AudioQueryのJSON文字列
  * @param [in] style_id スタイルID

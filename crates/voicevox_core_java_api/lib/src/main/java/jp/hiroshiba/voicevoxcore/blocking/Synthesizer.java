@@ -296,6 +296,9 @@ public final class Synthesizer {
   /**
    * {@link AudioQuery} から音声合成用の中間表現を生成する。
    *
+   * <p>ストリーミング音声合成にはいくつか注意事項がある。ユーザーガイドの<a
+   * href="https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/usage.md#%E3%82%B9%E3%83%88%E3%83%AA%E3%83%BC%E3%83%9F%E3%83%B3%E3%82%B0%E9%9F%B3%E5%A3%B0%E5%90%88%E6%88%90">ストリーミング音声合成</a>を参照。
+   *
    * @param audioQuery {@link AudioQuery}。
    * @param styleId スタイルID。
    * @return {@link CreateAudioFeatureConfigurator}。
