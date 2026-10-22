@@ -6,6 +6,7 @@ pub use crate::{
     core::adjust::MARGIN,
     core::metas::merge as merge_metas,
     dim::AUDIO_FEATURE_BINS,
+    engine::audio_length::AudioSegmentation,
     engine::talk::{
         DEFAULT_ENABLE_INTERROGATIVE_UPSPEAK,
         user_dict::{DEFAULT_WORD_TYPE, InvalidWordError},

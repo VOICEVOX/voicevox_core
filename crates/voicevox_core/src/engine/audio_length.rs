@@ -1,11 +1,11 @@
-use std::num::NonZero;
+use std::{fmt::Display, num::NonZero};
 
 use crate::FRAME_RATE;
 
 #[derive(Clone, Copy, Debug)]
-pub(crate) struct AudioSegmentation {
-    pub(crate) start_offset_in_secs: f64,
-    pub(crate) segment_length_in_secs: f64,
+pub struct AudioSegmentation {
+    pub start_offset_in_secs: f64,
+    pub segment_length_in_secs: f64,
 }
 
 // FIXME: 受理する範囲についてテストを書く
@@ -58,6 +58,10 @@ impl AudioSegmentation {
         const fn to_frame_length(secs: f64) -> f64 {
             secs * FRAME_RATE
         }
+    }
+
+    pub fn validate(self, frame_length: usize) -> Result<(), impl Display> {
+        self.try_to_frames(frame_length).map(|_| ())
     }
 }
 

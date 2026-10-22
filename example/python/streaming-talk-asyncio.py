@@ -123,8 +123,9 @@ async def main() -> None:
 
     logger.info("%s", f"Preparing the stream with {audio_query}")
 
-    # TODO: specify `args.segment_length`
-    stream = await synthesizer.streaming_synthesis(audio_query, args.style_id)
+    stream = await synthesizer.streaming_synthesis(
+        audio_query, args.style_id, segment_length=args.segment_length
+    )
 
     _wav_header = await anext(stream)
 

@@ -1,6 +1,6 @@
 from collections.abc import AsyncIterator
 from os import PathLike
-from typing import TYPE_CHECKING, NoReturn, Union
+from typing import TYPE_CHECKING, NoReturn, SupportsFloat, Union
 from uuid import UUID
 
 if TYPE_CHECKING:
@@ -530,11 +530,14 @@ class Synthesizer:
         WAVデータ。
         """
         ...
+    # FIXME: <../../test/test_type_stub_consts.py>で実物のsignatureと比較する。
     async def streaming_synthesis(
         self,
         audio_query: AudioQuery,
         style_id: StyleId | int,
         *,
+        start_offset: SupportsFloat = 0.0,
+        segment_length: SupportsFloat = 0.3,
         enable_interrogative_upspeak: bool = True,
     ) -> SynthesisStream:
         """
@@ -557,8 +560,23 @@ class Synthesizer:
             :class:`AudioQuery <voicevox_core.AudioQuery>`。
         style_id
             スタイルID。
+        start_offset
+            音声の開始位置。単位は秒。``0.0 <= start_offset * FRAME_RATE <= frame_length``
+            でなければならない。ここで ``frame_length`` は
+
+            .. code-block::
+
+                audio_query.frame_length(
+                    enable_interrogative_upspeak=enable_interrogative_upspeak,
+                )
+
+            で得られるものとする。
+        segment_length
+            一度に合成する音声の長さ。単位は秒。``0.5 < segment_length * FRAME_RATE``
+            でなければならない。
         enable_interrogative_upspeak
-            疑問文の調整を有効にするかどうか。
+            疑問文の調整を有効にするかどうか。この値を ``False``
+            にすることで上記の ``frame_length`` が小さくなる場合があることに注意。
 
         Returns
         -------
@@ -566,6 +584,18 @@ class Synthesizer:
 
         Raises
         ------
+        ValueError
+            - ``0.0 <= start_offset * FRAME_RATE <= frame_length``
+              を満たさない場合。ここで ``frame_length`` は
+
+              .. code-block::
+
+                  audio_query.frame_length(
+                      enable_interrogative_upspeak=enable_interrogative_upspeak,
+                  )
+
+              で得られるものとする。
+            - ``0.5 < segment_length * FRAME_RATE`` を満たさない場合。
         InvalidQueryError
             ``audio_query`` が :attr:`不正 <voicevox_core.AudioQuery.validate>` な場合。
         StyleNotFoundError
@@ -591,22 +621,26 @@ class Synthesizer:
         >>> async for pcm in stream:
         ...     _do_something(pcm)
 
-        TODO: ``segment_length`` を実装したらこれ↓もdoctest化
+        >>> from voicevox_core import FRAME_RATE
+        >>>
+        >>> frame_length = query.frame_length()
+        >>> if frame_length < 2:
+        ...     raise RuntimeError("unimplemented")
+        >>>
+        >>> stream = await synth.streaming_synthesis(
+        ...     query,
+        ...     STYLE_ID,
+        ...     segment_length=(frame_length + 0.5) / FRAME_RATE / 2.0,  # ２分割
+        ... )
+        >>> _wav_header, segment1, segment2 = [elm async for elm in stream]
 
-        .. code-block::
-
-            from voicevox_core import FRAME_RATE
-
-            frame_length = query.frame_length()
-            if frame_length < 2:
-                raise RuntimeError("unimplemented")
-
-            stream = await synth.streaming_synthesis(
-                query,
-                STYLE_ID,
-                segment_length=(frame_length + 0.5) / FRAME_RATE / 2.0,  # ２分割
-            )
-            _wav_header, segment1, segment2 = [elm async for elm in stream]
+        >>> stream = await synth.streaming_synthesis(
+        ...     query,
+        ...     STYLE_ID,
+        ...     segment_length=0.5 / FRAME_RATE,  # 0.005333333333333333
+        ... )
+        Traceback (most recent call last):
+        ValueError: `segment_length * 93.75` must be greater than `0.5`
 
         >>> # WAVデータ先頭部分の中身を見る場合
         >>> wav_header = _wav_header
@@ -614,8 +648,6 @@ class Synthesizer:
         >>> import struct
         >>> import wave
         >>> from io import BytesIO
-        >>>
-        >>> from voicevox_core import FRAME_RATE
         >>>
         >>> with BytesIO(wav_header) as buf, wave.open(buf, "rb") as h:
         ...     assert h.getnchannels() == (2 if query.output_stereo else 1)
