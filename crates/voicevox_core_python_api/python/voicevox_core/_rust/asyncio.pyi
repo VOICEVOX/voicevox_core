@@ -635,9 +635,9 @@ class Synthesizer:
         >>> _wav_header, segment1, segment2 = [elm async for elm in stream]
 
         >>> stream = await synth.streaming_synthesis(
-        ...    query,
-        ...    STYLE_ID,
-        ...    segment_length=0.5 / FRAME_RATE,  # 0.005333333333333333
+        ...     query,
+        ...     STYLE_ID,
+        ...     segment_length=0.5 / FRAME_RATE,  # 0.005333333333333333
         ... )
         Traceback (most recent call last):
         ValueError: `segment_length * 93.75` must be greater than `0.5`

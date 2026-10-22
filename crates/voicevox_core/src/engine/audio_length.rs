@@ -1,4 +1,4 @@
-use std::num::NonZero;
+use std::{fmt::Display, num::NonZero};
 
 use crate::FRAME_RATE;
 
@@ -60,7 +60,7 @@ impl AudioSegmentation {
         }
     }
 
-    pub fn validate(self, frame_length: usize) -> Result<(), InvalidAudioSegmentationError> {
+    pub fn validate(self, frame_length: usize) -> Result<(), impl Display> {
         self.try_to_frames(frame_length).map(|_| ())
     }
 }
@@ -75,7 +75,7 @@ impl Default for AudioSegmentation {
 }
 
 #[derive(derive_more::Display)]
-pub enum InvalidAudioSegmentationError {
+enum InvalidAudioSegmentationError {
     #[display(
         "`start_offset` in frames must be positive and must not exceed the length of the audio \
          ({frame_length} frames; approx. {approx_secs} seconds)",
