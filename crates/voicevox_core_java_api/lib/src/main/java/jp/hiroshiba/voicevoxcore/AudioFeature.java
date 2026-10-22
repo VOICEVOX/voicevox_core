@@ -20,8 +20,8 @@ public final class AudioFeature {
   /**
    * 総フレーム数。
    *
-   * <p>この{@code AudioFeature}を生成するときに用いた{@code AudioQuery}の{@link
-   * AudioQuery#frameLength() frameLength}に等しい。
+   * <p>この{@code AudioFeature}を生成するときに用いた{@code AudioQuery}の{@link AudioQuery#frameLength()
+   * frameLength}に等しい。
    *
    * @return 総フレーム数。
    */
