@@ -471,6 +471,12 @@ class Synthesizer:
         """
         :class:`AudioQuery` から中間表現である :class:`AudioFeature` を生成する。
 
+        .. warning::
+
+            ストリーミング音声合成にはいくつか注意事項がある。ユーザーガイドの
+            `ストリーミング音声合成 <https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/usage.md#ストリーミング音声合成>`_
+            を参照。
+
         Parameters
         ----------
         audio_query
@@ -553,6 +559,12 @@ class Synthesizer:
         ２番目以降の要素から ``s16le``
         形式の音声波形が始まる。要素が要求されていない間は音声合成が行われない。そのため例えば再生バッファへの書き込みがスレッドを長時間ブロックする場合に、滞りなく音声合成し続けるためにFIFOキューなどを利用しなければならないことがある。このような対処を１行で行えるAPIを
         `#1467 <https://github.com/VOICEVOX/voicevox_core/issues/1467>`_ で議論中。
+
+        .. warning::
+
+            ストリーミング音声合成には他にもいくつか注意事項がある。ユーザーガイドの
+            `ストリーミング音声合成 <https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/usage.md#ストリーミング音声合成>`_
+            を参照。
 
         Parameters
         ----------

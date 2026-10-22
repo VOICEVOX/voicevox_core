@@ -1898,6 +1898,11 @@ pub(crate) mod blocking {
         }
 
         /// AudioQueryから音声合成用の中間表現を生成する。
+        ///
+        /// <div class="warning">
+        ///   ストリーミング音声合成にはいくつか注意事項がある。ユーザーガイドの<a
+        ///   href="https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/usage.md#ストリーミング音声合成">ストリーミング音声合成</a>を参照。
+        /// </div>
         #[cfg_attr(doc, doc(alias = "voicevox_synthesizer_create_audio_feature"))]
         pub fn create_audio_feature<'a>(
             &'a self,
@@ -1943,6 +1948,11 @@ pub(crate) mod blocking {
         /// このメソッドが返す[`SynthesisStream`]は最初に必ず、WAVデータの先頭部分を示す44バイトのデータを返す。このときエラーが返されることはない。[Rustの`waveadapter`クレート]や[Pythonの`wave`]のようなツールを利用するなどすれば情報を読み取ることができる。音声をリアルタイムに再生するだけなら多くの場合この44バイトのデータは不要。
         ///
         /// ２番目以降の要素からが`s16le`形式の音声波形。要素が要求されていない間は音声合成が行われない。そのため例えば再生バッファへの書き込みがスレッドを長時間ブロックする場合に、滞りなく音声合成し続けるためにFIFOキューなどを利用しなければならないことがある。このような対処を１行で行えるAPIを[#1467]で議論中。
+        ///
+        /// <div class="warning">
+        ///   ストリーミング音声合成にはいくつか注意事項がある。ユーザーガイドの<a
+        ///   href="https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/usage.md#ストリーミング音声合成">ストリーミング音声合成</a>を参照。
+        /// </div>
         ///
         /// # Errors
         ///
@@ -3191,6 +3201,11 @@ pub(crate) mod nonblocking {
         }
 
         /// AudioQueryから音声合成用の中間表現を生成する。
+        ///
+        /// <div class="warning">
+        ///   ストリーミング音声合成にはいくつか注意事項がある。ユーザーガイドの<a
+        ///   href="https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/usage.md#ストリーミング音声合成">ストリーミング音声合成</a>を参照。
+        /// </div>
         pub fn create_audio_feature<'a>(
             &'a self,
             audio_query: &'a AudioQuery,
@@ -3239,6 +3254,11 @@ pub(crate) mod nonblocking {
         /// このメソッドが返す[`SynthesisStream`]は最初に必ず、WAVデータの先頭部分を示す44バイトのデータを返す。このときエラーが返されることはない。[Rustの`waveadapter`クレート]や[Pythonの`wave`]のようなツールを利用するなどすれば情報を読み取ることができる。音声をリアルタイムに再生するだけなら多くの場合この44バイトのデータは不要。
         ///
         /// ２番目以降の要素からが`s16le`形式の音声波形。要素が要求されていない間は音声合成が行われない。そのため例えば再生バッファへの書き込みがスレッドを長時間ブロックする場合に、滞りなく音声合成し続けるためにFIFOキューなどを利用しなければならないことがある。このような対処を１行で行えるAPIを[#1467]で議論中。
+        ///
+        /// <div class="warning">
+        ///   ストリーミング音声合成にはいくつか注意事項がある。ユーザーガイドの<a
+        ///   href="https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/usage.md#ストリーミング音声合成">ストリーミング音声合成</a>を参照。
+        /// </div>
         ///
         /// # Errors
         ///

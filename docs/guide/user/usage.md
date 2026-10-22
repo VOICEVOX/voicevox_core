@@ -185,6 +185,40 @@ with open("output.wav", "wb") as f:
 
 `AudioQuery`で調整できるパラメータは他にも速さ`.speed_scale`や音量`.volume_scale`、音ごとの高さ`.accent_phrases[].moras[].pitch`などがあります。詳細は[API ドキュメント](https://voicevox.github.io/voicevox_core/apis/python_api/autoapi/voicevox_core/index.html#voicevox_core.AudioQuery)で紹介しています。
 
+### ストリーミング音声合成
+
+TODO: 後で書きます。
+
+```py
+-wav = synthesizer.synthesis(audio_query, style_id)
++stream = synthesizer.streaming_synthesis(audio_query, style_id)
++wav = next(stream)
++for pcm in stream:
++    wav += pcm
+```
+
+```py
+from voicevox_core import FRAME_RATE, wav_from_s16le
+
+SEGMENT_LENGTH = round(0.3 * FRAME_RATE)  # 約0.3秒
+
+feature = synthesizer.create_audio_feature(audio_query, style_id)
+pcm = b""
+for offset in range(0, len(feature), SEGMENT_LENGTH):
+    pcm += await synthesizer.render(feature[offset:][:SEGMENT_LENGTH])
+wav = wav_from_s16le(
+    pcm, audio_query.output_sampling_rate, audio_query.output_stereo
+)
+```
+
+TODO: 以下の内容を解説予定です。
+
+- 区切りを小さくするとEコア/LITTLEコアが使われやすくなる問題（[#1455](https://github.com/VOICEVOX/voicevox_core/issues/1455)）について
+- [RTF](www.google.com/search?q=Real%20Time%20Factor)の話
+- `StreamingSynthesis`は要素をリクエストするまで音声合成処理をしないので、ストリーミング音声再生では一工夫要るという話（[#1467](https://github.com/VOICEVOX/voicevox_core/issues/1467)）
+- Python APIの非asyncio版において、[GIL](https://www.google.com/search?q=Global%20Interpreter%20Lock)を掴みっぱなしになる問題（[#1476](https://github.com/VOICEVOX/voicevox_core/issues/1476)）について
+- ソングの方は未だ無理という話
+
 ## ユーザー辞書
 
 ユーザー辞書を扱うこともできます。
