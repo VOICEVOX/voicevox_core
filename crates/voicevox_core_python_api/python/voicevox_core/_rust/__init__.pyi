@@ -29,11 +29,20 @@ FRAME_RATE: float = 93.75
 class AudioFeature:
     def __repr__(self) -> str: ...
     def __eq__(self, other: object) -> bool: ...
-    def __len__(self) -> int: ...
+    def __len__(self) -> int:
+        """
+        総フレーム数。
+
+        この ``AudioFeature`` を生成するときに用いた ``AudioQuery`` の
+        :meth:`frame_length <AudioQuery.frame_length>` に等しい。
+        """
+        ...
     def __getitem__(
         self, slice: builtins.slice[SupportsIndex | None, SupportsIndex | None, None]
     ) -> AudioFeatureSlice:
         """
+        ``slice`` に対応した :class:`AudioFeatureSlice` を返す。
+
         Parameters
         ----------
         slice
@@ -42,18 +51,30 @@ class AudioFeature:
         ...
 
 class AudioFeatureSlice:
-    def __init__(self, audio_feature: AudioFeature) -> None: ...
+    """ある :class:`AudioFeature` 上の区間。"""
+
+    def __init__(self, audio_feature: AudioFeature) -> None:
+        """与えられた :class:`AudioFeature` の全体を表す ``AudioFeatureSlice`` を生成する。"""
+        ...
     @property
-    def audio_feature(self) -> AudioFeature: ...
+    def audio_feature(self) -> AudioFeature:
+        """元の :class:`AudioFeature`。"""
+        ...
     @property
-    def start_offset(self) -> int: ...
+    def start_offset(self) -> int:
+        """この ``AudioFeatureSlice`` の始端が、元の :class:`AudioFeature` のどの箇所にあたるか。"""
+        ...
     def __repr__(self) -> str: ...
     def __eq__(self, other: object) -> bool: ...
-    def __len__(self) -> int: ...
+    def __len__(self) -> int:
+        """この ``AudioFeatureSlice`` が持つフレーム数。"""
+        ...
     def __getitem__(
         self, slice: builtins.slice[SupportsIndex | None, SupportsIndex | None, None]
     ) -> AudioFeatureSlice:
         """
+        この ``AudioFeatureSlice`` のサブスライスを返す。
+
         Parameters
         ----------
         slice
