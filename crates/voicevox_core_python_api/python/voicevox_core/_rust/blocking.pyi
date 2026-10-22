@@ -17,7 +17,7 @@ if TYPE_CHECKING:
         UserDictWord,
         VoiceModelId,
     )
-    from voicevox_core._rust import AudioFeature
+    from voicevox_core._rust import AudioFeature, AudioFeatureSlice
 
 class VoiceModelFile:
     """
@@ -478,23 +478,14 @@ class Synthesizer:
         :class:`AudioFeature` 。
         """
         ...
-    def render(
-        self,
-        audio: AudioFeature,
-        start: int,
-        stop: int,
-    ) -> bytes:
+    def render(self, audio: AudioFeatureSlice | AudioFeature) -> bytes:
         """
-        :class:`AudioFeature` からPCM形式の音声バイナリを生成する。
+        :class:`AudioFeatureSlice` からPCM形式の音声バイナリを生成する。
 
         Parameters
         ----------
-        audio_feature
-            :class:`AudioFeature` 。
-        start
-            生成範囲の始端（このフレームを含む）。
-        stop
-            生成範囲の終端（このフレームは含まれない）。
+        audio
+            :class:`AudioFeatureSlice`。
 
         Returns
         -------

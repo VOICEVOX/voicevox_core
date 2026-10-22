@@ -76,6 +76,9 @@ pub(crate) fn into_result_code_with_error(result: CApiResult<()>) -> VoicevoxRes
             Err(InvalidNote(_)) => VOICEVOX_RESULT_INVALID_NOTE_ERROR,
             Err(InvalidFrameAudioQuery(_)) => VOICEVOX_RESULT_INVALID_FRAME_AUDIO_QUERY_ERROR,
             Err(InvalidFramePhoneme(_)) => VOICEVOX_RESULT_INVALID_FRAME_PHONEME_ERROR,
+            Err(StartOutOfBounds { .. }) => VOICEVOX_RESULT_START_OUT_OF_BOUNDS_ERROR,
+            Err(EndOutOfBounds { .. }) => VOICEVOX_RESULT_END_OUT_OF_BOUNDS_ERROR,
+            Err(StartExceedsEnd { .. }) => VOICEVOX_RESULT_START_EXCEEDS_END_ERROR,
             Err(InvalidUuid(_)) => VOICEVOX_RESULT_INVALID_UUID_ERROR,
         }
     }
@@ -111,6 +114,12 @@ pub(crate) enum CApiError {
     InvalidFrameAudioQuery(Either<serde_json::Error, String>),
     #[error("無効なFramePhonemeです: {0}")]
     InvalidFramePhoneme(Either<serde_json::Error, String>),
+    #[error("始端の値が大きすぎます: {start} for {len}")]
+    StartOutOfBounds { start: usize, len: usize },
+    #[error("終端の値が大きすぎます: {end} for {len}")]
+    EndOutOfBounds { end: usize, len: usize },
+    #[error("始端が終端を超過しています: {start} > {end}")]
+    StartExceedsEnd { start: usize, end: usize },
     #[error("無効なUUIDです: {0}")]
     InvalidUuid(uuid::Error),
 }

@@ -1,4 +1,5 @@
 use std::{
+    cmp,
     collections::{HashMap, HashSet},
     ffi::CString,
     num::NonZero,
@@ -11,12 +12,15 @@ use camino::Utf8Path;
 use duplicate::duplicate_item;
 use easy_ext::ext;
 use ref_cast::ref_cast_custom;
-use voicevox_core::{CharacterMeta, Result, VoiceModelId};
+use voicevox_core::{
+    __internal::interop::{AudioFeatureOutOfBoundsError, AudioFeatureSliceExt as _},
+    AudioFeatureSlice, CharacterMeta, Result, VoiceModelId,
+};
 
 use crate::{
-    OpenJtalkRc, VoicevoxAudioFeature, VoicevoxInitializeOptions, VoicevoxOnnxruntime,
-    VoicevoxSynthesizer, VoicevoxUserDict, VoicevoxVoiceModelFile,
-    helpers::CApiResult,
+    OpenJtalkRc, VoicevoxAudioFeature, VoicevoxAudioFeatureSlice, VoicevoxInitializeOptions,
+    VoicevoxOnnxruntime, VoicevoxSynthesizer, VoicevoxUserDict, VoicevoxVoiceModelFile,
+    helpers::{CApiError, CApiResult},
     object::{CApiObject, CApiObjectPtrExt as _, MaybeDeleted},
 };
 
@@ -144,8 +148,164 @@ impl *const VoicevoxVoiceModelFile {
 
 #[ext(VoicevoxAudioFeaturePtrExt)]
 impl *const VoicevoxAudioFeature {
-    pub(crate) fn frame_length(self) -> usize {
-        self.body().frame_length()
+    pub(crate) fn len(self) -> usize {
+        self.body().len()
+    }
+
+    // easy-extの仕様上、`clippy::wrong_self_convention`が起動する
+    // （しかも`#[expect]`が難しい位置で）ので`&self`
+    pub(crate) fn is_empty(&self) -> bool {
+        self.body().is_empty()
+    }
+
+    pub(crate) fn slice(
+        self,
+        start_inclusive: usize,
+        end: usize,
+        end_is_inclusive: bool,
+        clamp: bool,
+        allow_start_exceeds_end: bool,
+    ) -> CApiResult<VoicevoxAudioFeatureSlice> {
+        let range = AudioFeatureSlice::new(&self.body()).validate_range_(
+            start_inclusive,
+            end,
+            end_is_inclusive,
+            clamp,
+            allow_start_exceeds_end,
+        )?;
+        let rust_api = self.body();
+        let slice = rust_api.slice(range);
+        Ok(VoicevoxAudioFeatureSlice {
+            audio_feature: self,
+            start_offset: slice.start_offset(),
+            end: slice.start_offset() + slice.len() - usize::from(end_is_inclusive),
+            end_is_inclusive,
+            clamp: false,
+            allow_start_exceeds_end: false,
+        })
+    }
+}
+
+impl VoicevoxAudioFeatureSlice {
+    pub(crate) fn new(
+        audio_feature: *const VoicevoxAudioFeature,
+        clamp: bool,
+        allow_start_exceeds_end: bool,
+    ) -> Self {
+        Self {
+            audio_feature,
+            start_offset: 0,
+            end: audio_feature.len(),
+            end_is_inclusive: false,
+            clamp,
+            allow_start_exceeds_end,
+        }
+    }
+
+    pub(crate) fn validate(self) -> CApiResult<std::ops::Range<usize>> {
+        AudioFeatureSlice::new(&self.audio_feature.body()).validate_range_(
+            self.start_offset,
+            self.end,
+            self.end_is_inclusive,
+            self.clamp,
+            self.allow_start_exceeds_end,
+        )
+    }
+
+    pub(crate) fn with_rust_api<F, O>(self, f: F) -> CApiResult<O>
+    where
+        F: FnOnce(AudioFeatureSlice<'_>) -> CApiResult<O>,
+    {
+        let range = self.validate()?;
+        f(self.audio_feature.body().slice(range))
+    }
+
+    pub(crate) fn len(self) -> CApiResult<usize> {
+        self.with_rust_api(|rust_api| Ok(rust_api.len()))
+    }
+
+    pub(crate) fn is_empty(self) -> CApiResult<bool> {
+        self.with_rust_api(|rust_api| Ok(rust_api.is_empty()))
+    }
+
+    pub(crate) fn slice(
+        self,
+        start_inclusive: usize,
+        end: usize,
+        end_is_inclusive: bool,
+        clamp: bool,
+        allow_start_exceeds_end: bool,
+    ) -> CApiResult<Self> {
+        self.with_rust_api(|rust_api| {
+            let range = rust_api.validate_range_(
+                start_inclusive,
+                end,
+                end_is_inclusive,
+                clamp,
+                allow_start_exceeds_end,
+            )?;
+            let rust_api = rust_api.slice(range);
+            Ok(Self {
+                audio_feature: self.audio_feature,
+                start_offset: rust_api.start_offset(),
+                end: rust_api.start_offset() + rust_api.len() - usize::from(end_is_inclusive),
+                end_is_inclusive,
+                clamp: false,
+                allow_start_exceeds_end: false,
+            })
+        })
+    }
+}
+
+#[ext]
+impl AudioFeatureSlice<'_> {
+    fn validate_range_(
+        self,
+        start_inclusive: usize,
+        end: usize,
+        end_is_inclusive: bool,
+        clamp: bool,
+        allow_start_exceeds_end: bool,
+    ) -> CApiResult<std::ops::Range<usize>> {
+        let len = self.len();
+        let result = if end_is_inclusive {
+            let range = if clamp {
+                let last = len
+                    .checked_sub(1)
+                    .ok_or(CApiError::EndOutOfBounds { end, len })?;
+                cmp::min(start_inclusive, last)..=cmp::min(end, last)
+            } else {
+                start_inclusive..=end
+            };
+            self.validate_range(range)
+        } else {
+            let range = if clamp {
+                cmp::min(start_inclusive, len)..cmp::min(end, len)
+            } else {
+                start_inclusive..end
+            };
+            self.validate_range(range)
+        };
+
+        match result {
+            Ok(range) => Ok(range),
+            Err(AudioFeatureOutOfBoundsError::StartOutOfBounds { start, len }) => {
+                Err(CApiError::StartOutOfBounds { start, len })
+            }
+            Err(AudioFeatureOutOfBoundsError::EndOutOfBounds { end, len }) => {
+                Err(CApiError::EndOutOfBounds { end, len })
+            }
+            Err(AudioFeatureOutOfBoundsError::StartExceedsEnd { start, end }) => {
+                if allow_start_exceeds_end {
+                    Ok(start..start)
+                } else {
+                    Err(CApiError::StartExceedsEnd { start, end })
+                }
+            }
+            Err(AudioFeatureOutOfBoundsError::Unknown { .. }) => unreachable!(
+                "`validate_range` should not return `Unknown` for `Range` and `RangeInclusive`"
+            ),
+        }
     }
 }
 

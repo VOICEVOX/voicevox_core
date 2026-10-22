@@ -48,44 +48,137 @@ impl AudioFeature {
         }
     }
 
-    /// workaround paddingを除いた音声特徴量のフレーム数。
-    pub fn frame_length(&self) -> usize {
+    #[cfg_attr(doc, doc(alias = "voicevox_audio_feature_len"))]
+    pub const fn len(&self) -> usize {
         self.internal_state.len() - 2 * MARGIN
+    }
+
+    #[cfg_attr(doc, doc(alias = "voicevox_audio_feature_is_empty"))]
+    pub const fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    /// # Panics
+    ///
+    /// この`AudioFeature`の[大きさ]に対して`range`が範囲外の場合パニックする。
+    ///
+    /// [大きさ]: Self::len
+    #[cfg_attr(doc, doc(alias = "voicevox_audio_feature_slice"))]
+    #[track_caller]
+    pub fn slice<'a>(
+        &'a self,
+        range: impl for<'b> SliceIndex<[_Frame<'b>], Output = [_Frame<'b>]> + Clone + Debug + 'static,
+    ) -> AudioFeatureSlice<'a> {
+        AudioFeatureSlice::new(self).slice(range)
+    }
+}
+
+#[cfg_attr(doc, doc(alias = "VoicevoxAudioFeatureSlice"))]
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub struct AudioFeatureSlice<'a> {
+    audio_feature: &'a AudioFeature,
+
+    // TODO: MSRVが1.96になったら`std::range::Range`にする。
+    /// Invariant: must be valid for `audio_feature`.
+    range: (usize, usize),
+}
+
+impl<'a> AudioFeatureSlice<'a> {
+    #[cfg_attr(doc, doc(alias = "voicevox_audio_feature_slice_new"))]
+    pub const fn new(audio_feature: &'a AudioFeature) -> Self {
+        Self {
+            audio_feature,
+            range: (0, audio_feature.len()),
+        }
+    }
+
+    #[cfg_attr(doc, doc(alias = "VoicevoxAudioFeatureSlice::audio_feature"))]
+    pub const fn audio_feature(self) -> &'a AudioFeature {
+        self.audio_feature
+    }
+
+    #[cfg_attr(doc, doc(alias = "VoicevoxAudioFeatureSlice::start_offset"))]
+    pub const fn start_offset(self) -> usize {
+        let (start, _) = self.range;
+        start
+    }
+
+    #[cfg_attr(doc, doc(alias = "voicevox_audio_feature_slice_len"))]
+    pub const fn len(self) -> usize {
+        let (start, end) = self.range;
+        end - start
+    }
+
+    #[cfg_attr(doc, doc(alias = "voicevox_audio_feature_slice_is_empty"))]
+    pub const fn is_empty(self) -> bool {
+        self.len() == 0
+    }
+
+    /// # Panics
+    ///
+    /// この`AudioFeatureSlice`の[大きさ]に対して`range`が範囲外の場合パニックする。
+    ///
+    /// [大きさ]: Self::len
+    #[cfg_attr(doc, doc(alias = "voicevox_audio_feature_slice_slice"))]
+    #[track_caller]
+    pub fn slice(
+        self,
+        range: impl for<'b> SliceIndex<[_Frame<'b>], Output = [_Frame<'b>]> + Clone + Debug + 'static,
+    ) -> Self {
+        match self.try_slice(range) {
+            Ok(slice) => slice,
+            Err(err) => panic!("{err}"),
+        }
+    }
+
+    pub(crate) const fn style_id(self) -> StyleId {
+        self.audio_feature.style_id
+    }
+
+    pub(crate) const fn pcm_options(self) -> PcmOptions {
+        self.audio_feature.pcm_options
     }
 
     /// 指定した音声区間に対応する特徴量を両端にマージンを追加した上で切り出す
     #[track_caller]
-    pub(crate) fn crop_with_margin(
-        &self,
-        range: impl for<'a> SliceIndex<[_Frame<'a>], Output = [_Frame<'a>]> + Clone + Debug + 'static,
-    ) -> ndarray::ArrayView2<'_, f32> {
-        let std::ops::Range { start, end } = match self.validate_range(range) {
-            Ok(range) => range,
-            Err(err) => panic!("{err}"),
-        };
-        (&self.internal_state[start..end + 2 * MARGIN]).into()
-    }
-
-    pub(crate) fn style_id(&self) -> StyleId {
-        self.style_id
-    }
-
-    pub(crate) fn pcm_options(&self) -> PcmOptions {
-        self.pcm_options
+    pub(crate) fn segment_with_margin(self) -> ndarray::ArrayView2<'a, f32> {
+        let (start, end) = self.range;
+        (&self.audio_feature.internal_state[start..end + 2 * MARGIN]).into()
     }
 }
 
-#[ext(AudioFeatureExt)]
-impl AudioFeature {
+impl<'a> From<&'a AudioFeature> for AudioFeatureSlice<'a> {
+    fn from(audio_feature: &'a AudioFeature) -> Self {
+        Self::new(audio_feature)
+    }
+}
+
+#[ext(AudioFeatureSliceExt)]
+impl AudioFeatureSlice<'_> {
+    pub fn try_slice(
+        self,
+        range: impl for<'a> SliceIndex<[_Frame<'a>], Output = [_Frame<'a>]> + Clone + Debug + 'static,
+    ) -> Result<Self, AudioFeatureOutOfBoundsError>
+    where
+        Self: Sized,
+    {
+        let std::ops::Range { start, end } = self.validate_range(range)?;
+        let (offset, _) = self.range;
+        Ok(AudioFeatureSlice {
+            audio_feature: self.audio_feature,
+            range: (offset + start, offset + end),
+        })
+    }
+
     /// この`AudioFeature`に対して有効な範囲を与えられた場合、それを[`std::ops::Range<usize>`]に変換する。
-    fn validate_range(
+    pub fn validate_range(
         &self,
         range: impl for<'a> SliceIndex<[_Frame<'a>], Output = [_Frame<'a>]> + Clone + Debug + 'static,
     ) -> Result<std::ops::Range<usize>, AudioFeatureOutOfBoundsError> {
-        let len = self.frame_length();
+        let len = self.len();
 
         // 長ささえ合っていればどう切り取ってもよい
-        let internal_state = _Frame::new_slice(&self.internal_state[MARGIN..][..len]);
+        let internal_state = _Frame::new_slice(&self.audio_feature.internal_state[MARGIN..][..len]);
 
         return internal_state
             .get(range.clone())
@@ -286,7 +379,7 @@ impl _Frame<'_> {
 }
 
 #[derive(PartialEq, derive_more::Display, Debug)]
-enum AudioFeatureOutOfBoundsError {
+pub enum AudioFeatureOutOfBoundsError {
     #[display("range start index {start} out of range for audio feature of length {len}")]
     StartOutOfBounds { start: usize, len: usize },
 
@@ -309,7 +402,35 @@ mod tests {
 
     use crate::{core::adjust::MARGIN, dim::AUDIO_FEATURE_BINS, engine::PcmOptions};
 
-    use super::{AudioFeature, AudioFeatureExt as _, AudioFeatureOutOfBoundsError};
+    use super::{AudioFeature, AudioFeatureOutOfBoundsError, AudioFeatureSliceExt as _};
+
+    #[test]
+    fn test_slicing_half_closed() {
+        const LEN: usize = 10;
+
+        let feat = AudioFeature::new(
+            [[0.; // whatever
+            AUDIO_FEATURE_BINS]; LEN + 2 * MARGIN]
+                .into(),
+            0.into(),          // whatever
+            PcmOptions::DUMMY, // whatever
+        );
+        assert_eq!(LEN, feat.len());
+
+        for (i, j, k, l) in iproduct!(0..=LEN, 0..=LEN, 0..=LEN, 0..=LEN) {
+            let expected = [(); LEN]
+                .get(i..j)
+                .and_then(|slice| slice.get(k..l))
+                .map(|slice| (i + k, slice.len()));
+            let actual = feat
+                .slice(..)
+                .try_slice(i..j)
+                .and_then(|slice| slice.try_slice(k..l))
+                .map(|slice| (slice.start_offset(), slice.len()))
+                .ok();
+            assert_eq!(expected, actual);
+        }
+    }
 
     #[test]
     fn test_validate_range_for_nonempty() {
@@ -322,6 +443,8 @@ mod tests {
             0.into(),          // whatever
             PcmOptions::DUMMY, // whatever
         );
+        let feat = feat.slice(..);
+        assert_eq!(LEN, feat.len());
 
         // `Range`
         for (start, end) in iproduct!(0..=LEN, 0..=LEN) {
@@ -432,6 +555,8 @@ mod tests {
             0.into(),          // whatever
             PcmOptions::DUMMY, // whatever
         );
+        let feat = feat.slice(..);
+        assert_eq!(0, feat.len());
 
         assert_eq!(Ok(0..0), feat.validate_range(..));
         assert_eq!(Ok(0..0), feat.validate_range(0..0));

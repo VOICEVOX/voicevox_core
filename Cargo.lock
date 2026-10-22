@@ -5213,7 +5213,6 @@ dependencies = [
  "heck 0.5.0",
  "log",
  "num-bigint",
- "num-traits",
  "ouroboros",
  "pyo3",
  "pyo3-log",

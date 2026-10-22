@@ -17,9 +17,9 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_Wav_rsWavFromS16le<'loc
     stereo: jboolean,
 ) -> jobject {
     throw_if_err(env, std::ptr::null_mut(), |env| {
-        let sample_rate = sample_rate
-            .try_into()
-            .map_err(|_| JavaApiError::IllegalArgument("Sampling rate must not be negative"))?;
+        let sample_rate = sample_rate.try_into().map_err(|_| {
+            JavaApiError::IllegalArgument("Sampling rate must not be negative".to_owned())
+        })?;
         let pcm = env.convert_byte_array(&pcm)?;
         let wav = wav_from_s16le(&pcm, sample_rate, stereo != 0);
         Ok(env.byte_array_from_slice(&wav)?.into_raw())

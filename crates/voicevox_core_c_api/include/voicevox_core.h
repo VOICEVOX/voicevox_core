@@ -301,6 +301,18 @@ enum VoicevoxResultCode
    * 楽譜とFrameAudioQueryの組み合わせが不正
    */
   VOICEVOX_RESULT_INCOMPATIBLE_QUERIES_ERROR = 35,
+  /**
+   * AudioFeatureSliceをスライスするときの始端が大きすぎた
+   */
+  VOICEVOX_RESULT_START_OUT_OF_BOUNDS_ERROR = 36,
+  /**
+   * AudioFeatureSliceをスライスするときの終端が大きすぎた
+   */
+  VOICEVOX_RESULT_END_OUT_OF_BOUNDS_ERROR = 37,
+  /**
+   * AudioFeatureSliceをスライスするときに始端が終端を超えていた
+   */
+  VOICEVOX_RESULT_START_EXCEEDS_END_ERROR = 38,
 };
 #ifndef __cplusplus
 typedef int32_t VoicevoxResultCode;
@@ -514,6 +526,24 @@ typedef struct VoicevoxSynthesisOptions {
    */
   bool enable_interrogative_upspeak;
 } VoicevoxSynthesisOptions;
+
+/**
+ * \orig-impl{VoicevoxAudioFeatureSlice}
+ */
+typedef struct VoicevoxAudioFeatureSlice {
+  /**
+   * \orig-impl{VoicevoxAudioFeatureSlice::audio_feature}
+   */
+  const struct VoicevoxAudioFeature *audio_feature;
+  /**
+   * \orig-impl{VoicevoxAudioFeatureSlice::start_offset}
+   */
+  uintptr_t start_offset;
+  uintptr_t end;
+  bool end_is_inclusive;
+  bool clamp;
+  bool allow_start_exceeds_end;
+} VoicevoxAudioFeatureSlice;
 
 /**
  * ::voicevox_synthesizer_tts のオプション。
@@ -942,8 +972,7 @@ struct VoicevoxAudioQueryFrameLengthOptions voicevox_make_default_audio_query_fr
  *     query, voicevox_make_default_audio_query_frame_length_options(),
  *     &frame_length_of_audio_query));
  *
- * const size_t frame_length_of_audio_feature =
- *     voicevox_audio_feature_frame_length(audio);
+ * const size_t frame_length_of_audio_feature = voicevox_audio_feature_len(audio);
  *
  * assert(frame_length_of_audio_query == frame_length_of_audio_feature);
  * ```
@@ -1846,24 +1875,124 @@ VoicevoxResultCode voicevox_synthesizer_create_audio_feature(const struct Voicev
  *
  * @returns フレーム数
  *
- * \no-orig-impl{voicevox_audio_feature_frame_length}
+ * \orig-impl{voicevox_audio_feature_len}
  */
 #ifdef _WIN32
 __declspec(dllimport)
 #endif
-uintptr_t voicevox_audio_feature_frame_length(const struct VoicevoxAudioFeature *audio_feature);
+uintptr_t voicevox_audio_feature_len(const struct VoicevoxAudioFeature *audio_feature);
 
 /**
- * ::VoicevoxAudioFeature の一部区間から、16bit PCMで音声波形を生成する。
+ * \orig-impl{voicevox_audio_feature_is_empty}
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+bool voicevox_audio_feature_is_empty(const struct VoicevoxAudioFeature *audio_feature);
+
+/**
+ * @param [in] audio_feature
+ * @param [in] start_inclusive 開始フレーム番号
+ * @param [in] end 終了フレーム番号
+ * @param [in] end_is_inclusive `end`を含むかどうか
+ * @param [in] clamp
+ * @param [in] allow_start_exceeds_end
+ * @param [out] output
+ *
+ * \safety{
+ * - `output`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+ * }
+ *
+ * \orig-impl{voicevox_audio_feature_slice}
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_audio_feature_slice(const struct VoicevoxAudioFeature *audio_feature,
+                                                uintptr_t start_inclusive,
+                                                uintptr_t end,
+                                                bool end_is_inclusive,
+                                                bool clamp,
+                                                bool allow_start_exceeds_end,
+                                                struct VoicevoxAudioFeatureSlice *output);
+
+/**
+ * \orig-impl{voicevox_audio_feature_slice_new}
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+struct VoicevoxAudioFeatureSlice voicevox_audio_feature_slice_new(const struct VoicevoxAudioFeature *audio_feature,
+                                                                  bool clamp,
+                                                                  bool allow_start_exceeds_end);
+
+/**
+ * @param [in] audio_feature_slice
+ * @param [out] output
+ *
+ * \safety{
+ * - `output`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+ * }
+ *
+ * \orig-impl{voicevox_audio_feature_slice_len}
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_audio_feature_slice_len(struct VoicevoxAudioFeatureSlice audio_feature_slice,
+                                                    uintptr_t *output);
+
+/**
+ * @param [in] audio_feature_slice
+ * @param [out] output
+ *
+ * \safety{
+ * - `output`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+ * }
+ *
+ * \orig-impl{voicevox_audio_feature_slice_is_empty}
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_audio_feature_slice_is_empty(struct VoicevoxAudioFeatureSlice audio_feature_slice,
+                                                         bool *output);
+
+/**
+ * @param [in] audio_feature_slice
+ * @param [in] start_inclusive 開始フレーム番号
+ * @param [in] end 終了フレーム番号
+ * @param [in] end_is_inclusive `end`を含むかどうか
+ * @param [in] clamp
+ * @param [in] allow_start_exceeds_end
+ * @param [out] output
+ *
+ * \safety{
+ * - `output`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+ * }
+ *
+ * \orig-impl{voicevox_audio_feature_slice_slice}
+ */
+#ifdef _WIN32
+__declspec(dllimport)
+#endif
+VoicevoxResultCode voicevox_audio_feature_slice_slice(struct VoicevoxAudioFeatureSlice audio_feature_slice,
+                                                      uintptr_t start_inclusive,
+                                                      uintptr_t end,
+                                                      bool end_is_inclusive,
+                                                      bool clamp,
+                                                      bool allow_start_exceeds_end,
+                                                      struct VoicevoxAudioFeatureSlice *output);
+
+/**
+ * ::VoicevoxAudioFeatureSlice から、16bit PCMで音声波形を生成する。
  *
  * 生成されたPCMデータが`0`バイトのとき、`output_pcm_length`には`0`が、`output_pcm`には ::voicevox_empty_bytes が書き込まれる。
  *
  * 生成した`1`バイト以上のPCMデータを解放するには ::voicevox_bytes_free を使う。
  *
  * @param [in] synthesizer 音声シンセサイザ
- * @param [in] audio_feature 音声合成用の中間表現
- * @param [in] start_inclusive 開始フレーム番号
- * @param [in] end_exclusive 終了フレーム番号（この番号は含まれない）
+ * @param [in] audio_feature_slice 音声合成用の中間表現
  * @param [out] output_pcm_length 出力のバイト長
  * @param [out] output_pcm 出力先
  *
@@ -1880,9 +2009,7 @@ uintptr_t voicevox_audio_feature_frame_length(const struct VoicevoxAudioFeature 
 __declspec(dllimport)
 #endif
 VoicevoxResultCode voicevox_synthesizer_render(const struct VoicevoxSynthesizer *synthesizer,
-                                               const struct VoicevoxAudioFeature *audio_feature,
-                                               uintptr_t start_inclusive,
-                                               uintptr_t end_exclusive,
+                                               struct VoicevoxAudioFeatureSlice audio_feature_slice,
                                                uintptr_t *output_pcm_length,
                                                uint8_t **output_pcm);
 

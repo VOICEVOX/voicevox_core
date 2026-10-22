@@ -309,21 +309,28 @@ public final class Synthesizer {
   /**
    * 音声合成用の中間表現から指定区間の16-bit PCM音声を生成する。
    *
-   * @param audioFeature 音声合成用の中間表現。
-   * @param startInclusive 開始フレーム番号。
-   * @param endExclusive 終了フレーム番号（この番号は含まれない）。
+   * @param audioFeatureSlice 音声合成用の中間表現。
    * @return 16-bit PCM音声データ。
    * @throws RunModelException 推論に失敗した場合。
    */
   @Nonnull
-  public byte[] render(AudioFeature audioFeature, long startInclusive, long endExclusive)
-      throws RunModelException {
-    if (startInclusive < 0
-        || endExclusive < startInclusive
-        || endExclusive > audioFeature.getFrameLength()) {
-      throw new IllegalArgumentException("range");
-    }
-    return rsRender(audioFeature, startInclusive, endExclusive);
+  public byte[] render(AudioFeature.Slice audioFeatureSlice) throws RunModelException {
+    // TODO: jniに頼ってもよいかもしれない？
+    int startInclusive = audioFeatureSlice.getStartOffset();
+    int endExclusive = audioFeatureSlice.getStartOffset() + audioFeatureSlice.length();
+    return rsRender(audioFeatureSlice.getAudioFeature(), startInclusive, endExclusive);
+  }
+
+  /**
+   * 音声合成用の中間表現から指定区間の16-bit PCM音声を生成する。
+   *
+   * @param audioFeature 音声合成用の中間表現。
+   * @return 16-bit PCM音声データ。
+   * @throws RunModelException 推論に失敗した場合。
+   */
+  @Nonnull
+  public byte[] render(AudioFeature audioFeature) throws RunModelException {
+    return rsRender(audioFeature, 0, audioFeature.length());
   }
 
   /**
@@ -517,7 +524,7 @@ public final class Synthesizer {
       String queryJson, int styleId, boolean enableInterrogativeUpspeak) throws RunModelException;
 
   @Nonnull
-  private native byte[] rsRender(AudioFeature audioFeature, long startInclusive, long endExclusive)
+  private native byte[] rsRender(AudioFeature audioFeature, int startInclusive, int endExclusive)
       throws RunModelException;
 
   @Nonnull

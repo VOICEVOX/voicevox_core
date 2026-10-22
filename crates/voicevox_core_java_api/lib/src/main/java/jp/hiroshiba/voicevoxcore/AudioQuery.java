@@ -133,7 +133,7 @@ public final class AudioQuery {
    * AudioQuery query = synth.createAudioQuery("こんにちは、音声合成の世界へようこそ", WHATEVER_STYLE1);
    * AudioFeature audio = synth.createAudioFeature(query, WHATEVER_STYLE2).perform();
    *
-   * assert query.frameLength().calculate() == audio.getFrameLength();
+   * assert query.frameLength().calculate() == audio.length();
    * }</pre>
    *
    * <pre>{@code

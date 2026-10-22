@@ -706,8 +706,7 @@ pub extern "C" fn voicevox_make_default_audio_query_frame_length_options()
 ///     query, voicevox_make_default_audio_query_frame_length_options(),
 ///     &frame_length_of_audio_query));
 ///
-/// const size_t frame_length_of_audio_feature =
-///     voicevox_audio_feature_frame_length(audio);
+/// const size_t frame_length_of_audio_feature = voicevox_audio_feature_len(audio);
 ///
 /// assert(frame_length_of_audio_query == frame_length_of_audio_feature);
 /// ```
@@ -1954,27 +1953,183 @@ pub struct VoicevoxAudioFeature {
 ///
 /// @returns フレーム数
 ///
-/// \no-orig-impl{voicevox_audio_feature_frame_length}
+/// \orig-impl{voicevox_audio_feature_len}
 #[unsafe(no_mangle)]
-pub extern "C" fn voicevox_audio_feature_frame_length(
-    audio_feature: *const VoicevoxAudioFeature,
-) -> usize {
+pub extern "C" fn voicevox_audio_feature_len(audio_feature: *const VoicevoxAudioFeature) -> usize {
     init_logger_once();
-    audio_feature.frame_length()
+    audio_feature.len()
+}
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// \orig-impl{voicevox_audio_feature_is_empty}
+#[unsafe(no_mangle)]
+pub extern "C" fn voicevox_audio_feature_is_empty(
+    audio_feature: *const VoicevoxAudioFeature,
+) -> bool {
+    init_logger_once();
+    audio_feature.is_empty()
+}
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// @param [in] audio_feature
+/// @param [in] start_inclusive 開始フレーム番号
+/// @param [in] end 終了フレーム番号
+/// @param [in] end_is_inclusive `end`を含むかどうか
+/// @param [in] clamp
+/// @param [in] allow_start_exceeds_end
+/// @param [out] output
+///
+/// \safety{
+/// - `output`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+/// }
+///
+/// \orig-impl{voicevox_audio_feature_slice}
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn voicevox_audio_feature_slice(
+    audio_feature: *const VoicevoxAudioFeature,
+    start_inclusive: usize,
+    end: usize,
+    end_is_inclusive: bool,
+    clamp: bool,
+    allow_start_exceeds_end: bool,
+    output: NonNull<VoicevoxAudioFeatureSlice>,
+) -> VoicevoxResultCode {
+    init_logger_once();
+    into_result_code_with_error((|| {
+        let slice = audio_feature.slice(
+            start_inclusive,
+            end,
+            end_is_inclusive,
+            clamp,
+            allow_start_exceeds_end,
+        )?;
+        // SAFETY: The safety contract must be upheld by the caller.
+        unsafe { output.write_unaligned(slice) };
+        Ok(())
+    })())
+}
+
+/// \orig-impl{VoicevoxAudioFeatureSlice}
+#[derive(Clone, Copy)]
+#[repr(C)]
+pub struct VoicevoxAudioFeatureSlice {
+    /// \orig-impl{VoicevoxAudioFeatureSlice::audio_feature}
+    audio_feature: *const VoicevoxAudioFeature,
+    /// \orig-impl{VoicevoxAudioFeatureSlice::start_offset}
+    start_offset: usize,
+    end: usize,
+    end_is_inclusive: bool,
+    clamp: bool,
+    allow_start_exceeds_end: bool,
+}
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// \orig-impl{voicevox_audio_feature_slice_new}
+#[unsafe(no_mangle)]
+pub extern "C" fn voicevox_audio_feature_slice_new(
+    audio_feature: *const VoicevoxAudioFeature,
+    clamp: bool,
+    allow_start_exceeds_end: bool,
+) -> VoicevoxAudioFeatureSlice {
+    init_logger_once();
+    VoicevoxAudioFeatureSlice::new(audio_feature, clamp, allow_start_exceeds_end)
+}
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// @param [in] audio_feature_slice
+/// @param [out] output
+///
+/// \safety{
+/// - `output`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+/// }
+///
+/// \orig-impl{voicevox_audio_feature_slice_len}
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn voicevox_audio_feature_slice_len(
+    audio_feature_slice: VoicevoxAudioFeatureSlice,
+    output: NonNull<usize>,
+) -> VoicevoxResultCode {
+    init_logger_once();
+    into_result_code_with_error((|| {
+        let len = audio_feature_slice.len()?;
+        // SAFETY: The safety contract must be upheld by the caller.
+        unsafe { output.write_unaligned(len) };
+        Ok(())
+    })())
+}
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// @param [in] audio_feature_slice
+/// @param [out] output
+///
+/// \safety{
+/// - `output`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+/// }
+///
+/// \orig-impl{voicevox_audio_feature_slice_is_empty}
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn voicevox_audio_feature_slice_is_empty(
+    audio_feature_slice: VoicevoxAudioFeatureSlice,
+    output: NonNull<bool>,
+) -> VoicevoxResultCode {
+    init_logger_once();
+    into_result_code_with_error((|| {
+        let is_empty = audio_feature_slice.is_empty()?;
+        // SAFETY: The safety contract must be upheld by the caller.
+        unsafe { output.write_unaligned(is_empty) };
+        Ok(())
+    })())
+}
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// @param [in] audio_feature_slice
+/// @param [in] start_inclusive 開始フレーム番号
+/// @param [in] end 終了フレーム番号
+/// @param [in] end_is_inclusive `end`を含むかどうか
+/// @param [in] clamp
+/// @param [in] allow_start_exceeds_end
+/// @param [out] output
+///
+/// \safety{
+/// - `output`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+/// }
+///
+/// \orig-impl{voicevox_audio_feature_slice_slice}
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn voicevox_audio_feature_slice_slice(
+    audio_feature_slice: VoicevoxAudioFeatureSlice,
+    start_inclusive: usize,
+    end: usize,
+    end_is_inclusive: bool,
+    clamp: bool,
+    allow_start_exceeds_end: bool,
+    output: NonNull<VoicevoxAudioFeatureSlice>,
+) -> VoicevoxResultCode {
+    init_logger_once();
+    into_result_code_with_error((|| {
+        let new_slice = audio_feature_slice.slice(
+            start_inclusive,
+            end,
+            end_is_inclusive,
+            clamp,
+            allow_start_exceeds_end,
+        )?;
+        // SAFETY: The safety contract must be upheld by the caller.
+        unsafe { output.write_unaligned(new_slice) };
+        Ok(())
+    })())
 }
 
 // FIXME: voicevox_bytes_freeをvoicevox_bytes_freeに改名
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
-/// ::VoicevoxAudioFeature の一部区間から、16bit PCMで音声波形を生成する。
+/// ::VoicevoxAudioFeatureSlice から、16bit PCMで音声波形を生成する。
 ///
 /// 生成されたPCMデータが`0`バイトのとき、`output_pcm_length`には`0`が、`output_pcm`には ::voicevox_empty_bytes が書き込まれる。
 ///
 /// 生成した`1`バイト以上のPCMデータを解放するには ::voicevox_bytes_free を使う。
 ///
 /// @param [in] synthesizer 音声シンセサイザ
-/// @param [in] audio_feature 音声合成用の中間表現
-/// @param [in] start_inclusive 開始フレーム番号
-/// @param [in] end_exclusive 終了フレーム番号（この番号は含まれない）
+/// @param [in] audio_feature_slice 音声合成用の中間表現
 /// @param [out] output_pcm_length 出力のバイト長
 /// @param [out] output_pcm 出力先
 ///
@@ -1989,17 +2144,18 @@ pub extern "C" fn voicevox_audio_feature_frame_length(
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn voicevox_synthesizer_render(
     synthesizer: *const VoicevoxSynthesizer,
-    audio_feature: *const VoicevoxAudioFeature,
-    start_inclusive: usize,
-    end_exclusive: usize,
+    audio_feature_slice: VoicevoxAudioFeatureSlice,
     output_pcm_length: NonNull<usize>,
     output_pcm: NonNull<NonNull<u8>>,
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error((|| {
-        let pcm = synthesizer
-            .body()
-            .render(&audio_feature.body(), start_inclusive..end_exclusive)?;
+        let pcm = audio_feature_slice.with_rust_api(|audio_feature_slice| {
+            synthesizer
+                .body()
+                .render(audio_feature_slice)
+                .map_err(Into::into)
+        })?;
         // SAFETY: The safety contract must be upheld by the caller.
         unsafe { U8_SLICE_OWNER.own_and_lend(pcm, output_pcm, output_pcm_length) };
         Ok(())
