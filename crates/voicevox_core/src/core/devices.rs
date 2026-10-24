@@ -86,6 +86,12 @@ pub struct SupportedDevices {
     ///
     /// [DirectML Execution Provider]: https://onnxruntime.ai/docs/execution-providers/DirectML-ExecutionProvider.html
     pub dml: bool,
+    /// OpenVINOが利用可能。
+    ///
+    /// ONNX Runtimeの[OpenVINO Execution Provider] (`OpenVINOExecutionProvider`)に対応する。必要な環境についてはそちらを参照。
+    ///
+    /// [OpenVINO Execution Provider]: https://onnxruntime.ai/docs/execution-providers/OpenVINO-ExecutionProvider.html
+    pub openvino: bool,
 }
 
 impl SupportedDevices {
@@ -98,6 +104,7 @@ impl SupportedDevices {
     /// # use voicevox_core::SupportedDevices;
     /// assert!(SupportedDevices::THIS.cuda);
     /// assert!(SupportedDevices::THIS.dml);
+    /// assert!(SupportedDevices::THIS.openvino);
     /// ```
     ///
     /// `link-onnxruntime`のフィーチャが有効化されているときは`cpu`を除き`false`となる。
@@ -107,18 +114,21 @@ impl SupportedDevices {
     /// # use voicevox_core::SupportedDevices;
     /// assert!(!SupportedDevices::THIS.cuda);
     /// assert!(!SupportedDevices::THIS.dml);
+    /// assert!(!SupportedDevices::THIS.openvino);
     /// ```
     pub const THIS: Self = if cfg!(feature = "load-onnxruntime") {
         Self {
             cpu: true,
             cuda: true,
             dml: true,
+            openvino: true,
         }
     } else if cfg!(feature = "link-onnxruntime") {
         Self {
             cpu: true,
             cuda: false,
             dml: false,
+            openvino: false,
         }
     } else {
         panic!("either `load-onnxruntime` or `link-onnxruntime` must be enabled");
@@ -190,13 +200,16 @@ pub(crate) enum GpuSpec {
     #[display("CUDA (device_id=0)")]
     Cuda,
 
+    #[display("OpenVINO")]
+    OpenVino,
+
     #[display("DirectML (device_id=0)")]
     Dml,
 }
 
 impl GpuSpec {
     pub(crate) fn defaults() -> Vec<Self> {
-        vec![Self::Cuda, Self::Dml]
+        vec![Self::Cuda, Self::OpenVino, Self::Dml]
     }
 }
 
@@ -206,6 +219,7 @@ impl Index<GpuSpec> for SupportedDevices {
     fn index(&self, gpu: GpuSpec) -> &Self::Output {
         match gpu {
             GpuSpec::Cuda => &self.cuda,
+            GpuSpec::OpenVino => &self.openvino,
             GpuSpec::Dml => &self.dml,
         }
     }
@@ -227,8 +241,13 @@ mod tests {
                     unused_variables,
                     reason = "比較対象としてここは網羅されてなければなりません"
                 )]
-                let SupportedDevices { cpu: _, cuda, dml } = &SUPPORTED_DEVICES;
-                [&raw const *cuda, &raw const *dml]
+                let SupportedDevices {
+                    cpu: _,
+                    cuda,
+                    dml,
+                    openvino,
+                } = &SUPPORTED_DEVICES;
+                [&raw const *cuda, &raw const *openvino, &raw const *dml]
             },
             *GpuSpec::defaults()
                 .into_iter()
