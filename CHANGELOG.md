@@ -19,9 +19,11 @@
 
 ## [0.17.1] - 2026-10-23 (+09:00)
 
+主な変更点とその解説については、[GitHub Releaseの本文](https://github.com/VOICEVOX/voicevox_core/releases/tag/0.17.1)をご覧ください。
+
 ### Added
 
-- ストリーミングトーク機能が追加されます ([#851], [#854], [#864], [#867], [#879], [#918], [#972], [#1319], [#1363], [#1371], [#1376], [#1400], [#1401], [#1419], [#1418], [#1420], [#1421], [#1423], [#1422], [#1426], [#1430], [#1431], [#1437], [#1432], [#1439], [#1441], [#1443], [#1444], [#1442], [#1446], [#1433], [#1448], [#1452], [#1453], [#1457], [#1461], [#1462], [#1463], [#1466], [#1468], [#1450], [#1472], [#1470], [#1473], [#1471], [#1477], [#1478])。
+- ストリーミングトーク機能が追加されます ([#851], [#854], [#864], [#867], [#879], [#918], [#972], [#1319], [#1363], [#1371], [#1376], [#1400], [#1401], [#1419], [#1418], [#1420], [#1421], [#1423], [#1422], [#1426], [#1430], [#1431], [#1437], [#1432], [#1439], [#1441], [#1443], [#1444], [#1442], [#1446], [#1433], [#1448], [#1452], [#1453], [#1451], [#1457], [#1461], [#1462], [#1460], [#1463], [#1466], [#1468], [#1450], [#1472], [#1470], [#1473], [#1471], [#1477], [#1478])。
 - 定数`FRAME_RATE=93.75`が追加されます。C APIではマクロと関数の両方で提供されます ([#1453])。
 - `AudioQuery::frame_length`が追加されます ([#1448])。
 - \[C\] `voicevox_json_free`の代わりに<code>voicevox\_**string**\_free</code>が、`voicevox_wav_free`の代わりに<code>voicevox\_**bytes**\_free</code>が追加されます ([#1441])。
@@ -42,6 +44,8 @@
 - \[Python\] `VoiceModelFile.open`が送出する`InvalidModelFormatError`が、`voicevox_core`モジュールにて適切に公開されます ([#1429])。
 
 ## [0.17.0] - 2026-08-14 (+09:00)
+
+主な変更点とその解説については、[GitHub Releaseの本文](https://github.com/VOICEVOX/voicevox_core/releases/tag/0.17.0)をご覧ください。
 
 ### Added
 
@@ -1589,9 +1593,11 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1446]: https://github.com/VOICEVOX/voicevox_core/pull/1446
 [#1448]: https://github.com/VOICEVOX/voicevox_core/pull/1448
 [#1450]: https://github.com/VOICEVOX/voicevox_core/pull/1450
+[#1451]: https://github.com/VOICEVOX/voicevox_core/pull/1451
 [#1452]: https://github.com/VOICEVOX/voicevox_core/pull/1452
 [#1453]: https://github.com/VOICEVOX/voicevox_core/pull/1453
 [#1457]: https://github.com/VOICEVOX/voicevox_core/pull/1457
+[#1460]: https://github.com/VOICEVOX/voicevox_core/pull/1460
 [#1461]: https://github.com/VOICEVOX/voicevox_core/pull/1461
 [#1462]: https://github.com/VOICEVOX/voicevox_core/pull/1462
 [#1463]: https://github.com/VOICEVOX/voicevox_core/pull/1463

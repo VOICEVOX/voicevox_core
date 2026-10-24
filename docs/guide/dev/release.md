@@ -3,7 +3,7 @@
 1. [`build`ワークフロー]を`コード署名する`付きで実行し、draft releaseを作成。
 2. 一つ前のリリースを参考にしてのbodyを書く。「{バージョン名}の主要な変更点」については[key-changes]から写す。
 3. draftを解除し、latestに。
-4. [CHANGELOG.md]にバージョンを刻む。
+4. [CHANGELOG.md]にバージョンを刻み、key-changes側からのリンクも更新する。
 
 1.において:
 
