@@ -103,6 +103,9 @@ pub(super) enum MoraKana {
     #[mora_mappings("ry", "e")]
     リェ,
 
+    #[mora_mappings("ry", "i")]
+    リィ,
+
     #[mora_mappings("r", "i")]
     リ,
 
@@ -138,6 +141,9 @@ pub(super) enum MoraKana {
 
     #[mora_mappings("my", "e")]
     ミェ,
+
+    #[mora_mappings("my", "i")]
+    ミィ,
 
     #[mora_mappings("m", "i")]
     ミ,
@@ -196,6 +202,9 @@ pub(super) enum MoraKana {
     #[mora_mappings("py", "e")]
     ピェ,
 
+    #[mora_mappings("py", "i")]
+    ピィ,
+
     #[mora_mappings("p", "i")]
     ピ,
 
@@ -211,6 +220,9 @@ pub(super) enum MoraKana {
     #[mora_mappings("by", "e")]
     ビェ,
 
+    #[mora_mappings("by", "i")]
+    ビィ,
+
     #[mora_mappings("b", "i")]
     ビ,
 
@@ -225,6 +237,9 @@ pub(super) enum MoraKana {
 
     #[mora_mappings("hy", "e")]
     ヒェ,
+
+    #[mora_mappings("hy", "i")]
+    ヒィ,
 
     #[mora_mappings("h", "i")]
     ヒ,
@@ -259,6 +274,9 @@ pub(super) enum MoraKana {
     #[mora_mappings("ny", "e")]
     ニェ,
 
+    #[mora_mappings("ny", "i")]
+    ニィ,
+
     #[mora_mappings("n", "i")]
     ニ,
 
@@ -286,6 +304,9 @@ pub(super) enum MoraKana {
     #[mora_mappings("dy", "a")]
     デャ,
 
+    #[mora_mappings("dy", "e")]
+    デェ,
+
     #[mora_mappings("d", "i")]
     ディ,
 
@@ -300,6 +321,9 @@ pub(super) enum MoraKana {
 
     #[mora_mappings("ty", "a")]
     テャ,
+
+    #[mora_mappings("ty", "e")]
+    テェ,
 
     #[mora_mappings("t", "i")]
     ティ,
@@ -421,11 +445,35 @@ pub(super) enum MoraKana {
     #[mora_mappings("gw", "a")]
     グヮ,
 
+    #[mora_mappings("gw", "o")]
+    グォ,
+
+    #[mora_mappings("gw", "e")]
+    グェ,
+
+    #[mora_mappings("gw", "u")]
+    グゥ,
+
+    #[mora_mappings("gw", "i")]
+    グィ,
+
     #[mora_mappings("g", "u")]
     グ,
 
     #[mora_mappings("kw", "a")]
     クヮ,
+
+    #[mora_mappings("kw", "o")]
+    クォ,
+
+    #[mora_mappings("kw", "e")]
+    クェ,
+
+    #[mora_mappings("kw", "u")]
+    クゥ,
+
+    #[mora_mappings("kw", "i")]
+    クィ,
 
     #[mora_mappings("k", "u")]
     ク,
@@ -442,6 +490,9 @@ pub(super) enum MoraKana {
     #[mora_mappings("gy", "e")]
     ギェ,
 
+    #[mora_mappings("gy", "i")]
+    ギィ,
+
     #[mora_mappings("g", "i")]
     ギ,
 
@@ -456,6 +507,9 @@ pub(super) enum MoraKana {
 
     #[mora_mappings("ky", "e")]
     キェ,
+
+    #[mora_mappings("ky", "i")]
+    キィ,
 
     #[mora_mappings("k", "i")]
     キ,
@@ -478,6 +532,9 @@ pub(super) enum MoraKana {
     #[mora_mappings("w", "e")]
     ウェ,
 
+    #[mora_mappings("w", "u")]
+    ウゥ,
+
     #[mora_mappings("w", "i")]
     ウィ,
 
@@ -492,9 +549,81 @@ pub(super) enum MoraKana {
 
     #[mora_mappings("", "a")]
     ア,
+
+    #[mora_mappings("by", "o", additional)]
+    ヴョ,
+
+    #[mora_mappings("by", "u", additional)]
+    ヴュ,
+
+    #[mora_mappings("by", "a", additional)]
+    ヴャ,
+
+    #[mora_mappings("", "o", additional)]
+    ヲ,
+
+    #[mora_mappings("", "e", additional)]
+    ヱ,
+
+    #[mora_mappings("", "i", additional)]
+    ヰ,
+
+    #[mora_mappings("w", "a", additional)]
+    ヮ,
+
+    #[mora_mappings("y", "o", additional)]
+    ョ,
+
+    #[mora_mappings("y", "u", additional)]
+    ュ,
+
+    #[mora_mappings("z", "u", additional)]
+    ヅ,
+
+    #[mora_mappings("j", "o", additional)]
+    ヂョ,
+
+    #[mora_mappings("j", "u", additional)]
+    ヂュ,
+
+    #[mora_mappings("j", "a", additional)]
+    ヂャ,
+
+    #[mora_mappings("j", "e", additional)]
+    ヂェ,
+
+    #[mora_mappings("j", "i", additional)]
+    ヂ,
+
+    #[mora_mappings("gw", "a", additional)]
+    グァ,
+
+    #[mora_mappings("kw", "a", additional)]
+    クァ,
+
+    #[mora_mappings("k", "e", additional)]
+    ヶ,
+
+    #[mora_mappings("y", "a", additional)]
+    ャ,
+
+    #[mora_mappings("", "o", additional)]
+    ォ,
+
+    #[mora_mappings("", "e", additional)]
+    ェ,
+
+    #[mora_mappings("", "u", additional)]
+    ゥ,
+
+    #[mora_mappings("", "i", additional)]
+    ィ,
+
+    #[mora_mappings("", "a", additional)]
+    ァ,
 }
 
-const _: () = assert!(MoraKana::COUNT == 144);
+const _: () = assert!(MoraKana::COUNT == 187);
 
 #[cfg(test)]
 mod tests {
@@ -504,19 +633,58 @@ mod tests {
     use super::{MORA_KANA_TO_MORA_PHONEMES, MORA_PHONEMES_TO_MORA_KANA, MoraKana};
 
     #[test]
-    fn mora_phonemes_to_mora_kana_has_the_same_length_as_mora_kana() {
-        assert_eq!(MoraKana::COUNT, MORA_PHONEMES_TO_MORA_KANA.len());
+    fn mappings_have_expected_lengths() {
+        assert_eq!(163, MORA_PHONEMES_TO_MORA_KANA.len());
+        assert_eq!(187, MoraKana::COUNT);
+        assert_eq!(187, MORA_KANA_TO_MORA_PHONEMES.iter().count());
     }
 
     #[test]
-    fn mappings_work() {
+    fn every_mora_kana_maps_to_a_canonical_mora_kana() {
+        let mut aliases = Vec::new();
+
         for (mora_kana, &(consonant, vowel)) in &MORA_KANA_TO_MORA_PHONEMES {
             let consonant = <&str>::from(consonant);
             let vowel = <&str>::from(vowel);
+            let canonical = MORA_PHONEMES_TO_MORA_KANA[&format!("{consonant}{vowel}")];
+
             assert_eq!(
-                mora_kana,
-                MORA_PHONEMES_TO_MORA_KANA[&format!("{consonant}{vowel}")]
+                MORA_KANA_TO_MORA_PHONEMES[mora_kana],
+                MORA_KANA_TO_MORA_PHONEMES[canonical],
             );
+            if mora_kana != canonical {
+                aliases.push((<&str>::from(mora_kana), <&str>::from(canonical)));
+            }
         }
+
+        assert_eq!(
+            [
+                ("ヴョ", "ビョ"),
+                ("ヴュ", "ビュ"),
+                ("ヴャ", "ビャ"),
+                ("ヲ", "オ"),
+                ("ヱ", "エ"),
+                ("ヰ", "イ"),
+                ("ヮ", "ワ"),
+                ("ョ", "ヨ"),
+                ("ュ", "ユ"),
+                ("ヅ", "ズ"),
+                ("ヂョ", "ジョ"),
+                ("ヂュ", "ジュ"),
+                ("ヂャ", "ジャ"),
+                ("ヂェ", "ジェ"),
+                ("ヂ", "ジ"),
+                ("グァ", "グヮ"),
+                ("クァ", "クヮ"),
+                ("ヶ", "ケ"),
+                ("ャ", "ヤ"),
+                ("ォ", "オ"),
+                ("ェ", "エ"),
+                ("ゥ", "ウ"),
+                ("ィ", "イ"),
+                ("ァ", "ア"),
+            ],
+            aliases.as_slice(),
+        );
     }
 }
