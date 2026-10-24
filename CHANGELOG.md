@@ -17,6 +17,8 @@
 [@phenylshima]: https://github.com/phenylshima
 -->
 
+## [0.17.1] - 2026-10-23 (+09:00)
+
 ### Added
 
 - ストリーミングトーク機能が追加されます ([#851], [#854], [#864], [#867], [#879], [#918], [#972], [#1319], [#1363], [#1371], [#1376], [#1400], [#1401], [#1419], [#1418], [#1420], [#1421], [#1423], [#1422], [#1426], [#1430], [#1431], [#1437], [#1432], [#1439], [#1441], [#1443], [#1444], [#1442], [#1446], [#1433], [#1448], [#1452], [#1453], [#1457], [#1461], [#1462], [#1463], [#1466], [#1468], [#1450], [#1472], [#1470], [#1473], [#1471], [#1477], [#1478])。
@@ -1124,7 +1126,8 @@ Windows版ダウンローダーのビルドに失敗しています。
 
 - \[Python\] モジュールに`__all__`が適切に設定されます ([#415])。
 
-[Unreleased]: https://github.com/VOICEVOX/voicevox_core/compare/0.17.0...HEAD
+[Unreleased]: https://github.com/VOICEVOX/voicevox_core/compare/0.17.1...HEAD
+[0.17.1]: https://github.com/VOICEVOX/voicevox_core/compare/0.17.0...0.17.1
 [0.17.0]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.4...0.17.0
 [0.16.4]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.3...0.16.4
 [0.16.3]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.2...0.16.3
