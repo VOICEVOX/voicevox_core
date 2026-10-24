@@ -184,7 +184,7 @@ class SupportedDevices:
     ONNX Runtimeとして利用可能なデバイスの情報。
 
     あくまでONNX Runtimeが対応しているデバイスの情報であることに注意。GPUが使える環境ではなかったとしても
-    ``cuda`` や ``dml`` は ``True`` を示しうる。
+    ``cuda`` や ``dml`` 、 ``migraphx`` は ``True`` を示しうる。
 
     VOICEVOX CORE以外が作ることはできない。作ろうとした場合 ``TypeError`` となる。
     """
@@ -210,6 +210,14 @@ class SupportedDevices:
 
     ONNX Runtimeの `DirectML Execution Provider <https://onnxruntime.ai/docs/execution-providers/DirectML-ExecutionProvider.html>`_
     (``DmlExecutionProvider``)に対応する。必要な環境についてはそちらを参照。
+    """
+
+    migraphx: bool
+    """
+    MIGraphXが利用可能。
+
+    ONNX Runtimeの `MIGraphX Execution Provider <https://onnxruntime.ai/docs/execution-providers/MIGraphX-ExecutionProvider.html>`_
+    (``MIGraphXExecutionProvider``)に対応する。必要な環境についてはそちらを参照。
     """
 
     _reserved: InitVar[Never]
