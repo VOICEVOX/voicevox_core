@@ -30,9 +30,10 @@
 
 ### Changed
 
-- \[Rust\] 依存ライブラリが変化します ([#1462], [#1470])。
-    - \[追加\] `sync_wrapper@1`: `^1.0.2`
+- \[Rust\] 依存ライブラリが変化します ([#1439], [#1462], [#1470])。
+    - \[追加\] `futures-core@0.3`: `^0.3.31`
     - \[追加\] `rustversion@1`: `^1.0.22`
+    - \[追加\] `sync_wrapper@1`: `^1.0.2`
 
 ### Deprecated
 
@@ -49,7 +50,7 @@
 
 ### Added
 
-- :tada: 新形式（`vvm_format_version=2`）のVVMが読み込めるようになり、`StyleType`に`StreamingTalk`が追加されます ([#1363], [#1371], [#1400] [#1401])。
+- :tada: 新形式（`vvm_format_version=2`）のVVMが読み込めるようになり、`StyleType`に`StreamingTalk`が追加されます ([#1363], [#1371], [#1400], [#1401])。
 - `Synthesizer::load_voice_model`にオプション`on_existing`が追加されます ([#1331], [#1337])。
 - ONNX Runtimeのサポート範囲が1.29まで拡大されます（ただし現時点でリリースされている最新のVOICEVOX ONNX Runtimeは1.23.2です） ([#1402], [#1404])。
 - \[Rust\] APIドキュメントが改善されます ([#1343], [#1381])。
