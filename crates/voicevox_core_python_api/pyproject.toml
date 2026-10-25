@@ -54,6 +54,6 @@ maturin = "1.10.2"
 pytest = "7.3.1"
 pytest-asyncio = "0.21.0"
 pytest-codspeed = "4.2.0"
-black = "23.3.0"
+black = "26.10.1"
 isort = "5.13.2"
 numpy = "2.2.6" # Python 3.10で動く最大バージョン
