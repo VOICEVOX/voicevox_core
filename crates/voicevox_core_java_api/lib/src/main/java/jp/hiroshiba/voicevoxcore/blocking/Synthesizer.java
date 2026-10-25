@@ -769,8 +769,7 @@ public final class Synthesizer {
     private final int styleId;
     private double startOffset = 0.0;
     private double segmentLength = 0.3;
-    // 他のConfiguratorと異なり、Rust APIの既定値に合わせて`true`。
-    private boolean interrogativeUpspeak = true;
+    private boolean interrogativeUpspeak = false; // FIXME: デフォルトで`false`になってしまっている！
 
     private StreamingSynthesisConfigurator(
         Synthesizer synthesizer, AudioQuery audioQuery, int styleId) {
@@ -807,9 +806,7 @@ public final class Synthesizer {
     }
 
     /**
-     * 疑問文の調整を有効にするかどうか。既定値は{@code true}。
-     *
-     * <p>{@link Synthesizer#synthesis}などの既定値({@code false})とは異なる。
+     * 疑問文の調整を有効にするかどうか。
      *
      * @param interrogativeUpspeak 疑問文の調整を有効にするかどうか。
      * @return {@link StreamingSynthesisConfigurator}。

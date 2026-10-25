@@ -265,9 +265,7 @@ class SynthesizerTest extends TestUtils {
   /** 残りの要素をすべて読み、連結して返す。 */
   private static byte[] drain(SynthesisStream stream) throws RunModelException {
     ByteArrayOutputStream out = new ByteArrayOutputStream();
-    for (byte[] chunk = stream.next(); chunk != null; chunk = stream.next()) {
-      out.write(chunk, 0, chunk.length);
-    }
+    stream.forEachRemaining(chunk -> out.write(chunk, 0, chunk.length));
     return out.toByteArray();
   }
 
@@ -275,8 +273,7 @@ class SynthesizerTest extends TestUtils {
   void checkStreamingSynthesis() throws RunModelException, InvalidModelDataException {
     Synthesizer synthesizer = buildSynthesizerWithModel();
     AudioQuery query = synthesizer.createAudioQuery(STREAMING_TEXT, STREAMING_STYLE_ID);
-    byte[] expected =
-        synthesizer.tts(STREAMING_TEXT, STREAMING_STYLE_ID).interrogativeUpspeak(true).perform();
+    byte[] expected = synthesizer.tts(STREAMING_TEXT, STREAMING_STYLE_ID).perform();
 
     try (SynthesisStream stream =
         synthesizer.streamingSynthesis(query, STREAMING_STYLE_ID).perform()) {
@@ -295,8 +292,7 @@ class SynthesizerTest extends TestUtils {
   void checkStreamingSynthesisSingleSegment() throws RunModelException, InvalidModelDataException {
     Synthesizer synthesizer = buildSynthesizerWithModel();
     AudioQuery query = synthesizer.createAudioQuery(STREAMING_TEXT, STREAMING_STYLE_ID);
-    byte[] expected =
-        synthesizer.tts(STREAMING_TEXT, STREAMING_STYLE_ID).interrogativeUpspeak(true).perform();
+    byte[] expected = synthesizer.tts(STREAMING_TEXT, STREAMING_STYLE_ID).perform();
 
     // 全体が1区間に収まる長さを指定すると、`tts`と完全に一致する
     try (SynthesisStream stream =
@@ -402,10 +398,10 @@ class SynthesizerTest extends TestUtils {
     // 疑問文の調整によって長さが変わる文なので、オプションが無視されていないことも確かめられる
     assertTrue(lengths[0] < lengths[1]);
 
-    // 既定値は`true`
+    // 既定値は`false`
     try (SynthesisStream stream =
         synthesizer.streamingSynthesis(query, STREAMING_STYLE_ID).perform()) {
-      assertEquals(lengths[1], stream.next().length + drain(stream).length);
+      assertEquals(lengths[0], stream.next().length + drain(stream).length);
     }
   }
 

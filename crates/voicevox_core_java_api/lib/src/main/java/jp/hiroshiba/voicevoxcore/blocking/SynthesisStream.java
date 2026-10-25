@@ -2,6 +2,7 @@ package jp.hiroshiba.voicevoxcore.blocking;
 
 import jakarta.annotation.Nullable;
 import java.io.Closeable;
+import java.util.function.Consumer;
 import jp.hiroshiba.voicevoxcore.exceptions.RunModelException;
 import jp.hiroshiba.voicevoxcore.exceptions.StyleNotFoundException;
 import jp.hiroshiba.voicevoxcore.internal.Dll;
@@ -38,6 +39,20 @@ public final class SynthesisStream implements Closeable {
   @Nullable
   public byte[] next() throws RunModelException {
     return rsNext();
+  }
+
+  /**
+   * 残りの音声の断片をすべて合成し、順に{@code action}へ渡す。
+   *
+   * @param action 音声の断片を受け取る処理。
+   * @throws RunModelException 推論に失敗した場合。
+   * @throws StyleNotFoundException 利用中の音声モデルがアンロードされていた場合。
+   * @throws IllegalStateException {@link #close()}の後、もしくは{@link #close()}の実行中に呼ばれた場合。
+   */
+  public void forEachRemaining(Consumer<byte[]> action) throws RunModelException {
+    for (byte[] chunk = next(); chunk != null; chunk = next()) {
+      action.accept(chunk);
+    }
   }
 
   /**
