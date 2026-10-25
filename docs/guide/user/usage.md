@@ -198,6 +198,21 @@ TODO: 後で書きます。
 +wav = bytes(wav)
 ```
 
+```java
+// Java APIの場合。`SynthesisStream`は`Iterator`ではなく、`next()`が終端で`null`を返す
+// なお`interrogativeUpspeak`の既定値は、`synthesis`（`false`）と違い`true`
+
+import java.io.ByteArrayOutputStream;
+import jp.hiroshiba.voicevoxcore.blocking.SynthesisStream;
+
+ByteArrayOutputStream wav = new ByteArrayOutputStream();
+try (SynthesisStream stream = synthesizer.streamingSynthesis(audioQuery, styleId).perform()) {
+  for (byte[] chunk = stream.next(); chunk != null; chunk = stream.next()) {
+    wav.write(chunk, 0, chunk.length);
+  }
+}
+```
+
 ```py
 # 音声合成の区切り方を細かく制御したい場合
 
@@ -214,7 +229,7 @@ wav = wav_from_s16le(
 )
 ```
 
-Java APIとC APIにおける`streaming_synthesis`は未実装です。代わりに`create_audio_feature`と`render`が利用できます。
+C APIにおける`streaming_synthesis`は未実装です。代わりに`create_audio_feature`と`render`が利用できます。
 
 TODO: 以下の内容を解説予定です。
 

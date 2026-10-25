@@ -337,6 +337,22 @@ public final class Synthesizer {
   }
 
   /**
+   * {@link AudioQuery}から、音声を断片ごとに合成する{@link SynthesisStream}を生成する。
+   *
+   * <p>ストリーミング音声合成にはいくつか注意事項がある。ユーザーガイドの<a
+   * href="https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/usage.md#%E3%82%B9%E3%83%88%E3%83%AA%E3%83%BC%E3%83%9F%E3%83%B3%E3%82%B0%E9%9F%B3%E5%A3%B0%E5%90%88%E6%88%90">ストリーミング音声合成</a>を参照。
+   *
+   * @param audioQuery {@link AudioQuery}。
+   * @param styleId スタイルID。
+   * @return {@link StreamingSynthesisConfigurator}。
+   * @see StreamingSynthesisConfigurator#perform
+   */
+  @Nonnull
+  public StreamingSynthesisConfigurator streamingSynthesis(AudioQuery audioQuery, int styleId) {
+    return new StreamingSynthesisConfigurator(this, audioQuery, styleId);
+  }
+
+  /**
    * AquesTalk風記法をもとに音声合成を実行するためのオブジェクトを生成する。
    *
    * @param kana AquesTalk風記法。
@@ -528,6 +544,15 @@ public final class Synthesizer {
 
   @Nonnull
   private native byte[] rsRender(AudioFeature audioFeature, int startInclusive, int endExclusive)
+      throws RunModelException;
+
+  @Nonnull
+  private native SynthesisStream rsStreamingSynthesis(
+      String queryJson,
+      int styleId,
+      double startOffset,
+      double segmentLength,
+      boolean enableInterrogativeUpspeak)
       throws RunModelException;
 
   @Nonnull
@@ -734,6 +759,84 @@ public final class Synthesizer {
     public AudioFeature perform() throws RunModelException {
       String queryJson = Convert.jsonFromQueryLike(this.audioQuery, "不正なAudioQueryです");
       return synthesizer.rsCreateAudioFeature(queryJson, this.styleId, this.interrogativeUpspeak);
+    }
+  }
+
+  /** {@link Synthesizer#streamingSynthesis} のオプション。 */
+  public final class StreamingSynthesisConfigurator {
+    private final Synthesizer synthesizer;
+    private final AudioQuery audioQuery;
+    private final int styleId;
+    private double startOffset = 0.0;
+    private double segmentLength = 0.3;
+    // 他のConfiguratorと異なり、Rust APIの既定値に合わせて`true`。
+    private boolean interrogativeUpspeak = true;
+
+    private StreamingSynthesisConfigurator(
+        Synthesizer synthesizer, AudioQuery audioQuery, int styleId) {
+      if (!Utils.isU32(styleId)) {
+        throw new IllegalArgumentException("styleId");
+      }
+      this.synthesizer = synthesizer;
+      this.audioQuery = audioQuery;
+      this.styleId = styleId;
+    }
+
+    /**
+     * 音声の開始位置。単位は秒。既定値は{@code 0.0}。
+     *
+     * @param startOffset 音声の開始位置(秒)。
+     * @return {@link StreamingSynthesisConfigurator}。
+     */
+    @Nonnull
+    public StreamingSynthesisConfigurator startOffset(double startOffset) {
+      this.startOffset = startOffset;
+      return this;
+    }
+
+    /**
+     * 一度に合成する音声の長さ。単位は秒。既定値は{@code 0.3}。
+     *
+     * @param segmentLength 一度に合成する音声の長さ(秒)。
+     * @return {@link StreamingSynthesisConfigurator}。
+     */
+    @Nonnull
+    public StreamingSynthesisConfigurator segmentLength(double segmentLength) {
+      this.segmentLength = segmentLength;
+      return this;
+    }
+
+    /**
+     * 疑問文の調整を有効にするかどうか。既定値は{@code true}。
+     *
+     * <p>{@link Synthesizer#synthesis}などの既定値({@code false})とは異なる。
+     *
+     * @param interrogativeUpspeak 疑問文の調整を有効にするかどうか。
+     * @return {@link StreamingSynthesisConfigurator}。
+     */
+    @Nonnull
+    public StreamingSynthesisConfigurator interrogativeUpspeak(boolean interrogativeUpspeak) {
+      this.interrogativeUpspeak = interrogativeUpspeak;
+      return this;
+    }
+
+    /**
+     * {@link SynthesisStream}を生成する。
+     *
+     * <p>このメソッドの中で中間表現の生成(推論)まで行われる。音声波形の合成は、{@link SynthesisStream#next()}が呼ばれるたびに少しずつ行われる。
+     *
+     * @return {@link SynthesisStream}。
+     * @throws InvalidQueryException {@code audioQuery}が不正な場合。
+     * @throws StyleNotFoundException {@code styleId}に対応する、ストリーミング音声合成({@code
+     *     streaming_talk})のスタイルが見つからなかった場合。
+     * @throws RunModelException 推論に失敗した場合。
+     * @throws IllegalArgumentException {@code startOffset}または{@code segmentLength}が範囲外の場合。
+     */
+    @Nonnull
+    public SynthesisStream perform() throws RunModelException {
+      String queryJson = Convert.jsonFromQueryLike(this.audioQuery, "不正なAudioQueryです");
+      return synthesizer.rsStreamingSynthesis(
+          queryJson, this.styleId, this.startOffset, this.segmentLength, this.interrogativeUpspeak);
     }
   }
 

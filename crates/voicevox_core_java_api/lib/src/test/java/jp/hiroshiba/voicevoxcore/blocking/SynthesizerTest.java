@@ -8,9 +8,11 @@ import static jp.hiroshiba.voicevoxcore.Wav.wavFromS16le;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -26,6 +28,7 @@ import jp.hiroshiba.voicevoxcore.Score;
 import jp.hiroshiba.voicevoxcore.TestUtils;
 import jp.hiroshiba.voicevoxcore.exceptions.InvalidModelDataException;
 import jp.hiroshiba.voicevoxcore.exceptions.RunModelException;
+import jp.hiroshiba.voicevoxcore.exceptions.StyleNotFoundException;
 import org.junit.jupiter.api.Test;
 
 class SynthesizerTest extends TestUtils {
@@ -244,6 +247,182 @@ class SynthesizerTest extends TestUtils {
     byte[] wav2 = wavFromS16le(pcm, query.outputSamplingRate, query.outputStereo);
 
     assertArrayEquals(wav1, wav2);
+  }
+
+  private static final String STREAMING_TEXT = "こんにちは？";
+  // `streaming_talk`に対応したスタイルを使用する
+  private static final int STREAMING_STYLE_ID = 302;
+
+  private Synthesizer buildSynthesizerWithModel()
+      throws RunModelException, InvalidModelDataException {
+    Synthesizer synthesizer = Synthesizer.builder(loadOnnxruntime(), loadOpenJtalk()).build();
+    try (VoiceModelFile model = openModel()) {
+      synthesizer.loadVoiceModel(model).perform();
+    }
+    return synthesizer;
+  }
+
+  /** 残りの要素をすべて読み、連結して返す。 */
+  private static byte[] drain(SynthesisStream stream) throws RunModelException {
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    for (byte[] chunk = stream.next(); chunk != null; chunk = stream.next()) {
+      out.write(chunk, 0, chunk.length);
+    }
+    return out.toByteArray();
+  }
+
+  @Test
+  void checkStreamingSynthesis() throws RunModelException, InvalidModelDataException {
+    Synthesizer synthesizer = buildSynthesizerWithModel();
+    AudioQuery query = synthesizer.createAudioQuery(STREAMING_TEXT, STREAMING_STYLE_ID);
+    byte[] expected =
+        synthesizer.tts(STREAMING_TEXT, STREAMING_STYLE_ID).interrogativeUpspeak(true).perform();
+
+    try (SynthesisStream stream =
+        synthesizer.streamingSynthesis(query, STREAMING_STYLE_ID).perform()) {
+      // 先頭の要素はWAVヘッダー
+      byte[] header = stream.next();
+      assertArrayEquals(Arrays.copyOf(expected, 44), header);
+
+      // 区間ごとに合成するため、波形は`tts`と完全には一致しない。Python APIのテストと同様に、
+      // ヘッダーと長さだけを確認する。
+      assertEquals(expected.length, header.length + drain(stream).length);
+      assertNull(stream.next());
+    }
+  }
+
+  @Test
+  void checkStreamingSynthesisSingleSegment() throws RunModelException, InvalidModelDataException {
+    Synthesizer synthesizer = buildSynthesizerWithModel();
+    AudioQuery query = synthesizer.createAudioQuery(STREAMING_TEXT, STREAMING_STYLE_ID);
+    byte[] expected =
+        synthesizer.tts(STREAMING_TEXT, STREAMING_STYLE_ID).interrogativeUpspeak(true).perform();
+
+    // 全体が1区間に収まる長さを指定すると、`tts`と完全に一致する
+    try (SynthesisStream stream =
+        synthesizer.streamingSynthesis(query, STREAMING_STYLE_ID).segmentLength(100.0).perform()) {
+      assertEquals(44, stream.next().length);
+      byte[] actual = wavFromS16le(drain(stream), query.outputSamplingRate, query.outputStereo);
+      assertArrayEquals(expected, actual);
+    }
+  }
+
+  @Test
+  void checkStreamingSynthesisClose() throws RunModelException, InvalidModelDataException {
+    Synthesizer synthesizer = buildSynthesizerWithModel();
+    AudioQuery query = synthesizer.createAudioQuery(STREAMING_TEXT, STREAMING_STYLE_ID);
+
+    SynthesisStream stream = synthesizer.streamingSynthesis(query, STREAMING_STYLE_ID).perform();
+    stream.close();
+    stream.close(); // 複数回呼んでもよい
+    assertThrowsExactly(IllegalStateException.class, stream::next);
+  }
+
+  @Test
+  void checkStreamingSynthesisInvalidRange() throws RunModelException, InvalidModelDataException {
+    Synthesizer synthesizer = buildSynthesizerWithModel();
+    AudioQuery query = synthesizer.createAudioQuery(STREAMING_TEXT, STREAMING_STYLE_ID);
+
+    // 負、NaN、音声の長さを超える値
+    for (double startOffset : new double[] {-1.0, Double.NaN, 1.0e6}) {
+      assertThrowsExactly(
+          IllegalArgumentException.class,
+          () ->
+              synthesizer
+                  .streamingSynthesis(query, STREAMING_STYLE_ID)
+                  .startOffset(startOffset)
+                  .perform());
+    }
+    for (double segmentLength : new double[] {0.0, -1.0, Double.NaN}) {
+      assertThrowsExactly(
+          IllegalArgumentException.class,
+          () ->
+              synthesizer
+                  .streamingSynthesis(query, STREAMING_STYLE_ID)
+                  .segmentLength(segmentLength)
+                  .perform());
+    }
+  }
+
+  @Test
+  void checkStreamingSynthesisStartOffset() throws RunModelException, InvalidModelDataException {
+    Synthesizer synthesizer = buildSynthesizerWithModel();
+    AudioQuery query = synthesizer.createAudioQuery(STREAMING_TEXT, STREAMING_STYLE_ID);
+
+    int fullLength;
+    try (SynthesisStream stream =
+        synthesizer.streamingSynthesis(query, STREAMING_STYLE_ID).perform()) {
+      fullLength = stream.next().length + drain(stream).length;
+    }
+
+    // 開始位置を進めた分だけ、ヘッダーはそのままで、PCMが短くなる
+    try (SynthesisStream stream =
+        synthesizer.streamingSynthesis(query, STREAMING_STYLE_ID).startOffset(0.5).perform()) {
+      byte[] header = stream.next();
+      assertEquals(44, header.length);
+      assertTrue(header.length + drain(stream).length < fullLength);
+    }
+  }
+
+  @Test
+  void checkStreamingSynthesisStyleNotFound() throws RunModelException, InvalidModelDataException {
+    Synthesizer synthesizer = buildSynthesizerWithModel();
+    AudioQuery query = synthesizer.createAudioQuery(STREAMING_TEXT, STREAMING_STYLE_ID);
+
+    // `talk`のスタイル(0、303)と、存在しないスタイルは、`streaming_talk`ではないので見つからない
+    for (int styleId : new int[] {0, 303, 999999}) {
+      assertThrowsExactly(
+          StyleNotFoundException.class,
+          () -> synthesizer.streamingSynthesis(query, styleId).perform());
+    }
+  }
+
+  @Test
+  void checkStreamingSynthesisInterrogativeUpspeak()
+      throws RunModelException, InvalidModelDataException {
+    Synthesizer synthesizer = buildSynthesizerWithModel();
+    AudioQuery query = synthesizer.createAudioQuery(STREAMING_TEXT, STREAMING_STYLE_ID);
+
+    int[] lengths = new int[2];
+    for (boolean upspeak : new boolean[] {false, true}) {
+      byte[] expected =
+          synthesizer
+              .tts(STREAMING_TEXT, STREAMING_STYLE_ID)
+              .interrogativeUpspeak(upspeak)
+              .perform();
+      try (SynthesisStream stream =
+          synthesizer
+              .streamingSynthesis(query, STREAMING_STYLE_ID)
+              .interrogativeUpspeak(upspeak)
+              .perform()) {
+        assertEquals(expected.length, stream.next().length + drain(stream).length);
+      }
+      lengths[upspeak ? 1 : 0] = expected.length;
+    }
+    // 疑問文の調整によって長さが変わる文なので、オプションが無視されていないことも確かめられる
+    assertTrue(lengths[0] < lengths[1]);
+
+    // 既定値は`true`
+    try (SynthesisStream stream =
+        synthesizer.streamingSynthesis(query, STREAMING_STYLE_ID).perform()) {
+      assertEquals(lengths[1], stream.next().length + drain(stream).length);
+    }
+  }
+
+  @Test
+  void checkStreamingSynthesisModelUnloaded() throws RunModelException, InvalidModelDataException {
+    Synthesizer synthesizer = Synthesizer.builder(loadOnnxruntime(), loadOpenJtalk()).build();
+    try (VoiceModelFile model = openModel()) {
+      synthesizer.loadVoiceModel(model).perform();
+      AudioQuery query = synthesizer.createAudioQuery(STREAMING_TEXT, STREAMING_STYLE_ID);
+
+      try (SynthesisStream stream =
+          synthesizer.streamingSynthesis(query, STREAMING_STYLE_ID).perform()) {
+        assertEquals(44, stream.next().length);
+        synthesizer.unloadVoiceModel(model.id);
+        assertThrowsExactly(StyleNotFoundException.class, stream::next);
+      }
+    }
   }
 
   @Test
