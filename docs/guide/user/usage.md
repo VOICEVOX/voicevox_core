@@ -198,18 +198,6 @@ TODO: 後で書きます。
 +wav = bytes(wav)
 ```
 
-```java
-// Java APIの場合。`SynthesisStream`は`Iterator`ではなく、`next()`が終端で`null`を返す
-
-import java.io.ByteArrayOutputStream;
-import jp.hiroshiba.voicevoxcore.blocking.SynthesisStream;
-
-ByteArrayOutputStream wav = new ByteArrayOutputStream();
-try (SynthesisStream stream = synthesizer.streamingSynthesis(audioQuery, styleId).perform()) {
-  stream.forEachRemaining(chunk -> wav.write(chunk, 0, chunk.length));
-}
-```
-
 ```py
 # 音声合成の区切り方を細かく制御したい場合
 
