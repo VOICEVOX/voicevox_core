@@ -1,19 +1,17 @@
 package jp.hiroshiba.voicevoxcore.blocking;
 
-import jakarta.annotation.Nullable;
+import jakarta.annotation.Nonnull;
 import java.io.Closeable;
+import java.util.NoSuchElementException;
 import java.util.function.Consumer;
 import jp.hiroshiba.voicevoxcore.exceptions.RunModelException;
 import jp.hiroshiba.voicevoxcore.exceptions.StyleNotFoundException;
 import jp.hiroshiba.voicevoxcore.internal.Dll;
 
 /**
- * ストリーミング音声合成の結果。
+ * 音声合成を都度行うことで、WAVデータを分割で返すオブジェクト。
  *
- * <p>{@link #next()}を呼ぶたびに、音声の断片(最初はWAVヘッダー、その後は16-bit PCM)が1つずつ合成される。{@link
- * #next()}を呼ばない限り、音声合成は実行されない。
- *
- * @see Synthesizer#streamingSynthesis
+ * <p>{@link Synthesizer#streamingSynthesis}により作られる。
  */
 public final class SynthesisStream implements Closeable {
   static {
@@ -25,33 +23,44 @@ public final class SynthesisStream implements Closeable {
   private SynthesisStream() {}
 
   /**
-   * 次の音声の断片を合成して返す。
+   * 次の要素があるかどうかを返す。
    *
-   * <p>最初の要素は必ず、WAVデータの先頭部分を示す44バイトのデータになる。このときエラーが返されることはない。
-   *
-   * <p>複数のスレッドから同時に呼んだ場合は、順番に実行される。
-   *
-   * @return 音声の断片。すべて返し終えた後は{@code null}。
-   * @throws RunModelException 推論に失敗した場合。
-   * @throws StyleNotFoundException 利用中の音声モデルがアンロードされていた場合。
+   * @return 次の要素があるかどうか。
    * @throws IllegalStateException {@link #close()}の後、もしくは{@link #close()}の実行中に呼ばれた場合。
    */
-  @Nullable
-  public byte[] next() throws RunModelException {
-    return rsNext();
+  public boolean hasNext() {
+    return rsHasNext();
   }
 
   /**
-   * 残りの音声の断片をすべて合成し、順に{@code action}へ渡す。
+   * 次の要素を返す。
    *
-   * @param action 音声の断片を受け取る処理。
-   * @throws RunModelException 推論に失敗した場合。
-   * @throws StyleNotFoundException 利用中の音声モデルがアンロードされていた場合。
+   * @return 次の要素。
+   * @throws NoSuchElementException 要素が無い場合。
+   * @throws StyleNotFoundException 利用中の音声モデルが{@link Synthesizer#unloadVoiceModel アンロード}されていた場合。
+   * @throws RunModelException 推論に失敗した、または推論結果が異常だった場合。
+   * @throws IllegalStateException {@link #close()}の後、もしくは{@link #close()}の実行中に呼ばれた場合。
+   */
+  @Nonnull
+  public byte[] next() throws RunModelException {
+    byte[] chunk = rsNext();
+    if (chunk == null) {
+      throw new NoSuchElementException();
+    }
+    return chunk;
+  }
+
+  /**
+   * 残りの要素をすべて、順に{@code action}へ渡す。
+   *
+   * @param action 要素を受け取る処理。
+   * @throws StyleNotFoundException 利用中の音声モデルが{@link Synthesizer#unloadVoiceModel アンロード}されていた場合。
+   * @throws RunModelException 推論に失敗した、または推論結果が異常だった場合。
    * @throws IllegalStateException {@link #close()}の後、もしくは{@link #close()}の実行中に呼ばれた場合。
    */
   public void forEachRemaining(Consumer<byte[]> action) throws RunModelException {
-    for (byte[] chunk = next(); chunk != null; chunk = next()) {
-      action.accept(chunk);
+    while (hasNext()) {
+      action.accept(next());
     }
   }
 
@@ -71,7 +80,8 @@ public final class SynthesisStream implements Closeable {
     super.finalize();
   }
 
-  @Nullable
+  private native boolean rsHasNext();
+
   private native byte[] rsNext() throws RunModelException;
 
   private native void rsClose();

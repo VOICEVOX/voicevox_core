@@ -8,7 +8,6 @@ import static jp.hiroshiba.voicevoxcore.Wav.wavFromS16le;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -16,6 +15,7 @@ import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.NoSuchElementException;
 import jp.hiroshiba.voicevoxcore.AccelerationMode;
 import jp.hiroshiba.voicevoxcore.AccentPhrase;
 import jp.hiroshiba.voicevoxcore.AudioFeature;
@@ -278,13 +278,15 @@ class SynthesizerTest extends TestUtils {
     try (SynthesisStream stream =
         synthesizer.streamingSynthesis(query, STREAMING_STYLE_ID).perform()) {
       // 先頭の要素はWAVヘッダー
+      assertTrue(stream.hasNext());
       byte[] header = stream.next();
       assertArrayEquals(Arrays.copyOf(expected, 44), header);
 
       // 区間ごとに合成するため、波形は`tts`と完全には一致しない。Python APIのテストと同様に、
       // ヘッダーと長さだけを確認する。
       assertEquals(expected.length, header.length + drain(stream).length);
-      assertNull(stream.next());
+      assertFalse(stream.hasNext());
+      assertThrowsExactly(NoSuchElementException.class, stream::next);
     }
   }
 
@@ -311,6 +313,7 @@ class SynthesizerTest extends TestUtils {
     SynthesisStream stream = synthesizer.streamingSynthesis(query, STREAMING_STYLE_ID).perform();
     stream.close();
     stream.close(); // 複数回呼んでもよい
+    assertThrowsExactly(IllegalStateException.class, stream::hasNext);
     assertThrowsExactly(IllegalStateException.class, stream::next);
   }
 

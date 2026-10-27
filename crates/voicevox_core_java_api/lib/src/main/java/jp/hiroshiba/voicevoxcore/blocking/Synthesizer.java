@@ -337,9 +337,18 @@ public final class Synthesizer {
   }
 
   /**
-   * {@link AudioQuery}から、音声を断片ごとに合成する{@link SynthesisStream}を生成する。
+   * {@link AudioQuery}からストリーミングで音声合成する。
    *
-   * <p>ストリーミング音声合成にはいくつか注意事項がある。ユーザーガイドの<a
+   * <p>このメソッド自体の実行は一瞬で終わる。
+   *
+   * <p>このメソッドが返す{@link
+   * SynthesisStream}は最初に必ず、WAVデータの先頭部分を示す44バイトのデータを返す。このときエラーが送出されることはない。音声をリアルタイムに再生するだけなら多くの場合この44バイトのデータは不要。
+   *
+   * <p>２番目以降の要素から{@code
+   * s16le}形式の音声波形が始まる。要素が要求されていない間は音声合成が行われない。そのため例えば再生バッファへの書き込みがスレッドを長時間ブロックする場合に、滞りなく音声合成し続けるためにFIFOキューなどを利用しなければならないことがある。このような対処を１行で行えるAPIを<a
+   * href="https://github.com/VOICEVOX/voicevox_core/issues/1467">#1467</a>で議論中。
+   *
+   * <p>ストリーミング音声合成には他にもいくつか注意事項がある。ユーザーガイドの<a
    * href="https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/usage.md#%E3%82%B9%E3%83%88%E3%83%AA%E3%83%BC%E3%83%9F%E3%83%B3%E3%82%B0%E9%9F%B3%E5%A3%B0%E5%90%88%E6%88%90">ストリーミング音声合成</a>を参照。
    *
    * @param audioQuery {@link AudioQuery}。
@@ -818,9 +827,9 @@ public final class Synthesizer {
     }
 
     /**
-     * {@link SynthesisStream}を生成する。
+     * 実行する。
      *
-     * <p>このメソッドの中で中間表現の生成(推論)まで行われる。音声波形の合成は、{@link SynthesisStream#next()}が呼ばれるたびに少しずつ行われる。
+     * <p>詳細は{@link Synthesizer#streamingSynthesis}を参照。
      *
      * @return {@link SynthesisStream}。
      * @throws InvalidQueryException {@code audioQuery}が不正な場合。

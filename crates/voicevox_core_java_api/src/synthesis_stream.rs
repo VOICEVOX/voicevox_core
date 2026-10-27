@@ -1,6 +1,10 @@
 use std::sync::{Arc, Mutex};
 
-use jni::{JNIEnv, objects::JObject, sys::jbyteArray};
+use jni::{
+    JNIEnv,
+    objects::JObject,
+    sys::{JNI_FALSE, JNI_TRUE, jboolean, jbyteArray},
+};
 use ouroboros::self_referencing;
 use voicevox_core::blocking::{OpenJtalk, Synthesizer};
 
@@ -39,6 +43,35 @@ impl SynthesisStreamBody {
 
 impl HasJavaClassIdent for SynthesisStreamBody {
     const JAVA_CLASS_IDENT: &str = "SynthesisStream";
+}
+
+// SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+#[unsafe(no_mangle)]
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_SynthesisStream_rsHasNext<
+    'local,
+>(
+    env: JNIEnv<'local>,
+    this: JObject<'local>,
+) -> jboolean {
+    throw_if_err(env, JNI_FALSE, |env| {
+        // SAFETY:
+        // - The safety contract must be upheld by the caller.
+        // - `jp.hiroshiba.voicevoxcore.blocking.SynthesisStream.handle` must correspond to
+        //   `self::SynthesisStream`.
+        let internal =
+            unsafe { env.get_rust_field::<_, _, SynthesisStream>(&this, "handle") }?.clone();
+        let internal = internal.read()?;
+
+        let remaining = internal
+            .0
+            .lock()
+            .unwrap_or_else(|e| panic!("{e}"))
+            .borrow_stream()
+            .size_hint()
+            .0;
+
+        Ok(if remaining > 0 { JNI_TRUE } else { JNI_FALSE })
+    })
 }
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
