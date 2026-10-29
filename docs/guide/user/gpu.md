@@ -13,6 +13,14 @@ DirectX12 に対応した GPU を搭載した Windows PC では DirectML を用�
 DirectML 版を利用するには Downloader の実行が必要です。  
 詳細は [DirectML 版をダウンロードする場合](./docs/guide/user/downloader.md#directml) を参照してください
 
+## MIGraphX
+
+ROCm に対応した AMD 製 GPU を搭載した Linux PC では MIGraphX を用いた合成が可能です。
+
+MIGraphX 版は Downloader では提供していません。  
+MIGraphX Execution Provider を有効にしてビルドした ONNX Runtime を用意してください。  
+詳細は [MIGraphX Execution Provider](https://onnxruntime.ai/docs/execution-providers/MIGraphX-ExecutionProvider.html) を参照してください
+
 macOS の場合、CUDA の macOS サポートは現在終了しているため、VOICEVOX CORE の macOS 向けビルド済みライブラリも CUDA, CUDNN を利用しない CPU 版のみの提供となります。
 
 <!--
