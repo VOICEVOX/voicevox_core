@@ -3,10 +3,13 @@ use std::sync::{Arc, Mutex};
 use jni::{
     JNIEnv,
     objects::JObject,
-    sys::{JNI_FALSE, JNI_TRUE, jboolean, jbyteArray},
+    sys::{JNI_FALSE, jboolean, jbyteArray},
 };
 use ouroboros::self_referencing;
-use voicevox_core::blocking::{OpenJtalk, Synthesizer};
+use voicevox_core::{
+    __internal::interop::PeekIfEmpty as _,
+    blocking::{OpenJtalk, Synthesizer},
+};
 
 use crate::common::{Closable, HasJavaClassIdent, throw_if_err};
 
@@ -62,15 +65,14 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_SynthesisStrea
             unsafe { env.get_rust_field::<_, _, SynthesisStream>(&this, "handle") }?.clone();
         let internal = internal.read()?;
 
-        let remaining = internal
+        let is_empty = internal
             .0
             .lock()
             .unwrap_or_else(|e| panic!("{e}"))
             .borrow_stream()
-            .size_hint()
-            .0;
+            .is_empty();
 
-        Ok(if remaining > 0 { JNI_TRUE } else { JNI_FALSE })
+        Ok((!is_empty).into())
     })
 }
 
