@@ -214,7 +214,7 @@ wav = wav_from_s16le(
 )
 ```
 
-Java APIとC APIにおける`streaming_synthesis`は未実装です。代わりに`create_audio_feature`と`render`が利用できます。
+C APIにおける`streaming_synthesis`は未実装です。代わりに`create_audio_feature`と`render`が利用できます。
 
 TODO: 以下の内容を解説予定です。
 

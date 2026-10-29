@@ -5176,6 +5176,7 @@ dependencies = [
  "duplicate",
  "easy-ext",
  "jni",
+ "ouroboros",
  "pretty_assertions",
  "rstest",
  "serde_json",

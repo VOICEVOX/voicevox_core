@@ -1,15 +1,16 @@
 use crate::{
-    common::{JNIEnvExt as _, query_from_json, throw_if_err},
+    common::{Closable, JNIEnvExt as _, JavaApiError, query_from_json, throw_if_err},
     object, object_type, static_field,
+    synthesis_stream::{SynthesisStream, SynthesisStreamBody},
 };
 
 use jni::{
     JNIEnv,
     objects::{JObject, JString},
-    sys::{jboolean, jint, jobject},
+    sys::{jboolean, jdouble, jint, jobject},
 };
 use std::{borrow::Cow, sync::Arc};
-use voicevox_core::AudioFeature;
+use voicevox_core::{__internal::interop::AudioSegmentation, AudioFeature};
 
 // SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 #[unsafe(no_mangle)]
@@ -861,6 +862,72 @@ unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rs
             .perform()?;
         let wav = env.byte_array_from_slice(wav)?;
         Ok(wav.into_raw())
+    })
+}
+
+// SAFETY: voicevox_core_java_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+#[unsafe(no_mangle)]
+unsafe extern "system" fn Java_jp_hiroshiba_voicevoxcore_blocking_Synthesizer_rsStreamingSynthesis<
+    'local,
+>(
+    env: JNIEnv<'local>,
+    this: JObject<'local>,
+    query_json: JString<'local>,
+    style_id: jint,
+    start_offset: jdouble,
+    segment_length: jdouble,
+    enable_interrogative_upspeak: jboolean,
+) -> jobject {
+    throw_if_err(env, std::ptr::null_mut(), |env| {
+        let audio_query: String = env.get_string(&query_json)?.into();
+        let audio_query: voicevox_core::AudioQuery = query_from_json(&audio_query)?;
+        let style_id = style_id as u32;
+        let enable_interrogative_upspeak = enable_interrogative_upspeak != 0;
+
+        // `perform`はパニックしうるので、先に検証する。
+        AudioSegmentation {
+            start_offset_in_secs: start_offset,
+            segment_length_in_secs: segment_length,
+        }
+        .validate(
+            audio_query
+                .frame_length()
+                .enable_interrogative_upspeak(enable_interrogative_upspeak)
+                .calculate()
+                .0,
+        )
+        .map_err(|e| JavaApiError::IllegalArgument(e.to_string()))?;
+
+        let internal = unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.blocking.Synthesizer.handle` must correspond to
+            //   `Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>`.
+            type RustField =
+                Arc<voicevox_core::blocking::Synthesizer<voicevox_core::blocking::OpenJtalk>>;
+            env.get_rust_field::<_, _, RustField>(&this, "handle")
+        }?
+        .clone();
+
+        let stream_internal = SynthesisStreamBody::try_new(internal, |internal| {
+            internal
+                .streaming_synthesis(&audio_query, voicevox_core::StyleId::new(style_id))
+                .enable_interrogative_upspeak(enable_interrogative_upspeak)
+                .start_offset(start_offset)
+                .segment_length(segment_length)
+                .perform()
+        })?;
+        let stream_internal = Arc::new(Closable::new(stream_internal));
+
+        let stream = env.new_object(object!("blocking/SynthesisStream"), "()V", &[])?;
+        unsafe {
+            // SAFETY:
+            // - The safety contract must be upheld by the caller.
+            // - `jp.hiroshiba.voicevoxcore.blocking.SynthesisStream.handle` must correspond to
+            //   `crate::synthesis_stream::SynthesisStream`.
+            env.set_rust_field::<_, _, SynthesisStream>(&stream, "handle", stream_internal)
+        }?;
+        Ok(stream.into_raw())
     })
 }
 
