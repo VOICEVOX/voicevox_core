@@ -294,7 +294,14 @@ impl InferenceRuntime for self::blocking::Onnxruntime {
             .map_err(ort::Error::<()>::from)?;
 
         match options.device {
-            DeviceSpec::Cpu => {}
+            DeviceSpec::Cpu => {
+                builder = builder
+                    .with_memory_pattern(false)
+                    .map_err(ort::Error::<()>::from)?;
+                CPUExecutionProvider::default()
+                    .with_arena_allocator(false)
+                    .register(&mut builder)?;
+            }
             DeviceSpec::Gpu(GpuSpec::Cuda) => {
                 CUDAExecutionProvider::default()
                     .with_conv_algorithm_search(ConvAlgorithmSearch::Heuristic)
