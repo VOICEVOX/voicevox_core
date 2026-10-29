@@ -791,7 +791,14 @@ public final class Synthesizer {
     }
 
     /**
-     * 音声の開始位置。単位は秒。既定値は{@code 0.0}。
+     * 音声の開始位置。単位は秒。
+     *
+     * <p>デフォルトは{@code 0.0}。
+     *
+     * <p><code>start_offset * {@link Frames#FRAME_RATE FRAME_RATE}</code>が{@code 0.0}以上{@link
+     * AudioQuery#frameLength 総フレーム}以下でなければ{@link #perform 実行}時に{@link
+     * IllegalArgumentException}をスローする。総フレーム数は{@link #interrogativeUpspeak(boolean)
+     * interrogativeUpspeak}により変わることに注意。
      *
      * @param startOffset 音声の開始位置(秒)。
      * @return {@link StreamingSynthesisConfigurator}。
@@ -803,7 +810,12 @@ public final class Synthesizer {
     }
 
     /**
-     * 一度に合成する音声の長さ。単位は秒。既定値は{@code 0.3}。
+     * 一度に合成する音声の長さ。単位は秒。
+     *
+     * <p>デフォルトは{@code 0.3}。
+     *
+     * <p><code>segmentLength * {@link Frames#FRAME_RATE FRAME_RATE}</code>が{@code
+     * 0.5}を超えていなければ{@link #perform 実行}時に{@link IllegalArgumentException}をスローする。
      *
      * @param segmentLength 一度に合成する音声の長さ(秒)。
      * @return {@link StreamingSynthesisConfigurator}。
@@ -814,12 +826,20 @@ public final class Synthesizer {
       return this;
     }
 
+    // spotless:off
     /**
      * 疑問文の調整を有効にするかどうか。
+     *
+     * <p>具体的には、{@link AccentPhrase#isInterrogative}を考慮するかどうか。
+     *
+     * <p>この値を{@code false}にすることにより{@link AudioQuery#frameLength 総フレーム}が<code>{@link
+     * #startOffset(double) startOffset} * {@link Frames#FRAME_RATE FRAME_RATE}</code>を下回る場合、{@link
+     * #perform 実行}時に{@link IllegalArgumentException}をスローする。
      *
      * @param interrogativeUpspeak 疑問文の調整を有効にするかどうか。
      * @return {@link StreamingSynthesisConfigurator}。
      */
+    // spotless:on
     @Nonnull
     public StreamingSynthesisConfigurator interrogativeUpspeak(boolean interrogativeUpspeak) {
       this.interrogativeUpspeak = interrogativeUpspeak;
