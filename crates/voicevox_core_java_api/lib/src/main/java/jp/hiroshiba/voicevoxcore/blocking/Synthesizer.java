@@ -13,6 +13,7 @@ import jp.hiroshiba.voicevoxcore.AudioFeature;
 import jp.hiroshiba.voicevoxcore.AudioQuery;
 import jp.hiroshiba.voicevoxcore.CharacterMeta;
 import jp.hiroshiba.voicevoxcore.FrameAudioQuery;
+import jp.hiroshiba.voicevoxcore.Frames;
 import jp.hiroshiba.voicevoxcore.OnExistingVoiceModelId;
 import jp.hiroshiba.voicevoxcore.Score;
 import jp.hiroshiba.voicevoxcore.StyleType;
@@ -795,7 +796,7 @@ public final class Synthesizer {
      *
      * <p>デフォルトは{@code 0.0}。
      *
-     * <p><code>start_offset * {@link Frames#FRAME_RATE FRAME_RATE}</code>が{@code 0.0}以上{@link
+     * <p><code>startOffset * {@link Frames#FRAME_RATE FRAME_RATE}</code>が{@code 0.0}以上{@link
      * AudioQuery#frameLength 総フレーム}以下でなければ{@link #perform 実行}時に{@link
      * IllegalArgumentException}をスローする。総フレーム数は{@link #interrogativeUpspeak(boolean)
      * interrogativeUpspeak}により変わることに注意。
@@ -826,11 +827,12 @@ public final class Synthesizer {
       return this;
     }
 
-    // spotless:off
     /**
      * 疑問文の調整を有効にするかどうか。
      *
      * <p>具体的には、{@link AccentPhrase#isInterrogative}を考慮するかどうか。
+     *
+     * <p>デフォルトは{@code false}。将来的に{@code true}になる予定。
      *
      * <p>この値を{@code false}にすることにより{@link AudioQuery#frameLength 総フレーム}が<code>{@link
      * #startOffset(double) startOffset} * {@link Frames#FRAME_RATE FRAME_RATE}</code>を下回る場合、{@link
@@ -839,7 +841,6 @@ public final class Synthesizer {
      * @param interrogativeUpspeak 疑問文の調整を有効にするかどうか。
      * @return {@link StreamingSynthesisConfigurator}。
      */
-    // spotless:on
     @Nonnull
     public StreamingSynthesisConfigurator interrogativeUpspeak(boolean interrogativeUpspeak) {
       this.interrogativeUpspeak = interrogativeUpspeak;
