@@ -21,6 +21,11 @@
 
 - \[Java\] `Synthesizer::streamingSynthesis`と`SynthesisStream`が追加されます ([#1480])。
 
+### Changed
+
+- \[Rust\] 依存ライブラリが変化します ([#1489])。
+    - \[削除\] `derive-getters@0.2`
+
 ## [0.17.1] - 2026-10-23 (+09:00)
 
 主な変更点とその解説については、[GitHub Releaseの本文](https://github.com/VOICEVOX/voicevox_core/releases/tag/0.17.1)をご覧ください。
@@ -1615,6 +1620,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1477]: https://github.com/VOICEVOX/voicevox_core/pull/1477
 [#1478]: https://github.com/VOICEVOX/voicevox_core/pull/1478
 [#1480]: https://github.com/VOICEVOX/voicevox_core/pull/1480
+[#1489]: https://github.com/VOICEVOX/voicevox_core/pull/1489
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 

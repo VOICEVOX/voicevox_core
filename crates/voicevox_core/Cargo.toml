@@ -41,7 +41,6 @@ blocking.workspace = true
 bytemuck = { workspace = true, features = ["derive", "must_cast"] }
 camino.workspace = true
 const_format.workspace = true
-derive-getters.workspace = true
 derive-new.workspace = true
 derive_more = { workspace = true, features = ["add", "as_ref", "debug", "deref", "display", "from", "from_str", "index", "into", "into_iterator"] }
 duplicate.workspace = true

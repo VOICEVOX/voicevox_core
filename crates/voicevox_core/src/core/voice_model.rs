@@ -2,6 +2,8 @@
 //!
 //! VVM ファイルの定義と形式は[ドキュメント](../../../docs/guide/dev/vvm.md)を参照。
 
+pub(super) mod compat;
+
 use std::{
     collections::HashMap,
     fmt::{self, Debug},
@@ -35,11 +37,12 @@ use super::{
         },
     },
     manifest::{
-        FormatVersion, Manifest, ManifestDomain, ManifestDomains, ModelFile, ModelFileType,
-        StyleIdToInnerVoiceId,
+        FormatVersion, Manifest, ManifestBody, ManifestDomain, ManifestDomains, ModelFile,
+        ModelFileType, StyleIdToInnerVoiceId,
     },
-    metas::{VoiceModelMetaSchemaV1, VoiceModelMetaSchemaV2},
 };
+
+use self::compat::v1::VoiceModelMetaV1;
 
 pub(super) type ModelBytesWithInnerVoiceIdsByDomain = inference_domain_map_values!(
     for<D> Option<(StyleIdToInnerVoiceId, EnumMap<D::Operation, ModelBytes>)>
@@ -122,18 +125,19 @@ impl<A: Async> Inner<A> {
                 source,
             )
         })?;
+        // TODO: serde_ignoredで知らないフィールドに対して警告を出す
         let manifest = serde_json::from_slice::<Manifest>(manifest)
             .map_err(|source| error(LoadModelErrorKind::InvalidModelFormat, source.into()))?;
 
         let metas = &async {
-            let idx = find_entry_index(manifest.metas_filename())?;
+            let idx = find_entry_index(&manifest.body.metas_filename)?;
             zip.read_file(idx).await
         }
         .await
         .map_err(|source| {
             error(
                 LoadModelErrorKind::ReadZipEntry {
-                    filename: manifest.metas_filename().clone(),
+                    filename: manifest.body.metas_filename.clone(),
                 },
                 source,
             )
@@ -146,7 +150,7 @@ impl<A: Async> Inner<A> {
             inference_model_entries_builder: |header| {
                 let VoiceModelHeader { manifest, .. } = &**header;
                 manifest
-                    .domains()
+                    .domains
                     .each_ref()
                     .map(inference_domain_map!(|manifest| find_entry_indices(
                         manifest,
@@ -441,7 +445,7 @@ impl<R: AsyncBufRead + AsyncSeek + Unpin> async_zip::base::read::seek::ZipFileRe
 /// モデルの`[u8]`と分けて`Status`に渡す。
 #[derive(Debug)]
 pub(crate) struct VoiceModelHeader {
-    pub(super) manifest: Manifest,
+    pub(super) manifest: ManifestBody,
     /// メタ情報。
     ///
     /// `manifest`が対応していない`StyleType`のスタイルは含まれるべきではない。
@@ -457,33 +461,31 @@ impl VoiceModelHeader {
             source: Some(source),
         };
 
-        let metas = match manifest.vvm_format_version() {
-            FormatVersion::V1 => {
-                let data =
-                    serde_json::from_slice::<VoiceModelMetaSchemaV1>(metas).map_err(|source| {
-                        error(
-                            LoadModelErrorKind::InvalidModelFormat,
-                            anyhow::Error::from(source)
-                                .context(format!("{}が不正です", manifest.metas_filename())),
-                        )
-                    })?;
-                VoiceModelMeta::from_iter(data.into_iter().map(Into::into))
-            }
-            FormatVersion::V2 => {
-                let data =
-                    serde_json::from_slice::<VoiceModelMetaSchemaV2>(metas).map_err(|source| {
-                        error(
-                            LoadModelErrorKind::InvalidModelFormat,
-                            anyhow::Error::from(source)
-                                .context(format!("{}が不正です", manifest.metas_filename())),
-                        )
-                    })?;
-                VoiceModelMeta::from_iter(data.into_iter().map(Into::into))
+        let metas = {
+            let error = |source| {
+                error(
+                    LoadModelErrorKind::InvalidModelFormat,
+                    anyhow::Error::from(source)
+                        .context(format!("{}が不正です", manifest.body.metas_filename)),
+                )
+            };
+
+            match manifest.vvm_format_version {
+                FormatVersion::V1 => serde_json::from_slice::<VoiceModelMetaV1>(metas)
+                    .map_err(error)?
+                    .into_iter()
+                    .map(Into::into)
+                    .collect(),
+                FormatVersion::LATEST => {
+                    serde_json::from_slice::<VoiceModelMeta>(metas).map_err(error)?
+                }
             }
         };
 
+        let manifest = manifest.body;
+
         manifest
-            .domains()
+            .domains
             .check_acceptable(&metas)
             .map_err(|style_type| {
                 error(
@@ -491,7 +493,7 @@ impl VoiceModelHeader {
                     anyhow!(
                         "{metas_filename}には`{style_type}`のスタイルが存在しますが、manifest.json\
                          での対応がありません",
-                        metas_filename = manifest.metas_filename(),
+                        metas_filename = manifest.metas_filename,
                     ),
                 )
             })?;
@@ -596,7 +598,7 @@ pub(crate) mod blocking {
         /// VVMファイルを閉じる。
         pub fn close(self) -> (VoiceModelId, VoiceModelMeta) {
             let heads = self.0.into_heads();
-            (*heads.header.manifest.id(), heads.header.metas.clone())
+            (heads.header.manifest.id, heads.header.metas.clone())
         }
 
         pub(crate) fn inner(&self) -> &Inner<SingleTasked> {
@@ -660,7 +662,7 @@ pub(crate) mod nonblocking {
         pub async fn close(self) -> (VoiceModelId, VoiceModelMeta) {
             let heads = self.0.into_heads();
             heads.zip.into_inner().close().await;
-            (*heads.header.manifest.id(), heads.header.metas.clone())
+            (heads.header.manifest.id, heads.header.metas.clone())
         }
 
         pub(crate) fn inner(&self) -> &Inner<BlockingThreadPool> {
