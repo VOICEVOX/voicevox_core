@@ -123,7 +123,7 @@ jobs:
               "can_skip_in_simple_test": true
             },
             {
-              "os": "macos-14",
+              "os": "macos-15",
               "target": "aarch64-apple-darwin",
               "artifact_name": "osx-arm64",
               "c_release_format": "plain-cdylib",
@@ -141,7 +141,7 @@ jobs:
               "can_skip_in_simple_test": true
             },
             {
-              "os": "macos-14",
+              "os": "macos-15",
               "target": "aarch64-apple-ios",
               "artifact_name": "ios-arm64-cpu",
               "c_release_format": "ios-xcframework",
@@ -150,7 +150,7 @@ jobs:
               "can_skip_in_simple_test": true
             },
             {
-              "os": "macos-14",
+              "os": "macos-15",
               "target": "aarch64-apple-ios-sim",
               "artifact_name": "ios-arm64-cpu-sim",
               "c_release_format": "ios-xcframework",
@@ -382,7 +382,7 @@ jobs:
   build_xcframework:
     if: ${{ needs.config.outputs.mode == 'draft-release' || needs.config.outputs.mode == 'full-test' }}
     needs: [config, create_draft_release, build]
-    runs-on: macos-14
+    runs-on: macos-15
     permissions:
       contents: write
     env:

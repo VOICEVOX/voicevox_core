@@ -21,6 +21,10 @@
 
 - \[Java\] `Synthesizer::streamingSynthesis`と`SynthesisStream`が追加されます ([#1480])。
 
+### Changed
+
+- \[C,Python,Java,ダウンローダー\] \[macOS,iOS\] リリースされるバイナリがすべて、`macos-15`および`macos-15-intel`のデフォルトのXcodeでビルドされるようになります。動作対象環境は変わらないはずです ([#1491])。
+
 ## [0.17.1] - 2026-10-23 (+09:00)
 
 主な変更点とその解説については、[GitHub Releaseの本文](https://github.com/VOICEVOX/voicevox_core/releases/tag/0.17.1)をご覧ください。
@@ -45,7 +49,7 @@
 
 ### Fixed
 
-- \[macOS\] ダウンローダーを含め、リリースされるバイナリがビルドされるときに`MACOSX_DEPLOYMENT_TARGET`が適切に設定されるようになります。従来は一部の依存ライブラリだけ`xcrun --show-sdk-version`の値でビルドされてしまっていたため、古いmacOSでダウンローダーや`OpenJtalk`が動かない可能性がありました ([#1438])。
+- \[C,Python,Java,ダウンローダー\] \[macOS\] ダウンローダーを含め、リリースされるバイナリがビルドされるときに`MACOSX_DEPLOYMENT_TARGET`が適切に設定されるようになります。従来は一部の依存ライブラリだけ`xcrun --show-sdk-version`の値でビルドされてしまっていたため、古いmacOSでダウンローダーや`OpenJtalk`が動かない可能性がありました ([#1438])。
 - \[Python\] `VoiceModelFile.open`が送出する`InvalidModelFormatError`が、`voicevox_core`モジュールにて適切に公開されます ([#1429])。
 
 ## [0.17.0] - 2026-08-14 (+09:00)
@@ -1615,6 +1619,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1477]: https://github.com/VOICEVOX/voicevox_core/pull/1477
 [#1478]: https://github.com/VOICEVOX/voicevox_core/pull/1478
 [#1480]: https://github.com/VOICEVOX/voicevox_core/pull/1480
+[#1491]: https://github.com/VOICEVOX/voicevox_core/pull/1491
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 
