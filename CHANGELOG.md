@@ -23,7 +23,7 @@
 
 ### Changed
 
-- \[macOS\] リリースされるAArch64のバイナリが`macos-15`のデフォルトのXcodeでビルドされるようになります。動作対象環境は変わらないはずです ([#1491])。
+- \[C,Python,Java,ダウンローダー\] \[macOS,iOS\] リリースされるバイナリがすべて、`macos-15`および`macos-15-intel`のデフォルトのXcodeでビルドされるようになります。動作対象環境は変わらないはずです ([#1491])。
 
 ## [0.17.1] - 2026-10-23 (+09:00)
 
@@ -49,7 +49,7 @@
 
 ### Fixed
 
-- \[macOS\] ダウンローダーを含め、リリースされるバイナリがビルドされるときに`MACOSX_DEPLOYMENT_TARGET`が適切に設定されるようになります。従来は一部の依存ライブラリだけ`xcrun --show-sdk-version`の値でビルドされてしまっていたため、古いmacOSでダウンローダーや`OpenJtalk`が動かない可能性がありました ([#1438])。
+- \[C,Python,Java,ダウンローダー\] \[macOS\] ダウンローダーを含め、リリースされるバイナリがビルドされるときに`MACOSX_DEPLOYMENT_TARGET`が適切に設定されるようになります。従来は一部の依存ライブラリだけ`xcrun --show-sdk-version`の値でビルドされてしまっていたため、古いmacOSでダウンローダーや`OpenJtalk`が動かない可能性がありました ([#1438])。
 - \[Python\] `VoiceModelFile.open`が送出する`InvalidModelFormatError`が、`voicevox_core`モジュールにて適切に公開されます ([#1429])。
 
 ## [0.17.0] - 2026-08-14 (+09:00)
