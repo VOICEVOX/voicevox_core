@@ -3,6 +3,7 @@
 //! VVM ファイルの定義と形式は[ドキュメント](../../../docs/guide/dev/vvm.md)を参照。
 
 pub(super) mod compat;
+pub(super) mod manifest;
 
 use std::{
     collections::HashMap,
@@ -28,21 +29,21 @@ use crate::{
     error::{LoadModelError, LoadModelErrorKind, LoadModelResult},
 };
 
-use super::{
-    infer::{
-        InferenceDomain,
-        domains::{
-            FrameDecodeDomain, InferenceDomainMap, SingingTeacherDomain, StreamingTalkDomain,
-            TalkDomain, inference_domain_map, inference_domain_map_values,
-        },
+use super::infer::{
+    InferenceDomain,
+    domains::{
+        FrameDecodeDomain, InferenceDomainMap, SingingTeacherDomain, StreamingTalkDomain,
+        TalkDomain, inference_domain_map, inference_domain_map_values,
     },
+};
+
+use self::{
+    compat::v1::VoiceModelMetaV1,
     manifest::{
         FormatVersion, Manifest, ManifestBody, ManifestDomain, ManifestDomains, ModelFile,
         ModelFileType, StyleIdToInnerVoiceId,
     },
 };
-
-use self::compat::v1::VoiceModelMetaV1;
 
 pub(super) type ModelBytesWithInnerVoiceIdsByDomain = inference_domain_map_values!(
     for<D> Option<(StyleIdToInnerVoiceId, EnumMap<D::Operation, ModelBytes>)>
@@ -701,7 +702,7 @@ mod tests {
 
     use super::super::{
         infer::domains::{InferenceDomainMap, inference_domain_map},
-        manifest::ManifestDomains,
+        voice_model::manifest::ManifestDomains,
     };
 
     #[rstest]

@@ -3,7 +3,6 @@
 pub(crate) mod adjust;
 pub(crate) mod devices;
 pub(crate) mod infer;
-mod manifest;
 pub(crate) mod metas;
 pub(crate) mod status;
 pub(crate) mod voice_model;

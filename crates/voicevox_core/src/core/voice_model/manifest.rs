@@ -12,12 +12,13 @@ use serde_with::{DisplayFromStr, serde_as};
 
 use crate::{StyleId, VoiceModelId};
 
-use super::infer::{
-    InferenceDomain,
-    domains::{InferenceDomainMap, inference_domain_map_values},
+use super::{
+    super::infer::{
+        InferenceDomain,
+        domains::{InferenceDomainMap, inference_domain_map_values},
+    },
+    compat::v1::ManifestBodyV1,
 };
-
-use super::voice_model::compat::v1::ManifestBodyV1;
 
 // vvm_format_versionの値に応じたスキーマでパースし現行のManifestに詰めなおす
 impl<'de> Deserialize<'de> for Manifest {
@@ -147,8 +148,8 @@ pub(super) struct Manifest {
 }
 
 #[derive(Debug, Deserialize)]
-pub(super) struct ManifestBody {
-    pub(super) id: VoiceModelId,
+pub(in super::super) struct ManifestBody {
+    pub(in super::super) id: VoiceModelId,
     pub(super) metas_filename: String,
     #[serde(flatten)]
     pub(super) domains: InferenceDomainMap<ManifestDomains>,
@@ -203,8 +204,9 @@ pub(crate) struct StyleIdToInnerVoiceId(
 mod tests {
     use std::ops::Deref;
 
-    use crate::core::manifest::Manifest;
     use rstest::rstest;
+
+    use super::Manifest;
 
     #[rstest]
     #[case("{\"vvm_format_version\": 1,

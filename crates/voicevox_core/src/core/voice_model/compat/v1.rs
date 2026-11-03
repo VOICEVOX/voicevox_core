@@ -6,12 +6,12 @@ use crate::{
     CharacterMeta, CharacterVersion, StyleId, StyleMeta, StyleType, VoiceModelId,
     core::{
         infer::domains::{FrameDecodeDomain, InferenceDomainMap, SingingTeacherDomain, TalkDomain},
-        manifest::{ManifestBody, ManifestDomain},
+        voice_model::manifest::{ManifestBody, ManifestDomain},
     },
 };
 
 #[derive(Deserialize)]
-pub(in super::super::super) struct ManifestBodyV1 {
+pub(in super::super) struct ManifestBodyV1 {
     id: VoiceModelId,
     metas_filename: String,
     talk: Option<ManifestDomain<TalkDomain>>,
