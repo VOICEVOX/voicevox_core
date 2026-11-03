@@ -608,9 +608,9 @@ mod blocking {
             ret.cast_into::<PyString>().map_err(Into::into)
         }
 
-        fn close(&self) {
-            let this = self.model.close();
-            drop(this);
+        fn close(&self, py: Python<'_>) {
+            // 他スレッドが`detach`の中で読み取りロックを持っていることがあるので、GILを手放して待つ
+            drop(py.detach(|| self.model.close()));
         }
 
         #[getter]
@@ -642,8 +642,9 @@ mod blocking {
                 '_,
                 PyAny,
             >,
+            py: Python<'_>,
         ) {
-            self.close();
+            self.close(py);
         }
     }
 
@@ -782,8 +783,7 @@ mod blocking {
         }
 
         fn analyze(&self, text: &str, py: Python<'_>) -> PyResult<ToDataclass<Vec<AccentPhrase>>> {
-            self.open_jtalk
-                .analyze_(text)
+            py.detach(|| self.open_jtalk.analyze_(text))
                 .map(Into::into)
                 .into_py_result(py)
         }
@@ -873,8 +873,8 @@ mod blocking {
                 SynthesisStreamInner::Some { body, .. } => body,
                 SynthesisStreamInner::Empty => return Ok(None),
             };
-            let pcm = body
-                .with_stream_mut(|rust_api| rust_api.next())
+            let pcm = py
+                .detach(|| body.with_stream_mut(|rust_api| rust_api.next()))
                 .expect("`stream` should be non empty while `SynthesisStreamInner::Some` is held")
                 .into_py_result(py);
             if body.borrow_stream().is_empty() {
@@ -1015,10 +1015,12 @@ mod blocking {
         ) -> PyResult<()> {
             let this = self.synthesizer.read()?;
             let model = &model.get().model.read()?;
-            this.load_voice_model(model)
-                .on_existing(on_existing)
-                .perform()
-                .into_py_result(py)
+            py.detach(|| {
+                this.load_voice_model(model)
+                    .on_existing(on_existing)
+                    .perform()
+            })
+            .into_py_result(py)
         }
 
         fn unload_voice_model(&self, voice_model_id: Uuid, py: Python<'_>) -> PyResult<()> {
@@ -1043,8 +1045,7 @@ mod blocking {
         ) -> PyResult<ToDataclass<AudioQuery>> {
             let synthesizer = self.synthesizer.read()?;
 
-            synthesizer
-                .create_audio_query_from_kana(kana, StyleId::new(style_id))
+            py.detach(|| synthesizer.create_audio_query_from_kana(kana, StyleId::new(style_id)))
                 .map(Into::into)
                 .into_py_result(py)
         }
@@ -1057,8 +1058,7 @@ mod blocking {
         ) -> PyResult<ToDataclass<AudioQuery>> {
             let synthesizesr = self.synthesizer.read()?;
 
-            synthesizesr
-                .create_audio_query(text, StyleId::new(style_id))
+            py.detach(|| synthesizesr.create_audio_query(text, StyleId::new(style_id)))
                 .map(Into::into)
                 .into_py_result(py)
         }
@@ -1071,8 +1071,7 @@ mod blocking {
         ) -> PyResult<ToDataclass<Vec<AccentPhrase>>> {
             let synthesizer = self.synthesizer.read()?;
 
-            synthesizer
-                .create_accent_phrases_from_kana(kana, StyleId::new(style_id))
+            py.detach(|| synthesizer.create_accent_phrases_from_kana(kana, StyleId::new(style_id)))
                 .map(Into::into)
                 .into_py_result(py)
         }
@@ -1085,8 +1084,7 @@ mod blocking {
         ) -> PyResult<ToDataclass<Vec<AccentPhrase>>> {
             let synthesizer = self.synthesizer.read()?;
 
-            synthesizer
-                .create_accent_phrases(text, StyleId::new(style_id))
+            py.detach(|| synthesizer.create_accent_phrases(text, StyleId::new(style_id)))
                 .map(Into::into)
                 .into_py_result(py)
         }
@@ -1100,8 +1098,7 @@ mod blocking {
             py: Python<'_>,
         ) -> PyResult<ToDataclass<Vec<AccentPhrase>>> {
             let synthesizer = self.synthesizer.read()?;
-            synthesizer
-                .replace_mora_data(&accent_phrases, style_id.into())
+            py.detach(|| synthesizer.replace_mora_data(&accent_phrases, style_id.into()))
                 .map(Into::into)
                 .into_py_result(py)
         }
@@ -1115,8 +1112,7 @@ mod blocking {
             py: Python<'_>,
         ) -> PyResult<ToDataclass<Vec<AccentPhrase>>> {
             let synthesizer = self.synthesizer.read()?;
-            synthesizer
-                .replace_phoneme_length(&accent_phrases, style_id.into())
+            py.detach(|| synthesizer.replace_phoneme_length(&accent_phrases, style_id.into()))
                 .map(Into::into)
                 .into_py_result(py)
         }
@@ -1130,8 +1126,7 @@ mod blocking {
             py: Python<'_>,
         ) -> PyResult<ToDataclass<Vec<AccentPhrase>>> {
             let synthesizer = self.synthesizer.read()?;
-            synthesizer
-                .replace_mora_pitch(&accent_phrases, style_id.into())
+            py.detach(|| synthesizer.replace_mora_pitch(&accent_phrases, style_id.into()))
                 .map(Into::into)
                 .into_py_result(py)
         }
@@ -1150,19 +1145,22 @@ mod blocking {
             enable_interrogative_upspeak: bool,
             py: Python<'_>,
         ) -> PyResult<AudioFeature> {
-            let audio = self
-                .synthesizer
-                .read()?
-                .create_audio_feature(&audio_query, StyleId::new(style_id))
-                .enable_interrogative_upspeak(enable_interrogative_upspeak)
-                .perform()
+            let synthesizer = self.synthesizer.read()?;
+            let audio = py
+                .detach(|| {
+                    synthesizer
+                        .create_audio_feature(&audio_query, StyleId::new(style_id))
+                        .enable_interrogative_upspeak(enable_interrogative_upspeak)
+                        .perform()
+                })
                 .into_py_result(py)?;
             Ok(AudioFeature { audio })
         }
 
         fn render(&self, audio: ToAudioFeatureSlice, py: Python<'_>) -> PyResult<Vec<u8>> {
             let audio = audio.get();
-            self.synthesizer.read()?.render(audio).into_py_result(py)
+            let synthesizer = self.synthesizer.read()?;
+            py.detach(|| synthesizer.render(audio)).into_py_result(py)
         }
 
         #[pyo3(signature=(
@@ -1179,12 +1177,14 @@ mod blocking {
             enable_interrogative_upspeak: bool,
             py: Python<'_>,
         ) -> PyResult<Vec<u8>> {
-            self.synthesizer
-                .read()?
-                .synthesis(&audio_query, StyleId::new(style_id))
-                .enable_interrogative_upspeak(enable_interrogative_upspeak)
-                .perform()
-                .into_py_result(py)
+            let synthesizer = self.synthesizer.read()?;
+            py.detach(|| {
+                synthesizer
+                    .synthesis(&audio_query, StyleId::new(style_id))
+                    .enable_interrogative_upspeak(enable_interrogative_upspeak)
+                    .perform()
+            })
+            .into_py_result(py)
         }
 
         #[pyo3(signature=(
@@ -1212,15 +1212,18 @@ mod blocking {
                 &audio_query,
             )?;
             let synthesizer = slf.get().synthesizer.read()?.clone();
-            let body = SynthesisStreamBody::try_new(synthesizer, |synthesizer| {
-                synthesizer
-                    .streaming_synthesis(&audio_query, StyleId::new(style_id))
-                    .enable_interrogative_upspeak(enable_interrogative_upspeak)
-                    .start_offset(start_offset)
-                    .segment_length(segment_length)
-                    .perform()
-            })
-            .into_py_result(py)?;
+            let body = py
+                .detach(|| {
+                    SynthesisStreamBody::try_new(synthesizer, |synthesizer| {
+                        synthesizer
+                            .streaming_synthesis(&audio_query, StyleId::new(style_id))
+                            .enable_interrogative_upspeak(enable_interrogative_upspeak)
+                            .start_offset(start_offset)
+                            .segment_length(segment_length)
+                            .perform()
+                    })
+                })
+                .into_py_result(py)?;
             Ok(SynthesisStream(if body.borrow_stream().is_empty() {
                 SynthesisStreamInner::Empty
             } else {
@@ -1246,12 +1249,14 @@ mod blocking {
             py: Python<'_>,
         ) -> PyResult<Vec<u8>> {
             let style_id = StyleId::new(style_id);
-            self.synthesizer
-                .read()?
-                .tts_from_kana(kana, style_id)
-                .enable_interrogative_upspeak(enable_interrogative_upspeak)
-                .perform()
-                .into_py_result(py)
+            let synthesizer = self.synthesizer.read()?;
+            py.detach(|| {
+                synthesizer
+                    .tts_from_kana(kana, style_id)
+                    .enable_interrogative_upspeak(enable_interrogative_upspeak)
+                    .perform()
+            })
+            .into_py_result(py)
         }
 
         #[pyo3(signature=(
@@ -1269,12 +1274,14 @@ mod blocking {
             py: Python<'_>,
         ) -> PyResult<Vec<u8>> {
             let style_id = StyleId::new(style_id);
-            self.synthesizer
-                .read()?
-                .tts(text, style_id)
-                .enable_interrogative_upspeak(enable_interrogative_upspeak)
-                .perform()
-                .into_py_result(py)
+            let synthesizer = self.synthesizer.read()?;
+            py.detach(|| {
+                synthesizer
+                    .tts(text, style_id)
+                    .enable_interrogative_upspeak(enable_interrogative_upspeak)
+                    .perform()
+            })
+            .into_py_result(py)
         }
 
         fn create_sing_frame_audio_query(
@@ -1284,9 +1291,8 @@ mod blocking {
             py: Python<'_>,
         ) -> PyResult<ToDataclass<FrameAudioQuery>> {
             let style_id = StyleId::new(style_id);
-            self.synthesizer
-                .read()?
-                .create_sing_frame_audio_query(&score, style_id)
+            let synthesizer = self.synthesizer.read()?;
+            py.detach(|| synthesizer.create_sing_frame_audio_query(&score, style_id))
                 .map(Into::into)
                 .into_py_result(py)
         }
@@ -1302,9 +1308,8 @@ mod blocking {
             let style_id = StyleId::new(style_id);
 
             // TODO: typed_floatsにissueかPRを出しに行き、スライス変換かbytemuck対応を入れてもらう
-            self.synthesizer
-                .read()?
-                .create_sing_frame_f0(&score, &frame_audio_query, style_id)
+            let synthesizer = self.synthesizer.read()?;
+            py.detach(|| synthesizer.create_sing_frame_f0(&score, &frame_audio_query, style_id))
                 .map(|f0s| f0s.into_iter().map(Into::into).collect())
                 .into_py_result(py)
         }
@@ -1320,9 +1325,8 @@ mod blocking {
             let style_id = StyleId::new(style_id);
 
             // TODO: typed_floatsにissueかPRを出しに行き、スライス変換かbytemuck対応を入れてもらう
-            self.synthesizer
-                .read()?
-                .create_sing_frame_volume(&score, &frame_audio_query, style_id)
+            let synthesizer = self.synthesizer.read()?;
+            py.detach(|| synthesizer.create_sing_frame_volume(&score, &frame_audio_query, style_id))
                 .map(|volumes| volumes.into_iter().map(Into::into).collect())
                 .into_py_result(py)
         }
@@ -1335,11 +1339,13 @@ mod blocking {
             py: Python<'_>,
         ) -> PyResult<Vec<u8>> {
             let style_id = StyleId::new(style_id);
-            self.synthesizer
-                .read()?
-                .frame_synthesis(&frame_audio_query, style_id)
-                .perform()
-                .into_py_result(py)
+            let synthesizer = self.synthesizer.read()?;
+            py.detach(|| {
+                synthesizer
+                    .frame_synthesis(&frame_audio_query, style_id)
+                    .perform()
+            })
+            .into_py_result(py)
         }
 
         fn close(&self, py: Python<'_>) {
