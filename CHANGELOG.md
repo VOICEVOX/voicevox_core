@@ -23,6 +23,9 @@
 
 ### Changed
 
+- 不正なVVMを`open`したときのメッセージが少しだけ変化します ([#1489])。
+- \[Rust\] 依存ライブラリが変化します ([#1489])。
+    - \[削除\] `derive-getters@0.2`
 - \[C,Python,Java,ダウンローダー\] \[macOS,iOS\] リリースされるバイナリがすべて、`macos-15`および`macos-15-intel`のデフォルトのXcodeでビルドされるようになります。動作対象環境は変わらないはずです ([#1491])。
 
 ## [0.17.1] - 2026-10-23 (+09:00)
@@ -1619,6 +1622,7 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1477]: https://github.com/VOICEVOX/voicevox_core/pull/1477
 [#1478]: https://github.com/VOICEVOX/voicevox_core/pull/1478
 [#1480]: https://github.com/VOICEVOX/voicevox_core/pull/1480
+[#1489]: https://github.com/VOICEVOX/voicevox_core/pull/1489
 [#1491]: https://github.com/VOICEVOX/voicevox_core/pull/1491
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25

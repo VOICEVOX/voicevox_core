@@ -27,7 +27,6 @@ color-print = "0.3.7"
 colorchoice = "1.0.2"
 comrak = { version = "0.26.0", default-features = false }
 const_format = "0.2.33"
-derive-getters = "0.2.0"
 derive-new = "0.5.9"
 derive-syn-parse = "0.2.0"
 derive_more = "1.0.0"
