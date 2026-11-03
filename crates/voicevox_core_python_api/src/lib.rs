@@ -608,9 +608,9 @@ mod blocking {
             ret.cast_into::<PyString>().map_err(Into::into)
         }
 
-        fn close(&self) {
-            let this = self.model.close();
-            drop(this);
+        fn close(&self, py: Python<'_>) {
+            // 他スレッドが`detach`の中で読み取りロックを持っていることがあるので、GILを手放して待つ
+            drop(py.detach(|| self.model.close()));
         }
 
         #[getter]
@@ -642,8 +642,9 @@ mod blocking {
                 '_,
                 PyAny,
             >,
+            py: Python<'_>,
         ) {
-            self.close();
+            self.close(py);
         }
     }
 
