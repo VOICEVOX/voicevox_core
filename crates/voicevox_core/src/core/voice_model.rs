@@ -126,7 +126,9 @@ impl<A: Async> Inner<A> {
                 source,
             )
         })?;
-        // TODO: serde_ignoredで知らないフィールドに対して警告を出す
+
+        // TODO: `Manifest`への`Deserialize`実装をやめ、serde_ignoredを使いながらデシリアライズを
+        // 繰り返す方式にすることで知らないフィールドに対して警告を出す
         let manifest = serde_json::from_slice::<Manifest>(manifest)
             .map_err(|source| error(LoadModelErrorKind::InvalidModelFormat, source.into()))?;
 
