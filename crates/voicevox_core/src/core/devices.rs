@@ -50,7 +50,7 @@ fn test_gpu(
 
 /// 利用可能なデバイスの情報。
 ///
-/// あくまで本ライブラリもしくはONNX Runtimeが対応しているデバイスの情報であることに注意。GPUが使える環境ではなかったとしても`cuda`や`dml`は`true`を示しうる。
+/// あくまで本ライブラリもしくはONNX Runtimeが対応しているデバイスの情報であることに注意。GPUが使える環境ではなかったとしても`cuda`や`dml`、`migraphx`は`true`を示しうる。
 ///
 /// ```
 /// # #[pollster::main]
@@ -86,6 +86,12 @@ pub struct SupportedDevices {
     ///
     /// [DirectML Execution Provider]: https://onnxruntime.ai/docs/execution-providers/DirectML-ExecutionProvider.html
     pub dml: bool,
+    /// MIGraphXが利用可能。
+    ///
+    /// ONNX Runtimeの[MIGraphX Execution Provider] (`MIGraphXExecutionProvider`)に対応する。必要な環境についてはそちらを参照。
+    ///
+    /// [MIGraphX Execution Provider]: https://onnxruntime.ai/docs/execution-providers/MIGraphX-ExecutionProvider.html
+    pub migraphx: bool,
 }
 
 impl SupportedDevices {
@@ -98,6 +104,7 @@ impl SupportedDevices {
     /// # use voicevox_core::SupportedDevices;
     /// assert!(SupportedDevices::THIS.cuda);
     /// assert!(SupportedDevices::THIS.dml);
+    /// assert!(SupportedDevices::THIS.migraphx);
     /// ```
     ///
     /// `link-onnxruntime`のフィーチャが有効化されているときは`cpu`を除き`false`となる。
@@ -107,18 +114,21 @@ impl SupportedDevices {
     /// # use voicevox_core::SupportedDevices;
     /// assert!(!SupportedDevices::THIS.cuda);
     /// assert!(!SupportedDevices::THIS.dml);
+    /// assert!(!SupportedDevices::THIS.migraphx);
     /// ```
     pub const THIS: Self = if cfg!(feature = "load-onnxruntime") {
         Self {
             cpu: true,
             cuda: true,
             dml: true,
+            migraphx: true,
         }
     } else if cfg!(feature = "link-onnxruntime") {
         Self {
             cpu: true,
             cuda: false,
             dml: false,
+            migraphx: false,
         }
     } else {
         panic!("either `load-onnxruntime` or `link-onnxruntime` must be enabled");
@@ -192,11 +202,14 @@ pub(crate) enum GpuSpec {
 
     #[display("DirectML (device_id=0)")]
     Dml,
+
+    #[display("MIGraphX (device_id=0)")]
+    Migraphx,
 }
 
 impl GpuSpec {
     pub(crate) fn defaults() -> Vec<Self> {
-        vec![Self::Cuda, Self::Dml]
+        vec![Self::Cuda, Self::Dml, Self::Migraphx]
     }
 }
 
@@ -207,6 +220,7 @@ impl Index<GpuSpec> for SupportedDevices {
         match gpu {
             GpuSpec::Cuda => &self.cuda,
             GpuSpec::Dml => &self.dml,
+            GpuSpec::Migraphx => &self.migraphx,
         }
     }
 }
@@ -227,8 +241,13 @@ mod tests {
                     unused_variables,
                     reason = "比較対象としてここは網羅されてなければなりません"
                 )]
-                let SupportedDevices { cpu: _, cuda, dml } = &SUPPORTED_DEVICES;
-                [&raw const *cuda, &raw const *dml]
+                let SupportedDevices {
+                    cpu: _,
+                    cuda,
+                    dml,
+                    migraphx,
+                } = &SUPPORTED_DEVICES;
+                [&raw const *cuda, &raw const *dml, &raw const *migraphx]
             },
             *GpuSpec::defaults()
                 .into_iter()
