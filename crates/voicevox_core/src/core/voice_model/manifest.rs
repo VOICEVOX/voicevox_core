@@ -20,7 +20,6 @@ use super::{
     compat::v1::ManifestBodyV1,
 };
 
-// vvm_format_versionの値に応じたスキーマでパースし現行のManifestに詰めなおす
 impl<'de> Deserialize<'de> for Manifest {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -143,7 +142,7 @@ impl<'de> Deserialize<'de> for FormatVersion {
 /// voicevox_coreで使われているManifest
 #[derive(Debug)]
 pub(super) struct Manifest {
-    pub(super) vvm_format_version: FormatVersion, // この値は固定ではない。バージョンに応じてmetasの構造やバリデーションが変化する。
+    pub(super) vvm_format_version: FormatVersion,
     pub(super) body: ManifestBody,
 }
 
