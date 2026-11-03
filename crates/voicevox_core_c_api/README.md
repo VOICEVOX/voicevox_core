@@ -5,6 +5,8 @@ VOICEVOX COREのCバインディング。
 ## C APIのビルド
 
 ビルドには [Rust](https://www.rust-lang.org/ja) ([Windows での Rust 開発環境構築手順はこちら](https://docs.microsoft.com/ja-jp/windows/dev-environment/rust/setup)) と [cmake](https://cmake.org/download/) が必要です。
+詳しくは[共通の構成要件](../../docs//guide/dev/requirements.md#共通)を参照してください。
+
 
 ```bash
 # DLLをビルド
