@@ -35,6 +35,15 @@ dependencies {
     implementation group: 'jakarta.annotation', name: 'jakarta.annotation-api', version: gradle.ext.jakartaAnnotationVersion
 }
 
+dependencyLocking {
+    lockAllConfigurations()
+}
+
+// Spotlessが内部で作るconfigurationは名前が一定しないため、ロックの対象から外す
+configurations.matching { it.name.startsWith('spotless') }.configureEach {
+    resolutionStrategy.deactivateDependencyLocking()
+}
+
 // Apply a specific Java toolchain to ease working on different environments.
 java {
     toolchain {
