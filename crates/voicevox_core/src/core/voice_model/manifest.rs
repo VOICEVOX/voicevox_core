@@ -59,19 +59,11 @@ impl<'de> Deserialize<'de> for Manifest {
                 let content_value = serde_json::Value::Object(root);
 
                 let body = match vvm_format_version {
-                    FormatVersion::V1 => {
-                        let WithFormatVersion::<ManifestBodyV1> {
-                            _vvm_format_version: _,
-                            body,
-                        } = Deserialize::deserialize(content_value).map_err(de::Error::custom)?;
-                        body.into()
-                    }
+                    FormatVersion::V1 => ManifestBodyV1::deserialize(content_value)
+                        .map_err(de::Error::custom)?
+                        .into(),
                     FormatVersion::LATEST => {
-                        let WithFormatVersion::<ManifestBody> {
-                            _vvm_format_version: _,
-                            body,
-                        } = Deserialize::deserialize(content_value).map_err(de::Error::custom)?;
-                        body
+                        Deserialize::deserialize(content_value).map_err(de::Error::custom)?
                     }
                 };
 
@@ -80,15 +72,6 @@ impl<'de> Deserialize<'de> for Manifest {
                     body,
                 })
             }
-        }
-
-        #[derive(Deserialize)]
-        struct WithFormatVersion<T> {
-            #[serde(rename = "vvm_format_version")]
-            _vvm_format_version: serde_json::Value,
-
-            #[serde(flatten)]
-            body: T,
         }
     }
 }
@@ -139,7 +122,6 @@ impl<'de> Deserialize<'de> for FormatVersion {
     }
 }
 
-/// voicevox_coreで使われているManifest
 #[derive(Debug)]
 pub(super) struct Manifest {
     pub(super) vvm_format_version: FormatVersion,
