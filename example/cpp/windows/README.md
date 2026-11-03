@@ -32,7 +32,7 @@ Visual Studio Installerを使用しインストールしてください。
 
 続いて、「Open JTalk辞書フォルダ」を配置します。  
 ダウンローダーを使用した場合、展開されたフォルダに含まれています。  
-ダウンローダーを使用していない場合は、http://open-jtalk.sourceforge.net/ を開き、Dictionary for Open JTalk 欄の Binary Package (UTF-8)をクリックして「open_jtalk_dic_utf_8-1.11.tar.gz」をダウンロードします。  
+ダウンローダーを使用していない場合は、https://github.com/r9y9/open_jtalk/releases/download/v1.11.1/open_jtalk_dic_utf_8-1.11.tar.gz から「open_jtalk_dic_utf_8-1.11.tar.gz」をダウンロードします（ダウンローダーと同じダウンロード元です）。  
 
 展開してできた「open_jtalk_dic_utf_8-1.11」フォルダをフォルダごと「simple_tts\bin\x64\Debug」に配置します。
 
