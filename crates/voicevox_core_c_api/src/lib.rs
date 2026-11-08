@@ -36,6 +36,7 @@ use std::ffi::{CStr, CString};
 use std::fmt;
 use std::io;
 use std::mem::MaybeUninit;
+use std::num::Saturating;
 use std::os::raw::c_char;
 use std::ptr::NonNull;
 use std::sync::Once;
@@ -109,6 +110,18 @@ macro_rules! deprecated_fn_impl {
         $imp($($args)*)
     }};
 }
+
+/// フレームレート。
+///
+/// 音声の秒数は`frame_length / VOICEVOX_FRAME_RATE`で表せる。
+///
+/// \note
+/// この定数は将来的に削除される可能性がある。例えば、<code><a href="../rust_api/voicevox_core/struct.StyleMeta.html">StyleMeta</a>::frame_rate</code>というフィールドに置き換えられる可能性がある。
+///
+/// \orig-impl{VOICEVOX_FRAME_RATE}
+pub const VOICEVOX_FRAME_RATE: f64 = 93.75;
+
+const _: () = assert!(VOICEVOX_FRAME_RATE == voicevox_core::FRAME_RATE);
 
 // TODO: https://github.com/mozilla/cbindgen/issues/927
 //#[cfg(feature = "load-onnxruntime")]
@@ -549,6 +562,17 @@ pub extern "C" fn voicevox_get_version() -> *const c_char {
 }
 
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// ::VOICEVOX_FRAME_RATE を返す。
+///
+/// @return ::VOICEVOX_FRAME_RATE
+///
+/// \orig-impl{voicevox_get_frame_rate}
+#[unsafe(no_mangle)]
+pub const extern "C" fn voicevox_get_frame_rate() -> f64 {
+    VOICEVOX_FRAME_RATE
+}
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
 /// AccentPhraseの配列からAudioQueryを作る。
 ///
 /// 生成したJSON文字列を解放するには ::voicevox_string_free を使う。
@@ -582,6 +606,198 @@ pub unsafe extern "C" fn voicevox_audio_query_create_from_accent_phrases(
             output_audio_query_json
                 .write_unaligned(C_STRING_DROP_CHECKER.whitelist(audio_query).into_raw());
         }
+        Ok(())
+    })())
+}
+
+/// ::voicevox_audio_query_frame_length のオプション。
+///
+/// \no-orig-impl{VoicevoxAudioQueryFrameLengthOptions}
+#[repr(C)]
+pub struct VoicevoxAudioQueryFrameLengthOptions {
+    /// [`AccentPhrase::is_interrogative`](../rust_api/voicevox_core/struct.AccentPhrase.html#structfield.is_interrogative)を認識するかどうか
+    enable_interrogative_upspeak: bool,
+}
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// デフォルトの `voicevox_audio_query_frame_length` のオプションを生成する。
+///
+/// @return デフォルト値が設定された `voicevox_audio_query_frame_length` のオプション
+///
+/// \no-orig-impl{voicevox_make_default_audio_query_frame_length_options}
+#[unsafe(no_mangle)]
+pub extern "C" fn voicevox_make_default_audio_query_frame_length_options()
+-> VoicevoxAudioQueryFrameLengthOptions {
+    init_logger_once();
+    Default::default()
+}
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// 音声の総フレーム数を算出する。
+///
+/// 音声の秒数は、フレーム数を ::VOICEVOX_FRAME_RATE で割った値で表せる。
+///
+/// 算出した値は[`SIZE_MAX`]で飽和する。算出方法は以下の通り。
+///
+/// 1. 以下の秒数を32-bit浮動小数点数として解釈して集める。
+///     - [`AudioQuery::pre_phoneme_length`]
+///     - [`AudioQuery::accent_phrases`]の要素ごとに
+///         - [`AccentPhrase::moras`]の要素ごとに
+///             - [`Mora::consonant_length`]
+///             - [`Mora::vowel_length`]
+///         - ::VoicevoxAudioQueryFrameLengthOptions::enable_interrogative_upspeak
+///           かつ[`AccentPhrase::is_interrogative`]かつ`moras`の最後の[`Mora::pitch`]が`0.0`以外のとき、`0.15`秒
+///         - [`AccentPhrase::pause_mora`]の`Mora::consonant_length`（通常はない）
+///         - `AccentPhrase::pause_mora`の`Mora::vowel_length`
+///     - [`AudioQuery::post_phoneme_length`]
+/// 2. それぞれの秒数を`secs`として、対応するフレーム長を`round_ties_even(round_ties_even(secs * (float)VOICEVOX_FRAME_RATE) / speed_scale)`として算出する。ここで`round_ties_even`は[Rustの`f32::round_ties_even`]であり、libmの[`roundevenf(3)`]と同様IEEE 754の`roundToIntegralTiesToEven`演算を行う。[`AudioQuery::speed_scale`]も32-bit浮動小数点数として解釈し、乗算と除算も32-bit浮動小数点数上で行う。
+/// 3. 各フレーム長を足し合わせる。
+///
+/// `AudioQuery`に対応する音声の長さは将来的に変わる可能性がある。例えば、秒数を64-bit浮動小数点数として解釈しているVOICEVOX
+/// ENGINEと挙動を揃える可能性がある。
+///
+/// [`SIZE_MAX`]: https://en.cppreference.com/c/types/limits
+/// [`AudioQuery::pre_phoneme_length`]: ../rust_api/voicevox_core/struct.AudioQuery.html#structfield.pre_phoneme_length
+/// [`AudioQuery::accent_phrases`]: ../rust_api/voicevox_core/struct.AudioQuery.html#structfield.accent_phrases
+/// [`AccentPhrase::moras`]: ../rust_api/voicevox_core/struct.AccentPhrase.html#structfield.moras
+/// [`Mora::consonant_length`]: ../rust_api/voicevox_core/struct.Mora.html#structfield.consonant_length
+/// [`Mora::vowel_length`]: ../rust_api/voicevox_core/struct.Mora.html#structfield.vowel_length
+/// [`AccentPhrase::is_interrogative`]: ../rust_api/voicevox_core/struct.AccentPhrase.html#structfield.is_interrogative
+/// [`Mora::pitch`]: ../rust_api/voicevox_core/struct.Mora.html#structfield.pitch
+/// [`AccentPhrase::pause_mora`]: ../rust_api/voicevox_core/struct.AccentPhrase.html#structfield.pause_mora
+/// [`AudioQuery::post_phoneme_length`]: ../rust_api/voicevox_core/struct.AudioQuery.html#structfield.post_phoneme_length
+/// [Rustの`f32::round_ties_even`]: https://doc.rust-lang.org/stable/std/primitive.f32.html#method.round_ties_even
+/// [`roundevenf(3)`]: https://en.cppreference.com/w/c/numeric/math/roundeven
+/// [`AudioQuery::speed_scale`]: ../rust_api/voicevox_core/struct.AudioQuery.html#structfield.speed_scale
+///
+/// @param [in] audio_query_json `AudioQuery`型のJSON
+/// @param [in] options オプション
+/// @param [out] output_frame_length 算出した総フレーム数の出力先
+///
+/// @returns 成功時には ::VOICEVOX_RESULT_OK 、失敗時には ::VOICEVOX_RESULT_INVALID_UTF8_INPUT_ERROR または ::VOICEVOX_RESULT_INVALID_AUDIO_QUERY_ERROR
+///
+/// \examples{
+/// ```c
+/// char *query = NULL;
+/// VoicevoxAudioFeature *audio = NULL;
+///
+/// VoicevoxResultCode voicevox_result = VOICEVOX_RESULT_OK;
+///
+/// #define TRY(result)                                                            \
+///   do {                                                                         \
+///     voicevox_result = result;                                                  \
+///     if (voicevox_result != VOICEVOX_RESULT_OK) {                               \
+///       goto cleanup;                                                            \
+///     }                                                                          \
+///   } while (0)
+/// ```
+///
+/// ```c
+/// TRY(voicevox_synthesizer_create_audio_query(
+///     synth, "こんにちは、音声合成の世界へようこそ？", WHATEVER_STYLE1,
+///     &query));
+///
+/// TRY(voicevox_synthesizer_create_audio_feature(
+///     synth, query, WHATEVER_STYLE2, voicevox_make_default_synthesis_options(),
+///     &audio));
+///
+/// size_t frame_length_of_audio_query;
+/// TRY(voicevox_audio_query_frame_length(
+///     query, voicevox_make_default_audio_query_frame_length_options(),
+///     &frame_length_of_audio_query));
+///
+/// const size_t frame_length_of_audio_feature = voicevox_audio_feature_len(audio);
+///
+/// assert(frame_length_of_audio_query == frame_length_of_audio_feature);
+/// ```
+///
+/// ```c
+/// size_t to_frame_length(float secs, float speed_scale) {
+///   const float kFrameRate = (float)VOICEVOX_FRAME_RATE;
+///   return roundevenf(roundevenf(secs * kFrameRate) / speed_scale);
+/// }
+///
+/// int main(void) {
+///   // …
+///
+///   // speed_scale         = 1.2f
+///   // pre_phoneme_length  = 3.3f
+///   // post_phoneme_length = 4.4f
+///   const char *kQuery = "{\n"
+///                        "  \"accent_phrases\": [],\n"
+///                        "  \"speedScale\": 1.2,\n"
+///                        "  \"pitchScale\": 0.0,\n"
+///                        "  \"intonationScale\": 1.0,\n"
+///                        "  \"volumeScale\": 1.0,\n"
+///                        "  \"prePhonemeLength\": 3.3,\n"
+///                        "  \"postPhonemeLength\": 4.4,\n"
+///                        "  \"outputSamplingRate\": 24000,\n"
+///                        "  \"outputStereo\": false\n"
+///                        "}\n";
+///
+///   size_t frame_length;
+///   TRY(voicevox_audio_query_frame_length(
+///       kQuery, voicevox_make_default_audio_query_frame_length_options(),
+///       &frame_length));
+///
+///   assert(frame_length ==
+///          // `speed_scale`, `pre_phoneme_length`
+///          to_frame_length(3.3f, 1.2f)
+///              // `speed_scale`, `consonant_length`, `vowel_length`,
+///              // `is_interrogative`
+///              + 0
+///              // `speed_scale`, `post_phoneme_length`
+///              + to_frame_length(4.4f, 1.2f));
+///
+///   // …
+/// }
+/// ```
+///
+/// ```c
+/// // speed_scale = FLT_MIN
+/// const char *kQuery = "{\n"
+///                      "  \"accent_phrases\": [],\n"
+///                      "  \"speedScale\": 1.1754943508222875e-38,\n"
+///                      "  \"pitchScale\": 0.0,\n"
+///                      "  \"intonationScale\": 1.0,\n"
+///                      "  \"volumeScale\": 1.0,\n"
+///                      "  \"prePhonemeLength\": 0.1,\n"
+///                      "  \"postPhonemeLength\": 0.1,\n"
+///                      "  \"outputSamplingRate\": 24000,\n"
+///                      "  \"outputStereo\": false\n"
+///                      "}\n";
+///
+/// size_t frame_length;
+/// TRY(voicevox_audio_query_frame_length(
+///     kQuery, voicevox_make_default_audio_query_frame_length_options(),
+///     &frame_length));
+///
+/// assert(frame_length == SIZE_MAX);
+/// ```
+/// }
+///
+/// \safety{
+/// - `audio_query_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+/// - `output_frame_length`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+/// }
+///
+/// \orig-impl{voicevox_audio_query_frame_length}
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn voicevox_audio_query_frame_length(
+    audio_query_json: *const c_char,
+    options: VoicevoxAudioQueryFrameLengthOptions,
+    output_frame_length: NonNull<usize>,
+) -> VoicevoxResultCode {
+    init_logger_once();
+    // SAFETY: The safety contract must be upheld by the caller.
+    let audio_query_json = unsafe { CStr::from_ptr(audio_query_json) };
+    into_result_code_with_error((|| {
+        let Saturating(frame_length) = AudioQuery::from_json_without_validation(audio_query_json)?
+            .frame_length()
+            .enable_interrogative_upspeak(options.enable_interrogative_upspeak)
+            .calculate();
+        // SAFETY: The safety contract must be upheld by the caller.
+        unsafe { output_frame_length.write_unaligned(frame_length) };
         Ok(())
     })())
 }
@@ -840,8 +1056,6 @@ pub unsafe extern "C" fn voicevox_ensure_compatible(
 /// @param [in] is_stereo ステレオかどうか
 /// @param [out] output_wav_length 出力のバイト長
 /// @param [out] output_wav 出力先
-///
-/// @returns 結果コード
 ///
 /// \safety{
 /// - `pcm_length > 0`のとき、`pcm`は長さ`pcm_length`にわたって<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
@@ -1677,6 +1891,11 @@ pub unsafe extern "C" fn voicevox_synthesizer_synthesis(
 ///
 /// 生成した中間表現を解放するには ::voicevox_audio_feature_delete を使う。
 ///
+/// > [!WARNING]
+/// > ストリーミング音声合成にはいくつか注意事項がある。ユーザーガイドの[ストリーミング音声合成]を参照。
+///
+/// [ストリーミング音声合成]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/usage.md#ストリーミング音声合成
+///
 /// @param [in] synthesizer 音声シンセサイザ
 /// @param [in] audio_query_json AudioQueryのJSON文字列
 /// @param [in] style_id スタイルID
@@ -1731,33 +1950,243 @@ pub struct VoicevoxAudioFeature {
 }
 
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
-/// ::VoicevoxAudioFeature のフレーム数を取得する。
+/// ::VoicevoxAudioFeature の総フレーム数を取得する。
+///
+/// この ::VoicevoxAudioFeature
+/// を生成するときに用いた`AudioQuery`について、生成時と同じ疑問文の語尾上昇設定で
+/// ::voicevox_audio_query_frame_length により算出した値に等しい。
 ///
 /// @param [in] audio_feature 音声合成用の中間表現
 ///
-/// @returns フレーム数
+/// @returns 総フレーム数
 ///
-/// \no-orig-impl{voicevox_audio_feature_frame_length}
+/// \orig-impl{voicevox_audio_feature_len}
 #[unsafe(no_mangle)]
-pub extern "C" fn voicevox_audio_feature_frame_length(
-    audio_feature: *const VoicevoxAudioFeature,
-) -> usize {
+pub extern "C" fn voicevox_audio_feature_len(audio_feature: *const VoicevoxAudioFeature) -> usize {
     init_logger_once();
-    audio_feature.frame_length()
+    audio_feature.len()
+}
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// ::voicevox_audio_feature_len で取得する長さが`0`かどうか。
+///
+/// @param [in] audio_feature 音声合成用の中間表現
+///
+/// @returns 長さが`0`なら`true`、それ以外は`false`
+///
+/// \orig-impl{voicevox_audio_feature_is_empty}
+#[unsafe(no_mangle)]
+pub extern "C" fn voicevox_audio_feature_is_empty(
+    audio_feature: *const VoicevoxAudioFeature,
+) -> bool {
+    init_logger_once();
+    audio_feature.is_empty()
+}
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// 指定された範囲に対応した ::VoicevoxAudioFeatureSlice を返す。
+///
+/// `audio_feature`は複製されずにそのまま構造体に入る。解放は不要。
+///
+/// @param [in] audio_feature
+/// @param [in] start_inclusive 開始フレーム番号
+/// @param [in] end 終了フレーム番号
+/// @param [in] end_is_inclusive `end`を含むかどうか
+/// @param [in] clamp
+/// @param [in] allow_start_exceeds_end
+/// @param [out] output スライスの出力先
+///
+/// @returns 結果コード。エラーは
+///          \ref VOICEVOX_RESULT_START_OUT_OF_BOUNDS_ERROR
+///          、\ref VOICEVOX_RESULT_END_OUT_OF_BOUNDS_ERROR
+///          、または \ref VOICEVOX_RESULT_START_EXCEEDS_END_ERROR
+///
+/// \safety{
+/// - `output`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+/// }
+///
+/// \orig-impl{voicevox_audio_feature_slice}
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn voicevox_audio_feature_slice(
+    audio_feature: *const VoicevoxAudioFeature,
+    start_inclusive: usize,
+    end: usize,
+    end_is_inclusive: bool,
+    clamp: bool,
+    allow_start_exceeds_end: bool,
+    output: NonNull<VoicevoxAudioFeatureSlice>,
+) -> VoicevoxResultCode {
+    init_logger_once();
+    into_result_code_with_error((|| {
+        let slice = audio_feature.slice(
+            start_inclusive,
+            end,
+            end_is_inclusive,
+            clamp,
+            allow_start_exceeds_end,
+        )?;
+        // SAFETY: The safety contract must be upheld by the caller.
+        unsafe { output.write_unaligned(slice) };
+        Ok(())
+    })())
+}
+
+/// ある ::VoicevoxAudioFeature 上の区間。
+///
+/// この構造体は、`audio_feature`を破棄するかフィールドを編集したときのみ不正な状態になる。
+///
+/// \orig-impl{VoicevoxAudioFeatureSlice}
+#[derive(Clone, Copy)]
+#[repr(C)]
+pub struct VoicevoxAudioFeatureSlice {
+    /// 元の ::VoicevoxAudioFeature 。
+    ///
+    /// \orig-impl{VoicevoxAudioFeatureSlice::audio_feature}
+    audio_feature: *const VoicevoxAudioFeature,
+    /// この ::VoicevoxAudioFeatureSlice の始端が、元の ::VoicevoxAudioFeature のどの箇所にあたるか。
+    ///
+    /// \orig-impl{VoicevoxAudioFeatureSlice::start_offset}
+    start_offset: usize,
+    end: usize,
+    end_is_inclusive: bool,
+    clamp: bool,
+    allow_start_exceeds_end: bool,
+}
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// 与えられた ::VoicevoxAudioFeature の全体を表す ::VoicevoxAudioFeatureSlice を返す。
+///
+/// `audio_feature`は複製されずにそのまま構造体に入る。解放は不要。
+///
+/// \orig-impl{voicevox_audio_feature_slice_new}
+#[unsafe(no_mangle)]
+pub extern "C" fn voicevox_audio_feature_slice_new(
+    audio_feature: *const VoicevoxAudioFeature,
+    clamp: bool,
+    allow_start_exceeds_end: bool,
+) -> VoicevoxAudioFeatureSlice {
+    init_logger_once();
+    VoicevoxAudioFeatureSlice::new(audio_feature, clamp, allow_start_exceeds_end)
+}
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// ::VoicevoxAudioFeatureSlice が持つフレーム数を返す。
+///
+/// @param [in] audio_feature_slice
+/// @param [out] output フレーム数の出力先
+///
+/// @returns 結果コード。エラーは
+///          \ref VOICEVOX_RESULT_START_OUT_OF_BOUNDS_ERROR
+///          、\ref VOICEVOX_RESULT_END_OUT_OF_BOUNDS_ERROR
+///          、または \ref VOICEVOX_RESULT_START_EXCEEDS_END_ERROR
+///
+/// \safety{
+/// - `output`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+/// }
+///
+/// \orig-impl{voicevox_audio_feature_slice_len}
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn voicevox_audio_feature_slice_len(
+    audio_feature_slice: VoicevoxAudioFeatureSlice,
+    output: NonNull<usize>,
+) -> VoicevoxResultCode {
+    init_logger_once();
+    into_result_code_with_error((|| {
+        let len = audio_feature_slice.len()?;
+        // SAFETY: The safety contract must be upheld by the caller.
+        unsafe { output.write_unaligned(len) };
+        Ok(())
+    })())
+}
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// ::voicevox_audio_feature_slice_len で取得する長さが`0`かどうかを返す。
+///
+/// @param [in] audio_feature_slice
+/// @param [out] output 長さが`0`かどうかの出力先
+///
+/// @returns 結果コード。エラーは
+///          \ref VOICEVOX_RESULT_START_OUT_OF_BOUNDS_ERROR
+///          、\ref VOICEVOX_RESULT_END_OUT_OF_BOUNDS_ERROR
+///          、または \ref VOICEVOX_RESULT_START_EXCEEDS_END_ERROR
+///
+/// \safety{
+/// - `output`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+/// }
+///
+/// \orig-impl{voicevox_audio_feature_slice_is_empty}
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn voicevox_audio_feature_slice_is_empty(
+    audio_feature_slice: VoicevoxAudioFeatureSlice,
+    output: NonNull<bool>,
+) -> VoicevoxResultCode {
+    init_logger_once();
+    into_result_code_with_error((|| {
+        let is_empty = audio_feature_slice.is_empty()?;
+        // SAFETY: The safety contract must be upheld by the caller.
+        unsafe { output.write_unaligned(is_empty) };
+        Ok(())
+    })())
+}
+
+// SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
+/// 与えられた ::VoicevoxAudioFeatureSlice のサブスライスを返す。
+///
+/// `audio_feature_slice.audio_feature`は複製されずにそのまま構造体に入る。解放は不要。
+///
+/// @param [in] audio_feature_slice
+/// @param [in] start_inclusive 開始フレーム番号
+/// @param [in] end 終了フレーム番号
+/// @param [in] end_is_inclusive `end`を含むかどうか
+/// @param [in] clamp
+/// @param [in] allow_start_exceeds_end
+/// @param [out] output サブスライスの出力先
+///
+/// @returns 結果コード。エラーは
+///          \ref VOICEVOX_RESULT_START_OUT_OF_BOUNDS_ERROR
+///          、\ref VOICEVOX_RESULT_END_OUT_OF_BOUNDS_ERROR
+///          、または \ref VOICEVOX_RESULT_START_EXCEEDS_END_ERROR
+///
+/// \safety{
+/// - `output`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
+/// }
+///
+/// \orig-impl{voicevox_audio_feature_slice_slice}
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn voicevox_audio_feature_slice_slice(
+    audio_feature_slice: VoicevoxAudioFeatureSlice,
+    start_inclusive: usize,
+    end: usize,
+    end_is_inclusive: bool,
+    clamp: bool,
+    allow_start_exceeds_end: bool,
+    output: NonNull<VoicevoxAudioFeatureSlice>,
+) -> VoicevoxResultCode {
+    init_logger_once();
+    into_result_code_with_error((|| {
+        let new_slice = audio_feature_slice.slice(
+            start_inclusive,
+            end,
+            end_is_inclusive,
+            clamp,
+            allow_start_exceeds_end,
+        )?;
+        // SAFETY: The safety contract must be upheld by the caller.
+        unsafe { output.write_unaligned(new_slice) };
+        Ok(())
+    })())
 }
 
 // FIXME: voicevox_bytes_freeをvoicevox_bytes_freeに改名
 // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
-/// ::VoicevoxAudioFeature の一部区間から、16bit PCMで音声波形を生成する。
+/// ::VoicevoxAudioFeatureSlice から、16bit PCMで音声波形を生成する。
 ///
 /// 生成されたPCMデータが`0`バイトのとき、`output_pcm_length`には`0`が、`output_pcm`には ::voicevox_empty_bytes が書き込まれる。
 ///
 /// 生成した`1`バイト以上のPCMデータを解放するには ::voicevox_bytes_free を使う。
 ///
 /// @param [in] synthesizer 音声シンセサイザ
-/// @param [in] audio_feature 音声合成用の中間表現
-/// @param [in] start_inclusive 開始フレーム番号
-/// @param [in] end_exclusive 終了フレーム番号（この番号は含まれない）
+/// @param [in] audio_feature_slice 音声合成用の中間表現
 /// @param [out] output_pcm_length 出力のバイト長
 /// @param [out] output_pcm 出力先
 ///
@@ -1772,17 +2201,18 @@ pub extern "C" fn voicevox_audio_feature_frame_length(
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn voicevox_synthesizer_render(
     synthesizer: *const VoicevoxSynthesizer,
-    audio_feature: *const VoicevoxAudioFeature,
-    start_inclusive: usize,
-    end_exclusive: usize,
+    audio_feature_slice: VoicevoxAudioFeatureSlice,
     output_pcm_length: NonNull<usize>,
     output_pcm: NonNull<NonNull<u8>>,
 ) -> VoicevoxResultCode {
     init_logger_once();
     into_result_code_with_error((|| {
-        let pcm = synthesizer
-            .body()
-            .render(&audio_feature.body(), start_inclusive..end_exclusive)?;
+        let pcm = audio_feature_slice.with_rust_api(|audio_feature_slice| {
+            synthesizer
+                .body()
+                .render(audio_feature_slice)
+                .map_err(Into::into)
+        })?;
         // SAFETY: The safety contract must be upheld by the caller.
         unsafe { U8_SLICE_OWNER.own_and_lend(pcm, output_pcm, output_pcm_length) };
         Ok(())

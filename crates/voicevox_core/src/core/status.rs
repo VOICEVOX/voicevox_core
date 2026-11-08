@@ -24,9 +24,11 @@ use super::{
         },
         session_set::{InferenceSessionCell, InferenceSessionSet},
     },
-    manifest::{InnerVoiceId, StyleIdToInnerVoiceId},
     metas::{self, CharacterMeta, StyleId, StyleMeta, VoiceModelMeta},
-    voice_model::{ModelBytesWithInnerVoiceIdsByDomain, VoiceModelHeader, VoiceModelId},
+    voice_model::{
+        ModelBytesWithInnerVoiceIdsByDomain, VoiceModelHeader, VoiceModelId,
+        manifest::{InnerVoiceId, StyleIdToInnerVoiceId},
+    },
 };
 
 /// `Synthesizer::load_voice_model`の実行時に、同じ[`id`]の`VoiceModelFile`が既に読み込まれていたときのふるまい。
@@ -651,7 +653,6 @@ mod tests {
             manifest: serde_json::from_str(&format!(
                 r#"
                 {{
-                  "vvm_format_version": 2,
                   "id": "{model_id}",
                   "metas_filename": "metas.json",
                   "talk": {{

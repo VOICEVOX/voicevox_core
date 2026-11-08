@@ -4,7 +4,6 @@ use std::{
     sync::Arc,
 };
 
-use derive_getters::Getters;
 use derive_more::{Deref, Index};
 use derive_new::new;
 use enum_map::EnumMap;
@@ -13,15 +12,14 @@ use serde_with::{DisplayFromStr, serde_as};
 
 use crate::{StyleId, VoiceModelId};
 
-use super::infer::{
-    InferenceDomain,
-    domains::{
-        FrameDecodeDomain, InferenceDomainMap, SingingTeacherDomain, TalkDomain,
-        inference_domain_map_values,
+use super::{
+    super::infer::{
+        InferenceDomain,
+        domains::{InferenceDomainMap, inference_domain_map_values},
     },
+    compat::v1::ManifestBodyV1,
 };
 
-// vvm_format_versionの値に応じたスキーマでパースし現行のManifestに詰めなおす
 impl<'de> Deserialize<'de> for Manifest {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -60,18 +58,19 @@ impl<'de> Deserialize<'de> for Manifest {
                     .ok_or_else(|| de::Error::missing_field("vvm_format_version"))?;
                 let content_value = serde_json::Value::Object(root);
 
-                match vvm_format_version {
-                    FormatVersion::V1 => {
-                        let data = ManifestSchemaV1::deserialize(content_value)
-                            .map_err(de::Error::custom)?;
-                        Ok(data.into())
+                let body = match vvm_format_version {
+                    FormatVersion::V1 => ManifestBodyV1::deserialize(content_value)
+                        .map_err(de::Error::custom)?
+                        .into(),
+                    FormatVersion::LATEST => {
+                        Deserialize::deserialize(content_value).map_err(de::Error::custom)?
                     }
-                    FormatVersion::V2 => {
-                        let data = ManifestSchemaV2::deserialize(content_value)
-                            .map_err(de::Error::custom)?;
-                        Ok(data.into())
-                    }
-                }
+                };
+
+                Ok(Manifest {
+                    vvm_format_version,
+                    body,
+                })
             }
         }
     }
@@ -96,10 +95,14 @@ impl Display for InnerVoiceId {
 }
 
 /// 現在有効なManifestのバージョン
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub(super) enum FormatVersion {
     V1,
     V2,
+}
+
+impl FormatVersion {
+    pub(super) const LATEST: Self = Self::V2;
 }
 
 impl<'de> Deserialize<'de> for FormatVersion {
@@ -119,61 +122,18 @@ impl<'de> Deserialize<'de> for FormatVersion {
     }
 }
 
-/// voicevox_coreで使われているManifest
-#[derive(Debug, Getters)]
+#[derive(Debug)]
 pub(super) struct Manifest {
-    vvm_format_version: FormatVersion, // この値は固定ではない。バージョンに応じてmetasの構造やバリデーションが変化する。
-    pub(super) id: VoiceModelId,
-    metas_filename: String,
-    domains: InferenceDomainMap<ManifestDomains>,
+    pub(super) vvm_format_version: FormatVersion,
+    pub(super) body: ManifestBody,
 }
 
-/// 現行（vvm_format_version=2）のManifestスキーマ
 #[derive(Debug, Deserialize)]
-struct ManifestSchemaV2 {
-    vvm_format_version: FormatVersion,
-    id: VoiceModelId,
-    metas_filename: String,
+pub(in super::super) struct ManifestBody {
+    pub(in super::super) id: VoiceModelId,
+    pub(super) metas_filename: String,
     #[serde(flatten)]
-    domains: InferenceDomainMap<ManifestDomains>,
-}
-
-impl From<ManifestSchemaV2> for Manifest {
-    fn from(schema: ManifestSchemaV2) -> Self {
-        Self {
-            vvm_format_version: schema.vvm_format_version,
-            id: schema.id,
-            metas_filename: schema.metas_filename,
-            domains: schema.domains,
-        }
-    }
-}
-
-/// 互換性維持のために残している旧式（vvm_format_version=1）のManifestスキーマ
-#[derive(Debug, Deserialize)]
-struct ManifestSchemaV1 {
-    vvm_format_version: FormatVersion,
-    id: VoiceModelId,
-    metas_filename: String,
-    talk: Option<ManifestDomain<TalkDomain>>,
-    singing_teacher: Option<ManifestDomain<SingingTeacherDomain>>,
-    frame_decode: Option<ManifestDomain<FrameDecodeDomain>>,
-}
-
-impl From<ManifestSchemaV1> for Manifest {
-    fn from(schema: ManifestSchemaV1) -> Self {
-        Self {
-            vvm_format_version: schema.vvm_format_version,
-            id: schema.id,
-            metas_filename: schema.metas_filename,
-            domains: InferenceDomainMap {
-                talk: schema.talk,
-                streaming_talk: None,
-                singing_teacher: schema.singing_teacher,
-                frame_decode: schema.frame_decode,
-            },
-        }
-    }
+    pub(super) domains: InferenceDomainMap<ManifestDomains>,
 }
 
 pub(super) type ManifestDomains = inference_domain_map_values!(for<D> Option<ManifestDomain<D>>);
@@ -225,8 +185,9 @@ pub(crate) struct StyleIdToInnerVoiceId(
 mod tests {
     use std::ops::Deref;
 
-    use crate::core::manifest::Manifest;
     use rstest::rstest;
+
+    use super::Manifest;
 
     #[rstest]
     #[case("{\"vvm_format_version\": 1,

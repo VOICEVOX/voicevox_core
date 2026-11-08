@@ -254,6 +254,39 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1505bd5d3d116872e7271a6d4e16d81d0c8570876c8de68093a09ac269d8aac0"
 
 [[package]]
+name = "audio-codec-algorithms"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1254ebf6529f3763c491acfb5ab6e960809e3c75a38584cc664f8c5667fb7107"
+
+[[package]]
+name = "audioadapter"
+version = "5.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d1292ef9edf681b7426ed089004b021a42896492f58bd0c909ad44e5faec9ac4"
+
+[[package]]
+name = "audioadapter-buffers"
+version = "5.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "46289a81a3bfa26d0f8b2415f8ca9decde9a66308a150568af5c102381b3c8ce"
+dependencies = [
+ "audioadapter",
+ "audioadapter-sample",
+ "num-traits",
+]
+
+[[package]]
+name = "audioadapter-sample"
+version = "5.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5258faecf4edbe35ec483bda9b1f7438e6b391891819269c6b5461aeaa0e8d7d"
+dependencies = [
+ "audio-codec-algorithms",
+ "num-traits",
+]
+
+[[package]]
 name = "autocfg"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1101,17 +1134,6 @@ checksum = "ececcb659e7ba858fb4f10388c250a7252eb0a27373f1a72b8748afdd248e587"
 dependencies = [
  "powerfmt",
  "serde_core",
-]
-
-[[package]]
-name = "derive-getters"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c5905670fd9c320154f3a4a01c9e609733cd7b753f3c58777ab7d5ce26686b3"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 1.0.102",
 ]
 
 [[package]]
@@ -2174,9 +2196,12 @@ dependencies = [
 
 [[package]]
 name = "indoc"
-version = "2.0.5"
+version = "2.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b248f5224d1d606005e02c97f5aa4e88eeb230488bcc03bc9ca4d7991399f2b5"
+checksum = "79cf5c93f93228cf8efb3ba362535fb11199ac548a09ce117c9b1adc3030d706"
+dependencies = [
+ "rustversion",
+]
 
 [[package]]
 name = "inventory"
@@ -4997,7 +5022,6 @@ dependencies = [
  "clap",
  "codspeed-divan-compat",
  "const_format",
- "derive-getters",
  "derive-new",
  "derive_more 1.0.0",
  "duplicate",
@@ -5030,12 +5054,14 @@ dependencies = [
  "regex",
  "rstest",
  "rstest_reuse",
+ "rustversion",
  "serde",
  "serde_json",
  "serde_with",
  "smallvec",
  "smol_str",
  "strum",
+ "sync_wrapper",
  "tempfile",
  "test_util",
  "thiserror 1.0.64",
@@ -5047,6 +5073,7 @@ dependencies = [
  "uuid",
  "voicevox_core_build_features",
  "voicevox_core_macros",
+ "waveadapter",
  "windows",
 ]
 
@@ -5092,6 +5119,7 @@ dependencies = [
  "educe",
  "either",
  "indexmap 2.13.0",
+ "indoc",
  "inventory",
  "itertools 0.10.5",
  "libc",
@@ -5117,6 +5145,7 @@ dependencies = [
  "typetag",
  "uuid",
  "voicevox_core",
+ "waveadapter",
 ]
 
 [[package]]
@@ -5129,6 +5158,7 @@ dependencies = [
  "duplicate",
  "easy-ext",
  "jni",
+ "ouroboros",
  "pretty_assertions",
  "rstest",
  "serde_json",
@@ -5166,7 +5196,6 @@ dependencies = [
  "heck 0.5.0",
  "log",
  "num-bigint",
- "num-traits",
  "ouroboros",
  "pyo3",
  "pyo3-log",
@@ -5302,6 +5331,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f143854a3b13752c6950862c906306adb27c7e839f7414cec8fea35beab624c1"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "waveadapter"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6ea698b1ff94f5856d65d89926585abd62bf1e50271f9363e81ad92d0d34bd0d"
+dependencies = [
+ "audioadapter",
+ "audioadapter-buffers",
+ "audioadapter-sample",
+ "num-traits",
 ]
 
 [[package]]

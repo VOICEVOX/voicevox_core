@@ -19,8 +19,32 @@
 
 ### Added
 
-- ストリーミングトーク機能が追加されます ([#851], [#854], [#864], [#867], [#879], [#918], [#972], [#1319], [#1363], [#1371], [#1376], [#1400], [#1401], [#1419], [#1418], [#1420], [#1421], [#1423], [#1422], [#1426], [#1430], [#1431], [#1437], [#1432], [#1439], [#1441], [#1443], [#1444], [#1442], [#1446])。
+- \[Java\] `Synthesizer::streamingSynthesis`と`SynthesisStream`が追加されます ([#1480])。
+
+### Changed
+
+- 不正なVVMを`open`したときのメッセージが少しだけ変化します ([#1489])。
+- \[Rust\] 依存ライブラリが変化します ([#1489])。
+    - \[削除\] `derive-getters@0.2`
+- \[C,Python,Java,ダウンローダー\] \[macOS,iOS\] リリースされるバイナリがすべて、`macos-15`および`macos-15-intel`のデフォルトのXcodeでビルドされるようになります。動作対象環境は変わらないはずです ([#1491])。
+
+## [0.17.1] - 2026-10-23 (+09:00)
+
+主な変更点とその解説については、[GitHub Releaseの本文](https://github.com/VOICEVOX/voicevox_core/releases/tag/0.17.1)をご覧ください。
+
+### Added
+
+- ストリーミングトーク機能が追加されます ([#851], [#854], [#864], [#867], [#879], [#918], [#972], [#1319], [#1363], [#1371], [#1376], [#1400], [#1401], [#1419], [#1418], [#1420], [#1421], [#1423], [#1422], [#1426], [#1430], [#1431], [#1437], [#1432], [#1439], [#1441], [#1443], [#1444], [#1442], [#1446], [#1433], [#1448], [#1452], [#1453], [#1451], [#1457], [#1461], [#1462], [#1460], [#1463], [#1466], [#1468], [#1450], [#1472], [#1470], [#1473], [#1471], [#1477], [#1478])。
+- 定数`FRAME_RATE=93.75`が追加されます。C APIではマクロと関数の両方で提供されます ([#1453])。
+- `AudioQuery::frame_length`が追加されます ([#1448])。
 - \[C\] `voicevox_json_free`の代わりに<code>voicevox\_**string**\_free</code>が、`voicevox_wav_free`の代わりに<code>voicevox\_**bytes**\_free</code>が追加されます ([#1441])。
+
+### Changed
+
+- \[Rust\] 依存ライブラリが変化します ([#1439], [#1462], [#1470])。
+    - \[追加\] `futures-core@0.3`: `^0.3.31`
+    - \[追加\] `rustversion@1`: `^1.0.22`
+    - \[追加\] `sync_wrapper@1`: `^1.0.2`
 
 ### Deprecated
 
@@ -28,13 +52,16 @@
 
 ### Fixed
 
+- \[C,Python,Java,ダウンローダー\] \[macOS\] ダウンローダーを含め、リリースされるバイナリがビルドされるときに`MACOSX_DEPLOYMENT_TARGET`が適切に設定されるようになります。従来は一部の依存ライブラリだけ`xcrun --show-sdk-version`の値でビルドされてしまっていたため、古いmacOSでダウンローダーや`OpenJtalk`が動かない可能性がありました ([#1438])。
 - \[Python\] `VoiceModelFile.open`が送出する`InvalidModelFormatError`が、`voicevox_core`モジュールにて適切に公開されます ([#1429])。
 
 ## [0.17.0] - 2026-08-14 (+09:00)
 
+主な変更点とその解説については、[GitHub Releaseの本文](https://github.com/VOICEVOX/voicevox_core/releases/tag/0.17.0)をご覧ください。
+
 ### Added
 
-- :tada: 新形式（`vvm_format_version=2`）のVVMが読み込めるようになり、`StyleType`に`StreamingTalk`が追加されます ([#1363], [#1371], [#1400] [#1401])。
+- :tada: 新形式（`vvm_format_version=2`）のVVMが読み込めるようになり、`StyleType`に`StreamingTalk`が追加されます ([#1363], [#1371], [#1400], [#1401])。
 - `Synthesizer::load_voice_model`にオプション`on_existing`が追加されます ([#1331], [#1337])。
 - ONNX Runtimeのサポート範囲が1.29まで拡大されます（ただし現時点でリリースされている最新のVOICEVOX ONNX Runtimeは1.23.2です） ([#1402], [#1404])。
 - \[Rust\] APIドキュメントが改善されます ([#1343], [#1381])。
@@ -1115,7 +1142,8 @@ Windows版ダウンローダーのビルドに失敗しています。
 
 - \[Python\] モジュールに`__all__`が適切に設定されます ([#415])。
 
-[Unreleased]: https://github.com/VOICEVOX/voicevox_core/compare/0.17.0...HEAD
+[Unreleased]: https://github.com/VOICEVOX/voicevox_core/compare/0.17.1...HEAD
+[0.17.1]: https://github.com/VOICEVOX/voicevox_core/compare/0.17.0...0.17.1
 [0.17.0]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.4...0.17.0
 [0.16.4]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.3...0.16.4
 [0.16.3]: https://github.com/VOICEVOX/voicevox_core/compare/0.16.2...0.16.3
@@ -1566,13 +1594,36 @@ Windows版ダウンローダーのビルドに失敗しています。
 [#1430]: https://github.com/VOICEVOX/voicevox_core/pull/1430
 [#1431]: https://github.com/VOICEVOX/voicevox_core/pull/1431
 [#1432]: https://github.com/VOICEVOX/voicevox_core/pull/1432
+[#1433]: https://github.com/VOICEVOX/voicevox_core/pull/1433
 [#1437]: https://github.com/VOICEVOX/voicevox_core/pull/1437
+[#1438]: https://github.com/VOICEVOX/voicevox_core/pull/1438
 [#1439]: https://github.com/VOICEVOX/voicevox_core/pull/1439
 [#1441]: https://github.com/VOICEVOX/voicevox_core/pull/1441
 [#1442]: https://github.com/VOICEVOX/voicevox_core/pull/1442
 [#1443]: https://github.com/VOICEVOX/voicevox_core/pull/1443
 [#1444]: https://github.com/VOICEVOX/voicevox_core/pull/1444
 [#1446]: https://github.com/VOICEVOX/voicevox_core/pull/1446
+[#1448]: https://github.com/VOICEVOX/voicevox_core/pull/1448
+[#1450]: https://github.com/VOICEVOX/voicevox_core/pull/1450
+[#1451]: https://github.com/VOICEVOX/voicevox_core/pull/1451
+[#1452]: https://github.com/VOICEVOX/voicevox_core/pull/1452
+[#1453]: https://github.com/VOICEVOX/voicevox_core/pull/1453
+[#1457]: https://github.com/VOICEVOX/voicevox_core/pull/1457
+[#1460]: https://github.com/VOICEVOX/voicevox_core/pull/1460
+[#1461]: https://github.com/VOICEVOX/voicevox_core/pull/1461
+[#1462]: https://github.com/VOICEVOX/voicevox_core/pull/1462
+[#1463]: https://github.com/VOICEVOX/voicevox_core/pull/1463
+[#1466]: https://github.com/VOICEVOX/voicevox_core/pull/1466
+[#1468]: https://github.com/VOICEVOX/voicevox_core/pull/1468
+[#1470]: https://github.com/VOICEVOX/voicevox_core/pull/1470
+[#1471]: https://github.com/VOICEVOX/voicevox_core/pull/1471
+[#1472]: https://github.com/VOICEVOX/voicevox_core/pull/1472
+[#1473]: https://github.com/VOICEVOX/voicevox_core/pull/1473
+[#1477]: https://github.com/VOICEVOX/voicevox_core/pull/1477
+[#1478]: https://github.com/VOICEVOX/voicevox_core/pull/1478
+[#1480]: https://github.com/VOICEVOX/voicevox_core/pull/1480
+[#1489]: https://github.com/VOICEVOX/voicevox_core/pull/1489
+[#1491]: https://github.com/VOICEVOX/voicevox_core/pull/1491
 
 [VOICEVOX/onnxruntime-builder#25]: https://github.com/VOICEVOX/onnxruntime-builder/pull/25
 

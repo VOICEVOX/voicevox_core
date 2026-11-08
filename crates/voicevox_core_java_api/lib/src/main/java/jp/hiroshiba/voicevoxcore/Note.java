@@ -72,8 +72,8 @@ public final class Note implements Cloneable {
   /**
    * 音符のフレーム長。
    *
-   * <p>秒数に93.75をかけ、端数を調整して整数にしたもの。例として125BPM (<em><strong>B</strong>eats <strong>P</strong>er
-   * <strong>M</strong>inute</em>)における一拍は:
+   * <p>秒数に{@link Frames#FRAME_RATE FRAME_RATE}=93.75をかけ、端数を調整して整数にしたもの。例として125BPM
+   * (<em><strong>B</strong>eats <strong>P</strong>er <strong>M</strong>inute</em>)における一拍は:
    *
    * <p>93.75[フレーム/秒] / (125[拍/分] / 60[秒/分]) = {@code 45}[フレーム/拍]
    *

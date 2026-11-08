@@ -123,7 +123,7 @@ jobs:
               "can_skip_in_simple_test": true
             },
             {
-              "os": "macos-14",
+              "os": "macos-15",
               "target": "aarch64-apple-darwin",
               "artifact_name": "osx-arm64",
               "c_release_format": "plain-cdylib",
@@ -141,7 +141,7 @@ jobs:
               "can_skip_in_simple_test": true
             },
             {
-              "os": "macos-14",
+              "os": "macos-15",
               "target": "aarch64-apple-ios",
               "artifact_name": "ios-arm64-cpu",
               "c_release_format": "ios-xcframework",
@@ -150,7 +150,7 @@ jobs:
               "can_skip_in_simple_test": true
             },
             {
-              "os": "macos-14",
+              "os": "macos-15",
               "target": "aarch64-apple-ios-sim",
               "artifact_name": "ios-arm64-cpu-sim",
               "c_release_format": "ios-xcframework",
@@ -281,7 +281,8 @@ jobs:
         with:
           tool: cargo-binstall
       - name: Install cargo-edit
-        run: cargo binstall cargo-edit@^0.11 --no-confirm --log-level debug
+        # https://github.com/cargo-bins/cargo-quickinstall/releases/tag/cargo-edit-0.13.13
+        run: cargo binstall cargo-edit@0.13.13 --no-confirm --log-level debug
       - name: set cargo version
         run: |
           version=${{ needs.config.outputs.version }}
@@ -291,6 +292,9 @@ jobs:
           fi
       - name: cache target
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - name: set deployment target
+        if: contains(matrix.target, '-apple-')
+        run: rustc --target=${{ matrix.target }} --print=deployment-target >> "$GITHUB_ENV"
       - name: build voicevox_core_c_api
         shell: bash
         run: |
@@ -378,7 +382,7 @@ jobs:
   build_xcframework:
     if: ${{ needs.config.outputs.mode == 'draft-release' || needs.config.outputs.mode == 'full-test' }}
     needs: [config, create_draft_release, build]
-    runs-on: macos-14
+    runs-on: macos-15
     permissions:
       contents: write
     env:

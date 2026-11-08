@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, NoReturn
+import builtins
+from typing import TYPE_CHECKING, NoReturn, SupportsIndex
 
 if TYPE_CHECKING:
     from voicevox_core import (
@@ -14,12 +15,72 @@ if TYPE_CHECKING:
 
 __version__: str
 
+FRAME_RATE: float = 93.75
+"""
+フレームレート。
+
+音声の秒数は ``frame_length / FRAME_RATE`` で表せる。
+
+.. note::
+
+    この定数は将来的に削除される可能性がある。例えば、 ``StyleMeta.frame_rate`` というフィールドに置き換えられる可能性がある。
+"""
+
 class AudioFeature:
-    FRAME_RATE: float = 24000 / 256
-    @property
-    def frame_length(self) -> int: ...
     def __repr__(self) -> str: ...
     def __eq__(self, other: object) -> bool: ...
+    def __len__(self) -> int:
+        """
+        総フレーム数。
+
+        この ``AudioFeature`` を生成するときに用いた ``AudioQuery`` の
+        :meth:`frame_length <AudioQuery.frame_length>` に等しい。
+        """
+        ...
+    def __getitem__(
+        self, slice: builtins.slice[SupportsIndex | None, SupportsIndex | None, None]
+    ) -> AudioFeatureSlice:
+        """
+        ``slice`` に対応した :class:`AudioFeatureSlice` を返す。
+
+        Parameters
+        ----------
+        slice
+            範囲。
+        """
+        ...
+
+class AudioFeatureSlice:
+    """ある :class:`AudioFeature` 上の区間。"""
+
+    def __init__(self, audio_feature: AudioFeature) -> None:
+        """与えられた :class:`AudioFeature` の全体を表す ``AudioFeatureSlice`` を生成する。"""
+        ...
+    @property
+    def audio_feature(self) -> AudioFeature:
+        """元の :class:`AudioFeature`。"""
+        ...
+    @property
+    def start_offset(self) -> int:
+        """この ``AudioFeatureSlice`` の始端が、元の :class:`AudioFeature` のどの箇所にあたるか。"""
+        ...
+    def __repr__(self) -> str: ...
+    def __eq__(self, other: object) -> bool: ...
+    def __len__(self) -> int:
+        """この ``AudioFeatureSlice`` が持つフレーム数。"""
+        ...
+    def __getitem__(
+        self, slice: builtins.slice[SupportsIndex | None, SupportsIndex | None, None]
+    ) -> AudioFeatureSlice:
+        """
+        この ``AudioFeatureSlice`` のサブスライスを返す。
+
+        Parameters
+        ----------
+        slice
+            範囲。
+        """
+        ...
 
 class NotLoadedOpenjtalkDictError(Exception):
     """open_jtalk辞書ファイルが読み込まれていない。"""
@@ -139,6 +200,9 @@ def _audio_query_from_accent_phrases(
 ) -> AudioQuery: ...
 def _audio_query_from_json(json: str) -> AudioQuery: ...
 def _audio_query_to_json(audio_query: AudioQuery) -> str: ...
+def audio_query_frame_length(
+    audio_query: AudioQuery, enable_interrogative_upspeak: bool
+) -> int: ...
 def _validate_mora(mora: Mora) -> None: ...
 def _validate_accent_phrase(accent_phrase: AccentPhrase) -> None: ...
 def _validate_audio_query(audio_query: AudioQuery) -> None: ...

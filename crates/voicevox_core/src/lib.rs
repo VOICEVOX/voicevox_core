@@ -239,7 +239,7 @@
 //!
 //! ユーザーガイドの[テキスト音声合成の流れ]を参照。
 //!
-//! 以下の`wav1`から`wav4`はすべて同一となる。
+//! 以下の`wav1`から`wav6`はすべて同一となる。
 //!
 //! [テキスト音声合成の流れ]: https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/tts-process.md
 //!
@@ -259,7 +259,7 @@
 //! #   #[cfg(false)]
 //!     const TEXT: &str = _;
 //! #
-//! #   const STYLE_ID: StyleId = StyleId(0);
+//! #   const STYLE_ID: StyleId = StyleId(302);
 //! #   #[cfg(false)]
 //!     const STYLE_ID: StyleId = _;
 //!
@@ -291,7 +291,21 @@
 //!         synth.synthesis(&query, STYLE_ID).perform()?
 //!     };
 //!
-//!     assert_eq!(1, HashSet::from([wav1, wav2, wav3, wav4, wav5]).len());
+//!     let wav6 = {
+//!         let phrases = synth.text_analyzer().analyze(TEXT)?;
+//!         let phrases = synth.replace_phoneme_length(&phrases, STYLE_ID)?;
+//!         let phrases = synth.replace_mora_pitch(&phrases, STYLE_ID)?;
+//!         let query = AudioQuery::from(phrases);
+//!         let feat = synth.create_audio_feature(&query, STYLE_ID).perform()?;
+//!         let pcm = synth.render(feat.slice(..))?; // `feat`そのままでも可
+//!         voicevox_core::wav_from_s16le(
+//!             &pcm,
+//!             query.output_sampling_rate.get().get(),
+//!             query.output_stereo,
+//!         )
+//!     };
+//!
+//!     assert_eq!(1, HashSet::from([wav1, wav2, wav3, wav4, wav5, wav6]).len());
 //!     Ok(())
 //! }
 //! #
@@ -340,10 +354,12 @@ pub mod __doc {
     ///
     /// | | 理由 |
     /// | :- | :- |
-    /// | `VoicevoxLoadOnnxruntimeOptions` | ビルダースタイルであるため |
+    /// | `VoicevoxAudioQueryFrameLengthOptions` | ビルダースタイルであるため |
+    /// | `VoicevoxLoadOnnxruntimeOptions` | 〃 |
     /// | `VoicevoxInitializeOptions` | 〃 |
     /// | `VoicevoxSynthesisOptions` | 〃 |
     /// | `VoicevoxTtsOptions` | 〃 |
+    /// | `voicevox_make_default_audio_query_frame_length_options` | 〃 |
     /// | `voicevox_make_default_load_onnxruntime_options` | 〃 |
     /// | `voicevox_make_default_initialize_options` | 〃 |
     /// | `voicevox_make_default_load_voice_model_options` | 〃 |
@@ -363,10 +379,12 @@ pub mod __doc {
     /// [C API]: https://voicevox.github.io/voicevox_core/apis/c_api/voicevox__core_8h.html
     /// [Rustのデストラクタ機構]: https://doc.rust-lang.org/reference/destructors.html
     #[doc(alias(
+        "VoicevoxAudioQueryFrameLengthOptions",
         "VoicevoxLoadOnnxruntimeOptions",
         "VoicevoxInitializeOptions",
         "VoicevoxSynthesisOptions",
         "VoicevoxTtsOptions",
+        "voicevox_make_default_audio_query_frame_length_options",
         "voicevox_make_default_load_onnxruntime_options",
         "voicevox_make_default_initialize_options",
         "voicevox_make_default_synthesis_options",
@@ -444,11 +462,14 @@ pub mod __doc {
 
 mod assert;
 mod asyncs;
+mod audio_feature;
 mod collections;
 mod convert;
 mod core;
+mod dim;
 mod engine;
 mod error;
+mod frame;
 mod future;
 mod macros;
 mod numerics;
@@ -473,6 +494,7 @@ mod test_util;
 use rstest_reuse;
 
 pub use self::{
+    audio_feature::{AudioFeature, AudioFeatureSlice},
     core::{
         devices::SupportedDevices,
         metas::{CharacterMeta, CharacterVersion, StyleId, StyleMeta, StyleType, VoiceModelMeta},
@@ -486,7 +508,7 @@ pub use self::{
             validate::ensure_compatible,
         },
         talk::{
-            AccentPhrase, AudioQuery, Mora,
+            AccentPhrase, AudioQuery, AudioQueryFrameLength, Mora,
             user_dict::{
                 UserDictWord, UserDictWordBuilder, UserDictWordPriority, UserDictWordType,
             },
@@ -494,7 +516,8 @@ pub use self::{
         wav_from_s16le,
     },
     error::{Error, ErrorKind},
+    frame::FRAME_RATE,
     result::Result,
-    synthesizer::{AccelerationMode, AudioFeature},
+    synthesizer::AccelerationMode,
     version::VERSION,
 };

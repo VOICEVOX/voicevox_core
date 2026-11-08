@@ -1,9 +1,13 @@
+import asyncio
 import json
 import os
+from asyncio import AbstractEventLoop
+from collections.abc import Generator
 from pathlib import Path
 from typing import TypedDict
 
 import pytest
+import pytest_asyncio
 import voicevox_core
 
 root_dir = Path(os.path.dirname(os.path.abspath(__file__)))
@@ -62,3 +66,47 @@ def example_data() -> ExampleData:
         root_dir.parent.parent.parent / "test_util" / "data" / "example_data.json"
     ).open() as f:
         return json.load(f)
+
+
+@pytest.fixture(scope="session")
+def blocking_synthesizer_with_model() -> voicevox_core.blocking.Synthesizer:
+    from voicevox_core.blocking import (
+        Onnxruntime,
+        OpenJtalk,
+        Synthesizer,
+        VoiceModelFile,
+    )
+
+    ort = Onnxruntime.load_once(filename=onnxruntime_filename)
+    ojt = OpenJtalk(open_jtalk_dic_dir)
+    synth = Synthesizer(ort, ojt, acceleration_mode="CPU")
+    with VoiceModelFile.open(model_dir) as vvm:
+        synth.load_voice_model(vvm)
+    return synth
+
+
+@pytest_asyncio.fixture(  # pyright: ignore[reportUnknownMemberType, reportUntypedFunctionDecorator]
+    scope="session",
+)
+async def asyncio_synthesizer_with_model() -> voicevox_core.asyncio.Synthesizer:
+    from voicevox_core.asyncio import (
+        Onnxruntime,
+        OpenJtalk,
+        Synthesizer,
+        VoiceModelFile,
+    )
+
+    ort = await Onnxruntime.load_once(filename=onnxruntime_filename)
+    ojt = await OpenJtalk.new(open_jtalk_dic_dir)
+    synth = Synthesizer(ort, ojt, acceleration_mode="CPU")
+    async with await VoiceModelFile.open(model_dir) as vvm:
+        await synth.load_voice_model(vvm)
+    return synth
+
+
+# FIXME: pytest-asyncio v1からはできないらしい。
+@pytest.fixture(scope="session")
+def event_loop() -> Generator[AbstractEventLoop, object]:
+    loop = asyncio.new_event_loop()
+    yield loop
+    loop.close()

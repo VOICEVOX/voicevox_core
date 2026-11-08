@@ -16,6 +16,7 @@ derive_more = { workspace = true, features = ["from"] }
 duplicate.workspace = true
 easy-ext.workspace = true
 jni.workspace = true
+ouroboros.workspace = true
 pretty_assertions = "1.4.1"
 rstest.workspace = true
 serde_json = { workspace = true, features = ["preserve_order"] }

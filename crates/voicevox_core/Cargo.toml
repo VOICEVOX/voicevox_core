@@ -41,7 +41,6 @@ blocking.workspace = true
 bytemuck = { workspace = true, features = ["derive", "must_cast"] }
 camino.workspace = true
 const_format.workspace = true
-derive-getters.workspace = true
 derive-new.workspace = true
 derive_more = { workspace = true, features = ["add", "as_ref", "debug", "deref", "display", "from", "from_str", "index", "into", "into_iterator"] }
 duplicate.workspace = true
@@ -68,12 +67,14 @@ pastey.workspace = true
 phf = { workspace = true, features = ["macros"] }
 ref-cast.workspace = true
 regex.workspace = true
+rustversion.workspace = true
 serde = { workspace = true, features = ["derive", "rc"] }
 serde_json = { workspace = true, features = ["preserve_order"] }
 serde_with.workspace = true
 smallvec.workspace = true
 smol_str.workspace = true
 strum = { workspace = true, features = ["derive"] }
+sync_wrapper.workspace = true
 tempfile.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
@@ -93,6 +94,7 @@ rstest_reuse.workspace = true
 test_util.workspace = true
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
 tracing-subscriber.workspace = true
+waveadapter.workspace = true
 
 [build-dependencies]
 voicevox_core_build_features.workspace = true

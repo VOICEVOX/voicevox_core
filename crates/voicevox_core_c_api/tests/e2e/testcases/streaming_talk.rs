@@ -559,6 +559,10 @@ impl assert_cdylib::TestCase for TestCase {
                 // if succeeded.
                 unsafe { audio_feature.assume_init() }
             };
+            let audio_feature_slice = unsafe {
+                // SAFETY: `audio_feature` should be valid.
+                lib.voicevox_audio_feature_slice_new(audio_feature, false, false)
+            };
             let (pcm_length, pcm) = {
                 let mut pcm_length = MaybeUninit::uninit();
                 let mut pcm = MaybeUninit::uninit();
@@ -566,9 +570,7 @@ impl assert_cdylib::TestCase for TestCase {
                     // SAFETY: `pcm_length` and `pcm` are valid for writes.
                     lib.voicevox_synthesizer_render(
                         synthesizer,
-                        audio_feature,
-                        0,
-                        lib.voicevox_audio_feature_frame_length(audio_feature),
+                        audio_feature_slice,
                         pcm_length.as_mut_ptr(),
                         pcm.as_mut_ptr(),
                     )

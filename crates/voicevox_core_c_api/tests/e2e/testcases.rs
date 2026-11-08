@@ -1,3 +1,5 @@
+mod audio_feature_slicing;
+mod audio_query_frame_length;
 mod compatible_engine;
 mod compatible_engine_load_model_before_initialize;
 mod deprecated_fn_warnings;

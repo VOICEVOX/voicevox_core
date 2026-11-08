@@ -3,9 +3,13 @@
 use easy_ext::ext;
 use ndarray::{Array1, Array2};
 
+/// 音が途切れてしまうのを避けるworkaround処理のためのパディング幅（フレーム数）
+// TODO: Rust 1.90であれば`{float}::round`がそのまま使える
+pub(crate) const PADDING_FRAME_LENGTH: usize = 38; // (0.4秒 * FRAME_RATE).round()
+
 /// 音が途切れてしまうのを避けるworkaround処理。
 // TODO: 改善したらここのpadding処理を取り除く
-pub(crate) fn pad_decoder_feature<const PADDING_FRAME_LENGTH: usize>(
+pub(crate) fn pad_decoder_feature(
     f0: ndarray::Array1<f32>,
     phoneme: ndarray::Array2<f32>,
 ) -> (usize, ndarray::Array1<f32>, ndarray::Array2<f32>) {

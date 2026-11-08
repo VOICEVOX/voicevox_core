@@ -9,7 +9,7 @@ use libc::c_int;
 
 use tracing::warn;
 use voicevox_core::{
-    __internal::interop::{PerformInference as _, ToJsonValue as _},
+    __internal::interop::{PerformInference as _, ToJsonValue as _, WAVE_SAMPLES_PER_FRAME},
     OnExistingVoiceModelId, StyleId, VoiceModelId,
 };
 
@@ -374,7 +374,8 @@ pub unsafe extern "C" fn decode_forward(
     match result {
         Ok(output_vec) => {
             // SAFETY: The safety contract must be upheld by the caller.
-            let output_slice = unsafe { std::slice::from_raw_parts_mut(output, length * 256) };
+            let output_slice =
+                unsafe { std::slice::from_raw_parts_mut(output, length * WAVE_SAMPLES_PER_FRAME) };
             output_slice.clone_from_slice(&output_vec);
             true
         }
@@ -400,8 +401,9 @@ pub unsafe extern "C" fn generate_full_intermediate(
     speaker_id: *mut i64,
     output: *mut f32,
 ) -> bool {
-    use voicevox_core::__internal::interop::MARGIN as MARGIN_WIDTH;
-    const FEATURE_SIZE: usize = 80;
+    use voicevox_core::__internal::interop::{
+        AUDIO_FEATURE_BINS as FEATURE_SIZE, MARGIN as MARGIN_WIDTH,
+    };
     init_logger_once();
     assert_aligned(f0);
     assert_aligned(phoneme);
@@ -421,14 +423,12 @@ pub unsafe extern "C" fn generate_full_intermediate(
     match result {
         Ok(output_arr) => {
             let output_len = (length + 2 * MARGIN_WIDTH) * FEATURE_SIZE;
-            if output_arr.len() != output_len {
-                if output_arr.ncols() != FEATURE_SIZE {
-                    panic!("the feature size is expected to be {FEATURE_SIZE}");
-                } else {
-                    panic!("expected {}, got {}", output_len, output_arr.len());
-                }
-            }
-            let output_arr = output_arr.as_standard_layout();
+            let output_arr = output_arr.as_flattened();
+            assert_eq!(
+                output_len,
+                output_arr.len(),
+                "we have checked the output length",
+            );
             // SAFETY: The safety contract must be upheld by the caller.
             unsafe {
                 output_arr
@@ -474,7 +474,7 @@ pub unsafe extern "C" fn render_audio_segment(
     );
     match result {
         Ok(output_arr) => {
-            let output_len = length * 256;
+            let output_len = length * WAVE_SAMPLES_PER_FRAME;
             if output_arr.len() != output_len {
                 panic!("expected {}, got {}", output_len, output_arr.len());
             }
@@ -682,7 +682,7 @@ pub unsafe extern "C" fn sf_decode_forward(
     );
     match result {
         Ok(output_arr) => {
-            let output_len = length * 256;
+            let output_len = length * WAVE_SAMPLES_PER_FRAME;
             if output_arr.len() != output_len {
                 panic!("expected {}, got {}", output_len, output_arr.len());
             }

@@ -18,6 +18,7 @@ from .._rust import (
     _validate_note,
     _validate_score,
     _validate_user_dict_word,
+    audio_query_frame_length,
 )
 from ._please_do_not_use import _Reserved
 
@@ -489,6 +490,97 @@ class AudioQuery:
         """
         _validate_audio_query(self)
 
+    def frame_length(self, *, enable_interrogative_upspeak: bool = True) -> int:
+        """
+        音声の総フレーム数を算出する。
+
+        音声の秒数は、フレーム数を :attr:`FRAME_RATE` で割った値で表せる。
+
+        返す値は ``size_t`` の最大値で飽和する。算出方法は以下の通り。
+
+        1. 以下の秒数を32-bit浮動小数点数として解釈して集める。
+
+           - :attr:`pre_phoneme_length`
+           - :attr:`accent_phrases` の要素ごとに
+
+             - :attr:`AccentPhrase.moras` の要素ごとに
+
+               - :attr:`Mora.consonant_length`
+               - :attr:`Mora.vowel_length`
+
+             - ``enable_interrogative_upspeak`` かつ
+               :attr:`AccentPhrase.is_interrogative` かつ :attr:`AccentPhrase.moras`
+               の最後の :attr:`Mora.pitch` が ``0.0`` 以外のとき、``0.15`` 秒
+             - :attr:`AccentPhrase.pause_mora` の
+               :attr:`Mora.consonant_length` （通常はない）
+             - :attr:`AccentPhrase.pause_mora` の :attr:`Mora.vowel_length`
+
+           - :attr:`post_phoneme_length`
+
+        2. それぞれの秒数を ``secs`` として、対応するフレーム長を
+           ``round_ties_even(round_ties_even(secs * FRAME_RATE) / speed_scale)``
+           として算出する。ここで ``round_ties_even`` は
+           |audio-query-frame-length-round-ties-even|_ であり、
+           |audio-query-frame-length-round|_ や |audio-query-frame-length-numpy-round|_
+           と同様IEEE 754の ``roundToIntegralTiesToEven``
+           演算を行う。 :attr:`speed_scale`
+           も32-bit浮動小数点数として解釈し、乗算と除算も32-bit浮動小数点数上で行う。
+        3. 各フレーム長を足し合わせる。
+
+        .. |audio-query-frame-length-round-ties-even| replace:: Rustの ``f32::round_ties_even``
+        .. _audio-query-frame-length-round-ties-even: https://doc.rust-lang.org/std/primitive.f32.html#method.round_ties_even
+        .. |audio-query-frame-length-round| replace:: ``builtins.round``
+        .. _audio-query-frame-length-round: https://docs.python.org/3/library/functions.html#round
+        .. |audio-query-frame-length-numpy-round| replace:: ``np.round``
+        .. _audio-query-frame-length-numpy-round: https://numpy.org/doc/stable/reference/generated/numpy.round.html
+
+        Notes
+        -----
+        ``AudioQuery``
+        に対応する音声の長さは将来的に変わる可能性がある。例えば、秒数を64-bit浮動小数点数として解釈しているVOICEVOX
+        ENGINEと挙動を揃える可能性がある。
+
+        Examples
+        --------
+
+        >>> query = synth.create_audio_query(
+        ...     "こんにちは、音声合成の世界へようこそ？", WHATEVER_STYLE1
+        ... )
+        >>> feat = synth.create_audio_feature(query, WHATEVER_STYLE2)
+        >>>
+        >>> assert query.frame_length() == len(feat)
+
+        >>> import numpy as np
+        >>> from numpy.lib import NumpyVersion
+        >>> from voicevox_core import FRAME_RATE
+        >>>
+        >>> # `np.float32`と`builtins.float`の乗算がデフォルトで`np.float32`に
+        >>> # なるのはNumPy 2から（cf. NEP 50）
+        >>> assert NumpyVersion(np.__version__).major == 2
+        >>>
+        >>> def to_frame_length(secs: np.float32, speed_scale: np.float32) -> int:
+        ...     return int(((secs * FRAME_RATE).round() / speed_scale).round())
+        >>>
+        >>> query = AudioQuery.from_accent_phrases([])
+        >>> query.speed_scale = 1.2
+        >>> query.pre_phoneme_length = 3.3
+        >>> query.post_phoneme_length = 4.4
+        >>>
+        >>> assert query.frame_length() == (
+        ...     # speed_scale, pre_phoneme_length
+        ...     to_frame_length(np.float32(3.3), np.float32(1.2))
+        ...     # speed_scale, consonant_length, vowel_length, is_interrogative
+        ...     + 0
+        ...     # speed_scale, post_phoneme_length
+        ...     + to_frame_length(np.float32(4.4), np.float32(1.2))
+        ... )
+
+        >>> query = AudioQuery.from_accent_phrases([])
+        >>> query.speed_scale = 1e-20
+        >>> assert query.frame_length() == 0xffffffffffffffff  # 64-bit環境の場合
+        """
+        return audio_query_frame_length(self, enable_interrogative_upspeak)
+
     # テストに使用する目的でのみ存在
 
     @staticmethod
@@ -636,7 +728,8 @@ class Note:
     """
     音符のフレーム長。
 
-    秒数に93.75をかけ、端数を調整して整数にしたもの。例として125BPM (Beats Per
+    秒数に :attr:`FRAME_RATE` =
+    93.75をかけ、端数を調整して整数にしたもの。例として125BPM (Beats Per
     Minute)における一拍は:
 
     93.75[フレーム/秒] / (125[拍/分] / 60[秒/分]) = 45[フレーム/拍]

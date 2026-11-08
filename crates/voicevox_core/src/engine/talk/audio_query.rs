@@ -216,7 +216,9 @@ mod tests {
     use rstest::rstest;
     use serde_json::json;
 
-    use super::{super::super::DEFAULT_SAMPLING_RATE, AudioQuery};
+    use super::AudioQuery;
+
+    use crate::frame::DEFAULT_SAMPLING_RATE;
 
     #[rstest]
     fn it_accepts_json_without_optional_fields() -> anyhow::Result<()> {

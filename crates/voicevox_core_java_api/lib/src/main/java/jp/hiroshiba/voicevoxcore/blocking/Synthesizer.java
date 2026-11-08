@@ -13,6 +13,7 @@ import jp.hiroshiba.voicevoxcore.AudioFeature;
 import jp.hiroshiba.voicevoxcore.AudioQuery;
 import jp.hiroshiba.voicevoxcore.CharacterMeta;
 import jp.hiroshiba.voicevoxcore.FrameAudioQuery;
+import jp.hiroshiba.voicevoxcore.Frames;
 import jp.hiroshiba.voicevoxcore.OnExistingVoiceModelId;
 import jp.hiroshiba.voicevoxcore.Score;
 import jp.hiroshiba.voicevoxcore.StyleType;
@@ -296,6 +297,9 @@ public final class Synthesizer {
   /**
    * {@link AudioQuery} から音声合成用の中間表現を生成する。
    *
+   * <p>ストリーミング音声合成にはいくつか注意事項がある。ユーザーガイドの<a
+   * href="https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/usage.md#%E3%82%B9%E3%83%88%E3%83%AA%E3%83%BC%E3%83%9F%E3%83%B3%E3%82%B0%E9%9F%B3%E5%A3%B0%E5%90%88%E6%88%90">ストリーミング音声合成</a>を参照。
+   *
    * @param audioQuery {@link AudioQuery}。
    * @param styleId スタイルID。
    * @return {@link CreateAudioFeatureConfigurator}。
@@ -309,21 +313,53 @@ public final class Synthesizer {
   /**
    * 音声合成用の中間表現から指定区間の16-bit PCM音声を生成する。
    *
-   * @param audioFeature 音声合成用の中間表現。
-   * @param startInclusive 開始フレーム番号。
-   * @param endExclusive 終了フレーム番号（この番号は含まれない）。
+   * @param audioFeatureSlice 音声合成用の中間表現。
    * @return 16-bit PCM音声データ。
    * @throws RunModelException 推論に失敗した場合。
    */
   @Nonnull
-  public byte[] render(AudioFeature audioFeature, long startInclusive, long endExclusive)
-      throws RunModelException {
-    if (startInclusive < 0
-        || endExclusive < startInclusive
-        || endExclusive > audioFeature.getFrameLength()) {
-      throw new IllegalArgumentException("range");
-    }
-    return rsRender(audioFeature, startInclusive, endExclusive);
+  public byte[] render(AudioFeature.Slice audioFeatureSlice) throws RunModelException {
+    // TODO: jniに頼ってもよいかもしれない？
+    int startInclusive = audioFeatureSlice.getStartOffset();
+    int endExclusive = audioFeatureSlice.getStartOffset() + audioFeatureSlice.length();
+    return rsRender(audioFeatureSlice.getAudioFeature(), startInclusive, endExclusive);
+  }
+
+  /**
+   * 音声合成用の中間表現から指定区間の16-bit PCM音声を生成する。
+   *
+   * @param audioFeature 音声合成用の中間表現。
+   * @return 16-bit PCM音声データ。
+   * @throws RunModelException 推論に失敗した場合。
+   */
+  @Nonnull
+  public byte[] render(AudioFeature audioFeature) throws RunModelException {
+    return rsRender(audioFeature, 0, audioFeature.length());
+  }
+
+  /**
+   * {@link AudioQuery}からストリーミングで音声合成する。
+   *
+   * <p>このメソッド自体の実行は一瞬で終わる。
+   *
+   * <p>このメソッドが返す{@link
+   * SynthesisStream}は最初に必ず、WAVデータの先頭部分を示す44バイトのデータを返す。このときエラーが送出されることはない。音声をリアルタイムに再生するだけなら多くの場合この44バイトのデータは不要。
+   *
+   * <p>２番目以降の要素から{@code
+   * s16le}形式の音声波形が始まる。要素が要求されていない間は音声合成が行われない。そのため例えば再生バッファへの書き込みがスレッドを長時間ブロックする場合に、滞りなく音声合成し続けるためにFIFOキューなどを利用しなければならないことがある。このような対処を１行で行えるAPIを<a
+   * href="https://github.com/VOICEVOX/voicevox_core/issues/1467">#1467</a>で議論中。
+   *
+   * <p>ストリーミング音声合成には他にもいくつか注意事項がある。ユーザーガイドの<a
+   * href="https://github.com/VOICEVOX/voicevox_core/blob/main/docs/guide/user/usage.md#%E3%82%B9%E3%83%88%E3%83%AA%E3%83%BC%E3%83%9F%E3%83%B3%E3%82%B0%E9%9F%B3%E5%A3%B0%E5%90%88%E6%88%90">ストリーミング音声合成</a>を参照。
+   *
+   * @param audioQuery {@link AudioQuery}。
+   * @param styleId スタイルID。
+   * @return {@link StreamingSynthesisConfigurator}。
+   * @see StreamingSynthesisConfigurator#perform
+   */
+  @Nonnull
+  public StreamingSynthesisConfigurator streamingSynthesis(AudioQuery audioQuery, int styleId) {
+    return new StreamingSynthesisConfigurator(this, audioQuery, styleId);
   }
 
   /**
@@ -517,7 +553,16 @@ public final class Synthesizer {
       String queryJson, int styleId, boolean enableInterrogativeUpspeak) throws RunModelException;
 
   @Nonnull
-  private native byte[] rsRender(AudioFeature audioFeature, long startInclusive, long endExclusive)
+  private native byte[] rsRender(AudioFeature audioFeature, int startInclusive, int endExclusive)
+      throws RunModelException;
+
+  @Nonnull
+  private native SynthesisStream rsStreamingSynthesis(
+      String queryJson,
+      int styleId,
+      double startOffset,
+      double segmentLength,
+      boolean enableInterrogativeUpspeak)
       throws RunModelException;
 
   @Nonnull
@@ -645,7 +690,7 @@ public final class Synthesizer {
     private Synthesizer synthesizer;
     private AudioQuery audioQuery;
     private int styleId;
-    private boolean interrogativeUpspeak;
+    private boolean interrogativeUpspeak; // FIXME: デフォルトで`false`になってしまっている！
 
     private SynthesisConfigurator(Synthesizer synthesizer, AudioQuery audioQuery, int styleId) {
       if (!Utils.isU32(styleId)) {
@@ -690,7 +735,7 @@ public final class Synthesizer {
     private Synthesizer synthesizer;
     private AudioQuery audioQuery;
     private int styleId;
-    private boolean interrogativeUpspeak;
+    private boolean interrogativeUpspeak; // FIXME: デフォルトで`false`になってしまっている！
 
     private CreateAudioFeatureConfigurator(
         Synthesizer synthesizer, AudioQuery audioQuery, int styleId) {
@@ -727,12 +772,107 @@ public final class Synthesizer {
     }
   }
 
+  /** {@link Synthesizer#streamingSynthesis} のオプション。 */
+  public final class StreamingSynthesisConfigurator {
+    private final Synthesizer synthesizer;
+    private final AudioQuery audioQuery;
+    private final int styleId;
+    private double startOffset = 0.0;
+    private double segmentLength = 0.3;
+    private boolean interrogativeUpspeak = false; // FIXME: デフォルトで`false`になってしまっている！
+
+    private StreamingSynthesisConfigurator(
+        Synthesizer synthesizer, AudioQuery audioQuery, int styleId) {
+      if (!Utils.isU32(styleId)) {
+        throw new IllegalArgumentException("styleId");
+      }
+      this.synthesizer = synthesizer;
+      this.audioQuery = audioQuery;
+      this.styleId = styleId;
+    }
+
+    /**
+     * 音声の開始位置。単位は秒。
+     *
+     * <p>デフォルトは{@code 0.0}。
+     *
+     * <p><code>startOffset * {@link Frames#FRAME_RATE FRAME_RATE}</code>が{@code 0.0}以上{@link
+     * AudioQuery#frameLength 総フレーム}以下でなければ{@link #perform 実行}時に{@link
+     * IllegalArgumentException}をスローする。総フレーム数は{@link #interrogativeUpspeak(boolean)
+     * interrogativeUpspeak}により変わることに注意。
+     *
+     * @param startOffset 音声の開始位置(秒)。
+     * @return {@link StreamingSynthesisConfigurator}。
+     */
+    @Nonnull
+    public StreamingSynthesisConfigurator startOffset(double startOffset) {
+      this.startOffset = startOffset;
+      return this;
+    }
+
+    /**
+     * 一度に合成する音声の長さ。単位は秒。
+     *
+     * <p>デフォルトは{@code 0.3}。
+     *
+     * <p><code>segmentLength * {@link Frames#FRAME_RATE FRAME_RATE}</code>が{@code
+     * 0.5}を超えていなければ{@link #perform 実行}時に{@link IllegalArgumentException}をスローする。
+     *
+     * @param segmentLength 一度に合成する音声の長さ(秒)。
+     * @return {@link StreamingSynthesisConfigurator}。
+     */
+    @Nonnull
+    public StreamingSynthesisConfigurator segmentLength(double segmentLength) {
+      this.segmentLength = segmentLength;
+      return this;
+    }
+
+    /**
+     * 疑問文の調整を有効にするかどうか。
+     *
+     * <p>具体的には、{@link AccentPhrase#isInterrogative}を考慮するかどうか。
+     *
+     * <p>デフォルトは{@code false}。将来的に{@code true}になる予定。
+     *
+     * <p>この値を{@code false}にすることにより{@link AudioQuery#frameLength 総フレーム}が<code>{@link
+     * #startOffset(double) startOffset} * {@link Frames#FRAME_RATE FRAME_RATE}</code>を下回る場合、{@link
+     * #perform 実行}時に{@link IllegalArgumentException}をスローする。
+     *
+     * @param interrogativeUpspeak 疑問文の調整を有効にするかどうか。
+     * @return {@link StreamingSynthesisConfigurator}。
+     */
+    @Nonnull
+    public StreamingSynthesisConfigurator interrogativeUpspeak(boolean interrogativeUpspeak) {
+      this.interrogativeUpspeak = interrogativeUpspeak;
+      return this;
+    }
+
+    /**
+     * 実行する。
+     *
+     * <p>詳細は{@link Synthesizer#streamingSynthesis}を参照。
+     *
+     * @return {@link SynthesisStream}。
+     * @throws InvalidQueryException {@code audioQuery}が不正な場合。
+     * @throws StyleNotFoundException {@code styleId}に対応する、ストリーミング音声合成({@code
+     *     streaming_talk})のスタイルが見つからなかった場合。
+     * @throws RunModelException 推論に失敗した場合。
+     * @throws IllegalArgumentException {@code startOffset}または{@code segmentLength}が範囲外の場合。
+     */
+    @Nonnull
+    public SynthesisStream perform() throws RunModelException {
+      String queryJson = Convert.jsonFromQueryLike(this.audioQuery, "不正なAudioQueryです");
+      return synthesizer.rsStreamingSynthesis(
+          queryJson, this.styleId, this.startOffset, this.segmentLength, this.interrogativeUpspeak);
+    }
+  }
+
   /** {@link Synthesizer#ttsFromKana} のオプション。 */
   public final class TtsFromKanaConfigurator {
     private Synthesizer synthesizer;
     private String kana;
     private int styleId;
-    private boolean interrogativeUpspeak;
+    private boolean interrogativeUpspeak; // FIXME: デフォルトで`false`になってしまっている！
 
     private TtsFromKanaConfigurator(Synthesizer synthesizer, String kana, int styleId) {
       if (!Utils.isU32(styleId)) {
@@ -775,7 +915,7 @@ public final class Synthesizer {
     private Synthesizer synthesizer;
     private String text;
     private int styleId;
-    private boolean interrogativeUpspeak;
+    private boolean interrogativeUpspeak; // FIXME: デフォルトで`false`になってしまっている！
 
     private TtsConfigurator(Synthesizer synthesizer, String text, int styleId) {
       if (!Utils.isU32(styleId)) {

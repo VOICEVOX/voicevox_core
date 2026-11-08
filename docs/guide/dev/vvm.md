@@ -21,4 +21,3 @@ VOICEVOX OSS が提供する VVM には `sample.vvm` がある（ビルドを行
 
 VVM における ***マニフェストファイル*** は、VVM ファイルの構成や、onnx モデルなどを読み込む・利用するのに必要な情報を記述したファイルである。  
 json 形式で記述され、root パスに`manifest.json`として配置する。  
-[VOICEVOX CORE のソースコード](https://github.com/VOICEVOX/voicevox_core/blob/main/crates/voicevox_core/src/manifest.rs) 内で `Manifest` 構造体としてスキーマが定義されている。  

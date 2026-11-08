@@ -6,6 +6,11 @@
   timezone: "Asia/Tokyo",
   separateMajorMinor: false,
   dependencyDashboardApproval: true,
+  vulnerabilityAlerts: {
+    groupName: "security dependencies",
+    groupSlug: "security-dependencies",
+    groupSingleUpdates: true,
+  },
   packageRules: [
     // `separateMajorMinor`を無効化した上で次の二つのgroupにすべてをまとめる。
     //

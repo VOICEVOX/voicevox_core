@@ -6,11 +6,14 @@
 
 import multiprocessing
 import platform
+import struct
+import wave
+from io import BytesIO
 
 import conftest
 import pytest
 import pytest_asyncio
-from voicevox_core import Note, NoteId, Score, StyleId
+from voicevox_core import FRAME_RATE, Note, NoteId, Score, StyleId
 from voicevox_core.asyncio import Onnxruntime, OpenJtalk, Synthesizer, VoiceModelFile
 
 
@@ -34,6 +37,8 @@ async def test(synthesizer: Synthesizer) -> None:
     frame_audio_query = await synthesizer.create_sing_frame_audio_query(
         SCORE, SINGING_TEACHER
     )
+    assert frame_audio_query.output_sampling_rate == 24000
+    assert not frame_audio_query.output_stereo
 
     phonemes = [phoneme.phoneme for phoneme in frame_audio_query.phonemes]
     assert phonemes == ["pau", "d", "o", "r", "e", "m", "i", "pau"]
@@ -62,12 +67,17 @@ async def test(synthesizer: Synthesizer) -> None:
 
     wav = await synthesizer.frame_synthesis(frame_audio_query, SINGER)
 
-    assert wav.startswith(b"RIFF")
-    assert (
-        NUM_TOTAL_FRAMES * 256 * 2 * (1 + frame_audio_query.output_stereo)
-        == int.from_bytes(wav[4:8], "little") - 36
-    )
-    assert wav[8:16] == b"WAVEfmt "
+    with BytesIO(wav) as wav_buf, wave.open(wav_buf, "rb") as wav_read:
+        # TODO: Python 3.15だと`Wave_read.getformat`というメソッドが入るらしい。
+        assert wav_read.getnchannels() == 1
+        assert wav_read.getsampwidth() == struct.calcsize("h")
+        assert wav_read.getframerate() == 24000
+        assert wav_read.getnframes() == NUM_TOTAL_FRAMES * int(24000.0 / FRAME_RATE)
+        assert wav_read.getcomptype() == "NONE"
+        assert (
+            len(wav_read.readframes(wav_read.getnframes()))
+            == wav_read.getnframes() * wav_read.getsampwidth()
+        )
 
 
 @pytest_asyncio.fixture

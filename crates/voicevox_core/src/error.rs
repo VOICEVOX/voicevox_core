@@ -3,10 +3,10 @@ use crate::{
     assert::assert_send_sync,
     core::devices::DeviceAvailabilities,
     engine::{
-        DEFAULT_SAMPLING_RATE,
         song::queries::Key,
         talk::{KanaParseError, user_dict::InvalidWordError},
     },
+    frame::DEFAULT_SAMPLING_RATE,
 };
 //use engine::
 use duplicate::duplicate_item;

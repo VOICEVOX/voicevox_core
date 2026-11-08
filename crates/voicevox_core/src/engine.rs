@@ -2,6 +2,7 @@
 
 mod acoustic_feature_extractor;
 mod audio_file;
+pub(crate) mod audio_length;
 mod mora_mappings;
 mod ndarray;
 mod sampling_rate;
@@ -11,9 +12,8 @@ pub(crate) mod validate;
 
 pub(crate) use self::{
     acoustic_feature_extractor::PhonemeCode,
-    audio_file::{PcmOptions, s16le_wav_prefix, to_s16le_pcm},
+    audio_file::{PcmOptions, WAV_PREFIX_LEN, s16le_wav_prefix, to_s16le_pcm},
     ndarray::IteratorExt,
-    sampling_rate::DEFAULT_SAMPLING_RATE,
 };
 pub use self::{
     acoustic_feature_extractor::{Consonant, NonConsonant, Phoneme, Sil},

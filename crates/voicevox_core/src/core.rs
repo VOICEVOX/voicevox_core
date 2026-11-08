@@ -3,12 +3,11 @@
 pub(crate) mod adjust;
 pub(crate) mod devices;
 pub(crate) mod infer;
-mod manifest;
 pub(crate) mod metas;
 pub(crate) mod status;
 pub(crate) mod voice_model;
 
 pub(crate) use self::adjust::{
     Array1ExtForPostProcess, Array1ExtForPreProcess, ArrayExt, ensure_minimum_phoneme_length,
-    ensure_non_nan_finite, ensure_positive_finite, pad_decoder_feature,
+    ensure_non_nan_finite, ensure_positive_finite, pad_decoder_feature, trim_margin_from_wave,
 };
