@@ -12,7 +12,6 @@
 #include <string.h>
 
 #include <array>
-#include <codecvt>
 #include <iostream>
 #include <vector>
 #include <filesystem>
@@ -170,19 +169,16 @@ void OutErrorMessage(VoicevoxResultCode messageCode) {
   std::wcout << wideStr << std::endl;
 }
 
-// FIXME: codecvtはC++17から非推奨であるため、std::filesystem::pathに乗り換える。それができたらvcxprojの_SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNINGを削除する。
-
 /// <summary>
 /// ワイド文字列をUTF8に変換します。
 /// </summary>
 /// <param name="src">ワイド文字列</param>
 /// <returns>UTF8文字列</returns>
-/// <remarks>
-/// https://nekko1119.hatenablog.com/entry/2017/01/02/054629 から引用
-/// </remarks>
 std::string wide_to_utf8_cppapi(std::wstring const& src) {
-  std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-  return converter.to_bytes(src);
+  int size = WideCharToMultiByte(CP_UTF8, 0, src.c_str(), static_cast<int>(src.size()), nullptr, 0, nullptr, nullptr);
+  std::string dst(size, '\0');
+  WideCharToMultiByte(CP_UTF8, 0, src.c_str(), static_cast<int>(src.size()), dst.data(), size, nullptr, nullptr);
+  return dst;
 }
 
 /// <summary>
@@ -190,10 +186,9 @@ std::string wide_to_utf8_cppapi(std::wstring const& src) {
 /// </summary>
 /// <param name="src">UTF8文字列</param>
 /// <returns>ワイド文字列</returns>
-/// <remarks>
-/// https://nekko1119.hatenablog.com/entry/2017/01/02/054629 から引用
-/// </remarks>
 std::wstring utf8_to_wide_cppapi(std::string const& src) {
-  std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-  return converter.from_bytes(src);
+  int size = MultiByteToWideChar(CP_UTF8, 0, src.c_str(), static_cast<int>(src.size()), nullptr, 0);
+  std::wstring dst(size, L'\0');
+  MultiByteToWideChar(CP_UTF8, 0, src.c_str(), static_cast<int>(src.size()), dst.data(), size);
+  return dst;
 }
