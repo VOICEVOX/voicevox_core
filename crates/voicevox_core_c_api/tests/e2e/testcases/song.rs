@@ -202,6 +202,8 @@ impl assert_cdylib::TestCase for TestCase {
         );
 
         let f0s = {
+            let initial_noises_json =
+                CString::new(serde_json::to_string(&vec![0.0f32; NUM_TOTAL_FRAMES])?)?;
             let mut f0s = MaybeUninit::uninit();
             assert_ok(unsafe {
                 // SAFETY:
@@ -211,6 +213,7 @@ impl assert_cdylib::TestCase for TestCase {
                     synthesizer,
                     SCORE.as_ptr(),
                     frame_audio_query_json,
+                    initial_noises_json.as_ptr(),
                     SINGING_TEACHER,
                     f0s.as_mut_ptr(),
                 )
@@ -229,6 +232,8 @@ impl assert_cdylib::TestCase for TestCase {
         );
 
         let volumes = {
+            let initial_noises_json =
+                CString::new(serde_json::to_string(&vec![0.0f32; NUM_TOTAL_FRAMES])?)?;
             let mut volumes = MaybeUninit::uninit();
             assert_ok(unsafe {
                 // SAFETY:
@@ -238,6 +243,7 @@ impl assert_cdylib::TestCase for TestCase {
                     synthesizer,
                     SCORE.as_ptr(),
                     frame_audio_query_json,
+                    initial_noises_json.as_ptr(),
                     SINGING_TEACHER,
                     volumes.as_mut_ptr(),
                 )

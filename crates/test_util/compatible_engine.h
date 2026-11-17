@@ -32,4 +32,12 @@ bool generate_full_intermediate(int64_t length, int64_t phoneme_size,
 bool render_audio_segment(int64_t length, int64_t margin_width, int64_t feature_size,
                           float *audio_feature, int64_t *speaker_id, float *output);
 
+bool predict_sing_f0_forward(int64_t length, int64_t *phoneme, int64_t *note,
+                             float *initial_noises, float *base_f0s,
+                             int64_t *speaker_id, float *output);
+
+bool predict_sing_volume_forward(int64_t length, int64_t *phoneme, int64_t *note,
+                                 float *f0, float *initial_noises, int64_t *speaker_id,
+                                 float *output);
+
 const char *last_error_message();
