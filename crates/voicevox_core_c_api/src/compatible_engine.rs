@@ -551,6 +551,7 @@ pub unsafe extern "C" fn predict_sing_consonant_length_forward(
 ///
 /// - `phoneme`はRustの`&[i64; length as usize]`として解釈できなければならない。
 /// - `note`はRustの`&[i64; length as usize]`として解釈できなければならない。
+/// - `initial_noises`はRustの`&[f32; length as usize]`として解釈できなければならない。
 /// - `speaker_id`はRustの`&[i64; 1]`として解釈できなければならない。
 /// - `output`はRustの`&mut [MaybeUninit<f32>; length as usize]`として解釈できなければならない。
 #[unsafe(no_mangle)] // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
@@ -558,12 +559,16 @@ pub unsafe extern "C" fn predict_sing_f0_forward(
     length: i64,
     phoneme: *mut i64,
     note: *mut i64,
+    initial_noises: *mut f32,
+    base_f0s: *mut f32,
     speaker_id: *mut i64,
     output: *mut f32,
 ) -> bool {
     init_logger_once();
     assert_aligned(phoneme);
     assert_aligned(note);
+    assert_aligned(initial_noises);
+    assert_aligned(base_f0s);
     assert_aligned(speaker_id);
     assert_aligned(output);
     let length = length as usize;
@@ -572,6 +577,8 @@ pub unsafe extern "C" fn predict_sing_f0_forward(
         // SAFETY: The safety contract must be upheld by the caller.
         unsafe { ndarray::ArrayView::from_shape_ptr([length], phoneme) }.to_owned(),
         unsafe { ndarray::ArrayView::from_shape_ptr([length], note) }.to_owned(),
+        unsafe { ndarray::ArrayView::from_shape_ptr([length], initial_noises) }.to_owned(),
+        unsafe { ndarray::ArrayView::from_shape_ptr([length], base_f0s) }.to_owned(),
         StyleId::new(unsafe { *speaker_id as u32 }),
     );
     match result {
@@ -601,6 +608,7 @@ pub unsafe extern "C" fn predict_sing_f0_forward(
 /// - `phoneme`はRustの`&[i64; length as usize]`として解釈できなければならない。
 /// - `note`はRustの`&[i64; length as usize]`として解釈できなければならない。
 /// - `f0`はRustの`&[f32; length as usize]`として解釈できなければならない。
+/// - `initial_noises`はRustの`&[f32; length as usize]`として解釈できなければならない。
 /// - `speaker_id`はRustの`&[i64; 1]`として解釈できなければならない。
 /// - `output`はRustの`&mut [MaybeUninit<f32>; length as usize]`として解釈できなければならない。
 #[unsafe(no_mangle)] // SAFETY: voicevox_core_c_apiを構成するライブラリの中に、これと同名のシンボルは存在しない
@@ -609,6 +617,7 @@ pub unsafe extern "C" fn predict_sing_volume_forward(
     phoneme: *mut i64,
     note: *mut i64,
     f0: *mut f32,
+    initial_noises: *mut f32,
     speaker_id: *mut i64,
     output: *mut f32,
 ) -> bool {
@@ -616,6 +625,7 @@ pub unsafe extern "C" fn predict_sing_volume_forward(
     assert_aligned(phoneme);
     assert_aligned(note);
     assert_aligned(f0);
+    assert_aligned(initial_noises);
     assert_aligned(speaker_id);
     assert_aligned(output);
     let length = length as usize;
@@ -625,6 +635,7 @@ pub unsafe extern "C" fn predict_sing_volume_forward(
         unsafe { ndarray::ArrayView::from_shape_ptr([length], phoneme) }.to_owned(),
         unsafe { ndarray::ArrayView::from_shape_ptr([length], note) }.to_owned(),
         unsafe { ndarray::ArrayView::from_shape_ptr([length], f0) }.to_owned(),
+        unsafe { ndarray::ArrayView::from_shape_ptr([length], initial_noises) }.to_owned(),
         StyleId::new(unsafe { *speaker_id as u32 }),
     );
     match result {

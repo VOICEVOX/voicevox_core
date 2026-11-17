@@ -2232,6 +2232,7 @@ VoicevoxResultCode voicevox_synthesizer_create_sing_frame_audio_query(const stru
  * @param [in] synthesizer 音声シンセサイザ
  * @param [in] score_json [`Score`型]を表すJSON
  * @param [in] frame_audio_query_json [`FrameAudioQuery`型]を表すJSON
+ * @param [in] initial_noises_json `float[]`を表すJSON
  * @param [in] style_id スタイルID
  * @param [out] output_f0_json 生成先
  *
@@ -2241,7 +2242,7 @@ VoicevoxResultCode voicevox_synthesizer_create_sing_frame_audio_query(const stru
  * @returns 結果コード
  *
  * \safety{
- * - `score_json`と`frame_audio_query_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+ * - `score_json`と`frame_audio_query_json`と`initial_noises_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
  * - `output_f0_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  * }
  *
@@ -2253,6 +2254,7 @@ __declspec(dllimport)
 VoicevoxResultCode voicevox_synthesizer_create_sing_frame_f0(const struct VoicevoxSynthesizer *synthesizer,
                                                              const char *score_json,
                                                              const char *frame_audio_query_json,
+                                                             const char *initial_noises_json,
                                                              VoicevoxStyleId style_id,
                                                              char **output_f0_json);
 
@@ -2268,6 +2270,7 @@ VoicevoxResultCode voicevox_synthesizer_create_sing_frame_f0(const struct Voicev
  * @param [in] synthesizer 音声シンセサイザ
  * @param [in] score_json [`Score`型]を表すJSON
  * @param [in] frame_audio_query_json [`FrameAudioQuery`型]を表すJSON
+ * @param [in] initial_noises_json `float[]`を表すJSON
  * @param [in] style_id スタイルID
  * @param [out] output_volume_json 生成先
  *
@@ -2277,7 +2280,7 @@ VoicevoxResultCode voicevox_synthesizer_create_sing_frame_f0(const struct Voicev
  * @returns 結果コード
  *
  * \safety{
- * - `score_json`と`frame_audio_query_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+ * - `score_json`と`frame_audio_query_json`と`initial_noises_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
  * - `output_volume_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
  * }
  *
@@ -2289,6 +2292,7 @@ __declspec(dllimport)
 VoicevoxResultCode voicevox_synthesizer_create_sing_frame_volume(const struct VoicevoxSynthesizer *synthesizer,
                                                                  const char *score_json,
                                                                  const char *frame_audio_query_json,
+                                                                 const char *initial_noises_json,
                                                                  VoicevoxStyleId style_id,
                                                                  char **output_volume_json);
 

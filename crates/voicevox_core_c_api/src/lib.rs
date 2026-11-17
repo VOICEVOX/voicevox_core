@@ -94,6 +94,14 @@ fn init_logger_once() {
     }
 }
 
+// TODO: 現状は `initial_noises` を別 JSON として受け取るワークアラウンド。
+// 本来は `FrameAudioQuery` に統合したい。
+fn initial_noises_from_json(initial_noises_json: &CStr) -> Result<Vec<f32>, CApiError> {
+    serde_json::from_str(ensure_utf8(initial_noises_json)?)
+        .map_err(either::Either::Left)
+        .map_err(CApiError::InvalidFrameAudioQuery)
+}
+
 macro_rules! deprecated_fn_impl {
     ($deprecated_fn_name:literal, $imp:ident($($args:tt)*)) => {{
         init_logger_once();
@@ -2445,6 +2453,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_sing_frame_audio_query(
 /// @param [in] synthesizer 音声シンセサイザ
 /// @param [in] score_json [`Score`型]を表すJSON
 /// @param [in] frame_audio_query_json [`FrameAudioQuery`型]を表すJSON
+/// @param [in] initial_noises_json `float[]`を表すJSON
 /// @param [in] style_id スタイルID
 /// @param [out] output_f0_json 生成先
 ///
@@ -2454,7 +2463,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_sing_frame_audio_query(
 /// @returns 結果コード
 ///
 /// \safety{
-/// - `score_json`と`frame_audio_query_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+/// - `score_json`と`frame_audio_query_json`と`initial_noises_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// - `output_f0_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
 ///
@@ -2464,6 +2473,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_sing_frame_f0(
     synthesizer: *const VoicevoxSynthesizer,
     score_json: *const c_char,
     frame_audio_query_json: *const c_char,
+    initial_noises_json: *const c_char,
     style_id: VoicevoxStyleId,
     output_f0_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
@@ -2472,13 +2482,20 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_sing_frame_f0(
         // SAFETY: The safety contract must be upheld by the caller.
         let score_json = unsafe { CStr::from_ptr(score_json) };
         let frame_audio_query_json = unsafe { CStr::from_ptr(frame_audio_query_json) };
+        let initial_noises_json = unsafe { CStr::from_ptr(initial_noises_json) };
 
         let score = &Score::validate_json(score_json)?;
         let frame_audio_query = &FrameAudioQuery::validate_json(frame_audio_query_json)?;
+        let initial_noises = initial_noises_from_json(initial_noises_json)?;
 
         let f0 = synthesizer
             .body()
-            .create_sing_frame_f0(score, frame_audio_query, StyleId::new(style_id))?
+            .create_sing_frame_f0_with_initial_noises(
+                score,
+                frame_audio_query,
+                &initial_noises,
+                StyleId::new(style_id),
+            )?
             .to_c_json();
 
         unsafe {
@@ -2502,6 +2519,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_sing_frame_f0(
 /// @param [in] synthesizer 音声シンセサイザ
 /// @param [in] score_json [`Score`型]を表すJSON
 /// @param [in] frame_audio_query_json [`FrameAudioQuery`型]を表すJSON
+/// @param [in] initial_noises_json `float[]`を表すJSON
 /// @param [in] style_id スタイルID
 /// @param [out] output_volume_json 生成先
 ///
@@ -2511,7 +2529,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_sing_frame_f0(
 /// @returns 結果コード
 ///
 /// \safety{
-/// - `score_json`と`frame_audio_query_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
+/// - `score_json`と`frame_audio_query_json`と`initial_noises_json`はヌル終端文字列を指し、かつ<a href="#voicevox-core-safety">読み込みについて有効</a>でなければならない。
 /// - `output_volume_json`は<a href="#voicevox-core-safety">書き込みについて有効</a>でなければならない。
 /// }
 ///
@@ -2521,6 +2539,7 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_sing_frame_volume(
     synthesizer: *const VoicevoxSynthesizer,
     score_json: *const c_char,
     frame_audio_query_json: *const c_char,
+    initial_noises_json: *const c_char,
     style_id: VoicevoxStyleId,
     output_volume_json: NonNull<*mut c_char>,
 ) -> VoicevoxResultCode {
@@ -2533,10 +2552,17 @@ pub unsafe extern "C" fn voicevox_synthesizer_create_sing_frame_volume(
         // SAFETY: The safety contract must be upheld by the caller.
         let frame_audio_query_json = unsafe { CStr::from_ptr(frame_audio_query_json) };
         let frame_audio_query = &FrameAudioQuery::validate_json(frame_audio_query_json)?;
+        let initial_noises_json = unsafe { CStr::from_ptr(initial_noises_json) };
+        let initial_noises = initial_noises_from_json(initial_noises_json)?;
 
         let volume = synthesizer
             .body()
-            .create_sing_frame_volume(score, frame_audio_query, StyleId::new(style_id))?
+            .create_sing_frame_volume_with_initial_noises(
+                score,
+                frame_audio_query,
+                &initial_noises,
+                StyleId::new(style_id),
+            )?
             .to_c_json();
 
         unsafe {

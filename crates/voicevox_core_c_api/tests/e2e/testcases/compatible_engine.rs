@@ -49,6 +49,8 @@ impl assert_cdylib::TestCase for TestCase {
         assert!(unsafe { !lib.is_model_loaded(EXAMPLE_DATA.speaker_id) });
         assert!(unsafe { lib.load_model(EXAMPLE_DATA.speaker_id) });
         assert!(unsafe { lib.is_model_loaded(EXAMPLE_DATA.speaker_id) });
+        assert!(unsafe { lib.load_model(6000) });
+        assert!(unsafe { lib.is_model_loaded(6000) });
 
         // テスト用テキストは"t e s u t o"
         let phoneme_length = {
@@ -105,6 +107,48 @@ impl assert_cdylib::TestCase for TestCase {
                 )
             });
             wave
+        };
+
+        let sing_f0 = {
+            let phoneme = [0, 37, 14, 35, 6, 37, 30, 0];
+            let note = [0, 30, 30, 40, 40, 50, 50, 0];
+            let mut initial_noises = [0.0; 8];
+            let base_f0s = [0.0; 8];
+            let mut output = [0.0; 8];
+            let mut speaker_id = 6000i64;
+            assert!(unsafe {
+                lib.predict_sing_f0_forward(
+                    phoneme.len() as i64,
+                    phoneme.as_ptr() as *mut i64,
+                    note.as_ptr() as *mut i64,
+                    initial_noises.as_mut_ptr(),
+                    base_f0s.as_ptr() as *mut f32,
+                    &mut speaker_id,
+                    output.as_mut_ptr(),
+                )
+            });
+            output
+        };
+
+        let sing_volume = {
+            let phoneme = [0, 37, 14, 35, 6, 37, 30, 0];
+            let note = [0, 30, 30, 40, 40, 50, 50, 0];
+            let mut f0 = [0.0, 5.905218, 5.905218, 0.0, 0.0, 5.565851, 5.565851, 0.0];
+            let mut initial_noises = [0.0; 8];
+            let mut output = [0.0; 8];
+            let mut speaker_id = 6000i64;
+            assert!(unsafe {
+                lib.predict_sing_volume_forward(
+                    phoneme.len() as i64,
+                    phoneme.as_ptr() as *mut i64,
+                    note.as_ptr() as *mut i64,
+                    f0.as_mut_ptr(),
+                    initial_noises.as_mut_ptr(),
+                    &mut speaker_id,
+                    output.as_mut_ptr(),
+                )
+            });
+            output
         };
 
         // 中間生成物を経由した場合の生成音声
@@ -208,6 +252,8 @@ impl assert_cdylib::TestCase for TestCase {
         assert!(wave.iter().copied().all(f32::is_normal));
         assert!(wave2.iter().copied().all(f32::is_normal));
         assert!(wave3.iter().copied().all(f32::is_normal));
+        assert!(sing_f0.iter().copied().all(f32::is_finite));
+        assert!(sing_volume.iter().copied().all(f32::is_finite));
         float_assert::close_l1(&wave2, &wave, 0.001);
         float_assert::close_l1(&wave3, &wave, 0.001);
 

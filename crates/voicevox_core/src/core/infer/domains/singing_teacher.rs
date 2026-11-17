@@ -72,6 +72,8 @@ pub(crate) struct PredictSingF0Input {
     pub(crate) phonemes: Array2<i64>,
     pub(crate) notes: Array2<i64>,
     pub(crate) speaker_id: Array1<i64>,
+    pub(crate) initial_noises: Array2<f32>,
+    pub(crate) base_f0s: Array2<f32>,
 }
 
 #[derive(InferenceOutputSignature)]
@@ -88,6 +90,7 @@ pub(crate) struct PredictSingVolumeInput {
     pub(crate) notes: Array2<i64>,
     pub(crate) frame_f0s: Array2<f32>,
     pub(crate) speaker_id: Array1<i64>,
+    pub(crate) initial_noises: Array2<f32>,
 }
 
 #[derive(InferenceOutputSignature)]
