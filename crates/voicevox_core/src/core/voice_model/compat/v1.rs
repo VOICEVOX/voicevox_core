@@ -5,7 +5,9 @@ use serde::Deserialize;
 use crate::{
     CharacterMeta, CharacterVersion, StyleId, StyleMeta, StyleType, VoiceModelId,
     core::{
-        infer::domains::{FrameDecodeDomain, InferenceDomainMap, SingingTeacherV1Domain, TalkDomain},
+        infer::domains::{
+            FrameDecodeDomain, InferenceDomainMap, SingingTeacherV1Domain, TalkDomain,
+        },
         voice_model::manifest::{ManifestBody, ManifestDomain},
     },
 };
