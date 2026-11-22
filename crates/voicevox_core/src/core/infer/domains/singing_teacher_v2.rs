@@ -11,10 +11,10 @@ use super::super::{
     InferenceDomain, InferenceInputSignature as _, InferenceOutputSignature as _, OutputTensor,
 };
 
-pub(crate) enum SingingTeacherDomain {}
+pub(crate) enum SingingTeacherV2Domain {}
 
-impl InferenceDomain for SingingTeacherDomain {
-    type Operation = SingingTeacherOperation;
+impl InferenceDomain for SingingTeacherV2Domain {
+    type Operation = SingingTeacherV2Operation;
 
     fn style_types() -> &'static BTreeSet<StyleType> {
         static STYLE_TYPES: LazyLock<BTreeSet<StyleType>> =
@@ -26,9 +26,9 @@ impl InferenceDomain for SingingTeacherDomain {
 #[derive(Clone, Copy, Debug, Deserialize, Enum, InferenceOperation)]
 #[serde(rename_all = "snake_case")]
 #[inference_operation(
-    type Domain = SingingTeacherDomain;
+    type Domain = SingingTeacherV2Domain;
 )]
-pub(crate) enum SingingTeacherOperation {
+pub(crate) enum SingingTeacherV2Operation {
     #[inference_operation(
         type Input = PredictSingConsonantLengthInput;
         type Output = PredictSingConsonantLengthOutput;
@@ -36,16 +36,16 @@ pub(crate) enum SingingTeacherOperation {
     PredictSingConsonantLength,
 
     #[inference_operation(
-        type Input = PredictSingF0Input;
-        type Output = PredictSingF0Output;
+        type Input = PredictSingF0V2Input;
+        type Output = PredictSingF0V2Output;
     )]
-    PredictSingF0,
+    PredictSingF0V2,
 
     #[inference_operation(
-        type Input = PredictSingVolumeInput;
-        type Output = PredictSingVolumeOutput;
+        type Input = PredictSingVolumeV2Input;
+        type Output = PredictSingVolumeV2Output;
     )]
-    PredictSingVolume,
+    PredictSingVolumeV2,
 }
 
 #[derive(InferenceInputSignature)]
@@ -66,31 +66,33 @@ pub(crate) struct PredictSingConsonantLengthOutput {
 
 #[derive(InferenceInputSignature)]
 #[inference_input_signature(
-    type Signature = PredictSingF0;
+    type Signature = PredictSingF0V2;
 )]
-pub(crate) struct PredictSingF0Input {
+pub(crate) struct PredictSingF0V2Input {
     pub(crate) phonemes: Array2<i64>,
     pub(crate) notes: Array2<i64>,
     pub(crate) speaker_id: Array1<i64>,
+    pub(crate) initial_noises: Array2<f32>,
 }
 
 #[derive(InferenceOutputSignature)]
-pub(crate) struct PredictSingF0Output {
+pub(crate) struct PredictSingF0V2Output {
     pub(crate) f0s: Array2<f32>,
 }
 
 #[derive(InferenceInputSignature)]
 #[inference_input_signature(
-    type Signature = PredictSingVolume;
+    type Signature = PredictSingVolumeV2;
 )]
-pub(crate) struct PredictSingVolumeInput {
+pub(crate) struct PredictSingVolumeV2Input {
     pub(crate) phonemes: Array2<i64>,
     pub(crate) notes: Array2<i64>,
     pub(crate) frame_f0s: Array2<f32>,
     pub(crate) speaker_id: Array1<i64>,
+    pub(crate) initial_noises: Array2<f32>,
 }
 
 #[derive(InferenceOutputSignature)]
-pub(crate) struct PredictSingVolumeOutput {
+pub(crate) struct PredictSingVolumeV2Output {
     pub(crate) volumes: Array2<f32>,
 }

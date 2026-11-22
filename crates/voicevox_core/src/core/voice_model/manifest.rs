@@ -17,7 +17,7 @@ use super::{
         InferenceDomain,
         domains::{InferenceDomainMap, inference_domain_map_values},
     },
-    compat::v1::ManifestBodyV1,
+    compat::{v1::ManifestBodyV1, v2::ManifestBodyV2},
 };
 
 impl<'de> Deserialize<'de> for Manifest {
@@ -62,6 +62,9 @@ impl<'de> Deserialize<'de> for Manifest {
                     FormatVersion::V1 => ManifestBodyV1::deserialize(content_value)
                         .map_err(de::Error::custom)?
                         .into(),
+                    FormatVersion::V2 => ManifestBodyV2::deserialize(content_value)
+                        .map_err(de::Error::custom)?
+                        .into(),
                     FormatVersion::LATEST => {
                         Deserialize::deserialize(content_value).map_err(de::Error::custom)?
                     }
@@ -99,10 +102,11 @@ impl Display for InnerVoiceId {
 pub(super) enum FormatVersion {
     V1,
     V2,
+    V3,
 }
 
 impl FormatVersion {
-    pub(super) const LATEST: Self = Self::V2;
+    pub(super) const LATEST: Self = Self::V3;
 }
 
 impl<'de> Deserialize<'de> for FormatVersion {
@@ -114,6 +118,7 @@ impl<'de> Deserialize<'de> for FormatVersion {
         match v {
             1 => Ok(FormatVersion::V1),
             2 => Ok(FormatVersion::V2),
+            3 => Ok(FormatVersion::V3),
             _ => Err(de::Error::custom(format!(
                 "未知の形式です（`vvm_format_version={v}`）。新しいバージョンのVOICEVOX \
                  COREであれば対応しているかもしれません",

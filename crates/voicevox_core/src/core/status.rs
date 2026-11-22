@@ -19,8 +19,8 @@ use super::{
         self, InferenceDomain, InferenceInputSignature, InferenceRuntime, InferenceSessionOptions,
         InferenceSignature,
         domains::{
-            FrameDecodeDomain, InferenceDomainMap, SingingTeacherDomain, StreamingTalkDomain,
-            TalkDomain, inference_domain_map_values,
+            FrameDecodeDomain, InferenceDomainMap, SingingTeacherV1Domain, SingingTeacherV2Domain,
+            StreamingTalkDomain, TalkDomain, inference_domain_map_values,
         },
         session_set::{InferenceSessionCell, InferenceSessionSet},
     },
@@ -405,7 +405,8 @@ pub(crate) trait InferenceDomainExt: InferenceDomain {
     T                        field;
     [ TalkDomain ]           [ talk ];
     [ StreamingTalkDomain ] [ streaming_talk ];
-    [ SingingTeacherDomain ] [ singing_teacher ];
+    [ SingingTeacherV1Domain ] [ singing_teacher_v1 ];
+    [ SingingTeacherV2Domain ] [ singing_teacher_v2 ];
     [ FrameDecodeDomain ]    [ frame_decode ];
 )]
 impl InferenceDomainExt for T {
@@ -435,7 +436,8 @@ impl InferenceDomainMap<ModelBytesWithInnerVoiceIdsByDomain> {
                 field;
                 [ talk ];
                 [ streaming_talk ];
-                [ singing_teacher ];
+                [ singing_teacher_v1 ];
+                [ singing_teacher_v2 ];
                 [ frame_decode ];
             ]
             let field = self
@@ -451,7 +453,8 @@ impl InferenceDomainMap<ModelBytesWithInnerVoiceIdsByDomain> {
         Ok(InferenceDomainMap {
             talk,
             streaming_talk,
-            singing_teacher,
+            singing_teacher_v1,
+            singing_teacher_v2,
             frame_decode,
         })
     }
@@ -486,8 +489,9 @@ mod tests {
                 InferenceOperation, InferenceRuntime, InferenceSessionOptions, InputScalarKind,
                 OutputScalarKind, OutputTensor, ParamInfo, PushInputTensor,
                 domains::{
-                    FrameDecodeOperation, InferenceDomainMap, SingingTeacherOperation,
-                    StreamingTalkOperation, TalkOperation, inference_domain_map,
+                    FrameDecodeOperation, InferenceDomainMap, SingingTeacherV1Operation,
+                    SingingTeacherV2Operation, StreamingTalkOperation, TalkOperation,
+                    inference_domain_map,
                 },
             },
             voice_model::{ModelBytes, ModelBytesWithInnerVoiceIdsByDomain, VoiceModelHeader},
@@ -519,10 +523,15 @@ mod tests {
                 | StreamingTalkOperation::GenerateFullIntermediate => light_session_options,
                 StreamingTalkOperation::RenderAudioSegment => heavy_session_options,
             },
-            singing_teacher: enum_map! {
-                SingingTeacherOperation::PredictSingConsonantLength
-                | SingingTeacherOperation::PredictSingF0
-                | SingingTeacherOperation::PredictSingVolume => light_session_options,
+            singing_teacher_v1: enum_map! {
+                SingingTeacherV1Operation::PredictSingConsonantLength
+                | SingingTeacherV1Operation::PredictSingF0V1
+                | SingingTeacherV1Operation::PredictSingVolumeV2 => light_session_options,
+            },
+            singing_teacher_v2: enum_map! {
+                SingingTeacherV2Operation::PredictSingConsonantLength
+                | SingingTeacherV2Operation::PredictSingF0V2
+                | SingingTeacherV2Operation::PredictSingVolumeV2 => light_session_options,
             },
             frame_decode: enum_map! {
                 FrameDecodeOperation::SfDecode => heavy_session_options,
@@ -699,7 +708,8 @@ mod tests {
                 EnumMap::from_fn(|op: TalkOperation| ModelBytes::Onnx(vec![op.into_usize() as u8])),
             )),
             streaming_talk: None,
-            singing_teacher: None,
+            singing_teacher_v1: None,
+            singing_teacher_v2: None,
             frame_decode: None,
         });
 
