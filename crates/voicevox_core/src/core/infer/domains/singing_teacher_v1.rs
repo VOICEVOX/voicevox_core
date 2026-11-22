@@ -35,17 +35,19 @@ pub(crate) enum SingingTeacherV1Operation {
     )]
     PredictSingConsonantLength,
 
+    #[serde(rename = "predict_sing_f0")]
     #[inference_operation(
         type Input = PredictSingF0V1Input;
         type Output = PredictSingF0V1Output;
     )]
     PredictSingF0V1,
 
+    #[serde(rename = "predict_sing_volume")]
     #[inference_operation(
         type Input = PredictSingVolumeV1Input;
         type Output = PredictSingVolumeV1Output;
     )]
-    PredictSingVolumeV2,
+    PredictSingVolumeV1,
 }
 
 #[derive(InferenceInputSignature)]
@@ -81,7 +83,7 @@ pub(crate) struct PredictSingF0V1Output {
 
 #[derive(InferenceInputSignature)]
 #[inference_input_signature(
-    type Signature = PredictSingVolumeV2;
+    type Signature = PredictSingVolumeV1;
 )]
 pub(crate) struct PredictSingVolumeV1Input {
     pub(crate) phonemes: Array2<i64>,

@@ -31,10 +31,7 @@ use crate::{
 
 use super::infer::{
     InferenceDomain,
-    domains::{
-        FrameDecodeDomain, InferenceDomainMap, SingingTeacherV1Domain, SingingTeacherV2Domain,
-        StreamingTalkDomain, TalkDomain, inference_domain_map, inference_domain_map_values,
-    },
+    domains::{InferenceDomainMap, inference_domain_map, inference_domain_map_values},
 };
 
 use self::{
@@ -583,26 +580,15 @@ impl InferenceDomainMap<ManifestDomains> {
             frame_decode,
         } = self;
 
-        return TalkDomain::contains(style_type).implies(|| talk.is_some())
-            && StreamingTalkDomain::contains(style_type).implies(|| streaming_talk.is_some())
-            && SingingTeacherV1Domain::contains(style_type)
-                .implies(|| singing_teacher_v1.is_some())
-            && SingingTeacherV2Domain::contains(style_type)
-                .implies(|| singing_teacher_v2.is_some())
-            && FrameDecodeDomain::contains(style_type).implies(|| frame_decode.is_some());
+        let any_version_of_singing_teacher =
+            singing_teacher_v1.is_some() || singing_teacher_v2.is_some();
 
-        #[ext]
-        impl<D: InferenceDomain> D {
-            fn contains(style_type: StyleType) -> bool {
-                Self::style_types().contains(&style_type)
-            }
-        }
-
-        #[ext]
-        impl bool {
-            fn implies(self, other: impl FnOnce() -> Self) -> Self {
-                !self || other()
-            }
+        match style_type {
+            StyleType::Talk => talk.is_some(),
+            StyleType::SingingTeacher => any_version_of_singing_teacher,
+            StyleType::FrameDecode => frame_decode.is_some(),
+            StyleType::Sing => any_version_of_singing_teacher || frame_decode.is_some(),
+            StyleType::StreamingTalk => streaming_talk.is_some(),
         }
     }
 }

@@ -323,7 +323,7 @@ impl<T, A: AsyncExt> Inner<T, A> {
                 singing_teacher_v1: enum_map! {
                     SingingTeacherV1Operation::PredictSingConsonantLength
                     | SingingTeacherV1Operation::PredictSingF0V1
-                    | SingingTeacherV1Operation::PredictSingVolumeV2 => light_session_options,
+                    | SingingTeacherV1Operation::PredictSingVolumeV1 => light_session_options,
                 },
                 singing_teacher_v2: enum_map! {
                     SingingTeacherV2Operation::PredictSingConsonantLength
