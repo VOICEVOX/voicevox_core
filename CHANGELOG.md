@@ -15,6 +15,12 @@
 [#750]: https://github.com/VOICEVOX/voicevox_core/pull/750
 
 [@phenylshima]: https://github.com/phenylshima
+
+### `vvm_format_version=3`
+
+- 新形式（`vvm_format_version=3`）のVVMが読み込めるようになります ([#1499])。
+
+[#1499]: https://github.com/VOICEVOX/voicevox_core/pull/1499
 -->
 
 ### Added

@@ -38,12 +38,10 @@ use crate::{
             domains::{
                 DecodeInput, DecodeOutput, FrameDecodeDomain, FrameDecodeOperation,
                 GenerateFullIntermediateInput, GenerateFullIntermediateOutput, InferenceDomainMap,
-                PredictSingConsonantLengthInput, PredictSingConsonantLengthOutput,
-                PredictSingF0Input, PredictSingF0Output, PredictSingVolumeInput,
-                PredictSingVolumeOutput, RenderAudioSegmentInput, RenderAudioSegmentOutput,
-                SfDecodeInput, SfDecodeOutput, SingingTeacherDomain, SingingTeacherOperation,
-                StreamingTalkDomain, StreamingTalkOperation, TalkDomain, TalkOperation,
-                streaming_talk, talk,
+                RenderAudioSegmentInput, RenderAudioSegmentOutput, SfDecodeInput, SfDecodeOutput,
+                SingingTeacherV1Domain, SingingTeacherV1Operation, SingingTeacherV2Domain,
+                SingingTeacherV2Operation, StreamingTalkDomain, StreamingTalkOperation, TalkDomain,
+                TalkOperation, singing_teacher_v1, singing_teacher_v2, streaming_talk, talk,
             },
         },
         pad_decoder_feature,
@@ -322,10 +320,15 @@ impl<T, A: AsyncExt> Inner<T, A> {
                     | StreamingTalkOperation::GenerateFullIntermediate => light_session_options,
                     StreamingTalkOperation::RenderAudioSegment => heavy_session_options,
                 },
-                singing_teacher: enum_map! {
-                    SingingTeacherOperation::PredictSingConsonantLength
-                    | SingingTeacherOperation::PredictSingF0
-                    | SingingTeacherOperation::PredictSingVolume => light_session_options,
+                singing_teacher_v1: enum_map! {
+                    SingingTeacherV1Operation::PredictSingConsonantLength
+                    | SingingTeacherV1Operation::PredictSingF0V1
+                    | SingingTeacherV1Operation::PredictSingVolumeV1 => light_session_options,
+                },
+                singing_teacher_v2: enum_map! {
+                    SingingTeacherV2Operation::PredictSingConsonantLength
+                    | SingingTeacherV2Operation::PredictSingF0V2
+                    | SingingTeacherV2Operation::PredictSingVolumeV2 => light_session_options,
                 },
                 frame_decode: enum_map! {
                     FrameDecodeOperation::SfDecode => heavy_session_options,
@@ -850,6 +853,13 @@ trait AsInner {
             )
             .collect::<Vec<_>>();
 
+        if self
+            .status()
+            .contains_domain::<SingingTeacherV2Domain>(style_id)
+        {
+            unimplemented!("operations for `singing_teacher_v2` are not yet implemented");
+        }
+
         let (phonemes_by_frame, keys_by_frame) =
             song::validate::frame_phoneme_note_pairs(&frame_phonemes, notes.as_ref())
                 .expect("`frame_phonemes`' phonemes should come from `notes`")
@@ -883,6 +893,13 @@ trait AsInner {
         let ValidatedScore { notes } = score.try_into()?;
         frame_audio_query.validate();
 
+        if self
+            .status()
+            .contains_domain::<SingingTeacherV2Domain>(style_id)
+        {
+            unimplemented!("operations for `singing_teacher_v2` are not yet implemented");
+        }
+
         let (phonemes_by_frame, keys_by_frame) =
             song::validate::frame_phoneme_note_pairs(&frame_audio_query.phonemes, notes.as_ref())?
                 .flat_map(|(p, n)| song::interpret::repeat_phoneme_code_and_key(p, n))
@@ -900,7 +917,7 @@ trait AsInner {
     ) -> Result<Vec<PositiveFinite<f32>>> {
         if phonemes_by_frame.is_empty() && keys_by_frame.is_empty() {
             // 一貫性の観点から、推論を行わない場合でも`StyleNotFound`エラーが出るようにする。
-            self.status().ids_for::<SingingTeacherDomain>(style_id)?;
+            self.status().ids_for::<SingingTeacherV1Domain>(style_id)?;
             return Ok(vec![]);
         }
 
@@ -908,7 +925,7 @@ trait AsInner {
 
         let f0s = self
             .status()
-            .predict_sing_f0::<Self::Async>(phonemes_by_frame, keys_by_frame, style_id)
+            .predict_sing_f0_v1::<Self::Async>(phonemes_by_frame, keys_by_frame, style_id)
             .await?;
 
         ensure_positive_finite(&f0s.into_vec(), |invalid| {
@@ -926,6 +943,13 @@ trait AsInner {
         frame_audio_query.validate();
 
         frame_audio_query.warn_for_f0_len();
+
+        if self
+            .status()
+            .contains_domain::<SingingTeacherV2Domain>(style_id)
+        {
+            unimplemented!("operations for `singing_teacher_v2` are not yet implemented");
+        }
 
         let (phonemes_by_frame, keys_by_frame) =
             song::validate::frame_phoneme_note_pairs(&frame_audio_query.phonemes, notes.as_ref())?
@@ -958,7 +982,7 @@ trait AsInner {
     ) -> Result<Vec<NonNaNFinite<f32>>> {
         if phonemes_by_frame.is_empty() && keys_by_frame.is_empty() && f0s.is_empty() {
             // 一貫性の観点から、推論を行わない場合でも`StyleNotFound`エラーが出るようにする。
-            self.status().ids_for::<SingingTeacherDomain>(style_id)?;
+            self.status().ids_for::<SingingTeacherV1Domain>(style_id)?;
             return Ok(vec![]);
         }
 
@@ -968,7 +992,7 @@ trait AsInner {
 
         let volumes = self
             .status()
-            .predict_sing_volume::<Self::Async>(phonemes_by_frame, keys_by_frame, f0s, style_id)
+            .predict_sing_volume_v1::<Self::Async>(phonemes_by_frame, keys_by_frame, f0s, style_id)
             .await?;
 
         ensure_non_nan_finite(&volumes.into_vec(), |invalid| {
@@ -995,7 +1019,8 @@ trait AsInner {
 
         let wave = &if frame_phonemes.is_empty() && f0s.is_empty() && volumes.is_empty() {
             // 一貫性の観点から、推論を行わない場合でも`StyleNotFound`エラーが出るようにする。
-            self.status().ids_for::<SingingTeacherDomain>(style_id)?;
+            // FIXME ↓ `FrameDecodeDomain`の間違い
+            self.status().ids_for::<SingingTeacherV1Domain>(style_id)?;
             vec![]
         } else {
             self.status()
@@ -1443,12 +1468,31 @@ impl<R: InferenceRuntime> Status<R> {
         note_duration: ndarray::Array1<i64>,
         style_id: StyleId,
     ) -> Result<ndarray::Array1<i64>> {
-        let (model_id, inner_voice_id) = self.ids_for::<SingingTeacherDomain>(style_id)?;
+        if self.contains_domain::<SingingTeacherV1Domain>(style_id) {
+            let (model_id, inner_voice_id) = self.ids_for::<SingingTeacherV1Domain>(style_id)?;
 
-        let PredictSingConsonantLengthOutput { consonant_lengths } = self
+            let singing_teacher_v1::PredictSingConsonantLengthOutput { consonant_lengths } = self
+                .run_session::<A, _>(
+                    model_id,
+                    singing_teacher_v1::PredictSingConsonantLengthInput {
+                        consonants: consonant.into_one_row(),
+                        vowels: vowel.into_one_row(),
+                        note_durations: note_duration.into_one_row(),
+                        speaker_id: ndarray::array![inner_voice_id.raw_id().into()],
+                    },
+                    A::LIGHT_INFERENCE_CANCELLABLE,
+                )
+                .await?;
+
+            return consonant_lengths.squeeze_into_1d();
+        }
+
+        let (model_id, inner_voice_id) = self.ids_for::<SingingTeacherV2Domain>(style_id)?;
+
+        let singing_teacher_v2::PredictSingConsonantLengthOutput { consonant_lengths } = self
             .run_session::<A, _>(
                 model_id,
-                PredictSingConsonantLengthInput {
+                singing_teacher_v2::PredictSingConsonantLengthInput {
                     consonants: consonant.into_one_row(),
                     vowels: vowel.into_one_row(),
                     note_durations: note_duration.into_one_row(),
@@ -1461,18 +1505,18 @@ impl<R: InferenceRuntime> Status<R> {
         consonant_lengths.squeeze_into_1d()
     }
 
-    async fn predict_sing_f0<A: infer::AsyncExt>(
+    async fn predict_sing_f0_v1<A: infer::AsyncExt>(
         &self,
         phoneme: ndarray::Array1<i64>,
         note: ndarray::Array1<i64>,
         style_id: StyleId,
     ) -> Result<ndarray::Array1<f32>> {
-        let (model_id, inner_voice_id) = self.ids_for::<SingingTeacherDomain>(style_id)?;
+        let (model_id, inner_voice_id) = self.ids_for::<SingingTeacherV1Domain>(style_id)?;
 
-        let PredictSingF0Output { f0s } = self
+        let singing_teacher_v1::PredictSingF0V1Output { f0s } = self
             .run_session::<A, _>(
                 model_id,
-                PredictSingF0Input {
+                singing_teacher_v1::PredictSingF0V1Input {
                     phonemes: phoneme.into_one_row(),
                     notes: note.into_one_row(),
                     speaker_id: ndarray::array![inner_voice_id.raw_id().into()],
@@ -1484,23 +1528,75 @@ impl<R: InferenceRuntime> Status<R> {
         f0s.squeeze_into_1d()
     }
 
-    async fn predict_sing_volume<A: infer::AsyncExt>(
+    async fn predict_sing_f0_v2<A: infer::AsyncExt>(
+        &self,
+        phoneme: ndarray::Array1<i64>,
+        note: ndarray::Array1<i64>,
+        initial_noise: ndarray::Array1<f32>,
+        style_id: StyleId,
+    ) -> Result<ndarray::Array1<f32>> {
+        let (model_id, inner_voice_id) = self.ids_for::<SingingTeacherV2Domain>(style_id)?;
+
+        let singing_teacher_v2::PredictSingF0V2Output { f0s } = self
+            .run_session::<A, _>(
+                model_id,
+                singing_teacher_v2::PredictSingF0V2Input {
+                    phonemes: phoneme.into_one_row(),
+                    notes: note.into_one_row(),
+                    speaker_id: ndarray::array![inner_voice_id.raw_id().into()],
+                    initial_noises: initial_noise.into_one_row(),
+                },
+                A::LIGHT_INFERENCE_CANCELLABLE,
+            )
+            .await?;
+
+        f0s.squeeze_into_1d()
+    }
+
+    async fn predict_sing_volume_v1<A: infer::AsyncExt>(
         &self,
         phoneme: ndarray::Array1<i64>,
         note: ndarray::Array1<i64>,
         f0: ndarray::Array1<f32>,
         style_id: StyleId,
     ) -> Result<ndarray::Array1<f32>> {
-        let (model_id, inner_voice_id) = self.ids_for::<SingingTeacherDomain>(style_id)?;
+        let (model_id, inner_voice_id) = self.ids_for::<SingingTeacherV1Domain>(style_id)?;
 
-        let PredictSingVolumeOutput { volumes } = self
+        let singing_teacher_v1::PredictSingVolumeV1Output { volumes } = self
             .run_session::<A, _>(
                 model_id,
-                PredictSingVolumeInput {
+                singing_teacher_v1::PredictSingVolumeV1Input {
                     phonemes: phoneme.into_one_row(),
                     notes: note.into_one_row(),
                     frame_f0s: f0.into_one_row(),
                     speaker_id: ndarray::array![inner_voice_id.raw_id().into()],
+                },
+                A::LIGHT_INFERENCE_CANCELLABLE,
+            )
+            .await?;
+
+        volumes.squeeze_into_1d()
+    }
+
+    async fn predict_sing_volume_v2<A: infer::AsyncExt>(
+        &self,
+        phoneme: ndarray::Array1<i64>,
+        note: ndarray::Array1<i64>,
+        f0: ndarray::Array1<f32>,
+        initial_noise: ndarray::Array1<f32>,
+        style_id: StyleId,
+    ) -> Result<ndarray::Array1<f32>> {
+        let (model_id, inner_voice_id) = self.ids_for::<SingingTeacherV2Domain>(style_id)?;
+
+        let singing_teacher_v2::PredictSingVolumeV2Output { volumes } = self
+            .run_session::<A, _>(
+                model_id,
+                singing_teacher_v2::PredictSingVolumeV2Input {
+                    phonemes: phoneme.into_one_row(),
+                    notes: note.into_one_row(),
+                    frame_f0s: f0.into_one_row(),
+                    speaker_id: ndarray::array![inner_voice_id.raw_id().into()],
+                    initial_noises: initial_noise.into_one_row(),
                 },
                 A::LIGHT_INFERENCE_CANCELLABLE,
             )
@@ -2786,7 +2882,7 @@ pub(crate) mod blocking {
                 .block_on()
         }
 
-        pub fn predict_sing_f0(
+        pub fn predict_sing_f0_v1(
             &self,
             phoneme: ndarray::Array1<i64>,
             note: ndarray::Array1<i64>,
@@ -2794,11 +2890,24 @@ pub(crate) mod blocking {
         ) -> crate::Result<ndarray::Array1<f32>> {
             self.0
                 .status
-                .predict_sing_f0::<SingleTasked>(phoneme, note, style_id)
+                .predict_sing_f0_v1::<SingleTasked>(phoneme, note, style_id)
                 .block_on()
         }
 
-        pub fn predict_sing_volume(
+        pub fn predict_sing_f0_v2(
+            &self,
+            phoneme: ndarray::Array1<i64>,
+            note: ndarray::Array1<i64>,
+            initial_noise: ndarray::Array1<f32>,
+            style_id: StyleId,
+        ) -> crate::Result<ndarray::Array1<f32>> {
+            self.0
+                .status
+                .predict_sing_f0_v2::<SingleTasked>(phoneme, note, initial_noise, style_id)
+                .block_on()
+        }
+
+        pub fn predict_sing_volume_v1(
             &self,
             phoneme: ndarray::Array1<i64>,
             note: ndarray::Array1<i64>,
@@ -2807,7 +2916,21 @@ pub(crate) mod blocking {
         ) -> crate::Result<ndarray::Array1<f32>> {
             self.0
                 .status
-                .predict_sing_volume::<SingleTasked>(phoneme, note, f0, style_id)
+                .predict_sing_volume_v1::<SingleTasked>(phoneme, note, f0, style_id)
+                .block_on()
+        }
+
+        pub fn predict_sing_volume_v2(
+            &self,
+            phoneme: ndarray::Array1<i64>,
+            note: ndarray::Array1<i64>,
+            f0: ndarray::Array1<f32>,
+            initial_noise: ndarray::Array1<f32>,
+            style_id: StyleId,
+        ) -> crate::Result<ndarray::Array1<f32>> {
+            self.0
+                .status
+                .predict_sing_volume_v2::<SingleTasked>(phoneme, note, f0, initial_noise, style_id)
                 .block_on()
         }
 
@@ -4539,7 +4662,7 @@ mod tests {
         let result = syntesizer
             .0
             .status
-            .predict_sing_f0::<BlockingThreadPool>(
+            .predict_sing_f0_v1::<BlockingThreadPool>(
                 phoneme_vector.clone(),
                 note_vector,
                 sing_teacher_style_id,
@@ -4576,7 +4699,7 @@ mod tests {
         let result = syntesizer
             .0
             .status
-            .predict_sing_volume::<BlockingThreadPool>(
+            .predict_sing_volume_v1::<BlockingThreadPool>(
                 phoneme_vector.clone(),
                 note_vector,
                 f0_vector,

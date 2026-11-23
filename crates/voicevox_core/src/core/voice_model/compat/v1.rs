@@ -5,7 +5,9 @@ use serde::Deserialize;
 use crate::{
     CharacterMeta, CharacterVersion, StyleId, StyleMeta, StyleType, VoiceModelId,
     core::{
-        infer::domains::{FrameDecodeDomain, InferenceDomainMap, SingingTeacherDomain, TalkDomain},
+        infer::domains::{
+            FrameDecodeDomain, InferenceDomainMap, SingingTeacherV1Domain, TalkDomain,
+        },
         voice_model::manifest::{ManifestBody, ManifestDomain},
     },
 };
@@ -15,7 +17,7 @@ pub(in super::super) struct ManifestBodyV1 {
     id: VoiceModelId,
     metas_filename: String,
     talk: Option<ManifestDomain<TalkDomain>>,
-    singing_teacher: Option<ManifestDomain<SingingTeacherDomain>>,
+    singing_teacher: Option<ManifestDomain<SingingTeacherV1Domain>>,
     frame_decode: Option<ManifestDomain<FrameDecodeDomain>>,
 }
 
@@ -27,7 +29,8 @@ impl From<ManifestBodyV1> for ManifestBody {
             domains: InferenceDomainMap {
                 talk: v1.talk,
                 streaming_talk: None,
-                singing_teacher: v1.singing_teacher,
+                singing_teacher_v1: v1.singing_teacher,
+                singing_teacher_v2: None,
                 frame_decode: v1.frame_decode,
             },
         }

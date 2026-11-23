@@ -31,14 +31,11 @@ use crate::{
 
 use super::infer::{
     InferenceDomain,
-    domains::{
-        FrameDecodeDomain, InferenceDomainMap, SingingTeacherDomain, StreamingTalkDomain,
-        TalkDomain, inference_domain_map, inference_domain_map_values,
-    },
+    domains::{InferenceDomainMap, inference_domain_map, inference_domain_map_values},
 };
 
 use self::{
-    compat::v1::VoiceModelMetaV1,
+    compat::{v1::VoiceModelMetaV1, v2::VoiceModelMetaV2},
     manifest::{
         FormatVersion, Manifest, ManifestBody, ManifestDomain, ManifestDomains, ModelFile,
         ModelFileType, StyleIdToInnerVoiceId,
@@ -257,7 +254,8 @@ impl<A: Async> Inner<A> {
         let InferenceDomainMap {
             talk,
             streaming_talk,
-            singing_teacher,
+            singing_teacher_v1,
+            singing_teacher_v2,
             frame_decode,
         } = self.with_inference_model_entries(|inference_model_entries| {
             inference_model_entries
@@ -306,7 +304,31 @@ impl<A: Async> Inner<A> {
         .await
         .transpose()?;
 
-        let singing_teacher = OptionFuture::from(singing_teacher.map(
+        let singing_teacher_v1 = OptionFuture::from(singing_teacher_v1.map(
+            async |(entries, style_id_to_inner_voice_id)| {
+                let [
+                    predict_sing_consonant_length,
+                    predict_sing_f0,
+                    predict_sing_volume,
+                ] = entries.into_array();
+
+                let predict_sing_consonant_length = read_file!(predict_sing_consonant_length);
+                let predict_sing_f0 = read_file!(predict_sing_f0);
+                let predict_sing_volume = read_file!(predict_sing_volume);
+
+                let model_bytes = EnumMap::from_array([
+                    predict_sing_consonant_length,
+                    predict_sing_f0,
+                    predict_sing_volume,
+                ]);
+
+                Ok((style_id_to_inner_voice_id, model_bytes))
+            },
+        ))
+        .await
+        .transpose()?;
+
+        let singing_teacher_v2 = OptionFuture::from(singing_teacher_v2.map(
             async |(entries, style_id_to_inner_voice_id)| {
                 let [
                     predict_sing_consonant_length,
@@ -347,7 +369,8 @@ impl<A: Async> Inner<A> {
         Ok(InferenceDomainMap {
             talk,
             streaming_talk,
-            singing_teacher,
+            singing_teacher_v1,
+            singing_teacher_v2,
             frame_decode,
         })
     }
@@ -479,6 +502,10 @@ impl VoiceModelHeader {
                     .into_iter()
                     .map(Into::into)
                     .collect(),
+                FormatVersion::V2 => {
+                    // VoiceModelMetaV2 == VoiceModelMeta
+                    serde_json::from_slice::<VoiceModelMetaV2>(metas).map_err(error)?
+                }
                 FormatVersion::LATEST => {
                     serde_json::from_slice::<VoiceModelMeta>(metas).map_err(error)?
                 }
@@ -548,27 +575,23 @@ impl InferenceDomainMap<ManifestDomains> {
         let Self {
             talk,
             streaming_talk,
-            singing_teacher,
+            singing_teacher_v1,
+            singing_teacher_v2,
             frame_decode,
         } = self;
 
-        return TalkDomain::contains(style_type).implies(|| talk.is_some())
-            && StreamingTalkDomain::contains(style_type).implies(|| streaming_talk.is_some())
-            && SingingTeacherDomain::contains(style_type).implies(|| singing_teacher.is_some())
-            && FrameDecodeDomain::contains(style_type).implies(|| frame_decode.is_some());
+        // FIXME: VOICEVOX/voicevox_project#102 をやるときに、
+        // visitor patternとかを活用してでもどうにかして`InferenceDomain::style_types`も置き換える
 
-        #[ext]
-        impl<D: InferenceDomain> D {
-            fn contains(style_type: StyleType) -> bool {
-                Self::style_types().contains(&style_type)
-            }
-        }
+        let any_version_of_singing_teacher =
+            singing_teacher_v1.is_some() || singing_teacher_v2.is_some();
 
-        #[ext]
-        impl bool {
-            fn implies(self, other: impl FnOnce() -> Self) -> Self {
-                !self || other()
-            }
+        match style_type {
+            StyleType::Talk => talk.is_some(),
+            StyleType::SingingTeacher => any_version_of_singing_teacher,
+            StyleType::FrameDecode => frame_decode.is_some(),
+            StyleType::Sing => any_version_of_singing_teacher && frame_decode.is_some(),
+            StyleType::StreamingTalk => streaming_talk.is_some(),
         }
     }
 }
