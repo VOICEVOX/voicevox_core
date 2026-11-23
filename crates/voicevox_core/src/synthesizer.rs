@@ -1019,6 +1019,7 @@ trait AsInner {
 
         let wave = &if frame_phonemes.is_empty() && f0s.is_empty() && volumes.is_empty() {
             // 一貫性の観点から、推論を行わない場合でも`StyleNotFound`エラーが出るようにする。
+            // FIXME ↓ `FrameDecodeDomain`の間違い
             self.status().ids_for::<SingingTeacherV1Domain>(style_id)?;
             vec![]
         } else {

@@ -24,16 +24,16 @@ pub(in super::super) struct ManifestBodyV2 {
 }
 
 impl From<ManifestBodyV2> for ManifestBody {
-    fn from(v1: ManifestBodyV2) -> Self {
+    fn from(v2: ManifestBodyV2) -> Self {
         Self {
-            id: v1.id,
-            metas_filename: v1.metas_filename,
+            id: v2.id,
+            metas_filename: v2.metas_filename,
             domains: InferenceDomainMap {
-                talk: v1.talk,
-                streaming_talk: v1.streaming_talk,
-                singing_teacher_v1: v1.singing_teacher,
+                talk: v2.talk,
+                streaming_talk: v2.streaming_talk,
+                singing_teacher_v1: v2.singing_teacher,
                 singing_teacher_v2: None,
-                frame_decode: v1.frame_decode,
+                frame_decode: v2.frame_decode,
             },
         }
     }

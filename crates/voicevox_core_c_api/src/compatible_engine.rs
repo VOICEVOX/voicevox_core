@@ -608,15 +608,15 @@ pub unsafe extern "C" fn predict_sing_f0_forward_v2(
     length: i64,
     phoneme: *mut i64,
     note: *mut i64,
-    speaker_id: *mut i64,
     initial_noise: *mut f32,
+    speaker_id: *mut i64,
     output: *mut f32,
 ) -> bool {
     init_logger_once();
     assert_aligned(phoneme);
     assert_aligned(note);
-    assert_aligned(speaker_id);
     assert_aligned(initial_noise);
+    assert_aligned(speaker_id);
     assert_aligned(output);
     let length = length as usize;
     let synthesizer = &*lock_synthesizer();
@@ -724,6 +724,7 @@ pub unsafe extern "C" fn predict_sing_volume_forward_v2(
     assert_aligned(phoneme);
     assert_aligned(note);
     assert_aligned(f0);
+    assert_aligned(initial_noise);
     assert_aligned(speaker_id);
     assert_aligned(output);
     let length = length as usize;

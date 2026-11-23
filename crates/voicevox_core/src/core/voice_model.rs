@@ -580,6 +580,9 @@ impl InferenceDomainMap<ManifestDomains> {
             frame_decode,
         } = self;
 
+        // FIXME: VOICEVOX/voicevox_project#102 をやるときに、
+        // visitor patternとかを活用してでもどうにかして`InferenceDomain::style_types`も置き換える
+
         let any_version_of_singing_teacher =
             singing_teacher_v1.is_some() || singing_teacher_v2.is_some();
 
@@ -587,7 +590,7 @@ impl InferenceDomainMap<ManifestDomains> {
             StyleType::Talk => talk.is_some(),
             StyleType::SingingTeacher => any_version_of_singing_teacher,
             StyleType::FrameDecode => frame_decode.is_some(),
-            StyleType::Sing => any_version_of_singing_teacher || frame_decode.is_some(),
+            StyleType::Sing => any_version_of_singing_teacher && frame_decode.is_some(),
             StyleType::StreamingTalk => streaming_talk.is_some(),
         }
     }
