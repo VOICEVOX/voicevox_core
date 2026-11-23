@@ -643,6 +643,8 @@ pub unsafe extern "C" fn predict_sing_f0_forward_v2(
             true
         }
         Err(err) => {
+            // FIXME: 新しいENGINE＋新しいCORE＋古いVVMという組み合わせのために、
+            // `initial_noise`を捨ててv1にフォールバックできるようにする。
             set_message(&format!("{err}"));
             false
         }
@@ -753,6 +755,8 @@ pub unsafe extern "C" fn predict_sing_volume_forward_v2(
             true
         }
         Err(err) => {
+            // FIXME: 新しいENGINE＋新しいCORE＋古いVVMという組み合わせのために、
+            // `initial_noise`を捨ててv1にフォールバックできるようにする。
             set_message(&format!("{err}"));
             false
         }
