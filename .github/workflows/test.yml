@@ -401,8 +401,10 @@ jobs:
       - name: Set up Java
         uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
-          java-version: "11"
-          distribution: "temurin"
+          java-version: |
+            8
+            11
+          distribution: ${{ case(runner.os == 'macOS' && runner.arch == 'ARM64', 'zulu', 'temurin') }}
       - name: 必要なDLLをコピーしてビルド
         working-directory: crates/voicevox_core_java_api
         run: |
